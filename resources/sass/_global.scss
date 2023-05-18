@@ -1,0 +1,321 @@
+// Global component styles
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    height: 100%;
+}
+
+a {
+    &:focus {
+        outline: none;
+    }
+}
+
+p {
+    a {
+        text-decoration: underline;
+    }
+}
+
+#markdown-content ul li a {
+    text-decoration: underline;
+}
+
+dl dd.separator{
+    border-bottom: 1px solid $primary;
+}
+
+dl.copyable{
+
+    dd button, dt a{
+        background: transparent;
+        border: none;
+        visibility: hidden;
+    }
+
+    dd:hover button, dt:hover a{
+        
+        visibility: visible;
+        color: $gray-400;
+    
+        &:hover{
+            color: $gray-500;
+        }
+    
+        &:active{
+            color: $success;
+        }
+    }
+}
+
+
+// Main page wrapper
+#wrapper {
+    display: flex;
+    #content-wrapper {
+        background-color: $gray-100;
+        width: 100%;
+        overflow-x: hidden;
+        #content {
+            flex: 1 0 auto;
+        }
+    }
+}
+
+// Set container padding to match gutter width instead of default 15px
+.container,
+.container-fluid {
+    padding-left: $grid-gutter-width;
+    padding-right: $grid-gutter-width;
+}
+
+// Custom extras
+.front-cover {
+    width: 100%;
+    height: 100vh;
+
+    background: url(/images/front.jpg);
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+
+    .content {
+        width: 500px;
+        margin: auto;
+        text-align: center;
+
+        padding-top: 200px;
+
+        @include media-breakpoint-down(md) {
+            width: 90%;
+        }
+
+        &-title {
+            font-size: 3rem;
+            color: white;
+            line-height: 0;
+
+            img {
+                height: 48px;
+                margin-bottom: 10px;
+            }
+
+            @include media-breakpoint-down(sm) {
+                font-size: 2rem;
+            }
+        }
+
+        &-description {
+            font-size: 22px;
+            color: white;
+
+            @include media-breakpoint-down(sm) {
+                font-size: 15px;
+            }
+        }
+
+        a {
+            margin-top: 20px;
+            padding-top: 6px;
+            width: 72%;
+        }
+    }
+
+    .logo {
+        position: absolute;
+        bottom: 20px;
+        left: calc(50vw - (215px / 2));
+
+        img {
+            width: 215px;
+        }
+    }
+}
+
+.table {
+    &-leftpadded {
+        thead,
+        tbody {
+            th:first-child,
+            td:first-child {
+                padding-left: 15px;
+            }
+        }
+    }
+
+    .thead-dark,
+    .tbody-dark {
+        th {
+            border-color: $blue;
+            background-color: $blue;
+        }
+    }
+
+    .thead-light {
+        th {
+            color: $gray-800;
+        }
+    }
+
+    tr {
+        color: $gray-800;
+    }
+}
+
+// Lets tweak a bit the style of bootstrap-table plugin
+table[data-toggle="table"] {
+    th {
+        &:first-child {
+            padding-left: 10px !important;
+        }
+
+        &:last-child {
+            padding-right: 10px !important;
+        }
+    }
+
+    .filter-control {
+        input {
+            height: calc(1.25em + 0.5rem + 2px);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        select {
+            height: calc(1.25em + 0.5rem + 2px);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+    }
+}
+
+table.table-card{
+
+    width: 100%;
+
+    th,td{
+        vertical-align: baseline;
+    }
+
+    th{
+        width: 10ch;
+    }
+
+    tr.spacing > td{
+        padding-bottom: 1rem;
+    }
+    tr.spacing > th{
+        padding-bottom: 1rem;
+    }
+}
+
+// Tweaks to the pagination of bootstrap-table plugin, fixes padding issues and more
+.fixed-table-pagination {
+    padding-left: 15px;
+    padding-right: 15px;
+
+    // Forcefully changing the rows for each page dropdown, as we can't change the html afaik
+    div.float-left.pagination-detail > span.page-list > span > button {
+        color: $gray-900;
+        background-color: $gray-100 !important;
+        border-color: $gray-200 !important;
+
+        height: calc(1.5em + 0.5rem + 2px);
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+    }
+}
+
+.zulu-clock{
+    position: absolute;
+    right: 16px;
+}
+
+.link-tooltip{
+    text-decoration: none;
+    background-image: linear-gradient(90deg,#294661 33%,#fff 0);
+    background-repeat: repeat-x;
+    background-position: bottom;
+    background-size: 3px 1px;
+}
+
+.tooltip-inner {
+    text-align: left;
+    white-space: pre-line;
+    max-width: 50vw !important;
+}
+
+.visiting-toggle:hover{
+    text-decoration: none;
+}
+
+.gap-1{
+    gap: 1rem;
+}
+
+.endorsement-card{
+    width: 18rem;
+    @include media-breakpoint-down(md) {
+        width: 100%;
+    }
+}
+
+.timeline{
+
+    max-height: 75vh;
+    overflow-y: auto;
+
+    .sessions{
+        margin-top: 2rem;
+        border-radius: 12px;
+        position: relative;
+        width: calc(100% - 20px);
+    }
+
+    ul, li{
+        list-style: none;
+        padding: 0;
+    }
+
+    li{
+        padding-bottom: 1.5rem;
+        border-left: 1px solid $primary;
+        position: relative;
+        padding-left: 20px;
+        margin-left: 30px;
+
+        &:last-child{
+            border: 0px;
+            padding-bottom: 0;
+        }
+
+        &:before{
+            content: '';
+            width: 15px;
+            height: 15px;
+            background: white;
+            border: 1px solid $primary;
+            border-radius: 50%;
+            position: absolute;
+            left: -8px;
+            top: 0px;
+        }
+    }
+
+    .time{
+        color: $gray-600;
+        font-size: 0.8rem;
+    }
+
+    p{
+        line-height: 1.5;
+        margin-top:0.4rem;
+    }
+}
