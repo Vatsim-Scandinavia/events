@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,9 +15,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+//--------------------------------------------------------------------------
+// Main page
+//--------------------------------------------------------------------------
+Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
+
+// Route::get('/', function () {
+//     return view('welcome');
+// })->name('welcome');
 
 //--------------------------------------------------------------------------
 // VATSIM Authentication
@@ -28,4 +34,8 @@ Route::get('/logout', [LoginController::class, 'logout'])->middleware('auth')->n
 
 // Auth::routes();
 
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+Route::middleware(['auth'])->group(function() {
+    
+    Route::get('/dashboard', [App\Http\Controllers\FrontController::class, 'index'])->name('dashboard');
+    
+});

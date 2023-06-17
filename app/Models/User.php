@@ -48,6 +48,16 @@ class User extends Authenticatable
         return $handover;
     }
 
+    /**
+     * Relationship of all permissions to this user
+     *
+     * @return Illuminate\Database\Eloquent\Collection|Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class, 'permissions')->withPivot('area_id')->withTimestamps();
+    }
+
     public function getNameAttribute()
     {
         return "{$this->handover->first_name} {$this->handover->last_name}";
