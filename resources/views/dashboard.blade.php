@@ -1,23 +1,27 @@
 @extends('layouts.app')
 
+@section('title', 'Dashboard')
+@section('title-flex')
+    <a href="{{ route('staffings.create') }}" class="btn btn-sm btn-success btn-icon-split">
+        <span class="icon text-white-50">
+            <i class="fas fa-plus"></i>
+        </span>
+        <span class="text">Create Staffing</span>
+    </a>
+@endsection
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Dashboard') }}</div>
-
-                <div class="card-body">
-                    @if (session('status'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('status') }}
-                        </div>
-                    @endif
-
-                    {{ __('You are logged in!') }}
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow mb-4 d-none d-xl-block d-lg-block d-md-block">
+                    <div class="card-header bg-primary py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-white">Available Staffings</h6>
+                    </div>
+                    <div class="card-body">
+                        
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 @endsection

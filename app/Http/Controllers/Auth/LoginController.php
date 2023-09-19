@@ -152,7 +152,7 @@ class LoginController extends Controller
     protected function completeLogin($resourceOwner, $token)
     {
         $account = User::updateOrCreate(
-            ['id' => $resourceOwner->data->id],
+            ['id' => $resourceOwner->data->cid],
             ['last_login' => Carbon::now()],
         );
 

@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Exceptions\MissingHandoverObjectException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -61,5 +63,35 @@ class User extends Authenticatable
     public function getNameAttribute()
     {
         return "{$this->handover->first_name} {$this->handover->last_name}";
+    }
+
+    /**
+     * Return if user is a moderator
+     *
+     * @return bool
+     */
+    public function isModerator(Area $area) 
+    {
+        if($area == null) {
+            return $this->groups->where('id', 2)->isNotEmpty();
+        }
+
+        foreach($this->groups->where('id', 2) as $group) {
+            if($group->pivot->area_id == $area->id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Return if user is an admin
+     *
+     * @return bool
+     */
+    public function isAdmin() 
+    {
+        return $this->groups->contains('id', 1);
     }
 }

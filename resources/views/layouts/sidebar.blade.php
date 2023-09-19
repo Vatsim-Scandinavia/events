@@ -14,9 +14,15 @@
         <hr class="sidebar-divider my-0">
 
         <li class="nav-item {{ Route::is('dashboard') ? 'active' : '' }}">
-        <a class="nav-link" href="{{ route('dashboard') }}">
-            <i class="fas fa-fw fa-table-columns"></i>
-            <span>Dashboard</span></a>
+            <a class="nav-link" href="{{ route('dashboard') }}">
+                <i class="fas fa-fw fa-table-columns"></i>
+                <span>Dashboard</span></a>
+        </li>
+
+        <li class="nav-item {{ Route::is('staffings.index') || Route::is('staffings.create') || Route::is('staffings.edit') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('staffings.index') }}">
+                <i class="fas fa-fw fa-calendar"></i>
+                <span>Staffings</span></a>
         </li>
 
         <!-- Divider -->

@@ -34,8 +34,15 @@ Route::get('/logout', [LoginController::class, 'logout'])->middleware('auth')->n
 
 // Auth::routes();
 
-Route::middleware(['auth'])->group(function() {
+Route::middleware(['auth', 'staff'])->group(function() {
     
     Route::get('/dashboard', [App\Http\Controllers\FrontController::class, 'index'])->name('dashboard');
+
+    Route::get('/staffings', [App\Http\Controllers\StaffingController::class, 'index'])->name('staffings.index');
+    Route::get('/staffings/create', [App\Http\Controllers\StaffingController::class, 'create'])->name('staffings.create');
+    Route::get('/staffings/edit/{staffing}', [App\Http\Controllers\StaffingController::class, 'edit'])->name('staffings.edit');
+    Route::post('/staffings/store', [App\Http\Controllers\StaffingController::class, 'store'])->name('staffings.store');
+    Route::patch('/staffings/edit/{staffing}', [App\Http\Controllers\StaffingController::class, 'update'])->name('staffings.update');
+    Route::delete('/staffings/delete/{staffing}', [App\Http\Controllers\StaffingController::class, 'delete'])->name('staffings.delete');
     
 });
