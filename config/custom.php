@@ -13,4 +13,7 @@ return [
     'forum_api_url' => env('FORUM_API_URL', null),
     'forum_calendar_type' => env('FORUM_CALENDAR_TYPE', null),
     'forum_api_secret' => env('FORUM_API_SECRET', null),
+
+    'discord_bot_token' => env('DISCORD_BOT_TOKEN', null),
+    'discord_guild_id' => env('DISCORD_GUILD_ID', null),
 ];

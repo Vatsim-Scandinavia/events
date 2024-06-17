@@ -17,7 +17,7 @@ return new class extends Migration
             $table->date('date');
             $table->text('description');
             $table->bigInteger('channel_id');
-            $table->bigInteger('message_id');
+            $table->bigInteger('message_id')->nullable();
             $table->integer('week_int');
             $table->text('section_1_title');
             $table->text('section_2_title')->nullable();

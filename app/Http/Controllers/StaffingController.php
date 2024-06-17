@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Area;
 use App\Models\Staffing;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
@@ -64,7 +65,36 @@ class StaffingController extends Controller
 
         $areas = Area::all();
 
-        return view('staffing.create', compact('allData', 'areas'));
+        $channels = $this->getGuildChannels();
+
+        return view('staffing.create', compact('allData', 'areas', 'channels'));
+    }
+
+    protected function getGuildChannels() {
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bot ' . Config::get('custom.discord_bot_token'),
+                'Content-Type' => 'application/json',
+            ])->get('https://discord.com/api/v10/guilds/' . Config::get('custom.discord_guild_id') . '/channels');
+
+            if($response->successful()) {
+                $channelsData = $response->json();
+
+                // Filter channels where 'type' is equal to 0
+                $filteredChannels = array_filter($channelsData, function ($channel) {
+                    return isset($channel['type']) && $channel['type'] == 0;
+                });
+
+                // Reset array keys to start from 0 if needed
+                $filteredChannels = array_values($filteredChannels);
+
+                return $filteredChannels;
+            } else {
+                return "Error: Unable to fetch guild channels. HTTP status code: " . $response->status();
+            }
+        } catch (\Exception $e) {
+            return 'Error: '. $e->getMessage();
+        }
     }
 
     /**
@@ -72,7 +102,58 @@ class StaffingController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $this->validate($request, [
+            'event' => 'required|integer',
+            'description' => 'required',
+            'channel_id' => 'required|integer',
+            'week_int' => 'required|integer|between:1,4',
+            'section_1_title' => 'required',
+            'section_2_title' => 'nullable',
+            'section_3_title' => 'nullable',
+            'section_4_title' => 'nullable',
+            'restrict_booking' => 'required|integer',
+        ]);
+
+        $eventData = $this->getEvent($request->input('event'));
+
+        // Staffing::create([
+        //     'id' => $eventData->id,
+        //     'title' => $eventData->title,
+        //     'date' => $this->getDate($eventData->start),
+        // ])
+        
+        var_dump($this->getDate($eventData->start));
+    }
+
+    protected function getEvent($id) {
+        try {
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+            ])
+            ->withBasicAuth(Config::get('custom.forum_api_secret'), '')
+            ->get(Config::get('custom.forum_api_url') . '/' . $id);
+            
+            if ($response->successful()) {
+                return $response->json();
+            }
+        } catch (\Exception $e) {
+            return 'Error: '.$e->getMessage();
+        }
+        
+    }
+
+    protected function getDate($date) {
+        $carbonDate = Carbon::parse($date);
+
+        $dayofweek = $carbonDate->dayOfWeek->format('l');
+
+        $currentDate = Carbon::now();
+
+        while ($currentDate->dayOfWeek !== $dayofweek) {
+            $currentDate->addDay();
+        }
+
+        return $currentDate;
     }
 
     /**
