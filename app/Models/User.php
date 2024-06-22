@@ -4,7 +4,6 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
-use App\Exceptions\MissingHandoverObjectException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -21,7 +20,13 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'id',
+        'email',
+        'first_name',
+        'last_name',
         'last_login',
+        'access_token',
+        'refresh_token',
+        'token_expires',
     ];
 
     public $timestamps = false;
@@ -39,17 +44,6 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    public function handover()
-    {
-        $handover = $this->hasOne(Handover::class, 'id');
-
-        if ($handover->first() == null) {
-            throw new MissingHandoverObjectException($this->id);
-        }
-
-        return $handover;
-    }
-
     /**
      * Relationship of all permissions to this user
      *
@@ -60,9 +54,14 @@ class User extends Authenticatable
         return $this->belongsToMany(Group::class, 'permissions')->withPivot('area_id')->withTimestamps();
     }
 
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
+
     public function getNameAttribute()
     {
-        return "{$this->handover->first_name} {$this->handover->last_name}";
+        return "{$this->first_name} {$this->last_name}";
     }
 
     /**

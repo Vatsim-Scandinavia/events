@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('area', function (Blueprint $table) {
-            $table->id();
+        Schema::create('areas', function (Blueprint $table) {
+            $table->increments('id');
             $table->string('name');
         });
 
-        DB::table('area')->insert([
+        DB::table('areas')->insert([
             ['name' => 'Denmark'],
             ['name' => 'Finland'],
             ['name' => 'Iceland'],
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('countries');
+        Schema::dropIfExists('areas');
     }
 };

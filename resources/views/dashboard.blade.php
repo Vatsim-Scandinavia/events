@@ -2,12 +2,14 @@
 
 @section('title', 'Dashboard')
 @section('title-flex')
-    <a href="{{ route('staffings.create') }}" class="btn btn-sm btn-success btn-icon-split">
-        <span class="icon text-white-50">
-            <i class="fas fa-plus"></i>
-        </span>
-        <span class="text">Create Staffing</span>
-    </a>
+    @can('create', Event::class)
+        <a href="{{ route('staffings.create') }}" class="btn btn-sm btn-success btn-icon-split">
+            <span class="icon text-white-50">
+                <i class="fas fa-plus"></i>
+            </span>
+            <span class="text">Create Staffing</span>
+        </a>
+    @endcan
 @endsection
 @section('content')
     <div class="container">

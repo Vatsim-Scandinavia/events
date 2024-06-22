@@ -15,8 +15,8 @@ return new class extends Migration
             $table->primary(['user_id', 'area_id', 'group_id']);
 
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('area_id');
-            $table->unsignedBigInteger('group_id');
+            $table->unsignedInteger('area_id');
+            $table->unsignedInteger('group_id');
 
             $table->unsignedBigInteger('inserted_by')->nullable();
             $table->timestamps();
@@ -24,7 +24,7 @@ return new class extends Migration
 
         Schema::table('permissions', function (Blueprint $table) {
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('area_id')->references('id')->on('area')->onDelete('cascade');
+            $table->foreign('area_id')->references('id')->on('areas')->onDelete('cascade');
             $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
             $table->foreign('inserted_by')->references('id')->on('users')->onDelete('set null');
         });

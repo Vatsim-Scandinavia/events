@@ -4,14 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\OAuthController;
-use App\Models\Area;
-use App\Models\Group;
 use App\Models\User;
 use App\Providers\RouteServiceProvider;
-use Carbon\Carbon;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Config;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 
 class LoginController extends Controller
@@ -51,20 +47,22 @@ class LoginController extends Controller
 
     /**
      * Login the user
-     * 
-     * @param \Illuminate\Http\Request $request request to proccess
+     *
+     * @param  \Illuminate\Http\Request  $request  request to proccess
      * @return mixed
      */
     public function login(Request $request)
     {
-        if(!$request->has('code') || !$request->has('state')) {
-            $authURL = $this->provider->getAuthorizationUrl();
-
+        if (!$request->has('code') || !$request->has('state')) {
+            $authorizationUrl = $this->provider->getAuthorizationUrl([
+                'required_scopes' => implode(' ', config('oauth.scopes')),
+                'scope' => implode(' ', config('oauth.scopes')),
+            ]);
             $request->session()->put('oauthstate', $this->provider->getState());
 
-            return redirect()->away($authURL);
-        } else if($request->input('state') !== session()->pull('oauthstate')) {
-            return redirect()->route('welcome')->withErrors("Something went wrong, please try again (state mismatch).");
+            return redirect()->away($authorizationUrl);
+        } elseif ($request->input('state') !== session()->pull('oauthstate')) {
+            return redirect()->route('front')->withError('Something went wrong, please try again (state mismatch).');
         } else {
             return $this->verifyLogin($request);
         }
@@ -72,88 +70,61 @@ class LoginController extends Controller
 
     /**
      * Verify the login of the user's request before proceeding
-     * 
-     * @param \Illuminate\Http\Request $request request to proccess
+     *
+     * @param  \Illuminate\Http\Request  $request  request to proccess
      * @return \Illuminate\Http\RedirectResponse
      */
     protected function verifyLogin(Request $request)
     {
         try {
             $accessToken = $this->provider->getAccessToken('authorization_code', [
-                'code' => $request->input('code')
+                'code' => $request->input('code'),
             ]);
         } catch (IdentityProviderException $e) {
-            return redirect()->route('welcome')->withError("Authentication error: ".$e->getMessage());
+            return redirect()->route('front')->withError('Authentication error: ' . $e->getMessage());
         }
 
         $resourceOwner = json_decode(json_encode($this->provider->getResourceOwner($accessToken)->toArray()));
+        $data = OAuthController::mapOAuthProperties($resourceOwner);
 
-        if(!isset($resourceOwner)) {
-            return redirect()->route('welcome')->withErrors("You did not grant all data which is required to use this service.");
+        if (
+            !$data['id'] ||
+            !$data['email'] ||
+            !$data['first_name'] ||
+            !$data['last_name']
+        ) {
+            return redirect()->route('front')->withError('Missing data from sign-in request. You need to grant all permissions.');
         }
 
-        $account = $this->completeLogin($resourceOwner, $accessToken);
+        $account = $this->completeLogin($data, $accessToken);
 
+        // Login the user and don't remember the session forever
         auth()->login($account, false);
-
-        try {
-
-            $client = new \GuzzleHttp\Client();  // Initalize client
-
-            $response = $client->request('GET', Config::get('custom.cc_url') . '/api/roles', [
-                'headers' => [
-                    'Authorization' => 'Bearer ' . Config::get('custom.cc_api_secret'),
-                    'Accept' => 'application/json',
-                ]
-            ]); // Make request
-
-            $data = json_decode($response->getBody()->getContents());
-
-            $existingUserIds = []; // Track existing user IDs
-
-            $roles = ['admins' => 1, 'moderators' => 2]; // Map roles to group IDs
-
-            foreach ($roles as $role => $groupId) {
-                foreach ($data->data->$role as $key => $item) {
-                    $existingUserIds[] = $item->id; // Add user ID to the existing user IDs array
-        
-                    $user = User::findOrFail($item->id);
-        
-                    foreach ($item->fir as $fir) {
-                        $area = Area::where('name', $fir)->first();
-                        $user->groups()->syncWithoutDetaching([$groupId => ['area_id' => $area->id]]);
-                    }
-        
-                    continue;
-                }
-            }
-
-            // Remove the group if the user's data is not in the API response
-            foreach (\Auth::user()->groups as $group) {
-                if (!in_array($group->pivot->user_id, $existingUserIds)) {
-                    \Auth::user()->groups()->detach($group);
-                }
-            }
-        } catch(\GuzzleHttp\Exception\ClientException $e) {
-            return redirect()->route('welcome')->withError("Authentication error: ".$e->getMessage());
-        }
-
 
         return redirect()->intended(route('dashboard'))->withSuccess('Login Successful');
     }
 
     /**
      * Complete the login by creating or updating the existing account and last login timestamp
-     * 
-     * @param mixed $resourceOwner
-     * @param mixed $token
+     *
+     * @param  mixed  $token
      * @return \App\Models\User User's account data
      */
-    protected function completeLogin($resourceOwner, $token)
+    protected function completeLogin(array $data, $token)
     {
         $account = User::updateOrCreate(
-            ['id' => $resourceOwner->data->cid],
-            ['last_login' => Carbon::now()],
+            [
+                'id' => $data['id'],
+            ],
+            [
+                'email' => $data['email'],
+                'first_name' => $data['first_name'],
+                'last_name' => $data['last_name'],
+                'access_token' => $token->getToken(),
+                'refresh_token' => $token->getRefreshToken(),
+                'token_expires' => $token->getExpires(),
+                'last_login' => \Carbon\Carbon::now(),
+            ]
         );
 
         $account->save();
@@ -163,13 +134,13 @@ class LoginController extends Controller
 
     /**
      * Log out he user and redirect to front page
-     * 
+     *
      * @return \Illuminate\Http\RedirectResponse
      */
     public function logout()
     {
         auth()->logout();
 
-        return redirect()->route('welcome')->withSuccess('You have been successfully logged out.');
+        return redirect(route('front'))->withSuccess('You have been successfully logged out');
     }
 }

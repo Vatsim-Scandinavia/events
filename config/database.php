@@ -55,6 +55,12 @@ return [
             'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
         ],
 
+        'sqlite-testing' => [
+            'driver' => 'sqlite',
+            'database' => database_path('testing.sqlite'),
+            'foreign_key_constraints' => true,
+        ],
+
         'sqlite-handover' => [
             'driver' => 'sqlite',
             'url' => env('DATABASE_URL'),
@@ -86,7 +92,7 @@ return [
         'mysql-handover' => [
             'driver' => 'mysql',
             'url' => env('DATABASE_URL'),
-            'host' => env('DB_HANDOVER_HOST', '127.0.0.1'),
+            'host' => env('DB_HANDOVER_HOST'),
             'port' => env('DB_HANDOVER_PORT', '3306'),
             'database' => env('DB_HANDOVER_DATABASE', 'forge'),
             'username' => env('DB_HANDOVER_USERNAME', 'forge'),
