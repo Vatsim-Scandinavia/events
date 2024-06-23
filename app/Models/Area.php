@@ -20,4 +20,9 @@ class Area extends Model
     {
         return $this->hasMany(Staffing::class);
     }
+
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
 }

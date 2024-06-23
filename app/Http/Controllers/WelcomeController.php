@@ -14,9 +14,9 @@ class WelcomeController extends Controller
      */
     public function index()
     {
-        if(Auth::check()) {
-            return redirect()->intended(route('dashboard'));
-        }
+        // if(Auth::check()) {
+        //     return redirect()->intended(route('dashboard'));
+        // }
 
         return view('welcome');
     }

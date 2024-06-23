@@ -69,7 +69,7 @@ class User extends Authenticatable
      *
      * @return bool
      */
-    public function isModerator(Area $area) 
+    public function isModerator(?Area $area = null) 
     {
         if($area == null) {
             return $this->groups->where('id', 2)->isNotEmpty();
@@ -77,6 +77,26 @@ class User extends Authenticatable
 
         foreach($this->groups->where('id', 2) as $group) {
             if($group->pivot->area_id == $area->id) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function isModeratorOrAbove(?Area $area = null) 
+    {
+        if ($area == null) {
+            return $this->groups->where('id', '<=', 2)->isNotEmpty();
+        }
+
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        // Check if user is moderator or above in the specified area
+        foreach ($this->groups->where('id', '<=', 2) as $group) {
+            if ($group->pivot->area_id == $area->id) {
                 return true;
             }
         }

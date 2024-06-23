@@ -25,8 +25,13 @@ class Event extends Model
         'image'
     ];
 
-    public function organizer()
+    public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function area()
+    {
+        return $this->belongsTo(Area::class);
     }
 }

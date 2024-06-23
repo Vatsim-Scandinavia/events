@@ -62,7 +62,7 @@ class LoginController extends Controller
 
             return redirect()->away($authorizationUrl);
         } elseif ($request->input('state') !== session()->pull('oauthstate')) {
-            return redirect()->route('front')->withError('Something went wrong, please try again (state mismatch).');
+            return redirect()->route('welcome')->withError('Something went wrong, please try again (state mismatch).');
         } else {
             return $this->verifyLogin($request);
         }
@@ -81,7 +81,7 @@ class LoginController extends Controller
                 'code' => $request->input('code'),
             ]);
         } catch (IdentityProviderException $e) {
-            return redirect()->route('front')->withError('Authentication error: ' . $e->getMessage());
+            return redirect()->route('welcome')->withError('Authentication error: ' . $e->getMessage());
         }
 
         $resourceOwner = json_decode(json_encode($this->provider->getResourceOwner($accessToken)->toArray()));
@@ -93,7 +93,7 @@ class LoginController extends Controller
             !$data['first_name'] ||
             !$data['last_name']
         ) {
-            return redirect()->route('front')->withError('Missing data from sign-in request. You need to grant all permissions.');
+            return redirect()->route('welcome')->withError('Missing data from sign-in request. You need to grant all permissions.');
         }
 
         $account = $this->completeLogin($data, $accessToken);
@@ -133,7 +133,7 @@ class LoginController extends Controller
     }
 
     /**
-     * Log out he user and redirect to front page
+     * Log out he user and redirect to welcome page
      *
      * @return \Illuminate\Http\RedirectResponse
      */
@@ -141,6 +141,6 @@ class LoginController extends Controller
     {
         auth()->logout();
 
-        return redirect(route('front'))->withSuccess('You have been successfully logged out');
+        return redirect(route('welcome'))->withSuccess('You have been successfully logged out');
     }
 }

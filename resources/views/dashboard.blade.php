@@ -3,11 +3,11 @@
 @section('title', 'Dashboard')
 @section('title-flex')
     @can('create', Event::class)
-        <a href="{{ route('staffings.create') }}" class="btn btn-sm btn-success btn-icon-split">
+        <a href="{{-- route('events.create') --}}" class="btn btn-sm btn-success btn-icon-split">
             <span class="icon text-white-50">
                 <i class="fas fa-plus"></i>
             </span>
-            <span class="text">Create Staffing</span>
+            <span class="text">Create Event</span>
         </a>
     @endcan
 @endsection
