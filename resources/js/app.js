@@ -4,8 +4,13 @@
 
 import './bootstrap.js';
 import moment from 'moment';
+import flatpickr from 'flatpickr';
+
+import 'flatpickr/dist/flatpickr.css'
 
 window.moment = moment;
+window.flatpickr = flatpickr;
+window.event_api_token = process.env.EVENTS_API_KEY;
 
 /**
  * Other global javascript functionality

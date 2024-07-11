@@ -17,3 +17,10 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+    
+Route::get('/calendars/{calendar}/events', [App\Http\Controllers\API\EventController::class, 'index'])->name('api.event.index');
+
+Route::group(['middleware' => 'api-token'], function() {
+    // Route::get('/calendars/{calendar}/events', [App\Http\Controllers\API\EventController::class, 'index'])->name('api.event.index');
+});

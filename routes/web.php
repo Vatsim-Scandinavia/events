@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\CalendarController;
+use App\Http\Controllers\EventController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +39,22 @@ Route::get('/logout', [LoginController::class, 'logout'])->middleware('auth')->n
 Route::middleware(['auth'])->group(function() {
     
     Route::get('/dashboard', [App\Http\Controllers\FrontController::class, 'index'])->name('dashboard');
+
+    Route::controller(CalendarController::class)->group(function() {
+        Route::get('/calendar/{calendar}', 'show')->name('calendar');
+        Route::get('/calendars', 'index')->name('calendars.index');
+        Route::get('/calendars/create', 'create')->name('calendars.create');
+        Route::get('/calendars/edit/{calendar}', 'edit')->name('calendars.edit');
+        Route::post('/calendars', 'store')->name('calendars.store');
+        Route::patch('/calendars/{calendar}', 'update')->name('calendars.update');
+        Route::delete('/calendars', 'destroy')->name('calendars.destroy');
+    });
+
+    Route::controller(EventController::class)->group(function() {
+        Route::get('/events', 'index')->name('events.index');
+        Route::get('/events/create', 'create')->name('events.create');
+        Route::post('/events', 'store')->name('events.store');
+    });
 
     Route::get('/staffings', [App\Http\Controllers\StaffingController::class, 'index'])->name('staffings.index');
     Route::get('/staffings/create', [App\Http\Controllers\StaffingController::class, 'create'])->name('staffings.create');
