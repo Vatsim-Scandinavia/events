@@ -24,4 +24,14 @@ class EventPolicy
     {
         return $user->isModeratorOrAbove();
     }
+
+    public function update(User $user, Event $event) 
+    {
+        return $user->isModerator($event->area) || $user->isAdmin();
+    }
+
+    public function destroy(User $user, Event $event)
+    {
+        return $user->isModerator($event->area) || $user->isAdmin();
+    }
 }

@@ -6,7 +6,21 @@ import './bootstrap.js';
 import moment from 'moment';
 import flatpickr from 'flatpickr';
 
-import 'flatpickr/dist/flatpickr.css'
+import 'flatpickr/dist/flatpickr.css';
+
+import { Calendar } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import listPlugin from '@fullcalendar/list';
+import bootstrapPlugin from '@fullcalendar/bootstrap';
+import interactionPlugin from '@fullcalendar/interaction';
+
+window.Calendar = Calendar;
+window.dayGridPlugin = dayGridPlugin;
+window.timeGridPlugin = timeGridPlugin;
+window.listPlugin = listPlugin;
+window.bootstrapPlugin = bootstrapPlugin;
+window.interactionPlugin = interactionPlugin;
 
 window.moment = moment;
 window.flatpickr = flatpickr;

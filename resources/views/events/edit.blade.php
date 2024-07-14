@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Create Event')
+@section('title', 'Edit Event')
 @section('content')
     <div class="row">
         <div class="col-xl-12 col-md-12 mb-12">
@@ -8,14 +8,15 @@
                     <h6 class="m-0 fw-bold text-white">User input</h6> 
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('events.store') }}" method="post" enctype="multipart/form-data">
+                    <form action="{{ route('events.update', $event) }}" method="post" enctype="multipart/form-data">
                         @csrf
+                        @method('PATCH')
                         <div class="container-fluid">
                             <div class="row pt-2">
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-group">
                                         <label for="event" class="form-label my-1 me-2">Event Title<i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
-                                        <input type="text" name="title" id="title" class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" required>
+                                        <input type="text" name="title" id="title" class="form-control @error('title') is-invalid @enderror" value="{{ $event->title }}" required>
                                         @error('title')
                                             <span class="text-danger">{{ $errors->first('title') }}</span>
                                         @enderror
@@ -25,10 +26,10 @@
                                     <div class="form-group">
                                         <label for="calendar" class="form-label my-1 me-2">Calendar <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="calendar_id" id="calendar" class="form-control my-1 me-sm-2 @error('calendar') is-invalid @enderror" required>
-                                            <option disabled selected>Select Calendar</option>
+                                            <option disabled>Select Calendar</option>
                                             @foreach ($calendars as $calendar)
                                                 @can('view', $calendar)
-                                                    <option value="{{ $calendar->id }}" {{ old('calendar_id') == $calendar->id ? 'selected' : '' }}>{{ $calendar->name }}</option>
+                                                    <option value="{{ $calendar->id }}" {{ $event->calendar_id == $calendar->id ? 'selected' : '' }}>{{ $calendar->name }}</option>
                                                 @endcan
                                             @endforeach
                                         </select>
@@ -41,9 +42,9 @@
                                     <div class="form-group">
                                         <label for="area" class="form-label my-1 me-2">FIR <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="area" id="area" class="form-control my-1 me-sm-2 @error('area') is-invalid @enderror" required>
-                                            <option disabled selected>Select FIR</option>
+                                            <option disabled>Select FIR</option>
                                             @foreach ($areas as $area)
-                                                <option value="{{ $area->id }}" {{ old('area') == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
+                                                <option value="{{ $area->id }}" {{ $event->area_id == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
                                             @endforeach
                                         </select>
                                         @error('area')
@@ -54,7 +55,7 @@
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-group">
                                         <label for="description" class="form-label my-1 me-2">Description</label>
-                                        <textarea class="form-control @error('description') is-invalid @enderror" name="description" id="description" rows="8">{{ old('description') }}</textarea>
+                                        <textarea class="form-control @error('description') is-invalid @enderror" name="description" id="description" rows="8">{{ $event->description }}</textarea>
                                         @error('description')
                                             <span class="text-danger">{{ $errors->first('description') }}</span>
                                         @enderror
@@ -72,12 +73,15 @@
                                                 </span>
                                             @enderror
                                         </div>
+                                        @if ($event->image)
+                                            <img src="{{ asset('storage/images/' . $event->image) }}" alt="Event Image" class="img-thumbnail mt-2" width="200">
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="start_date" class="form-label my-1 me-2">Start Date & Time <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
-                                        <input type="text" name="start_date" id="start_date" class="datepicker form-control @error('start_date') is-invalid @enderror">
+                                        <input type="text" name="start_date" id="start_date" class="datepicker form-control @error('start_date') is-invalid @enderror" value="{{ $event->start_date }}">
                                         @error('start_date')
                                             <span class="text-danger">{{ $errors->first('start_date') }}</span>
                                         @enderror
@@ -86,7 +90,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="end_date" class="form-label my-1 me-2">End Date & Time <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
-                                        <input type="text" name="end_date" id="end_date" class="datepicker form-control @error('end_date') is-invalid @enderror">
+                                        <input type="text" name="end_date" id="end_date" class="datepicker form-control @error('end_date') is-invalid @enderror" value="{{ $event->end_date }}">
                                         @error('end_date')
                                             <span class="text-danger">{{ $errors->first('end_date') }}</span>
                                         @enderror
@@ -98,7 +102,7 @@
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-check">
                                         <input type="hidden" name="event_type" value="0">
-                                        <input class="form-check-input" type="radio" name="event_type" id="is_recurring" value="1" data-toggle="collapse" data-target="#recurringOptions" aria-expanded="false" aria-controls="recurringOptions" {{ old('recurrence_interval') != null && old('recurrence_unit') != null ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="radio" name="event_type" id="is_recurring" value="1" data-toggle="collapse" data-target="#recurringOptions" aria-expanded="false" aria-controls="recurringOptions" {{ $event->recurrence_interval != null && $event->recurrence_unit != null ? 'checked' : '' }}>
                                         <label class="form-check-label" for="is_recurring">
                                             Recurring Event
                                         </label>
@@ -106,7 +110,7 @@
                                 </div>
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="event_type" id="is_full_day" value="2" {{ old('is_full_day') == 1 ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="radio" name="event_type" id="is_full_day" value="2" {{ $event->is_full_day == 1 ? 'checked' : '' }}>
                                         <label class="form-check-label" for="is_full_day">
                                           Full day event
                                         </label>
@@ -119,7 +123,7 @@
                                             <select id="recurrence_unit" name="recurrence_unit" class="form-control my-1 me-sm-2 @error('recurrence_unit') is-invalid @enderror">
                                                 <option value="0" selected>None</option>
                                                 @foreach (\App\Helpers\EventHelper::labels() as $value => $label)
-                                                    <option value="{{ $value }}" {{ old('recurrence_unit') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                    <option value="{{ $value }}" {{ $event->recurrence_unit == $value ? 'selected' : '' }}>{{ $label }}</option>
                                                 @endforeach
                                             </select>
                                             @error('recurrence_unit')
@@ -130,13 +134,13 @@
                                     <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                         <div class="form-group">
                                             <label for="recurrence_interval">Recurrence Interval</label>
-                                            <input type="number" id="recurrence_interval" name="recurrence_interval" class="form-control" value="{{ old('recurrence_interval') }}" placeholder="eg. 2 for every second day">
+                                            <input type="number" id="recurrence_interval" name="recurrence_interval" class="form-control" value="{{ $event->recurrence_interval }}" placeholder="eg. 2 for every second day">
                                         </div>
                                     </div>
                                     <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                         <div class="form-group">
                                             <label for="recurrence_end_date">Recurrence end date</label>
-                                            <input type="date" id="recurrence_end_date" name="recurrence_end_date" class="datepicker form-control" value="{{ old('recurrence_end_date') }}">
+                                            <input type="date" id="recurrence_end_date" name="recurrence_end_date" class="datepicker form-control" value="{{ $event->recurrence_end_date }}">
                                         </div>
                                     </div>
                                 </div>

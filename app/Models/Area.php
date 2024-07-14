@@ -11,6 +11,8 @@ class Area extends Model
 
     public $table = 'areas';
 
+    public $timestamps = false;
+
     public function permissions()
     {
         return $this->belongsToMany(Group::class, 'permissions')->withPivot('area_id')->withTimestamps();

@@ -15,6 +15,7 @@ class ApiKey extends Model
         'id', 
         'name', 
         'last_used_at', 
-        'read_only',
+        'readonly',
+        'created_at'
     ];
 }

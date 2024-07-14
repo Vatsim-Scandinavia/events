@@ -53,7 +53,11 @@ Route::middleware(['auth'])->group(function() {
     Route::controller(EventController::class)->group(function() {
         Route::get('/events', 'index')->name('events.index');
         Route::get('/events/create', 'create')->name('events.create');
+        Route::get('/events/{event}/edit', 'edit')->name('events.edit');
+        Route::get('/events/{event}', 'show')->name('events.show');
         Route::post('/events', 'store')->name('events.store');
+        Route::patch('/events/{event}', 'update')->name('events.update');
+        Route::delete('/events/{event}', 'destroy')->name('events.destroy');
     });
 
     Route::get('/staffings', [App\Http\Controllers\StaffingController::class, 'index'])->name('staffings.index');

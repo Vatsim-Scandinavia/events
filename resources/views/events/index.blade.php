@@ -39,7 +39,21 @@
                                             <td>{{ \Carbon\Carbon::parse($event->start_date)->format('d-m-Y') }}</td>
                                             <td>{{ \Carbon\Carbon::parse($event->end_date)->format('d-m-Y') }}</td>
                                             <td>
-                                                
+                                                <a class="btn btn-info" href="{{ route('events.show', $event->id) }}"><i class="fas fa-eye"></i>
+                                                    Show</a>
+                                                @can('update', $event)
+                                                    <a class="btn btn-primary" href="{{ route('events.edit', $event->id) }}"><i class="fas fa-edit"></i>
+                                                        Edit</a>
+                                                @endcan
+                                                @can('destroy', $event)
+                                                    <form method="POST" action="{{ route('events.destroy', $event->id) }}" style="display:inline"
+                                                        onsubmit="return confirm('Are you sure you want to delete this calendar?')">
+                                                        @method('DELETE')
+                                                        @csrf
+                                                        <button class="btn btn-danger" type="submit"><i class="fas fa-trash"
+                                                                aria-hidden="true"></i> Delete</button>
+                                                    </form>
+                                                @endcan
                                             </td>
                                         </tr>
                                     @endcan

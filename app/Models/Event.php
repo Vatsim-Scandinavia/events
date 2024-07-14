@@ -132,4 +132,80 @@ class Event extends Model
 
         return $recurrences;
     }
+
+    public function checkRecurrences() 
+    {
+        $expectedRecurrences = [];
+        $missingRecurrences = [];
+        $extraRecurrences = [];
+        $actualRecurrences = $this->children()->orderBy('start_date')->get();
+
+        if($this->recurrence_interval && $this->recurrence_unit) {
+            $start = Carbon::parse($this->start_date);
+            $end = Carbon::parse($this->end_date);
+
+            $interval = $this->recurrence_interval ?? 1;
+            $unit = $this->recurrence_unit ?? 'day';
+
+            $recurrenceEnd = $this->recurrence_end_date ? Carbon::parse($this->recurrence_end_date)->endOfDay() : Carbon::now()->addYear()->endOfDay();
+
+            switch ($unit) {
+                case 'day':
+                    $intervalType = 'days';
+                    break;
+                case 'week':
+                    $intervalType = 'weeks';
+                    break;
+                case 'month':
+                    $intervalType = 'months';
+                    break;
+                case 'year':
+                    $intervalType = 'years';
+                    break;
+                default:
+                    $intervalType = 'days';
+                    break;
+            }
+
+            $start = $start->copy()->add($interval, $intervalType);
+            $end = $end->copy()->add($interval, $intervalType);
+
+            while ($start <= $recurrenceEnd) {
+                if($start > $end) {
+                    break;
+                }
+
+                $expectedRecurrences[] = [
+                    'start_date' => $start->copy(),
+                    'end_date' => $end->copy(),
+                ];
+
+                $start = $start->copy()->add($interval, $intervalType);
+                $end = $end->copy()->add($interval, $intervalType);
+            }
+
+            foreach ($expectedRecurrences as $expected) {
+                $matchFound = false;
+
+                foreach ($actualRecurrences as $key => $actual) {
+                    if($expected['start_date']->equalTo(Carbon::parse($actual->start_date)) && $expected['end_date']->equalTo(Carbon::parse($actual->end_date))) {
+                        $matchFound = true;
+                        unset($actualRecurrences[$key]);
+                        break;
+                    }
+                }
+
+                if(!$matchFound) {
+                    $missingRecurrences[] = $expected;
+                }
+            }
+
+            $extraRecurrences = $actualRecurrences;
+
+            return [
+                'missing_recurrences' => $missingRecurrences,
+                'extra_recurrences' => $extraRecurrences
+            ];
+        }
+    }
 }

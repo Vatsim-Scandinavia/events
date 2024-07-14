@@ -13,7 +13,7 @@ class CreateApiKey extends Command
      *
      * @var string
      */
-    protected $signature = 'create-apikey';
+    protected $signature = 'create:apikey';
 
     /**
      * The console command description.

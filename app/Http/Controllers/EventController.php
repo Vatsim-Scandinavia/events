@@ -7,6 +7,10 @@ use App\Models\Calendar;
 use App\Models\Event;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+
 
 class EventController extends Controller
 {
@@ -17,7 +21,7 @@ class EventController extends Controller
     {
         $this->authorize('index', Event::class);
 
-        $events = Event::all();
+        $events = Event::orderBy('start_date', 'ASC')->get();
         
         return view('events.index', compact('events'));
     }
@@ -54,7 +58,7 @@ class EventController extends Controller
             'recurrence_interval' => 'nullable|integer',
             'recurrence_unit' => 'nullable|string|max:255',
             'recurrence_end_date' => 'nullable|date_format:Y-m-d H:i|after_or_equal:end_date',
-            'image' => 'nullable|image|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
         $event = Event::create([
@@ -62,18 +66,38 @@ class EventController extends Controller
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'start_date' => Carbon::parse($request->input('start_date'))->format('Y-m-d H:i'),
-            'end_date' =>  Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
+            'end_date' => Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
             'is_full_day' => $request->input('event_type') == '2' ? true : false,
             'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
+            'image' => isset($imageName) ? $imageName : null,
         ]);
 
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
+
+            // if (!App::runningUnitTests()) {
+            //     $image->storeAs('images', $imageName, 'public');
+            // } else {
+            //     $image->storeAs('storage/framework/testing/disks/public/images/', $imageName);
+            // }
+            $image->storeAs('images', $imageName, 'public');
+
+            $event->image = $imageName;
+        }
+
+        // Ensure area and user association
         $event->area()->associate($request->input('area'));
         $event->user()->associate(\Auth::user());
-        $recurrences = $event->generateRecurrences();
-        $event->children()->saveMany($recurrences);
         $event->save();
+
+        // Generate and save recurrences if the event is recurring
+        if ($event->recurrence_interval && $event->recurrence_unit) {
+            $recurrences = $event->generateRecurrences();
+            $event->children()->saveMany($recurrences);
+        }
 
         return redirect()->route('events.index')->withSuccess('Event created successfully.');
     }
@@ -83,7 +107,9 @@ class EventController extends Controller
      */
     public function show(Event $event)
     {
-        //
+        $this->authorize('view', $event);
+
+        return view('events.show', compact('event'));
     }
 
     /**
@@ -91,7 +117,13 @@ class EventController extends Controller
      */
     public function edit(Event $event)
     {
-        //
+        $this->authorize('update', $event);
+
+        $areas = Area::all();
+
+        $calendars = Calendar::all();
+
+        return view('events.edit', compact('areas', 'calendars', 'event'));
     }
 
     /**
@@ -102,35 +134,72 @@ class EventController extends Controller
         $this->authorize('update', $event);
 
         $this->validate($request, [
-            'calendar_id' => 'required|exists.calendars.id',
+            'calendar_id' => 'required|exists:calendars,id',
+            'area' => 'required|exists:areas,id',
             'title' => 'required|string|max:255',
-            'description' => 'required',
+            'description' => 'nullable',
             'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:today',
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
-            'is_full_day' => 'boolean',
+            'event_type' => 'integer',
             'recurrence_interval' => 'nullable|integer',
             'recurrence_unit' => 'nullable|string|max:255',
-            'image' => 'nullable|image|max:2048',
-            'area' => 'required|exists:areas.id',
+            'recurrence_end_date' => 'nullable|date_format:Y-m-d H:i|after_or_equal:end_date',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $event = Event::create([
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
+    
+            // if (!App::runningUnitTests()) {
+            //     // Delete the old image if it exists
+            //     if ($event->image) {
+            //         Storage::disk('public')->delete('images/' . $event->image);
+            //     }
+            //     $image->storeAs('images', $imageName, 'public');
+            // } else {
+            //     // Delete the old image if it exists
+            //     if ($event->image) {
+            //         File::delete('storage/framework/testing/disks/public/images/' . $event->image);
+            //     }
+            //     $image->storeAs('storage/framework/testing/disks/public/images/', $imageName);
+            // }
+
+            if ($event->image) {
+                    Storage::disk('public')->delete('images/' . $event->image);
+                }
+            $image->storeAs('images', $imageName, 'public');
+            $event->image = $imageName;
+        }
+
+        $event->update([
             'calendar_id' => $request->input('calendar_id'),
             'title' => $request->input('title'),
             'description' => $request->input('description'),
             'start_date' => Carbon::parse($request->input('start_date'))->format('Y-m-d H:i'),
             'end_date' =>  Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
-            'is_full_day' => $request->input('is_full_day'),
-            'recurrence_interval' => $request->input('recurrence_interval'),
-            'recurrence_unit' => $request->input('recurrence_unit'),
+            'is_full_day' => $request->input('event_type') == '2' ? true : false,
+            'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
+            'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
+            'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
+            'image' => isset($imageName) ? $imageName : $event->image,
         ]);
 
+        // Ensure area and user association
         $event->area()->associate($request->input('area'));
         $event->user()->associate(\Auth::user());
-        $event->children()->delete();
-        $recurrences = $event->generateRecurrences();
-        $event->children()->saveMany($recurrences);
+
+        // Save the event before handling recurrences
         $event->save();
+
+        // Check if the event is a recurring event and delete old recurrences if they exist
+        if ($event->recurrence_interval && $event->recurrence_unit) {
+            $event->children()->delete();
+
+            // Generate and save new recurrences
+            $recurrences = $event->generateRecurrences();
+            $event->children()->saveMany($recurrences);
+        }
 
         return redirect()->route('events.index')->withSuccess('Event updated successfully.');
 
