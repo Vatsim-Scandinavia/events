@@ -124,7 +124,7 @@ class EventTest extends TestCase
         // Create a test calendar
         $calendar = Calendar::factory()->create();
 
-        $area = Area::factory()->create();
+        $area = Area::find(rand(1,5));
 
         Storage::fake('public');
 
@@ -162,7 +162,7 @@ class EventTest extends TestCase
         // Create a test calendar
         $calendar = Calendar::factory()->create();
 
-        $area = Area::factory()->create();
+        $area = Area::find(rand(1,5));
 
         // Create test event data
         $startDate = now()->addDays(1)->format('Y-m-d H:i');
@@ -222,7 +222,7 @@ class EventTest extends TestCase
         // Create a test calendar
         $calendar = Calendar::factory()->create();
 
-        $area = Area::factory()->create();
+        $area = Area::find(rand(1,5));
 
         // Create a test event
         $event = Event::factory()->create();
@@ -264,7 +264,7 @@ class EventTest extends TestCase
 
     protected function getUser()
     {
-        $area = Area::factory()->create();
+        $area = Area::find(rand(1,5));
         $user = User::factory()->create();
         $user->groups()->attach(1, ['area_id' => $area->id]);
 

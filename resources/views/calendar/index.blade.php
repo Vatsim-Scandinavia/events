@@ -62,3 +62,6 @@
         </div>
     </div>
 @endsection
+@section('js')
+    @vite(['resources/js/bootstrap-table.js'])
+@endsection

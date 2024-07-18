@@ -77,12 +77,6 @@ class EventController extends Controller
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-
-            // if (!App::runningUnitTests()) {
-            //     $image->storeAs('images', $imageName, 'public');
-            // } else {
-            //     $image->storeAs('storage/framework/testing/disks/public/images/', $imageName);
-            // }
             $image->storeAs('images', $imageName, 'public');
 
             $event->image = $imageName;
@@ -150,20 +144,6 @@ class EventController extends Controller
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-    
-            // if (!App::runningUnitTests()) {
-            //     // Delete the old image if it exists
-            //     if ($event->image) {
-            //         Storage::disk('public')->delete('images/' . $event->image);
-            //     }
-            //     $image->storeAs('images', $imageName, 'public');
-            // } else {
-            //     // Delete the old image if it exists
-            //     if ($event->image) {
-            //         File::delete('storage/framework/testing/disks/public/images/' . $event->image);
-            //     }
-            //     $image->storeAs('storage/framework/testing/disks/public/images/', $imageName);
-            // }
 
             if ($event->image) {
                     Storage::disk('public')->delete('images/' . $event->image);
@@ -213,6 +193,8 @@ class EventController extends Controller
         $this->authorize('destroy', $event);
 
         $event->delete();
+
+        $event->children()->delete();
 
         return redirect()->route('events.index')->withSuccess('Event deleted successfully');
     }

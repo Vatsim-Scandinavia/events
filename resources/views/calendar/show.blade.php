@@ -1,13 +1,14 @@
-@extends('layouts.app')
+@extends('public.app')
 @section('title', 'Calendar - '. $calendar->name)
 @section('content')
-<div class="card shadow mb-4">
-    <div class="card-body">
-        <div id='calendar'></div>
+    <div class="card shadow mb-4">
+        <div class="card-body">
+            <div id='calendar'></div>
+        </div>
     </div>
-</div>
 @endsection
 @section('js')
+    @vite(['resources/js/fullcalendar.js'])
     <script>
         document.addEventListener('DOMContentLoaded', function(){
             var calendarEl = document.getElementById('calendar');
@@ -27,6 +28,7 @@
                 },
                 initialView: 'dayGridMonth',
                 themeSystem: 'bootstrap',
+                firstDay: 1,
                 eventColor: '#1a475f',
                 nowIndicator: true,
                 timeZone: 'UTC',
@@ -49,9 +51,7 @@
                                 start: event.start_date,
                                 end: event.end_date,
                                 description: event.description,
-                                isFullDay: event.is_full_day,
-                                isRecurring: event.is_recurring,
-                                recurrencePattern: event.recurrence_pattern,
+                                allDay: event.is_full_day,
                                 url: `/events/${event.id}`
                             }));
                             successCallback(events);

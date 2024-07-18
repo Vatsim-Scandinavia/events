@@ -1,8 +1,5 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 export default defineConfig({
     plugins: [
@@ -11,6 +8,8 @@ export default defineConfig({
                 'resources/sass/app.scss',
                 'resources/sass/vendor.scss',
                 'resources/js/app.js',
+                'resources/js/bootstrap-table.js',
+                'resources/js/fullcalendar.js',
             ],
             refresh: true,
         }),

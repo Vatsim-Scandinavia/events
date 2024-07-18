@@ -117,6 +117,7 @@ class Event extends Model
                     'recurrence_interval' => $this->recurrence_interval,
                     'recurrence_unit' => $this->recurrence_unit,
                     'recurrence_end_date' => $this->recurrence_end_date,
+                    'image' => $this->image,
                     'user_id' => $this->user_id,
                     'area_id' => $this->area_id,
                 ]);

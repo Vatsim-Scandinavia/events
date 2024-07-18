@@ -201,7 +201,7 @@ class CalendarTest extends TestCase
 
     protected function getUser()
     {
-        $area = Area::factory()->create();
+        $area = Area::find(rand(1,5));
         $user = User::factory()->create();
         $user->groups()->attach(1, ['area_id' => $area->id]);
 

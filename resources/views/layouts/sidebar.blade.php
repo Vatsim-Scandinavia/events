@@ -19,11 +19,13 @@
                 <span>Dashboard</span></a>
         </li>
 
-        <li class="nav-item {{ Route::is('calendar') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('calendar', 1) }}">
-                <i class="fas fa-fw fa-calendar"></i>
-                <span>Calendar</span></a>
-        </li>
+        @foreach (App\Models\Calendar::where('public', 1)->get() as $calendar)
+            <li class="nav-item {{ Route::is('calendar') && request()->route('calendar')->id == $calendar->id ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('calendar', $calendar->id) }}">
+                    <i class="fas fa-fw fa-calendar"></i>
+                    <span>{{ $calendar->name }}</span></a>
+            </li>
+        @endforeach
 
         {{-- <li class="nav-item {{ Route::is('staffings.index') || Route::is('staffings.create') || Route::is('staffings.edit') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('staffings.index') }}">
@@ -49,10 +51,26 @@
                 </li>
             @endif
 
-            <li class="nav-item {{ Route::is('events.index') || Route::is('events.create') ? 'active' : '' }}">
+            <li class="nav-item {{ Route::is('events.index') || Route::is('events.create') | Route::is('events.edit')? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('events.index') }}">
-                    <i class="fas fa-fw fa-calendar-alt"></i>
+                    <i class="fas fa-fw fa-calendar-day"></i>
                     <span>Event Management</span>
+                </a>
+            </li>
+        @endif
+
+        @if (\Auth::user()->isAdmin())
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block">
+
+            <!-- Headng -->
+            <div class="sidebar-heading">
+                Users
+            </div>
+            <li class="nav-item {{ Route::is('users.index') || Route::is('users.show') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('users.index') }}">
+                    <i class="fas fa-fw fa-users"></i>
+                    <span>User Management</span>
                 </a>
             </li>
         @endif
