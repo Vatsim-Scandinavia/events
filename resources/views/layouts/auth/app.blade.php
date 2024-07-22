@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    @include('layouts.header')
+    @include('layouts.auth..header')
 </head>
 <body id="page-top">
     <div id="app"></div>
@@ -9,7 +9,7 @@
     <div id="wrapper">
 
         @auth
-            @include('layouts.sidebar')
+            @include('layouts.auth..sidebar')
         @endauth
         
         <!-- Content Wrapper -->
@@ -18,7 +18,7 @@
             <!-- Main Content -->
             <div id="content">
                 @auth
-                    @include('layouts.topbar')
+                    @include('layouts.auth.topbar')
                 @endauth
                 
                 <!-- Begin Page Content -->

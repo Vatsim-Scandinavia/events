@@ -17,14 +17,13 @@ class EventSeeder extends Seeder
      */
     public function run(): void
     {
-        $faker = Faker::create();
 
         // Create Normal Events
         Event::factory()->count(5)->create([
             'calendar_id' => rand(1,2),
         ])->each(function ($event) {
             $event->area()->associate(Area::inRandomOrder()->first()->id);
-            $event->user()->associate(User::whereHas('groups')->first()->id);
+            $event->user()->associate(User::whereHas('groups')->inRandomOrder()->first()->id);
             $event->save();
         });
 
@@ -36,7 +35,7 @@ class EventSeeder extends Seeder
             'recurrence_end_date' => now()->addWeeks(5)->format('Y-m-d H:i:s'),
         ])->each(function ($event) {
             $event->area()->associate(Area::inRandomOrder()->first()->id);
-            $event->user()->associate(User::whereHas('groups')->first()->id);
+            $event->user()->associate(User::whereHas('groups')->inRandomOrder()->first()->id);
             $event->save();
 
             // Generate and save recurrences if the event is recurring
@@ -53,7 +52,7 @@ class EventSeeder extends Seeder
             'is_full_day' => true,
         ])->each(function ($event) {
             $event->area()->associate(Area::inRandomOrder()->first()->id);
-            $event->user()->associate(User::whereHas('groups')->first()->id);
+            $event->user()->associate(User::whereHas('groups')->inRandomOrder()->first()->id);
             $event->save();
         });
     }

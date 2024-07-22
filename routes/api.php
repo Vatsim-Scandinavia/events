@@ -19,8 +19,8 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
     
-Route::get('/calendars/{calendar}/events', [App\Http\Controllers\API\EventController::class, 'index'])->name('api.event.index');
+// Route::get('/calendars/{calendar}/events', [App\Http\Controllers\API\EventController::class, 'index'])->name('api.event.index');
 
 Route::group(['middleware' => 'api-token'], function() {
-    // Route::get('/calendars/{calendar}/events', [App\Http\Controllers\API\EventController::class, 'index'])->name('api.event.index');
+    Route::get('/calendars/{calendar}/events', [App\Http\Controllers\API\EventController::class, 'index'])->name('api.event.index');
 });

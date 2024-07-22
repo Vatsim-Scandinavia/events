@@ -3,7 +3,7 @@
     <!-- Sidebar - Brand -->
     <a class="sidebar-brand d-flex align-items-center" href="{{-- route('dashboard') --}}">
         <div class="sidebar-brand-icon">
-            <img src="{{ asset('images/temp-logo.png') }}">
+            <img src="{{ asset('images/' . config('app.logo')) }}">
         </div>
 
         <div class="sidebar-brand-text mx-3">{{ config('app.name') }}</div>
@@ -19,7 +19,7 @@
                 <span>Dashboard</span></a>
         </li>
 
-        @foreach (App\Models\Calendar::where('public', 1)->get() as $calendar)
+        @foreach (App\Models\Calendar::where('public', 1)->get()->take(4) as $calendar)
             <li class="nav-item {{ Route::is('calendar') && request()->route('calendar')->id == $calendar->id ? 'active' : '' }}">
                 <a class="nav-link" href="{{ route('calendar', $calendar->id) }}">
                     <i class="fas fa-fw fa-calendar"></i>
@@ -90,8 +90,8 @@
         @endif
 
         <!-- Logo -->
-        <a href="#"><img class="logo" src="{{-- asset('images/logos/'.Config::get('app.logo')) --}}"></a>
-        <a href="https://github.com/Vatsim-Scandinavia/controlcenter" target="_blank" class="version-sidebar">{{ config('app.name') }} v0.0.1</a>
+        <a href="#"><img class="logo" src="{{ asset('images/logos/'. config('app.logo')) }}"></a>
+        <a href="https://github.com/Vatsim-Scandinavia/events" target="_blank" class="version-sidebar">{{ config('app.name') }} v0.0.1</a>
     @else
         <!-- Divider -->
         <hr class="sidebar-divider my-0">

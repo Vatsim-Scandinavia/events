@@ -15,9 +15,9 @@ class CalendarPolicy
         return $user->isAdmin();
     }
 
-    public function view(User $user, Calendar $calendar) 
+    public function view(?User $user, Calendar $calendar) 
     {
-        return $user->isModeratorOrAbove() || $calendar->public;
+        return ($user && $user->isModeratorOrAbove()) || $calendar->public;
     }
 
     public function create(User $user) 

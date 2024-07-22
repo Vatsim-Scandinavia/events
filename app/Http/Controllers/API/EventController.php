@@ -10,7 +10,9 @@ class EventController extends Controller
 {
     public function index(Calendar $calendar) 
     {
-        $events = $calendar->events()->get();
+        $events = $calendar
+            ->events()
+            ->get();
 
         return response()->json(['data' => $events->values()], 200);
     }

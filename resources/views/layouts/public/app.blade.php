@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    @include('public.header')
+    @include('layouts.public.header')
 </head>
 <body>
-    @include('public.topbar')
+    @include('layouts.public.topbar')
 
     @yield('content')
 

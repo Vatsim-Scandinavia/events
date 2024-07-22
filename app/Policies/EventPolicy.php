@@ -15,9 +15,9 @@ class EventPolicy
         return $user->isModeratorOrAbove();
     }
 
-    public function view(User $user, Event $event)
+    public function view(?User $user, Event $event)
     {
-        return $user->isModeratorOrAbove() || $user->isModerator($event->area) || $user->is($event->user);
+        return $user && ($user->isModeratorOrAbove() || $user->isModerator($event->area) || $user->is($event->user)) || $event->calendar->public;
     }
 
     public function create(User $user) 

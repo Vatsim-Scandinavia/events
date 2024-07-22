@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.auth.app')
 @section('title', 'Create Event')
 @section('content')
     <div class="row">

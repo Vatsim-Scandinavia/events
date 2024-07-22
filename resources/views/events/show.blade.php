@@ -1,4 +1,4 @@
-@extends('public.app')
+@extends('layouts.public.app')
 @section('title', $event->title)
 @section('content')
     <div class="container mt-5">

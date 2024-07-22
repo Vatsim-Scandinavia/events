@@ -20,9 +20,9 @@
 <link rel="mask-icon" href="/images/favicon/safari-pinned-tab.svg" color="#5bbad5">
 <link rel="shortcut icon" href="/images/favicon/favicon.ico">
 <meta name="msapplication-TileColor" content="#2b5797">
-<meta name="msapplication-config" content="/images/favicon/browserconfig.xml">
+<meta name="msapplication-config" content="/images/favicon/browserconfig.xml"> --}}
 <meta name="theme-color" content="#ffffff">
-<meta name="robots" content="noindex"> --}}
+<meta name="robots" content="noindex">
 
 <!-- CSS -->
 @vite(['resources/sass/app.scss', 'resources/sass/vendor.scss'])

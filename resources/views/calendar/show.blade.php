@@ -1,5 +1,10 @@
-@extends('public.app')
+@extends('layouts.public.app')
 @section('title', 'Calendar - '. $calendar->name)
+@section('css')
+    <style>
+        @media screen and (max-width:767px) { .fc-toolbar.fc-header-toolbar {font-size: 60%}}
+    </style>
+@endsection
 @section('content')
     <div class="card shadow mb-4">
         <div class="card-body">
@@ -21,16 +26,11 @@
                     timeGridPlugin,
                     listPlugin
                 ],
-                headerToolbar: {
-                    left: 'dayGridMonth,dayGridWeek,timeGridDay,listMonth',
-                    center: 'title',
-                    right: 'today prevYear,prev,next,nextYear',
-                },
-                initialView: 'dayGridMonth',
                 themeSystem: 'bootstrap',
                 firstDay: 1,
                 eventColor: '#1a475f',
                 nowIndicator: true,
+                longPressDelay: 0,
                 timeZone: 'UTC',
                 events: function(fetchInfo, successCallback, failureCallback) {
                     fetch(`/api/calendars/{{ $calendar->id }}/events`, {
@@ -40,9 +40,7 @@
                             'Content-Type': 'application/json'
                         }
                     })
-                    .then(response => {
-                        return response.json();
-                    })
+                    .then(response => response.json())
                     .then(data => {
                         if (Array.isArray(data.data)) {
                             const events = data.data.map(event => ({
@@ -65,9 +63,27 @@
                         failureCallback(error);
                     });
                 },
-                selectable: true,
                 editable: false,
             });
+
+            function updateToolbar() {
+                if (window.innerWidth < 768) {
+                    calendar.setOption('headerToolbar', {
+                        left: 'prev,next today',
+                        center: 'title',
+                        right: 'dayGridMonth,timeGridDay'
+                    });
+                } else {
+                    calendar.setOption('headerToolbar', {
+                        left: 'dayGridMonth,dayGridWeek,timeGridDay,listMonth',
+                        center: 'title',
+                        right: 'today prevYear,prev,next,nextYear'
+                    });
+                }
+            }
+
+            updateToolbar(); // Set initial toolbar based on screen size
+            window.addEventListener('resize', updateToolbar, { passive: true }); // Update toolbar on resize with passive option
 
             calendar.render();
         });

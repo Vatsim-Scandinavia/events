@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.auth.app')
 @section('title', 'Events')
 @section('title-flex')
     @can('create', \App\Models\Event::class)

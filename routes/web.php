@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\FrontController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
@@ -39,10 +40,9 @@ Route::get('/logout', [LoginController::class, 'logout'])->middleware('auth')->n
 
 Route::middleware(['auth'])->group(function() {
     
-    Route::get('/dashboard', [App\Http\Controllers\FrontController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [FrontController::class, 'index'])->name('dashboard');
 
     Route::controller(CalendarController::class)->group(function() {
-        Route::get('/calendar/{calendar}', 'show')->name('calendar');
         Route::get('/calendars', 'index')->name('calendars.index');
         Route::get('/calendars/create', 'create')->name('calendars.create');
         Route::get('/calendars/edit/{calendar}', 'edit')->name('calendars.edit');
@@ -55,7 +55,6 @@ Route::middleware(['auth'])->group(function() {
         Route::get('/events', 'index')->name('events.index');
         Route::get('/events/create', 'create')->name('events.create');
         Route::get('/events/{event}/edit', 'edit')->name('events.edit');
-        Route::get('/events/{event}', 'show')->name('events.show');
         Route::post('/events', 'store')->name('events.store');
         Route::patch('/events/{event}', 'update')->name('events.update');
         Route::delete('/events/{event}', 'destroy')->name('events.destroy');
@@ -75,3 +74,6 @@ Route::middleware(['auth'])->group(function() {
     // Route::delete('/staffings/delete/{staffing}', [App\Http\Controllers\StaffingController::class, 'delete'])->name('staffings.delete');
     
 });
+
+Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
+Route::get('/calendar/{calendar}', [CalendarController::class, 'show'])->name('calendar');

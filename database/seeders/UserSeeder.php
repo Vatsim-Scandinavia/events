@@ -14,6 +14,8 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+        $groups = Group::all();
+
         for($i = 1; $i <= 11; $i++) {
             $first_name = 'Web';
             $last_name = 'X';
@@ -61,12 +63,20 @@ class UserSeeder extends Seeder
                     break;
             }
 
-            User::factory()->create([
+            $user = User::factory()->create([
                 'id' => 10000000 + $i,
                 'email' => $email,
                 'first_name' => $first_name,
                 'last_name' => $last_name
-            ])->groups()->attach(Group::find($group), ['area_id' => 1]);
+            ]);
+
+            // Assign groups randomly, or specific group for user 10
+            if ($i == 10) {
+                $user->groups()->attach(Group::find($group), ['area_id' => 1]);
+            } else if ($i !== 11) {
+                $randomGroup = $groups->random(rand(0, $groups->count()))->pluck('id')->toArray();
+                $user->groups()->attach($randomGroup, ['area_id' => 1]);
+            }
         }
     }
 }

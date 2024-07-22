@@ -26,7 +26,13 @@ class FrontController extends Controller
     public function index()
     {
         $now = Carbon::now();
-        $events = Event::whereBetween('start_date', [$now, $now->copy()->addDay()])->limit(5)->get();
+        $events = Event::whereBetween('start_date', [$now, $now->copy()->addDay()])
+            ->orderBy('start_date', 'asc')
+            ->limit(5)
+            ->get()
+            ->filter(function ($event) {
+                return \Auth::user()->can('view', $event) && \Auth::user()->can('view', $event->calendar);
+            });
 
         return view('dashboard', compact('events'));
     }

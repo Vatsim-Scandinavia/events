@@ -20,6 +20,42 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Owner
+    |--------------------------------------------------------------------------
+    |
+    | This value is the owner of your application. This value is used when the
+    | framework needs to place the application's owner in a notification or
+    | any other location as required by the application or its packages.
+    |
+    */
+
+    'owner_name' => env('APP_OWNER_NAME', 'Subdivision name'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Short name of application owner
+    |--------------------------------------------------------------------------
+    |
+    | Same as above, but the shortened name. Mostly used in more compact views.
+    |
+    */
+
+    'owner_name_short' => env('APP_OWNER_NAME_SHORT', 'UNKNOWN'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application Owner Code
+    |--------------------------------------------------------------------------
+    |
+    | 3-4 letter name identifying the entity in VATSIM API.
+    | For example 'SCA', NOT 'VATSCA'.
+    |
+    */
+
+    'owner_code' => env('APP_OWNER_CODE', 'UNK'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |
@@ -58,6 +94,15 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     'asset_url' => env('ASSET_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Logos
+    |--------------------------------------------------------------------------
+    |
+    */
+
+    'logo' => env('APP_LOGO', 'vatsca.svg'),
 
     /*
     |--------------------------------------------------------------------------

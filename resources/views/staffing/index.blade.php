@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.auth.app')
 
 @section('title', 'Staffings')
 @section('title-flex')

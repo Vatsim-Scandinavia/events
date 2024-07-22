@@ -58,12 +58,7 @@ class APITest extends TestCase
     public function test_events_can_be_recieved_from_the_api()
     {
         // Create an API key
-        $api = ApiKey::create([
-            'id' => '635912f9-c22b-4a63-96e5-14be08a20098',
-            'name' => 'Test',
-            'readonly' => 0,
-            'created_at' => now(),
-        ]);
+        $api = ApiKey::factory()->create();
 
         // Create test event
         $event = Event::factory()->create();
@@ -72,7 +67,7 @@ class APITest extends TestCase
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $api->id,
             'Accept' => 'application/json'
-        ])->get(route('api.event.index', $event->calendar_id));
+        ])->get(route('api.event.index', $event->calendar));
 
         // Assert that the response status is 200 (OK) 
         $response->assertStatus(200);

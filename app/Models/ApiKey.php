@@ -11,10 +11,12 @@ class ApiKey extends Model
 
     public $table = 'api_keys';
 
+    public $incrementing = false;
+
     public $fillable = [
         'id', 
         'name', 
-        'last_used_at', 
+        'last_used_at',
         'readonly',
         'created_at'
     ];
