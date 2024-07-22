@@ -25,13 +25,13 @@ class CalendarController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'public' => 'nullable|boolean'
+            'public' => 'required|boolean'
         ]);
 
         $calendar = Calendar::create([
             'name' => $request->input('name'),
             'description' => $request->input('description'),
-            'public' => $request->input('public')
+            'public' => $request->input('public'),
         ]);
 
         return response()->json([
@@ -56,7 +56,7 @@ class CalendarController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'public' => 'nullable|boolean',
+            'public' => 'required|boolean',
         ]);
 
         $calendar->update([

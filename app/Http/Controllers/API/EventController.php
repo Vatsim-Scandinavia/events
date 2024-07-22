@@ -36,7 +36,7 @@ class EventController extends Controller
             'description' => 'nullable',
             'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:today',
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
-            'event_type' => 'integer',
+            'event_type' => 'required|integer',
             'recurrence_interval' => 'nullable|integer',
             'recurrence_unit' => 'nullable|string|max:255',
             'recurrence_end_date' => 'nullable|date_format:Y-m-d H:i|after_or_equal:end_date',
@@ -44,7 +44,7 @@ class EventController extends Controller
 
         $user = User::findorFail($data['user']);
 
-        $this->authorize('create', Event::class, $user);
+        $this->authorize('create', Event::class);
 
         $event = Event::create([
             'calendar_id' => $request->input('calendar_id'),
