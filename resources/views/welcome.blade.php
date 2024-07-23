@@ -5,7 +5,11 @@
             <h1 class="display-4">Welcome to {{ config('app.owner_name') }} Event Manager</h1>
             <hr class="my-4">
             <p>Get started by logging in to get an overview of our upcoming events.</p>
-            <a class="btn btn-primary btn-lg mx-2" href="{{ route('login') }}" role="button">Login</a>
+            @guest
+                <a class="btn btn-primary btn-lg mx-2" href="{{ route('login') }}" role="button">Login</a>
+            @else
+                <a class="btn btn-primary btn-lg mx-2" href="{{ route('dashboard') }}" role="button">Dashboard</a>
+            @endguest
         </div>
 
         <div class="card-deck mt-5">

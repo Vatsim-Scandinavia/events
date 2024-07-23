@@ -36,6 +36,50 @@
                         <span>Logout</span></a>
                 </li>
             @endauth
+            @env('local')
+                @guest
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-toggle="modal" data-target="#devloginSidebar">
+                            <i class="fa fa-lg fa-key"></i>&nbsp;Login as user
+                        </a>
+                    </li>
+                @endguest
+            @endenv
         </ul>
     </div>
 </nav>
+
+@env('local')
+    @guest
+        <!-- Sidebar Modal -->
+        <div class="modal fade right" id="devloginSidebar" tabindex="-1" role="dialog" aria-labelledby="devloginSidebarLabel" aria-hidden="true">
+            <div class="modal-dialog modal-full-height modal-right" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="devloginSidebarLabel">Login as user</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning" role="alert">
+                            This function is only available in local environment.
+                        </div>
+                        <div class="d-flex flex-row flex-wrap gap-2 justify-content-between">
+                            <x-login-link key="10000001" label="10000001" />
+                            <x-login-link key="10000002" label="10000002" />
+                            <x-login-link key="10000003" label="10000003" />
+                            <x-login-link key="10000004" label="10000004" />
+                            <x-login-link key="10000005" label="10000005" />
+                            <x-login-link key="10000006" label="10000006" />
+                            <x-login-link key="10000007" label="10000007" />
+                            <x-login-link key="10000008" label="10000008" />
+                            <x-login-link key="10000009" label="10000009" />
+                            <x-login-link key="10000010" label="10000010" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endguest
+@endenv
