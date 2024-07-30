@@ -40,7 +40,7 @@ class CalendarTest extends TestCase
         $response = $this->actingAs($user)->get(route('calendars.index'));
 
         // Check status code
-        $response->assertStatus(403);
+        $response->assertStatus(302);
     }
 
     /**
@@ -70,7 +70,7 @@ class CalendarTest extends TestCase
         $response = $this->actingAs($user)->get(route('calendars.create'));
 
         // Check status code
-        $response->assertStatus(403);
+        $response->assertStatus(302);
     }
 
     /**
@@ -107,7 +107,7 @@ class CalendarTest extends TestCase
         $response = $this->actingAs($user)->get(route('calendars.edit', $calendar));
 
         // Check status code
-        $response->assertStatus(403);
+        $response->assertStatus(302);
     }
 
     /**

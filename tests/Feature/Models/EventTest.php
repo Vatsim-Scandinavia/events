@@ -44,7 +44,7 @@ class EventTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.index'));
 
         // Check status code
-        $response->assertStatus(403);
+        $response->assertStatus(302);
     }
 
     /**
@@ -74,7 +74,7 @@ class EventTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.create'));
 
         // Check status code
-        $response->assertStatus(403);
+        $response->assertStatus(302);
     }
 
     /**
@@ -113,7 +113,7 @@ class EventTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         // Check status code
-        $response->assertStatus(403);
+        $response->assertStatus(302);
     }
 
     public function test_normal_event_can_be_created() : void 
@@ -128,7 +128,9 @@ class EventTest extends TestCase
 
         Storage::fake('public');
 
-        $image = UploadedFile::fake()->image('test_image.jpg');
+        $imagePath = $this->getImage();
+
+        $image = new \Illuminate\Http\UploadedFile($imagePath, 'test_image.jpg', 'image/jpeg', null, true);
 
         // Post request to create a normal event
         $response = $this->actingAs($user)->post(route('events.store'), [
@@ -138,7 +140,6 @@ class EventTest extends TestCase
             'description' => $this->faker->paragraph(),
             'start_date' => now()->addDays(1)->format('Y-m-d H:i'),
             'end_date' => now()->addDays(1)->addHours(2)->format('Y-m-d H:i'),
-            'is_full_day' => false,
             'recurrence_interval' => null,
             'recurrence_unit' => null,
             'recurrence_end_date' => null,
@@ -177,7 +178,6 @@ class EventTest extends TestCase
             'description' => $this->faker->paragraph(),
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'is_full_day' => false,
             'recurrence_interval' => 1,
             'recurrence_unit' => 'week',
             'recurrence_end_date' => $recurrenceEndDate,
@@ -235,7 +235,6 @@ class EventTest extends TestCase
             'description' => $this->faker->paragraph(),
             'start_date' => now()->addDays(1)->format('Y-m-d H:i'),
             'end_date' => now()->addDays(1)->addHours(2)->format('Y-m-d H:i'),
-            'is_full_day' => false,
             'recurrence_interval' => null,
             'recurrence_unit' => null,
             'recurrence_end_date' => null,
@@ -269,5 +268,19 @@ class EventTest extends TestCase
         $user->groups()->attach(1, ['area_id' => $area->id]);
 
         return $user;
+    }
+
+    protected function getImage()
+    {
+        // Create a 16:9 image
+        $width = 1600;
+        $height = 900;
+        $image = imagecreate($width, $height);
+        $background = imagecolorallocate($image, 0, 0, 0); // black background
+        $imagePath = storage_path('framework/testing/test_image.jpg');
+        imagejpeg($image, $imagePath);
+        imagedestroy($image);
+
+        return $imagePath;
     }
 }

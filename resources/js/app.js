@@ -8,7 +8,6 @@ import flatpickr from 'flatpickr';
 
 window.moment = moment;
 window.flatpickr = flatpickr;
-window.event_api_token = process.env.EVENTS_API_KEY;
 
 /**
  * Other global javascript functionality

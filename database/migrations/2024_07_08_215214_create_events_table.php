@@ -18,7 +18,6 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->timestamp('start_date');
             $table->timestamp('end_date')->nullable();
-            $table->boolean('is_full_day')->default(false);
             $table->integer('recurrence_interval')->nullable(); // E.g., 1 for every day, 2 for every second day
             $table->string('recurrence_unit')->nullable(); // E.g., 'day', 'week', 'month', 'year'
             $table->timestamp('recurrence_end_date')->nullable(); // New field for recurrence end date

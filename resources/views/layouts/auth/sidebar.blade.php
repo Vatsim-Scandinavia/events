@@ -1,7 +1,7 @@
 <!-- Sidebar -->
 <ul class="navbar-nav sidebar sidebar-dark accordion" id="accordionSidebar">
     <!-- Sidebar - Brand -->
-    <a class="sidebar-brand d-flex align-items-center" href="{{-- route('dashboard') --}}">
+    <a class="sidebar-brand d-flex align-items-center" href="{{ route('welcome') }}">
         <div class="sidebar-brand-icon">
             <img src="{{ asset('images/' . config('app.logo')) }}">
         </div>
@@ -12,6 +12,12 @@
     @auth
         <!-- Divider -->
         <hr class="sidebar-divider my-0">
+
+        <li class="nav-item {{ Route::is('welcome') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('welcome') }}">
+                <i class="fas fa-fw fa-house"></i>
+                <span>Frontpage</span></a>
+        </li>
 
         <li class="nav-item {{ Route::is('dashboard') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('dashboard') }}">
@@ -90,8 +96,8 @@
         @endif
 
         <!-- Logo -->
-        <a href="#"><img class="logo" src="{{ asset('images/logos/'. config('app.logo')) }}"></a>
-        <a href="https://github.com/Vatsim-Scandinavia/events" target="_blank" class="version-sidebar">{{ config('app.name') }} v0.0.1</a>
+        <a href="#"><img class="logo" src="{{ asset('images/'. config('app.logo')) }}"></a>
+        <a href="https://github.com/Vatsim-Scandinavia/events" target="_blank" class="version-sidebar">Event Manager v{{ config('app.version') }}</a>
     @else
         <!-- Divider -->
         <hr class="sidebar-divider my-0">

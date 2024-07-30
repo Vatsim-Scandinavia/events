@@ -58,7 +58,18 @@ class CalendarController extends Controller
     {
         $this->authorize('view', $calendar);
 
-        return view('calendar.show', compact('calendar'));
+        $allEvents = $calendar->events()->get();
+        $events = $allEvents->map(function ($event){
+            return [
+                'id' => $event->id,
+                'title' => $event->title,
+                'start' => $event->start_date,
+                'end' => $event->end_date,
+                'url' => route('events.show', $event->id),
+            ];
+        });
+
+        return view('calendar.show', compact('calendar', 'events'));
     }
 
     /**

@@ -40,7 +40,7 @@ class UserTest extends TestCase
         $response = $this->actingAs($user)->get(route('users.index', $user));
 
         // Check status code
-        $response->assertStatus(403);
+        $response->assertStatus(302);
     }
 
     /**
@@ -49,7 +49,7 @@ class UserTest extends TestCase
     public function test_users_show_page_can_be_rendered(): void
     {
         // Setup user with permissions
-        $user = $this->getUser();
+        $user = $this->getUser(2);
 
         // Render the users page
         $response = $this->actingAs($user)->get(route('users.show', $user));

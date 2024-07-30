@@ -30,7 +30,6 @@
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item"><strong>Start Date:</strong> {{ \Carbon\Carbon::parse($event->start_date)->format('F j, Y, g:i a') }}</li>
                     <li class="list-group-item"><strong>End Date:</strong> {{ \Carbon\Carbon::parse($event->end_date)->format('F j, Y, g:i a') }}</li>
-                    <li class="list-group-item"><strong>Full Day Event:</strong> {{ $event->is_full_day ? 'Yes' : 'No' }}</li>
                     @if($event->recurrence_interval)
                         <li class="list-group-item"><strong>Recurrence:</strong> Every {{ $event->recurrence_interval }} {{ Str::plural($event->recurrence_unit, $event->recurrence_interval) }}</li>
                         <li class="list-group-item"><strong>Recurrence End Date:</strong> {{ \Carbon\Carbon::parse($event->recurrence_end_date)->format('F j, Y, g:i a') }}</li>

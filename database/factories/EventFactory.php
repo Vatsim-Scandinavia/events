@@ -23,7 +23,6 @@ class EventFactory extends Factory
             'description' => $this->faker->paragraph(),
             'start_date' => now()->addDays(1)->format('Y-m-d H:i:s'),
             'end_date' => now()->addDays(1)->addHours(2)->format('Y-m-d H:i:s'),
-            'is_full_day' => false,
             'recurrence_interval' => null,
             'recurrence_unit' => null,
             'recurrence_end_date' => null,

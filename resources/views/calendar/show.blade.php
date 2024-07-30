@@ -6,17 +6,28 @@
     </style>
 @endsection
 @section('content')
-    <div class="card shadow mb-4">
-        <div class="card-body">
-            <div id='calendar'></div>
+    <div class="container mt-5">
+        <div class="card mt-5 shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="m-0">{{ $calendar->name }}</h5>
+            </div>
+            <div class="card-body">
+                <div id='calendar'></div>
+            </div>
         </div>
     </div>
+    
+    <footer class="text-center mt-5 mb-3">
+        <a href="https://github.com/Vatsim-Scandinavia/events" target="_blank">Event Manager v{{ config('app.version') }}</a>
+    </footer>
 @endsection
 @section('js')
     @vite(['resources/js/fullcalendar.js'])
     <script>
         document.addEventListener('DOMContentLoaded', function(){
             var calendarEl = document.getElementById('calendar');
+
+            var events = @json($events);
 
             var calendar = new Calendar(calendarEl, {
                 plugins: [ 
@@ -32,37 +43,7 @@
                 nowIndicator: true,
                 longPressDelay: 0,
                 timeZone: 'UTC',
-                events: function(fetchInfo, successCallback, failureCallback) {
-                    fetch(`/api/calendars/{{ $calendar->id }}/events`, {
-                        method: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${event_api_token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (Array.isArray(data.data)) {
-                            const events = data.data.map(event => ({
-                                id: event.id,
-                                title: event.title,
-                                start: event.start_date,
-                                end: event.end_date,
-                                description: event.description,
-                                allDay: event.is_full_day,
-                                url: `/events/${event.id}`
-                            }));
-                            successCallback(events);
-                        } else {
-                            console.error('No data or incorrect data format:', data);
-                            failureCallback(new Error('No data or incorrect data format'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error fetching events:', error);
-                        failureCallback(error);
-                    });
-                },
+                events: events,
                 editable: false,
             });
 

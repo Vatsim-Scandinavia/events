@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Calendar;
 use App\Models\Event;
 use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class WelcomeController extends Controller
 {
@@ -17,7 +16,7 @@ class WelcomeController extends Controller
     public function index()
     {
         $now = Carbon::now();
-        $events = Event::where('start_date', '>=', $now)
+        $UpcomingEvents = Event::where('start_date', '>=', $now)
             ->orderBy('start_date', 'asc')
             ->get()
             ->filter(function ($event) {
@@ -25,6 +24,24 @@ class WelcomeController extends Controller
             })
             ->take(5);
 
-        return view('welcome', compact('events'));
+        $calendar = Calendar::where('public', 1)->first();
+
+        if($calendar) {
+            $allEvents = $calendar->events()->get();
+            $events = $allEvents->map(function ($event){
+                return [
+                    'id' => $event->id,
+                    'title' => $event->title,
+                    'start' => $event->start_date,
+                    'end' => $event->end_date,
+                    'url' => route('events.show', $event->id),
+                ];
+            });
+        } else {
+            $events = collect();
+        }
+        
+
+        return view('welcome', compact('UpcomingEvents', 'events', 'calendar'));
     }
 }

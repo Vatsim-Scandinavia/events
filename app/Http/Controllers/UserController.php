@@ -30,7 +30,6 @@ class UserController extends Controller
         $this->authorize('view', $user);
 
         $events = $user->events()
-            ->where('start_date', '>=', Carbon::now())
             ->orderBy('start_date', 'asc')
             ->get()
             ->filter(function($event) {

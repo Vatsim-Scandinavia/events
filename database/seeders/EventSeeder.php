@@ -44,16 +44,5 @@ class EventSeeder extends Seeder
                 $event->children()->saveMany($recurrences);
             }
         });
-
-
-        // Create Full-Day Events
-        Event::factory()->count(2)->create([
-            'calendar_id' => rand(1,2),
-            'is_full_day' => true,
-        ])->each(function ($event) {
-            $event->area()->associate(Area::inRandomOrder()->first()->id);
-            $event->user()->associate(User::whereHas('groups')->inRandomOrder()->first()->id);
-            $event->save();
-        });
     }
 }
