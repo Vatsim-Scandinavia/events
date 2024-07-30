@@ -2,9 +2,6 @@
 @section('title', 'Home')
 @section('content')
     <div class="container mt-5">
-        <div class="jumbotron text-center shadow-sm">
-            <h1 class="display-4">Welcome to {{ config('app.owner_name') }} Event Manager</h1>
-        </div>
 
         <div class="card mt-5 shadow-sm">
             <div class="card-header bg-primary text-white">
@@ -23,9 +20,7 @@
                             </li>
                         @endforeach
                     @else
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <p>No Events Available</p>
-                        </li>
+                        <span>No Events Available</span>
                     @endif
                 </ul>
             </div>

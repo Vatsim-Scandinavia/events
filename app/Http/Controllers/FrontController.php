@@ -25,6 +25,8 @@ class FrontController extends Controller
      */
     public function index()
     {
+        $this->authorize('index', Event::class);
+
         $now = Carbon::now();
         $events = Event::whereBetween('start_date', [$now, $now->copy()->addDay()])
             ->orderBy('start_date', 'asc')

@@ -38,7 +38,7 @@ Route::get('/logout', [LoginController::class, 'logout'])->middleware('auth')->n
 
 // Auth::routes();
 
-Route::middleware(['auth', 'staff'])->group(function() {
+Route::middleware(['auth'])->group(function() {
     
     Route::get('/dashboard', [FrontController::class, 'index'])->name('dashboard');
 

@@ -40,7 +40,7 @@ class UserTest extends TestCase
         $response = $this->actingAs($user)->get(route('users.index', $user));
 
         // Check status code
-        $response->assertStatus(302);
+        $response->assertStatus(403);
     }
 
     /**

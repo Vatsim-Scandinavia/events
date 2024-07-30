@@ -15,11 +15,13 @@
             </li>
             @if (Route::has('login'))
                 @auth
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ route('dashboard') }}">
-                            <i class="fas fa-fw fa-table-columns"></i>
-                            <span>Dashboard</span></a>
-                    </li>
+                    @can('index', \App\Models\Event::class)
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ route('dashboard') }}">
+                                <i class="fas fa-fw fa-table-columns"></i>
+                                <span>Dashboard</span></a>
+                        </li>
+                    @endcan
                 @else
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('login') }}">

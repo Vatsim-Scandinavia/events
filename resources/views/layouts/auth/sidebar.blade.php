@@ -96,7 +96,7 @@
         @endif
 
         <!-- Logo -->
-        <a href="#"><img class="logo" src="{{ asset('images/'. config('app.logo')) }}"></a>
+        <a href="#"><img class="logo" src="{{ asset('images/vatsca_logo.svg') }}"></a>
         <a href="https://github.com/Vatsim-Scandinavia/events" target="_blank" class="version-sidebar">Event Manager v{{ config('app.version') }}</a>
     @else
         <!-- Divider -->

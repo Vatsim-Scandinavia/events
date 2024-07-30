@@ -18,7 +18,7 @@ class UserPolicy
 
     public function view(User $user, User $model) 
     {
-        return $user->isAdmin() || $user->is($model);
+        return $user->isAdmin() || ($user->is($model) && $user->isModeratorOrAbove());
     }
 
     public function viewAccess(User $user) 

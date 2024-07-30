@@ -44,7 +44,7 @@ class EventTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.index'));
 
         // Check status code
-        $response->assertStatus(302);
+        $response->assertStatus(403);
     }
 
     /**
@@ -74,7 +74,7 @@ class EventTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.create'));
 
         // Check status code
-        $response->assertStatus(302);
+        $response->assertStatus(403);
     }
 
     /**
@@ -113,7 +113,7 @@ class EventTest extends TestCase
         $response = $this->actingAs($user)->get(route('events.edit', $event));
 
         // Check status code
-        $response->assertStatus(302);
+        $response->assertStatus(403);
     }
 
     public function test_normal_event_can_be_created() : void 
