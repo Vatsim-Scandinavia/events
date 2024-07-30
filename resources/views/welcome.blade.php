@@ -54,8 +54,6 @@
             document.addEventListener('DOMContentLoaded', function() {
                 var calendarEl = document.getElementById('calendar');
 
-                var events = @json($events);
-
                 var calendar = new Calendar(calendarEl, {
                     plugins: [
                         dayGridPlugin,
@@ -71,7 +69,7 @@
                     longPressDelay: 0,
                     timeZone: 'UTC',
                     initialView: 'dayGridMonth',
-                    events: events,
+                    events: @json($events),
                 });
 
                 function updateToolbar() {

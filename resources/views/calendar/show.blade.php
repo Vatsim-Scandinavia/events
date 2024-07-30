@@ -27,8 +27,6 @@
         document.addEventListener('DOMContentLoaded', function(){
             var calendarEl = document.getElementById('calendar');
 
-            var events = @json($events);
-
             var calendar = new Calendar(calendarEl, {
                 plugins: [ 
                     dayGridPlugin,
@@ -43,7 +41,7 @@
                 nowIndicator: true,
                 longPressDelay: 0,
                 timeZone: 'UTC',
-                events: events,
+                events: @json($events),
                 editable: false,
             });
 
