@@ -273,6 +273,7 @@ class EventTest extends TestCase
     protected function getImage()
     {
         // Create a 16:9 image
+        // Remember `install-php-extensions gd` if you try to run this locally, otherwise this test will fail.
         $width = 1600;
         $height = 900;
         $image = imagecreate($width, $height);
