@@ -1,10 +1,10 @@
-@extends('layouts.auth.app')
+@extends('layouts.app')
 @section('title', 'Edit Event')
 @section('content')
-    <div class="row justify-content-center">
+    <div class="row">
         <div class="col-xl-6 col-md-12 mb-12">
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center justify-content-center">
+                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center">
                     <h6 class="m-0 fw-bold text-white">User input</h6> 
                 </div>
                 <div class="card-body">
@@ -77,7 +77,7 @@
                                     <div class="row mb-4">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="start_date" class="form-label my-1 me-2">Start Date & Time <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                                <label for="start_date" class="form-label my-1 me-2">Start Date & Time (Zulu)<i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                                 <input type="text" name="start_date" id="start_date" class="datepicker form-control @error('start_date') is-invalid @enderror" value="{{ $event->start_date }}">
                                                 @error('start_date')
                                                     <span class="text-danger">{{ $errors->first('start_date') }}</span>
@@ -86,7 +86,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="end_date" class="form-label my-1 me-2">End Date & Time <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                                <label for="end_date" class="form-label my-1 me-2">End Date & Time (Zulu)<i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                                 <input type="text" name="end_date" id="end_date" class="datepicker form-control @error('end_date') is-invalid @enderror" value="{{ $event->end_date }}">
                                                 @error('end_date')
                                                     <span class="text-danger">{{ $errors->first('end_date') }}</span>

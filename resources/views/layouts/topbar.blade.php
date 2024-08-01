@@ -14,21 +14,41 @@
                     <span>Home</span></a>
             </li>
             @if (Route::has('login'))
-                @auth
-                    @can('index', \App\Models\Event::class)
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('dashboard') }}">
-                                <i class="fas fa-fw fa-table-columns"></i>
-                                <span>Dashboard</span></a>
-                        </li>
-                    @endcan
-                @else
+                @guest
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('login') }}">
                             <span>Login</span></a>
                     </li>
                 @endauth
             @endif
+            @auth
+                @if (\Auth::user()->isModeratorOrAbove())
+                    @can('index', \App\Models\Calendar::class)
+                        <li class="nav-item">
+                            <a class="nav-link {{ Route::is('calendars.index') || Route::is('calendars.create') || Route::is('calendars.edit') ? 'active' : '' }}" href="{{ route('calendars.index') }}">
+                                <i class="fas fa-fw fa-calendar-alt"></i>
+                                <span>Calendars</span>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('index', \App\Models\Event::class)
+                        <li class="nav-item {{ Route::is('events.index') || Route::is('events.create') | Route::is('events.edit')? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('events.index') }}">
+                                <i class="fas fa-fw fa-calendar-day"></i>
+                                <span>Events</span>
+                            </a>
+                        </li>
+                    @endcan
+                @endif
+                @if (\Auth::user()->isAdmin())
+                    <li class="nav-item {{ Route::is('users.index') || Route::is('users.show') ? 'active' : '' }}">
+                        <a class="nav-link" href="{{ route('users.index') }}">
+                            <i class="fas fa-fw fa-users"></i>
+                            <span>User Management</span>
+                        </a>
+                    </li>
+                @endif
+            @endauth
             @foreach (App\Models\Calendar::where('public', 1)->get()->take(4) as $calendar)
                 <li class="nav-item {{ Route::is('events.show') && request()->route('event')->calendar_id == $calendar->id || Route::is('calendar') && request()->route('calendar')->id == $calendar->id ? 'active' : '' }}">
                     <a class="nav-link" href="{{ route('calendar', $calendar->id) }}">

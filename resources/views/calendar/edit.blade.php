@@ -1,10 +1,10 @@
-@extends('layouts.auth.app')
+@extends('layouts.app')
 @section('title', 'Create Calendar')
 @section('content')
-    <div class="row justify-content-center">
+    <div class="row">
         <div class="col-xl-6 col-md-12 mb-12">
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center justify-content-center">
+                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center">
                     <h6 class="m-0 fw-bold text-white">User input</h6> 
                 </div>
                 <div class="card-body">
@@ -30,10 +30,18 @@
                                         @enderror
                                     </div>
 
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="public" id="public" value="1" {{ $calendar->public == "1" ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="public">
+                                            Public Calendar
+                                        </label>
+                                    </div>
+
                                     <div class="form-check mb-4">
-                                        <input type="hidden" name="public" value="0">
-                                        <input class="form-check-input" type="checkbox" value="1" name="public" id="public" {{$calendar->public == "1" ? 'checked' : '' }}>
-                                        <label for="public" class="form-label my-1 me-2">Public calendar?</label>
+                                        <input class="form-check-input" type="radio" name="public" id="private" value="0" {{ $calendar->public == "0" ? 'checked' : '' }} required>
+                                        <label class="form-check-label" for="private">
+                                            Private Calendar
+                                        </label>
                                     </div>
                                 </div>
 

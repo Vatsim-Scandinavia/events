@@ -61,7 +61,7 @@ class EventController extends Controller
             'image' => 'nullable|image|mimes:jpeg,jpg|max:2048',
         ]);
 
-        $imageName = null;
+        $imageURL = null;
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
@@ -81,6 +81,8 @@ class EventController extends Controller
             if (!Storage::disk('public')->exists('images/' . $imageName)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.'])->withInput();
             }
+
+            $imageURL = asset('storage/images/' . $imageName);
         }
 
         $event = Event::create([
@@ -92,7 +94,7 @@ class EventController extends Controller
             'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
-            'image' => $imageName,
+            'image' => $imageURL,
         ]);
 
         // Ensure area and user association
@@ -154,7 +156,7 @@ class EventController extends Controller
             'image' => 'nullable|image|mimes:jpeg,jpg|max:2048',
         ]);
 
-        $imageName = $event->image;
+        $imageURL = $event->image;
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
@@ -179,8 +181,10 @@ class EventController extends Controller
             if (!Storage::disk('public')->exists('images/' . $imageName)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.']);
             }
+
+            $imageURL = asset('storage/images/' . $imageName);
     
-            $event->image = $imageName;
+            $event->image = $imageURL;
         }
 
         $event->update([
@@ -192,7 +196,7 @@ class EventController extends Controller
             'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
-            'image' => $imageName,
+            'image' => $imageURL,
         ]);
 
         // Ensure area and user association

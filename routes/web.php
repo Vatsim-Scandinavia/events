@@ -3,7 +3,6 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\FrontController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
@@ -39,8 +38,6 @@ Route::get('/logout', [LoginController::class, 'logout'])->middleware('auth')->n
 // Auth::routes();
 
 Route::middleware(['auth'])->group(function() {
-    
-    Route::get('/dashboard', [FrontController::class, 'index'])->name('dashboard');
 
     Route::controller(CalendarController::class)->group(function() {
         Route::get('/calendars', 'index')->name('calendars.index');

@@ -94,6 +94,6 @@ class UserController extends Controller
             }
         }
 
-        return redirect()->route('users.index')->withSuccess('User successfully updated');
+        return redirect()->route('users.show', $user)->withSuccess('User successfully updated');
     }
 }

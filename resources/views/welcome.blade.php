@@ -1,4 +1,4 @@
-@extends('layouts.public.app')
+@extends('layouts.app')
 @section('title', 'Home')
 @section('content')
     <div class="container mt-5">
@@ -62,6 +62,17 @@
                     eventColor: '#1a475f',
                     nowIndicator: true,
                     longPressDelay: 0,
+                    eventTimeFormat: {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false
+                    },
+                    slotLabelFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    },
+                    dayMaxEvents: 4,
                     timeZone: 'UTC',
                     initialView: 'dayGridMonth',
                     events: @json($events),

@@ -1,4 +1,4 @@
-@extends('layouts.public.app')
+@extends('layouts.app')
 @section('title', 'Calendar - '. $calendar->name)
 @section('css')
     <style>
@@ -28,22 +28,33 @@
             var calendarEl = document.getElementById('calendar');
 
             var calendar = new Calendar(calendarEl, {
-                plugins: [ 
-                    dayGridPlugin,
-                    interactionPlugin,
-                    bootstrapPlugin,
-                    timeGridPlugin,
-                    listPlugin
-                ],
-                themeSystem: 'bootstrap',
-                firstDay: 1,
-                eventColor: '#1a475f',
-                nowIndicator: true,
-                longPressDelay: 0,
-                timeZone: 'UTC',
-                events: @json($events),
-                editable: false,
-            });
+                    plugins: [
+                        dayGridPlugin,
+                        interactionPlugin,
+                        bootstrapPlugin,
+                        timeGridPlugin,
+                        listPlugin
+                    ],
+                    themeSystem: 'bootstrap',
+                    firstDay: 1,
+                    eventColor: '#1a475f',
+                    nowIndicator: true,
+                    longPressDelay: 0,
+                    eventTimeFormat: {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false
+                    },
+                    slotLabelFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    },
+                    dayMaxEvents: 4,
+                    timeZone: 'UTC',
+                    initialView: 'dayGridMonth',
+                    events: @json($events),
+                });
 
             function updateToolbar() {
                 if (window.innerWidth < 768) {

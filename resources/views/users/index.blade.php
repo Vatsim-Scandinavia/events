@@ -1,4 +1,4 @@
-@extends('layouts.auth.app')
+@extends('layouts.app')
 @section('title', 'User Management')
 @section('content')
     <div class="row">
@@ -28,7 +28,7 @@
                                             <td>{{ $user->first_name }}</td>
                                             <td>{{ $user->last_name }}</td>
                                             <td>
-                                                <a class="btn btn-info" href="{{ route('users.show', $user->id) }}"><i class="fas fa-eye"></i> Show</a>
+                                                <a class="btn btn-sm btn-info" href="{{ route('users.show', $user->id) }}"><i class="fas fa-eye"></i> Show</a>
                                             </td>
                                         </tr>
                                     @endcan

@@ -1,4 +1,4 @@
-@extends('layouts.auth.app')
+@extends('layouts.app')
 @section('title', 'Calendars')
 @section('title-flex')
     @can('create', \App\Models\Calendar::class)
@@ -14,7 +14,7 @@
     <div class="row">
         <div class="col-xl-12 col-md-12 mb-12">
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center justify-content-center">
+                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center">
                     <h6 class="m-0 fw-bold text-white">Calendar Overview</h6> 
                 </div>
 
@@ -35,10 +35,10 @@
                                             <td>{{ $calendar->id }}</td>
                                             <td>{{ $calendar->name }}</td>
                                             <td>
-                                                <a class="btn btn-info" href="{{ route('calendar', $calendar->id) }}"><i class="fas fa-eye"></i>
+                                                <a class="btn btn-sm btn-info" href="{{ route('calendar', $calendar->id) }}"><i class="fas fa-eye"></i>
                                                     Show</a>
                                                 @can('update', $calendar)
-                                                    <a class="btn btn-primary" href="{{ route('calendars.edit', $calendar->id) }}"><i class="fas fa-edit"></i>
+                                                    <a class="btn btn-sm btn-primary" href="{{ route('calendars.edit', $calendar->id) }}"><i class="fas fa-edit"></i>
                                                         Edit</a>
                                                 @endcan
                                                 @can('destroy', $calendar)
@@ -46,7 +46,7 @@
                                                         onsubmit="return confirm('Are you sure you want to delete this calendar?')">
                                                         @method('DELETE')
                                                         @csrf
-                                                        <button class="btn btn-danger" type="submit"><i class="fas fa-trash"
+                                                        <button class="btn btn-sm btn-danger" type="submit"><i class="fas fa-trash"
                                                                 aria-hidden="true"></i> Delete</button>
                                                     </form>
                                                 @endcan

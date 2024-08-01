@@ -1,10 +1,10 @@
-@extends('layouts.auth.app')
+@extends('layouts.app')
 @section('title', 'Create Event')
 @section('content')
-    <div class="row justify-content-center">
+    <div class="row">
         <div class="col-xl-6 col-md-12 mb-12">
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center justify-content-center">
+                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center">
                     <h6 class="m-0 fw-bold text-white">User input</h6> 
                 </div>
                 <div class="card-body">
@@ -27,7 +27,7 @@
                                             <option disabled selected>Select Calendar</option>
                                             @foreach ($calendars as $calendar)
                                                 @can('view', $calendar)
-                                                    <option value="{{ $calendar->id }}" {{ old('calendar_id') == $calendar->id ? 'selected' : '' }}>{{ $calendar->name }}</option>
+                                                    <option value="{{ $calendar->id }}" {{ old('calendar_id') == $calendar->id ? 'selected' : '' }}>{{ $calendar->name }} ({{ $calendar->public == 1 ? 'Public' : 'Private' }})</option>
                                                 @endcan
                                             @endforeach
                                         </select>
@@ -73,7 +73,7 @@
                                     <div class="row mb-4">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="start_date" class="form-label my-1 me-2">Start Date & Time <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                                <label for="start_date" class="form-label my-1 me-2">Start Date & Time (Zulu)<i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                                 <input type="text" name="start_date" id="start_date" class="datepicker form-control @error('start_date') is-invalid @enderror">
                                                 @error('start_date')
                                                     <span class="text-danger">{{ $errors->first('start_date') }}</span>
@@ -82,7 +82,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="end_date" class="form-label my-1 me-2">End Date & Time <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                                <label for="end_date" class="form-label my-1 me-2">End Date & Time (Zulu)<i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                                 <input type="text" name="end_date" id="end_date" class="datepicker form-control @error('end_date') is-invalid @enderror">
                                                 @error('end_date')
                                                     <span class="text-danger">{{ $errors->first('end_date') }}</span>
