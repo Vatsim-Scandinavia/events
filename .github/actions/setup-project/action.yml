@@ -10,6 +10,7 @@ inputs:
   seed-database:
     description: Whether to seed the database or not
     default: 'false'
+
 runs:
   using: composite
   steps:
@@ -41,5 +42,11 @@ runs:
   - name: Seed the database
     if: inputs.seed-database == 'true'
     run: php artisan db:seed
+    shell: bash
+    working-directory: ./${{ inputs.path }}
+
+  - name: Build frontend assets
+    if: inputs.setup-node == 'true'
+    run: npm run build
     shell: bash
     working-directory: ./${{ inputs.path }}
