@@ -15,7 +15,7 @@ return new class extends Migration
             $table->increments('id');
             $table->unsignedInteger('calendar_id');
             $table->string('title');
-            $table->text('short_description')->nullable();
+            $table->string('short_description', 280)->nullable();
             $table->text('long_description')->nullable();
             $table->timestamp('start_date');
             $table->timestamp('end_date')->nullable();
