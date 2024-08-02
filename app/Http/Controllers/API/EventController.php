@@ -48,28 +48,26 @@ class EventController extends Controller
 
         $this->authorize('create', Event::class);
 
-        $imageURL = null;
+        $imageName = null;
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-            $imagePath = $image->getPathName();
+            $imageName = now()->format('Y-m-d') . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
     
             // Get image dimensions
-            list($width, $height) = getimagesize($imagePath);
-            if ($width / $height != 16 / 9) {
+            list($width, $height) = getimagesize($image->getPathName());
+            if (round($width / $height, 2) != round(16 / 9, 2)) {
                 return back()->withErrors(['image' => 'Image must be in 16:9 aspect ratio.'])->withInput();
             }
     
             // Store the image
-            $image->storeAs('images', $imageName, 'public');
+            $storedPath = $image->storeAs('banners', $imageName, 'public');
     
             // Check if the image was successfully uploaded
-            if (!Storage::disk('public')->exists('images/' . $imageName)) {
+            if (!Storage::disk('public')->exists($storedPath)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.'])->withInput();
             }
-
-            $imageURL = asset('storage/images/' . $imageName);
+            
         }
 
         $event = Event::create([
@@ -82,7 +80,7 @@ class EventController extends Controller
             'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
-            'image' => $imageURL,
+            'image' => $imageName,
         ]);
 
         // Ensure area and user association
