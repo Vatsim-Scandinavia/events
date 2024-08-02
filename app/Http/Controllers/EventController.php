@@ -55,7 +55,7 @@ class EventController extends Controller
             'recurrence_interval' => 'nullable|integer',
             'recurrence_unit' => 'nullable|string|max:255',
             'recurrence_end_date' => 'nullable|date_format:Y-m-d H:i|after_or_equal:end_date',
-            'image' => 'nullable|image|mimes:jpeg,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ]);
 
         $imageName = null;
@@ -146,7 +146,7 @@ class EventController extends Controller
             'recurrence_interval' => 'nullable|integer',
             'recurrence_unit' => 'nullable|string|max:255',
             'recurrence_end_date' => 'nullable|date_format:Y-m-d H:i|after_or_equal:end_date',
-            'image' => 'nullable|image|mimes:jpeg,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ]);
 
         $imageURL = $event->image;

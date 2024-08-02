@@ -55,7 +55,7 @@
                                     <div class="form-group mb-4">
                                         <label for="customFile" class="form-label my-1 me-2">Image upload</label>
                                         <div class="custom-file">
-                                            <input type="file" class="custom-file-input @error('image') is-invalid @enderror" id="customFile" name="image" accept="image/jpg, image/jpeg" />
+                                            <input type="file" class="custom-file-input @error('image') is-invalid @enderror" id="customFile" name="image" accept="image/jpg, image/jpeg, image/png" />
                                             <label class="custom-file-label" for="customFile">Choose file</label>
                                             @error('image')
                                                 <span class="invalid-feedback" role="alert">
