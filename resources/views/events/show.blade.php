@@ -2,7 +2,7 @@
 @section('title', $event->title)
 @section('content')
 
-    <div style="width: 1000px;">
+    <div class="container-event">
 
         @if($event->image)
             <img src="{{ asset('storage/banners/' . $event->image) }}" alt="{{ $event->title }}" class="img-fluid">

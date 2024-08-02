@@ -73,6 +73,14 @@ dl.copyable{
     padding-right: $grid-gutter-width;
 }
 
+.container-event{
+    width: 1000px;
+
+    @include media-breakpoint-down(md) {
+        width: 100%;
+    }
+}
+
 // Custom extras
 .front-cover {
     width: 100%;
