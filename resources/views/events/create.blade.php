@@ -14,7 +14,7 @@
                             <div class="row pt-2">
                                 <div class="col-xl-12 col-md-12 mb-12">
                                     <div class="form-group mb-4">
-                                        <label for="event" class="form-label my-1 me-2">Event Title<i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                        <label for="event" class="form-label my-1 me-2">Event Title</label>
                                         <input type="text" name="title" id="title" class="form-control @error('title') is-invalid @enderror" value="{{ old('title') }}" required>
                                         @error('title')
                                             <span class="text-danger">{{ $errors->first('title') }}</span>
@@ -22,7 +22,7 @@
                                     </div>
 
                                     <div class="form-group mb-4">
-                                        <label for="calendar" class="form-label my-1 me-2">Calendar <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                        <label for="calendar" class="form-label my-1 me-2">Calendar</label>
                                         <select name="calendar_id" id="calendar" class="form-control my-1 me-sm-2 @error('calendar') is-invalid @enderror" required>
                                             <option disabled selected>Select Calendar</option>
                                             @foreach ($calendars as $calendar)
@@ -37,7 +37,7 @@
                                     </div>
 
                                     <div class="form-group mb-4">
-                                        <label for="area" class="form-label my-1 me-2">FIR <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                        <label for="area" class="form-label my-1 me-2">FIR</label>
                                         <select name="area" id="area" class="form-control my-1 me-sm-2 @error('area') is-invalid @enderror" required>
                                             <option disabled selected>Select FIR</option>
                                             @foreach ($areas as $area)
@@ -81,7 +81,7 @@
                                     <div class="row mb-4">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="start_date" class="form-label my-1 me-2">Start Date & Time (Zulu)<i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                                <label for="start_date" class="form-label my-1 me-2">Start Date & Time (Zulu)</label>
                                                 <input type="text" name="start_date" id="start_date" class="datepicker form-control @error('start_date') is-invalid @enderror">
                                                 @error('start_date')
                                                     <span class="text-danger">{{ $errors->first('start_date') }}</span>
@@ -90,7 +90,7 @@
                                         </div>
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="end_date" class="form-label my-1 me-2">End Date & Time (Zulu)<i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                                <label for="end_date" class="form-label my-1 me-2">End Date & Time (Zulu)</label>
                                                 <input type="text" name="end_date" id="end_date" class="datepicker form-control @error('end_date') is-invalid @enderror">
                                                 @error('end_date')
                                                     <span class="text-danger">{{ $errors->first('end_date') }}</span>
@@ -161,15 +161,6 @@
     <script type="module">
         document.addEventListener("DOMContentLoaded", function() {
             var simplemde1 = new SimpleMDE({
-                element: document.getElementById('short_description'),
-                status: false,
-                toolbar: ["bold", "italic", "heading-3", "|", "quote", "unordered-list", "ordered-list", "|", "link", "preview", "side-by-side", "fullscreen", "|", "guide"],
-                insertTexts: {
-                    link: ["[","](link)"],
-                }
-            });
-
-            var simplemde2 = new SimpleMDE({
                 element: document.getElementById('long_description'),
                 status: false,
                 toolbar: ["bold", "italic", "heading-3", "|", "quote", "unordered-list", "ordered-list", "|", "link", "preview", "side-by-side", "fullscreen", "|", "guide"],
@@ -285,6 +276,9 @@
                 // Hide the recurring options collapse when Full day event is selected
                 recurringOptionsCollapse.classList.remove('show');
             });
+
+            // Initialize custom file input
+            bsCustomFileInput.init();
         });
     </script>
 @endsection

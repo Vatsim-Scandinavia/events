@@ -3,11 +3,13 @@
  */
 
 import './bootstrap.js';
+import bsCustomFileInput from 'bs-custom-file-input'
 import moment from 'moment';
 import flatpickr from 'flatpickr';
 
 window.moment = moment;
 window.flatpickr = flatpickr;
+window.bsCustomFileInput = bsCustomFileInput;
 
 /**
  * Other global javascript functionality
