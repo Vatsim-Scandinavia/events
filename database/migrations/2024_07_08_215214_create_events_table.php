@@ -15,8 +15,8 @@ return new class extends Migration
             $table->increments('id');
             $table->unsignedInteger('calendar_id');
             $table->string('title');
-            $table->string('short_description', 280)->nullable();
-            $table->text('long_description')->nullable();
+            $table->string('short_description', 280);
+            $table->text('long_description');
             $table->timestamp('start_date');
             $table->timestamp('end_date')->nullable();
             $table->integer('recurrence_interval')->nullable(); // E.g., 1 for every day, 2 for every second day
