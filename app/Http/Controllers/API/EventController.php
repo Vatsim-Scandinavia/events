@@ -23,7 +23,7 @@ class EventController extends Controller
 
         // Set the full path on the image attribute
         $events->transform(function ($event) {
-            $event->image = asset('storage/banners/' . $event->image);
+            $event->image = isset($event->image) ? asset('storage/banners/' . $event->image) : null;
             return $event;
         });
 
