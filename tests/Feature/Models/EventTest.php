@@ -121,14 +121,13 @@ class EventTest extends TestCase
         // Setup user with permissions
         $user = $this->getUser();
 
-        // Create a test calendar
-        $calendar = Calendar::factory()->create();
-
         // Fetching first area as some users might only have one area
         $area = Area::find(1);
 
-        Storage::fake('public');
+        // Create a test calendar
+        $calendar = Calendar::factory()->create();
 
+        // Generate a black test image
         $image = UploadedFile::fake()->image('test_image.jpg', $width = 1600, $height = 900);
 
         // Post request to create a normal event
@@ -148,6 +147,10 @@ class EventTest extends TestCase
 
         $response->assertRedirect(route('events.index'));
         $response->assertSessionHas('success', 'Event created successfully.');
+
+        // Check if the file exists
+        $event = Event::latest()->first();
+        Storage::disk('public')->assertExists('banners/' . $event->image);
     }
 
     public function test_recurrent_event_can_be_created() : void 
