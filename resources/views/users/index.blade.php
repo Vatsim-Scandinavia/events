@@ -4,8 +4,8 @@
     <div class="row">
         <div class="col-xl-12 col-md-12 mb-12">
             <div class="card shadow mb-4">
-                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center justify-content-center">
-                    <h6 class="m-0 fw-bold text-white">Event Overview</h6> 
+                <div class="card-header bg-primary py-3 d-flex flex-row align-items-center">
+                    <h6 class="m-0 fw-bold text-white">Users</h6> 
                 </div>
 
                 <div class="card-body p-0">

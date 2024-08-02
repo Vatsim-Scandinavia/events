@@ -10,7 +10,21 @@
         <div class="row">
             <div class="col-lg-12 margin-tb">
                 <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                    <h1 class="h3 mb-0 text-gray-800">@yield('title', 'Page Title')</h1>
+                    @php
+
+                        $icon = '';
+                        if(Route::is('home')){
+                            $icon = 'fas fa-home';
+                        } elseif(Route::is('calendar*')){
+                            $icon = 'fas fa-calendar-alt';
+                        } elseif(Route::is('events*')){
+                            $icon = 'fas fa-calendar-day';
+                        } elseif(Route::is('user*')){
+                            $icon = 'fas fa-users';
+                        }
+
+                    @endphp
+                    <h1 class="h3 mb-0 text-primary"><i class="{{ $icon }}"></i> @yield('title', 'Page Title')</h1>
                     @yield('title-flex')
                 </div>
             </div>

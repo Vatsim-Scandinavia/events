@@ -6,14 +6,12 @@
     </style>
 @endsection
 @section('content')
-    <div class="mt-5">
-        <div class="card mt-5 shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h5 class="m-0">{{ $calendar->name }}</h5>
-            </div>
-            <div class="card-body">
-                <div id='calendar'></div>
-            </div>
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="m-0">{{ $calendar->name }}</h5>
+        </div>
+        <div class="card-body">
+            <div id='calendar'></div>
         </div>
     </div>
     
