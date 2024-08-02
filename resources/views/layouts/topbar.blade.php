@@ -23,19 +23,19 @@
             @endif
             @auth
                 @if (\Auth::user()->isModeratorOrAbove())
-                    @can('index', \App\Models\Calendar::class)
-                        <li class="nav-item">
-                            <a class="nav-link {{ Route::is('calendars.index') || Route::is('calendars.create') || Route::is('calendars.edit') ? 'active' : '' }}" href="{{ route('calendars.index') }}">
-                                <i class="fas fa-fw fa-calendar-alt"></i>
-                                <span>Calendars</span>
-                            </a>
-                        </li>
-                    @endcan
                     @can('index', \App\Models\Event::class)
                         <li class="nav-item {{ Route::is('events.index') || Route::is('events.create') | Route::is('events.edit')? 'active' : '' }}">
                             <a class="nav-link" href="{{ route('events.index') }}">
                                 <i class="fas fa-fw fa-calendar-day"></i>
                                 <span>Events</span>
+                            </a>
+                        </li>
+                    @endcan
+                    @can('index', \App\Models\Calendar::class)
+                        <li class="nav-item">
+                            <a class="nav-link {{ Route::is('calendars.index') || Route::is('calendars.create') || Route::is('calendars.edit') ? 'active' : '' }}" href="{{ route('calendars.index') }}">
+                                <i class="fas fa-fw fa-calendar-alt"></i>
+                                <span>Calendars</span>
                             </a>
                         </li>
                     @endcan
