@@ -8,6 +8,7 @@ use App\Models\Event;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class EventController extends Controller
 {
@@ -31,30 +32,57 @@ class EventController extends Controller
         $data = $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
             'area' => 'required|exists:areas,id',
-            'user' => 'required|exists:users,id',
             'title' => 'required|string|max:255',
-            'description' => 'nullable',
+            'short_description' => 'nullable|max:280',
+            'long_description' => 'nullable',
             'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:today',
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
-            'event_type' => 'required|integer',
+            'event_type' => 'integer',
             'recurrence_interval' => 'nullable|integer',
             'recurrence_unit' => 'nullable|string|max:255',
             'recurrence_end_date' => 'nullable|date_format:Y-m-d H:i|after_or_equal:end_date',
+            'image' => 'nullable|image|mimes:jpeg,jpg|max:2048',
         ]);
 
         $user = User::findorFail($data['user']);
 
         $this->authorize('create', Event::class);
 
+        $imageURL = null;
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $imagePath = $image->getPathName();
+    
+            // Get image dimensions
+            list($width, $height) = getimagesize($imagePath);
+            if ($width / $height != 16 / 9) {
+                return back()->withErrors(['image' => 'Image must be in 16:9 aspect ratio.'])->withInput();
+            }
+    
+            // Store the image
+            $image->storeAs('images', $imageName, 'public');
+    
+            // Check if the image was successfully uploaded
+            if (!Storage::disk('public')->exists('images/' . $imageName)) {
+                return back()->withErrors(['image' => 'Failed to upload the image.'])->withInput();
+            }
+
+            $imageURL = asset('storage/images/' . $imageName);
+        }
+
         $event = Event::create([
             'calendar_id' => $request->input('calendar_id'),
             'title' => $request->input('title'),
-            'description' => $request->input('description'),
+            'short_description' => $request->input('short_description'),
+            'long_description' => $request->input('long_description'),
             'start_date' => Carbon::parse($request->input('start_date'))->format('Y-m-d H:i'),
             'end_date' => Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
             'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
+            'image' => $imageURL,
         ]);
 
         // Ensure area and user association
@@ -90,30 +118,64 @@ class EventController extends Controller
         $data = $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
             'area' => 'required|exists:areas,id',
-            'user' => 'required|exists:users,id',
             'title' => 'required|string|max:255',
-            'description' => 'nullable',
-            'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:today',
+            'short_description' => 'nullable|max:280',
+            'long_description' => 'nullable',
+            'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:' . Carbon::parse($event->start_date)->format('Y-m-d H:i'),
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
             'event_type' => 'integer',
             'recurrence_interval' => 'nullable|integer',
             'recurrence_unit' => 'nullable|string|max:255',
             'recurrence_end_date' => 'nullable|date_format:Y-m-d H:i|after_or_equal:end_date',
+            'image' => 'nullable|image|mimes:jpeg,jpg|max:2048',
         ]);
 
         $user = User::findorFail($data['user']);
 
         $this->authorize('create', Event::class, $user);
 
+        $imageURL = $event->image;
+
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
+            $imagePath = $image->getPathName();
+    
+            // Get image dimensions
+            list($width, $height) = getimagesize($imagePath);
+            if ($width / $height != 16 / 9) {
+                return back()->withErrors(['image' => 'Image must be in 16:9 aspect ratio.']);
+            }
+    
+            // Delete the old image if it exists
+            if ($event->image) {
+                Storage::disk('public')->delete('images/' . $event->image);
+            }
+    
+            // Store the new image
+            $image->storeAs('images', $imageName, 'public');
+    
+            // Check if the image was successfully uploaded
+            if (!Storage::disk('public')->exists('images/' . $imageName)) {
+                return back()->withErrors(['image' => 'Failed to upload the image.']);
+            }
+
+            $imageURL = asset('storage/images/' . $imageName);
+    
+            $event->image = $imageURL;
+        }
+
         $event->update([
             'calendar_id' => $request->input('calendar_id'),
             'title' => $request->input('title'),
-            'description' => $request->input('description'),
+            'short_description' => $request->input('short_description'),
+            'long_description' => $request->input('long_description'),
             'start_date' => Carbon::parse($request->input('start_date'))->format('Y-m-d H:i'),
-            'end_date' => Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
+            'end_date' =>  Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
             'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
+            'image' => $imageURL,
         ]);
 
         $event->area()->associate($request->input('area'));
