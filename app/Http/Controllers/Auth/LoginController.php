@@ -101,7 +101,7 @@ class LoginController extends Controller
         // Login the user and don't remember the session forever
         auth()->login($account, false);
 
-        return redirect()->intended(route('dashboard'))->withSuccess('Login Successful');
+        return redirect()->intended(route('home'))->withSuccess('Login Successful');
     }
 
     /**
