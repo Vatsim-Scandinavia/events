@@ -1,8 +1,7 @@
 @extends('layouts.app')
 @section('title', 'Home')
 @section('content')
-    <div class="container mt-5">
-
+    <div class="mt-5">
         <div class="card mt-5 shadow-sm">
             <div class="card-header bg-primary text-white">
                 <h5 class="m-0">Upcoming Events</h5>
