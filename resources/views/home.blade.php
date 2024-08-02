@@ -1,16 +1,15 @@
 @extends('layouts.app')
 @section('title', 'Home')
 @section('content')
-    <div class="container mt-5">
-
+    <div class="mt-5">
         <div class="card mt-5 shadow-sm">
             <div class="card-header bg-primary text-white">
                 <h5 class="m-0">Upcoming Events</h5>
             </div>
             <div class="card-body">
                 <ul class="list-group list-group-flush">
-                    @if ($UpcomingEvents->isNotEmpty())
-                        @foreach($UpcomingEvents as $event)
+                    @if ($upcomingEvents->isNotEmpty())
+                        @foreach($upcomingEvents as $event)
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span>{{ $event->title }}</span>
                                 <div>

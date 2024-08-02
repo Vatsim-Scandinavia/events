@@ -49,9 +49,11 @@ COPY --from=frontend --chown=www-data:www-data /app/public/ /app/public/
 
 WORKDIR /app
 
+# Ensure the storage and cache directories have the correct permissions
 RUN chmod -R 755 storage bootstrap/cache && \
-        composer install --no-dev --no-interaction --prefer-dist && \
-        mkdir -p /app/storage/app/public/files
+    composer install --no-dev --no-interaction --prefer-dist && \
+    mkdir -p /app/storage/app/public/banners && \
+    chmod -R 775 /app/storage
 
 # Wrap around the default PHP entrypoint with a custom entrypoint
 COPY ./container/entrypoint.sh /usr/local/bin/service-entrypoint

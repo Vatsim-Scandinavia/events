@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Models;
 
-use App\Models\Area;
 use App\Models\Calendar;
 use App\Models\Event;
 use App\Models\User;
@@ -121,9 +120,6 @@ class EventTest extends TestCase
         // Setup user with permissions
         $user = $this->getUser();
 
-        // Fetching first area as some users might only have one area
-        $area = Area::find(1);
-
         // Create a test calendar
         $calendar = Calendar::factory()->create();
 
@@ -132,7 +128,6 @@ class EventTest extends TestCase
 
         // Post request to create a normal event
         $response = $this->actingAs($user)->post(route('events.store'), [
-            'area' => $area->id,
             'calendar_id' => $calendar->id,
             'title' => $this->faker->sentence(1),
             'short_description' => $this->faker->text(280),
@@ -161,8 +156,6 @@ class EventTest extends TestCase
         // Create a test calendar
         $calendar = Calendar::factory()->create();
 
-        $area = Area::find(rand(1,5));
-
         // Create test event data
         $startDate = now()->addDays(1)->format('Y-m-d H:i');
         $endDate = now()->addDays(1)->addHours(2)->format('Y-m-d H:i');
@@ -170,7 +163,6 @@ class EventTest extends TestCase
 
         // Post request to create a normal event
         $response = $this->actingAs($user)->post(route('events.store'), [
-            'area' => $area->id,
             'calendar_id' => $calendar->id,
             'title' => 'Test Event',
             'short_description' => $this->faker->text(280),
@@ -221,14 +213,11 @@ class EventTest extends TestCase
         // Create a test calendar
         $calendar = Calendar::factory()->create();
 
-        $area = Area::find(rand(1,5));
-
         // Create a test event
         $event = Event::factory()->create();
 
         // Patch request to update the calendar
         $response = $this->actingAs($user)->patch(route('events.update', $event), [
-            'area' => $area->id,
             'calendar_id' => $calendar->id,
             'title' => $this->faker->sentence(1),
             'short_description' => $this->faker->text(280),
@@ -263,9 +252,8 @@ class EventTest extends TestCase
 
     protected function getUser()
     {
-        $area = Area::find(rand(1,5));
         $user = User::factory()->create();
-        $user->groups()->attach(1, ['area_id' => $area->id]);
+        $user->groups()->attach(1);
 
         return $user;
     }

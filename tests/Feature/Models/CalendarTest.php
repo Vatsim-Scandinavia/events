@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Models;
 
-use App\Models\Area;
 use App\Models\Calendar;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -201,9 +200,8 @@ class CalendarTest extends TestCase
 
     protected function getUser()
     {
-        $area = Area::find(rand(1,5));
         $user = User::factory()->create();
-        $user->groups()->attach(1, ['area_id' => $area->id]);
+        $user->groups()->attach(1);
 
         return $user;
     }

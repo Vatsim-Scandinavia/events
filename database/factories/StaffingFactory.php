@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Models\Area;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,8 +16,6 @@ class StaffingFactory extends Factory
      */
     public function definition(): array
     {
-        $areas = collect(Area::all()->modelKeys());
-
         return [
             'title' => fake()->sentence(),
             'date' => fake()->dateTimeBetween('+1 month', '+6 month'),
@@ -31,7 +28,6 @@ class StaffingFactory extends Factory
             'section_3_title' => fake()->sentence(),
             'section_4_title' => fake()->sentence(),
             'restrict_bookings' => rand(0, 1),
-            'area_id' => $areas->random(),
         ];
     }
 

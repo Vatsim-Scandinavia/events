@@ -24,12 +24,7 @@ return new class extends Migration
             $table->text('section_3_title')->nullable();
             $table->text('section_4_title')->nullable();
             $table->integer('restrict_bookings');
-            $table->unsignedInteger('area_id');
             $table->timestamps();
-        });
-
-        Schema::table('staffings', function (Blueprint $table) {
-            $table->foreign('area_id')->references('id')->on('areas')->onDelete('cascade');
         });
     }
 

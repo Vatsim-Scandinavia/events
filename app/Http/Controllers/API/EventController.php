@@ -23,7 +23,7 @@ class EventController extends Controller
 
         // Set the full path on the image attribute
         $events->transform(function ($event) {
-            $event->image = asset('storage/banners/' . $event->image);
+            $event->image = isset($event->image) ? asset('storage/banners/' . $event->image) : null;
             return $event;
         });
 
@@ -37,7 +37,6 @@ class EventController extends Controller
     {
         $data = $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
-            'area' => 'required|exists:areas,id',
             'title' => 'required|string|max:255',
             'short_description' => 'required|max:280',
             'long_description' => 'required',
@@ -70,7 +69,7 @@ class EventController extends Controller
             $storedPath = $image->storeAs('banners', $imageName, 'public');
     
             // Check if the image was successfully uploaded
-            if (!Storage::disk('public')->exists($storedPath)) {
+            if ($storedPath && !Storage::disk('public')->exists($storedPath)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.'])->withInput();
             }
 
@@ -89,8 +88,7 @@ class EventController extends Controller
             'image' => $imageName,
         ]);
 
-        // Ensure area and user association
-        $event->area()->associate($request->input('area'));
+        // Ensure user association
         $event->user()->associate($user);
         $event->save();
 
@@ -121,7 +119,6 @@ class EventController extends Controller
     {
         $data = $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
-            'area' => 'required|exists:areas,id',
             'title' => 'required|string|max:255',
             'short_description' => 'required|max:280',
             'long_description' => 'required',
@@ -182,7 +179,6 @@ class EventController extends Controller
             'image' => $imageURL,
         ]);
 
-        $event->area()->associate($request->input('area'));
         $event->user()->associate($user);
         $event->save();
 

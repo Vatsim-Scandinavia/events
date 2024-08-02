@@ -5,14 +5,14 @@
         <div class="card shadow mb-4">
             <div class="card-body text-center">
                 <h1 class="card-title">{{ $event->title }}</h1>
-                <p class="card-text text-muted">Hosted by {{ $event->area->name }} FIR in <a href="{{ route('calendar', $event->calendar->id) }}" class="card-link">{{ $event->calendar->name }}</a></p>
+                <p class="card-text text-muted">Hosted <a href="{{ route('calendar', $event->calendar->id) }}" class="card-link">{{ $event->calendar->name }}</a></p>
             </div>
         </div>
 
         @if($event->image)
         <div class="card shadow mb-4">
             <div class="card-body text-center">
-                <img src="{{ $event->image }}" alt="{{ $event->title }}" class="img-fluid">
+                <img src="{{ asset('storage/banners/' . $event->image) }}" alt="{{ $event->title }}" class="img-fluid">
             </div>
         </div>
         @endif
@@ -34,7 +34,6 @@
                         <li class="list-group-item"><strong>Recurrence:</strong> Every {{ $event->recurrence_interval }} {{ Str::plural($event->recurrence_unit, $event->recurrence_interval) }}</li>
                         <li class="list-group-item"><strong>Recurrence End Date:</strong> {{ \Carbon\Carbon::parse($event->recurrence_end_date)->format('F j, Y, H:i') }}z</li>
                     @endif
-                    <li class="list-group-item"><strong>FIR:</strong> {{ $event->area->name }}</li>
                 </ul>
             </div>
         </div>

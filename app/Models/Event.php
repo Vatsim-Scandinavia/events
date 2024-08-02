@@ -29,8 +29,7 @@ class Event extends Model
         'recurrence_end_date',
         'published',
         'image',
-        'user_id',
-        'area_id'
+        'user_id'
     ];
 
     protected $dates = [
@@ -41,11 +40,6 @@ class Event extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function area()
-    {
-        return $this->belongsTo(Area::class);
     }
 
     public function calendar() 
@@ -124,8 +118,7 @@ class Event extends Model
                     'recurrence_unit' => $this->recurrence_unit,
                     'recurrence_end_date' => $this->recurrence_end_date,
                     'image' => $this->image,
-                    'user_id' => $this->user_id,
-                    'area_id' => $this->area_id,
+                    'user_id' => $this->user_id
                 ]);
 
                 // Move to the next recurrence date

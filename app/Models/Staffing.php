@@ -18,8 +18,4 @@ class Staffing extends Model
         'id', 'title', 'date', 'description', 'channel_id', 'message_id', 'week_int', 'section_1_title', 'section_2_title', 'section_3_title', 'section_4_title', 'restrict_bookings'
     ];
 
-    public function area() 
-    {
-        return $this->belongsTo(Area::class, 'area_id');
-    }
 }

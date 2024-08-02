@@ -6,7 +6,7 @@ use App\Models\Calendar;
 use App\Models\Event;
 use Carbon\Carbon;
 
-class WelcomeController extends Controller
+class HomeController extends Controller
 {
     /**
      * Show the landing page if not logged in, or redirect if logged in.
@@ -15,14 +15,14 @@ class WelcomeController extends Controller
      */
     public function index()
     {
-        $now = Carbon::now();
-        $UpcomingEvents = Event::where('start_date', '>=', $now)
-            ->orderBy('start_date', 'asc')
-            ->get()
-            ->filter(function ($event) {
-                return $event->calendar->public;
+        // Get events with start date today and the connected Calendar is public
+        $upcomingEvents = Event::where('start_date', '>=', Carbon::today())
+            ->whereHas('calendar', function($query) {
+                $query->where('public', 1);
             })
-            ->take(5);
+            ->orderBy('start_date', 'asc')
+            ->limit(5)
+            ->get();
 
         $calendar = Calendar::where('public', 1)->first();
 
@@ -42,6 +42,6 @@ class WelcomeController extends Controller
         }
         
 
-        return view('welcome', compact('UpcomingEvents', 'events', 'calendar'));
+        return view('home', compact('upcomingEvents', 'events', 'calendar'));
     }
 }

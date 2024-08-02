@@ -12,10 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('permissions', function (Blueprint $table) {
-            $table->primary(['user_id', 'area_id', 'group_id']);
-
             $table->unsignedBigInteger('user_id');
-            $table->unsignedInteger('area_id');
             $table->unsignedInteger('group_id');
 
             $table->unsignedBigInteger('inserted_by')->nullable();
@@ -24,7 +21,6 @@ return new class extends Migration
 
         Schema::table('permissions', function (Blueprint $table) {
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('area_id')->references('id')->on('areas')->onDelete('cascade');
             $table->foreign('group_id')->references('id')->on('groups')->onDelete('cascade');
             $table->foreign('inserted_by')->references('id')->on('users')->onDelete('set null');
         });

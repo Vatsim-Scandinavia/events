@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Area;
 use App\Models\Staffing;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -63,11 +62,9 @@ class StaffingController extends Controller
             }
         }
 
-        $areas = Area::all();
-
         $channels = $this->getGuildChannels();
 
-        return view('staffing.create', compact('allData', 'areas', 'channels'));
+        return view('staffing.create', compact('allData', 'channels'));
     }
 
     protected function getGuildChannels() {

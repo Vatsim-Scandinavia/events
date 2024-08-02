@@ -38,19 +38,6 @@
                                     </div>
 
                                     <div class="form-group mb-4">
-                                        <label for="area" class="form-label my-1 me-2">FIR</label>
-                                        <select name="area" id="area" class="form-control my-1 me-sm-2 @error('area') is-invalid @enderror" required>
-                                            <option disabled>Select FIR</option>
-                                            @foreach ($areas as $area)
-                                                <option value="{{ $area->id }}" {{ $event->area_id == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        @error('area')
-                                            <span class="text-danger">{{ $errors->first('area') }}</span>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-group mb-4">
                                         <label for="short_description" class="form-label my-1 me-2">Short Description (max 280 characters)</label>
                                         <textarea class="form-control @error('short_description') is-invalid @enderror" name="short_description" id="short_description" rows="8">{{ $event->short_description }}</textarea>
                                         @error('short_description')
@@ -78,7 +65,7 @@
                                             @enderror
                                         </div>
                                         @if ($event->image)
-                                            <img src="{{ asset('storage/images/' . $event->image) }}" alt="Event Image" class="img-thumbnail mt-2" width="200">
+                                            <img src="{{ asset('storage/banners/' . $event->image) }}" alt="Event Image" class="img-thumbnail mt-2" width="200">
                                         @endif
                                     </div>
 

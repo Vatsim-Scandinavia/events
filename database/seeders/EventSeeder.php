@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Area;
 use App\Models\Event;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -19,7 +18,6 @@ class EventSeeder extends Seeder
         Event::factory()->count(5)->create([
             'calendar_id' => rand(1,2),
         ])->each(function ($event) {
-            $event->area()->associate(Area::inRandomOrder()->first()->id);
             $event->user()->associate(User::whereHas('groups')->inRandomOrder()->first()->id);
             $event->save();
         });
@@ -31,7 +29,6 @@ class EventSeeder extends Seeder
             'recurrence_unit' => 'week',
             'recurrence_end_date' => now()->addWeeks(5)->format('Y-m-d H:i:s'),
         ])->each(function ($event) {
-            $event->area()->associate(Area::inRandomOrder()->first()->id);
             $event->user()->associate(User::whereHas('groups')->inRandomOrder()->first()->id);
             $event->save();
 

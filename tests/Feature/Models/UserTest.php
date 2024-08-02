@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Models;
 
-use App\Models\Area;
 use App\Models\Group;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,10 +60,9 @@ class UserTest extends TestCase
     protected function getUser($group = null)
     {
         $group == null ? null : $group;
-        $area = Area::find(rand(1,5));
         $user = User::factory()->create();
         if ($group) {
-            $user->groups()->attach($group, ['area_id' => $area->id]);
+            $user->groups()->attach($group);
         }
 
         return $user;

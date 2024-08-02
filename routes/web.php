@@ -4,7 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,13 +19,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 //--------------------------------------------------------------------------
-// Main page
+// Homepage
 //--------------------------------------------------------------------------
-Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
-
-// Route::get('/', function () {
-//     return view('welcome');
-// })->name('welcome');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 //--------------------------------------------------------------------------
 // VATSIM Authentication

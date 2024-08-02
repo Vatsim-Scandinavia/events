@@ -51,7 +51,7 @@ class User extends Authenticatable
      */
     public function groups()
     {
-        return $this->belongsToMany(Group::class, 'permissions')->withPivot('area_id')->withTimestamps();
+        return $this->belongsToMany(Group::class, 'permissions');
     }
 
     public function events()
@@ -69,39 +69,19 @@ class User extends Authenticatable
      *
      * @return bool
      */
-    public function isModerator(?Area $area = null) 
+    public function isModerator() 
     {
-        if($area == null) {
-            return $this->groups->where('id', 2)->isNotEmpty();
-        }
-
-        foreach($this->groups->where('id', 2) as $group) {
-            if($group->pivot->area_id == $area->id) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->groups->where('id', 2)->isNotEmpty();
     }
 
-    public function isModeratorOrAbove(?Area $area = null) 
+    /**
+     * Return if user is a moderator or above
+     * 
+     * @return bool
+     */
+    public function isModeratorOrAbove() 
     {
-        if ($area == null) {
-            return $this->groups->where('id', '<=', 2)->isNotEmpty();
-        }
-
-        if ($this->isAdmin()) {
-            return true;
-        }
-
-        // Check if user is moderator or above in the specified area
-        foreach ($this->groups->where('id', '<=', 2) as $group) {
-            if ($group->pivot->area_id == $area->id) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->groups->where('id', '<=', 2)->isNotEmpty();;
     }
 
     /**
