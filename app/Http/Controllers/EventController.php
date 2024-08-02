@@ -87,7 +87,8 @@ class EventController extends Controller
         $event = Event::create([
             'calendar_id' => $request->input('calendar_id'),
             'title' => $request->input('title'),
-            'description' => $request->input('description'),
+            'short_description' => $request->input('short_description'),
+            'long_description' => $request->input('long_description'),
             'start_date' => Carbon::parse($request->input('start_date'))->format('Y-m-d H:i'),
             'end_date' => Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
             'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
