@@ -13,10 +13,13 @@
                             @if ($event->image)
                                 <img src={{ asset('storage/banners/' . $event->image) }} height="100">
                             @endif
-                            <span class="d-none d-md-block">{{ $event->title }}</span>
+                            <span class="d-none d-md-block">
+                                {{ $event->title }}
+                                <br>
+                                {{ \Carbon\Carbon::parse($event->start_date)->format('F j, Y, H:i') }}z
+                            </span>
                             <div>
                                 <a href="{{ route('events.show', $event->id) }}" class="btn btn-info btn-sm">View Event</a>
-                                <a href="{{ route('calendar', $event->calendar) }}" class="btn btn-secondary btn-sm">View Calendar</a>
                             </div>
                         </li>
                     @endforeach
