@@ -21,6 +21,12 @@ class EventController extends Controller
             ->events()
             ->get();
 
+        // Set the full path on the image attribute
+        $events->transform(function ($event) {
+            $event->image = asset('storage/banners/' . $event->image);
+            return $event;
+        });
+
         return response()->json(['data' => $events->values()], 200);
     }
 
@@ -67,7 +73,7 @@ class EventController extends Controller
             if (!Storage::disk('public')->exists($storedPath)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.'])->withInput();
             }
-            
+
         }
 
         $event = Event::create([

@@ -7,6 +7,7 @@ use App\Models\Calendar;
 use App\Models\Event;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class APITest extends TestCase
@@ -61,7 +62,10 @@ class APITest extends TestCase
         $api = ApiKey::factory()->create();
 
         // Create test event
-        $event = Event::factory()->create();
+        $image = UploadedFile::fake()->image('test_image.jpg', $width = 1600, $height = 900);
+        $event = Event::factory()->create([
+            'image' => $image,
+        ]);
 
         // Send a GET request to the API endpoint with the bearer token in the headers
         $response = $this->withHeaders([
