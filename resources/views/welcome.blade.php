@@ -9,8 +9,8 @@
             </div>
             <div class="card-body">
                 <ul class="list-group list-group-flush">
-                    @if ($UpcomingEvents->isNotEmpty())
-                        @foreach($UpcomingEvents as $event)
+                    @if ($upcomingEvents->isNotEmpty())
+                        @foreach($upcomingEvents as $event)
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span>{{ $event->title }}</span>
                                 <div>
