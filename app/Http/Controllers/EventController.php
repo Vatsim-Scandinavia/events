@@ -150,14 +150,14 @@ class EventController extends Controller
         ]);
 
         $imageURL = $event->image;
+        $imageName = null;
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = time() . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-            $imagePath = $image->getPathName();
+            $imageName = now()->format('Y-m-d') . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
     
             // Get image dimensions
-            list($width, $height) = getimagesize($imagePath);
+            list($width, $height) = getimagesize($image->getPathName());
             if (round($width / $height, 2) != round(16 / 9, 2)) {
                 return back()->withErrors(['image' => 'Image must be in 16:9 aspect ratio.']);
             }
