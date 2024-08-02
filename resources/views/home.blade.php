@@ -31,12 +31,14 @@
     </div>
 
     @if ($calendar)
-        <div class="card mt-5 shadow-sm">
-            <div class="card-header bg-primary text-white">
-                <h5 class="m-0">{{ $calendar->name }}</h5>
-            </div>
-            <div class="card-body">
-                <div id="calendar"></div>
+        <div class="d-none d-md-block">
+            <div class="card mt-5 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="m-0">{{ $calendar->name }}</h5>
+                </div>
+                <div class="card-body">
+                    <div id="calendar"></div>
+                </div>
             </div>
         </div>
     @endif
