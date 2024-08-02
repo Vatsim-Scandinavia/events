@@ -79,6 +79,15 @@ dl.copyable{
     @include media-breakpoint-down(md) {
         width: 100%;
     }
+
+    a{
+        color: $primary;
+        text-decoration: underline;
+
+        &:hover{
+            text-decoration: none;
+        }
+    }
 }
 
 // Custom extras
