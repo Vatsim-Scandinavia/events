@@ -6,7 +6,7 @@ use App\Models\Calendar;
 use App\Models\Event;
 use Carbon\Carbon;
 
-class WelcomeController extends Controller
+class HomeController extends Controller
 {
     /**
      * Show the landing page if not logged in, or redirect if logged in.
@@ -42,6 +42,6 @@ class WelcomeController extends Controller
         }
         
 
-        return view('welcome', compact('upcomingEvents', 'events', 'calendar'));
+        return view('home', compact('upcomingEvents', 'events', 'calendar'));
     }
 }
