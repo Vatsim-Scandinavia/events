@@ -29,6 +29,11 @@ runs:
     shell: bash
     working-directory: ./${{ inputs.path }}
 
+  - name: Generate symbolic link
+    run: php artisan storage:link
+    shell: bash
+    working-directory: ./${{ inputs.path }}
+
   - name: Directory Permissions
     run: chmod -R 777 storage bootstrap/cache
     shell: bash
