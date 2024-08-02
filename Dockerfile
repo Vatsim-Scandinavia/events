@@ -55,6 +55,8 @@ RUN chmod -R 755 storage bootstrap/cache && \
     mkdir -p /app/storage/app/public/banners && \
     chmod -R 775 /app/storage
 
+RUN chown -R www-data:www-data /app/storage/app/public/banners
+
 # Wrap around the default PHP entrypoint with a custom entrypoint
 COPY ./container/entrypoint.sh /usr/local/bin/service-entrypoint
 ENTRYPOINT [ "service-entrypoint" ]
