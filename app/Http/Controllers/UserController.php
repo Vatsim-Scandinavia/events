@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Area;
 use App\Models\Group;
 use App\Models\User;
 use Carbon\Carbon;
@@ -36,11 +35,9 @@ class UserController extends Controller
                 return \Auth::user()->can('view', $event);
             });
 
-        $areas = Area::all();
-
         $groups = Group::all();
 
-        return view('users.show', compact('user', 'events', 'areas', 'groups'));
+        return view('users.show', compact('user', 'events', 'groups'));
     }
 
     /**
@@ -53,14 +50,8 @@ class UserController extends Controller
         $permissions = [];
 
         // Generate a list of possible validations
-        foreach (Area::all() as $area) {
-            foreach (Group::all() as $group) {
-                // Only process ranks the user is allowed to change
-                $this->authorize('updateGroup', [$user, $group, $area]);
-
-                $key = $area->id . '_' . $group->name;
-                $permissions[$key] = '';
-            }
+        foreach (Group::all() as $group) {
+            $permissions[$group->name] = '';
         }
 
         // Valiate and allow these fields, then loop through permissions to set the final data set
@@ -69,27 +60,22 @@ class UserController extends Controller
             isset($data[$key]) ? $permissions[$key] = true : $permissions[$key] = false;
         }
 
+        //dd($permissions);
+
         // Check and update the permissions
         foreach ($permissions as $key => $value) {
-            $str = explode('_', $key);
-
-            $area = Area::where('id', $str[0])->get()->first();
-            $group = Group::where('name', $str[1])->get()->first();
+            $group = Group::where('name', $key)->get()->first();
 
             // Check if permission is not set, and set it or other way around.
-            if ($user->groups()->where('area_id', $area->id)->where('group_id', $group->id)->get()->count() == 0) {
+            if ($user->groups()->where('group_id', $group->id)->get()->count() == 0) {
                 if ($value == true) {
-                    $this->authorize('updateGroup', [$user, $group, $area]);
-
                     // Attach the new permission
-                    $user->groups()->attach($group, ['area_id' => $area->id, 'inserted_by' => \Auth::user()->id]);
+                    $user->groups()->attach($group, ['inserted_by' => \Auth::user()->id]);
                 }
             } else {
                 if ($value == false) {
-                    $this->authorize('updateGroup', [$user, $group, $area]);
-
                     // Detach the permission
-                    $user->groups()->wherePivot('area_id', $area->id)->wherePivot('group_id', $group->id)->detach();
+                    $user->groups()->wherePivot('group_id', $group->id)->detach();
                 }
             }
         }

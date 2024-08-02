@@ -12,6 +12,6 @@ class StaffingPolicy
 
     public function view(User $user, Staffing $staffing)
     {
-        return $user->isAdmin() || $user->isModerator($staffing->area);
+        return $user->isAdmin() || $user->isModerator();
     }
 }

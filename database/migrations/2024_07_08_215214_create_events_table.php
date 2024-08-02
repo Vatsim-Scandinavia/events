@@ -25,7 +25,6 @@ return new class extends Migration
             $table->tinyInteger('published')->default(0); // might do something with this
             $table->string('image')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
-            $table->unsignedInteger('area_id')->nullable();
             $table->unsignedInteger('parent_id')->nullable();
             $table->softDeletes();
             $table->timestamps();
@@ -34,7 +33,6 @@ return new class extends Migration
         Schema::table('events', function (Blueprint $table) {
             $table->foreign('calendar_id')->references('id')->on('calendars')->onDelete('cascade');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('set null');
-            $table->foreign('area_id')->references('id')->on('areas')->onDelete('cascade');
             $table->foreign('parent_id')->references('id')->on('events')->onDelete('cascade');
         });
     }

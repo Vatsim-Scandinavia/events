@@ -49,7 +49,6 @@
                                             <tr>
                                                 <th data-field="title" data-sortable="true" data-filter-control="input">Title</th>
                                                 <th data-field="calendar" data-sortable="true" data-filter-control="input">Calendar</th>
-                                                <th data-field="area" data-sortable="true" data-filter-control="input">Area</th>
                                                 <th data-field="startdate" data-sortable="true" data-filter-control="input">Start Date</th>
                                                 <th data-field="enddate" data-sortable="true" data-filter-control="input">End Date</th>
                                             </tr>
@@ -66,9 +65,6 @@
                                                         @else
                                                             {{ $event->calendar->name }}
                                                         @endcan 
-                                                    </td>
-                                                    <td>
-                                                        {{ $event->area->name }}
                                                     </td>
                                                     <td>
                                                         {{ \Carbon\Carbon::parse($event->start_date)->format('d-m-Y H:i') }}
@@ -101,25 +97,23 @@
                                     <table class="table table-bordered table-hover table-responsive w-100 d-block d-md-table">
                                         <thead>
                                             <tr>
-                                                <th>Area</th>
+                                                <th>Access</th>
                                                 @foreach($groups as $group)
                                                     <th class="text-center">{{ $group->name }} <i class="fas fa-question-circle text-gray-400" title="{{ $group->description }}"></i></th>
                                                 @endforeach
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach($areas as $area)
-                                                <tr>
-                                                    <td>{{ $area->name }}</td>
-                                                    @foreach($groups as $group)
-                                                        @can('updateGroup', $user)
-                                                            <td class="text-center"><input type="checkbox" name="{{ $area->id }}_{{ $group->name }}" {{ $user->groups()->where('group_id', $group->id)->where('area_id', $area->id)->count() ? "checked" : "" }}></td>
-                                                        @else
-                                                            <td class="text-center"><input type="checkbox" {{ $user->groups()->where('group_id', $group->id)->where('area_id', $area->id)->count() ? "checked" : "" }} disabled></td>
-                                                        @endcan
-                                                    @endforeach 
-                                                </tr>
-                                            @endforeach
+                                            <tr>
+                                                <td>All Calendars</td>
+                                                @foreach($groups as $group)
+                                                    @can('update', $user)
+                                                        <td class="text-center"><input type="checkbox" name="{{ $group->name }}" {{ $user->groups()->where('group_id', $group->id)->count() ? "checked" : "" }}></td>
+                                                    @else
+                                                        <td class="text-center"><input type="checkbox" {{ $user->groups()->where('group_id', $group->id)->count() ? "checked" : "" }} disabled></td>
+                                                    @endcan
+                                                @endforeach 
+                                            </tr>
                                         </tbody>
                                     </table>
                                     @can('update', $user)

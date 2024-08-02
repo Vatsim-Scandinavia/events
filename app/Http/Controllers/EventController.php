@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Area;
 use App\Models\Calendar;
 use App\Models\Event;
 use Carbon\Carbon;
@@ -33,11 +32,9 @@ class EventController extends Controller
     {
         $this->authorize('create', Event::class);
 
-        $areas = Area::all();
-
         $calendars = Calendar::all();
 
-        return view('events.create', compact('areas', 'calendars'));
+        return view('events.create', compact('calendars'));
     }
 
     /**
@@ -49,7 +46,6 @@ class EventController extends Controller
 
         $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
-            'area' => 'required|exists:areas,id',
             'title' => 'required|string|max:255',
             'short_description' => 'nullable|max:280',
             'long_description' => 'nullable',
@@ -97,8 +93,7 @@ class EventController extends Controller
             'image' => $imageName,
         ]);
 
-        // Ensure area and user association
-        $event->area()->associate($request->input('area'));
+        // Ensure user association
         $event->user()->associate(\Auth::user());
         $event->save();
 
@@ -128,11 +123,9 @@ class EventController extends Controller
     {
         $this->authorize('update', $event);
 
-        $areas = Area::all();
-
         $calendars = Calendar::all();
 
-        return view('events.edit', compact('areas', 'calendars', 'event'));
+        return view('events.edit', compact('calendars', 'event'));
     }
 
     /**
@@ -144,7 +137,6 @@ class EventController extends Controller
 
         $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
-            'area' => 'required|exists:areas,id',
             'title' => 'required|string|max:255',
             'short_description' => 'nullable|max:280',
             'long_description' => 'nullable',
@@ -201,8 +193,7 @@ class EventController extends Controller
             'image' => $imageURL,
         ]);
 
-        // Ensure area and user association
-        $event->area()->associate($request->input('area'));
+        // Ensure user association
         $event->user()->associate(\Auth::user());
 
         // Save the event before handling recurrences

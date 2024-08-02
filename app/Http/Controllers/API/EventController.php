@@ -37,7 +37,6 @@ class EventController extends Controller
     {
         $data = $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
-            'area' => 'required|exists:areas,id',
             'title' => 'required|string|max:255',
             'short_description' => 'nullable|max:280',
             'long_description' => 'nullable',
@@ -89,8 +88,7 @@ class EventController extends Controller
             'image' => $imageName,
         ]);
 
-        // Ensure area and user association
-        $event->area()->associate($request->input('area'));
+        // Ensure user association
         $event->user()->associate($user);
         $event->save();
 
@@ -121,7 +119,6 @@ class EventController extends Controller
     {
         $data = $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
-            'area' => 'required|exists:areas,id',
             'title' => 'required|string|max:255',
             'short_description' => 'nullable|max:280',
             'long_description' => 'nullable',
@@ -182,7 +179,6 @@ class EventController extends Controller
             'image' => $imageURL,
         ]);
 
-        $event->area()->associate($request->input('area'));
         $event->user()->associate($user);
         $event->save();
 

@@ -11,6 +11,6 @@ class Group extends Model
 
     public function users()
     {
-        return $this->belongsToMany(User::class, 'permissions')->withPivot('area_id')->withTimestamps();
+        return $this->belongsToMany(User::class, 'permissions');
     }
 }

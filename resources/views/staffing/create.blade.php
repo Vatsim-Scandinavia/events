@@ -89,17 +89,6 @@
                                 </div>
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-group">
-                                        <label for="area" class="form-label my-1 me-2">FIR <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
-                                        <select name="area" id="area" class="form-control my-1 me-sm-2" required>
-                                            <option disabled selected>Select FIR</option>
-                                            @foreach ($areas as $area)
-                                                <option value="{{ $area->id }}">{{ $area->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
-                                    <div class="form-group">
                                         <label for="channel_id" class="form-label my-1 me-2">Discord Channels <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="channel_id" id="channel_id" class="form-control my-1 me-sm-2" required>
                                             <option disabled selected>Select Discord Channel</option>

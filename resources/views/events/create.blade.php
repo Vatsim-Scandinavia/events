@@ -37,19 +37,6 @@
                                     </div>
 
                                     <div class="form-group mb-4">
-                                        <label for="area" class="form-label my-1 me-2">FIR <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
-                                        <select name="area" id="area" class="form-control my-1 me-sm-2 @error('area') is-invalid @enderror" required>
-                                            <option disabled selected>Select FIR</option>
-                                            @foreach ($areas as $area)
-                                                <option value="{{ $area->id }}" {{ old('area') == $area->id ? 'selected' : '' }}>{{ $area->name }}</option>
-                                            @endforeach
-                                        </select>
-                                        @error('area')
-                                            <span class="text-danger">{{ $errors->first('area') }}</span>
-                                        @enderror
-                                    </div>
-
-                                    <div class="form-group mb-4">
                                         <label for="short_description" class="form-label my-1 me-2">Short Description (max 280 characters)</label>
                                         <textarea class="form-control @error('short_description') is-invalid @enderror" name="short_description" id="short_description" rows="8">{{ old('short_description') }}</textarea>
                                         @error('short_description')
