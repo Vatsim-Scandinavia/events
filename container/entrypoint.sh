@@ -18,6 +18,7 @@ if [ -z "$APP_KEY" ] && [ ! -f "$CONTROL_CENTER_ROOT/.env" ]; then
     cp container/example-prod.env .env
     echo "WARNING: Temporarily updating the application key"
     php artisan key:generate
+    php artisan storage:link
 fi
 
 exec docker-php-entrypoint "$@"
