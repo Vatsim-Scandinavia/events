@@ -12,7 +12,7 @@
         @if($event->image)
         <div class="card shadow mb-4">
             <div class="card-body text-center">
-                <img src="{{ $event->image }}" alt="{{ $event->title }}" class="img-fluid">
+                <img src="{{ asset('storage/banners/' . $event->image) }}" alt="{{ $event->title }}" class="img-fluid">
             </div>
         </div>
         @endif

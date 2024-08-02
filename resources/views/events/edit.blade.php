@@ -78,7 +78,7 @@
                                             @enderror
                                         </div>
                                         @if ($event->image)
-                                            <img src="{{ asset('storage/images/' . $event->image) }}" alt="Event Image" class="img-thumbnail mt-2" width="200">
+                                            <img src="{{ asset('storage/banners/' . $event->image) }}" alt="Event Image" class="img-thumbnail mt-2" width="200">
                                         @endif
                                     </div>
 
