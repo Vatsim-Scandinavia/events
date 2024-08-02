@@ -105,7 +105,7 @@ class APITest extends TestCase
                     'calendar_id' => $event->calendar_id,
                     'title' => $event->title,
                     'short_description' => $event->short_description,
-                    'slong_description' => $event->long_description,
+                    'long_description' => $event->long_description,
                     'start_date' => $event->start_date,
                     'end_date' => $event->end_date,
                     'recurrence_interval' => $event->recurrence_interval,
