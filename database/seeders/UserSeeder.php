@@ -72,7 +72,7 @@ class UserSeeder extends Seeder
 
             // Assign groups randomly, or specific group for user 10
             if ($i == 10) {
-                $user->groups()->attach(Group::find($group), ['area_id' => 1]);
+                $user->groups()->attach(Group::find($group));
             } else if ($i !== 11) {
                 $randomGroup = $groups->random(rand(0, $groups->count()))->pluck('id')->toArray();
                 $user->groups()->attach($randomGroup);
