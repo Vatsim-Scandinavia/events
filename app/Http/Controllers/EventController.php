@@ -78,7 +78,7 @@ class EventController extends Controller
             $storedPath = $image->storeAs('banners', $imageName, 'public');
     
             // Check if the image was successfully uploaded
-            if (!Storage::disk('public')->exists($storedPath)) {
+            if ($storedPath && !Storage::disk('public')->exists($storedPath)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.'])->withInput();
             }
 
