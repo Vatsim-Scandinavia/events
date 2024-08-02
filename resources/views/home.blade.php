@@ -10,7 +10,9 @@
                 @if ($upcomingEvents->isNotEmpty())
                     @foreach($upcomingEvents as $event)
                         <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
-                            <img src={{ asset('storage/banners/' . $event->image) }} height="100">
+                            @if ($event->image)
+                                <img src={{ asset('storage/banners/' . $event->image) }} height="100">
+                            @endif
                             <span class="d-none d-md-block">{{ $event->title }}</span>
                             <div>
                                 <a href="{{ route('events.show', $event->id) }}" class="btn btn-info btn-sm">View Event</a>
