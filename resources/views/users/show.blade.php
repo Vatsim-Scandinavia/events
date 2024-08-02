@@ -2,7 +2,7 @@
 @section('title', 'User Details')
 @section('content')
     <div class="row">
-        <div class="col-xl-3 col-md-4 col-sm-12 mb-12">
+        <div class="col-xl-4 col-md-4 col-sm-12 mb-12">
             <div class="card shadow mb-4">
                 <div class="card-header bg-primary py-3 d-flex flex-row align-items-center justify-content-between">
                     <h6 class="m-0 fw-bold text-white">
@@ -22,7 +22,7 @@
                         <dd>{{ $user->first_name.' '.$user->last_name }}<button type="button" onclick="navigator.clipboard.writeText('{{ $user->first_name.' '.$user->last_name }}')"><i class="fas fa-copy"></i></button></dd>
     
                         <dt>Email</dt>
-                        <dd class="separator pb-3">{{ $user->email }}<button type="button" onclick="navigator.clipboard.writeText('{{ $user->email }}')"><i class="fas fa-copy"></i></button></dd>
+                        <dd>{{ $user->email }}<button type="button" onclick="navigator.clipboard.writeText('{{ $user->email }}')"><i class="fas fa-copy"></i></button></dd>
     
                         <dt class="pt-2">Last login</dt>
                         <dd>{{ \Carbon\Carbon::parse($user->last_login)->format('d-m-Y H:i') }}</dd>
@@ -30,7 +30,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-9 col-md-8 col-sm-12 mb-12">
+        <div class="col-xl-8 col-md-8 col-sm-12 mb-12">
             <div class="row">
                 <div class="col-xl-12 col-lg-12 col-md-12 mb-12 p-0">
                     <div class="card shadow mb-4">
