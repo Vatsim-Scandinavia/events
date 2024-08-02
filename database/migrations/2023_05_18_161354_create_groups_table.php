@@ -18,7 +18,7 @@ return new class extends Migration
         });
 
         DB::table('groups')->insert([
-            ['id' => 1, 'name' => 'Administrator', 'description' => 'Access to whole system. Ment for vACC DIR, Event coordinator and technicaians.'],
+            ['id' => 1, 'name' => 'Administrator', 'description' => 'Access to whole system. Ment for vACC DIR, Event coordinator and technicians.'],
             ['id' => 2, 'name' => 'Moderator', 'description' => 'Access to key features of the system. Ment for Event Assistants and other event related duties.'],
         ]);
     }
