@@ -3,12 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Area;
-use App\Models\Calendar;
 use App\Models\Event;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Faker\Factory as Faker;
 
 class EventSeeder extends Seeder
 {

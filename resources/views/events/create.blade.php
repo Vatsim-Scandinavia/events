@@ -50,10 +50,18 @@
                                     </div>
 
                                     <div class="form-group mb-4">
-                                        <label for="description" class="form-label my-1 me-2">Description</label>
-                                        <textarea class="form-control @error('description') is-invalid @enderror" name="description" id="description" rows="8">{{ old('description') }}</textarea>
-                                        @error('description')
-                                            <span class="text-danger">{{ $errors->first('description') }}</span>
+                                        <label for="short_description" class="form-label my-1 me-2">Short Description (max 280 characters)</label>
+                                        <textarea class="form-control @error('short_description') is-invalid @enderror" name="short_description" id="short_description" rows="8">{{ old('short_description') }}</textarea>
+                                        @error('short_description')
+                                            <span class="text-danger">{{ $errors->first('short_description') }}</span>
+                                        @enderror
+                                    </div>
+
+                                    <div class="form-group mb-4">
+                                        <label for="long_description" class="form-label my-1 me-2">Event Description</label>
+                                        <textarea class="form-control @error('long_description') is-invalid @enderror" name="long_description" id="long_description" rows="8">{{ old('long_description') }}</textarea>
+                                        @error('long_description')
+                                            <span class="text-danger">{{ $errors->first('long_description') }}</span>
                                         @enderror
                                     </div>
 
@@ -153,7 +161,16 @@
     <script type="module">
         document.addEventListener("DOMContentLoaded", function() {
             var simplemde1 = new SimpleMDE({
-                element: document.getElementById('description'),
+                element: document.getElementById('short_description'),
+                status: false,
+                toolbar: ["bold", "italic", "heading-3", "|", "quote", "unordered-list", "ordered-list", "|", "link", "preview", "side-by-side", "fullscreen", "|", "guide"],
+                insertTexts: {
+                    link: ["[","](link)"],
+                }
+            });
+
+            var simplemde2 = new SimpleMDE({
+                element: document.getElementById('long_description'),
                 status: false,
                 toolbar: ["bold", "italic", "heading-3", "|", "quote", "unordered-list", "ordered-list", "|", "link", "preview", "side-by-side", "fullscreen", "|", "guide"],
                 insertTexts: {

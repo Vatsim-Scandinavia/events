@@ -20,7 +20,8 @@ class EventFactory extends Factory
         return [
             'calendar_id' => Calendar::factory()->create()->id,
             'title' => $this->faker->sentence(1),
-            'description' => $this->faker->paragraph(),
+            'short_description' => $this->faker->text(280),
+            'long_description' => $this->faker->paragraph(),
             'start_date' => now()->addDays(1)->format('Y-m-d H:i:s'),
             'end_date' => now()->addDays(1)->addHours(2)->format('Y-m-d H:i:s'),
             'recurrence_interval' => null,

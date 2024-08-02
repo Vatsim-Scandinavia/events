@@ -20,7 +20,8 @@ class Event extends Model
         'id',
         'calendar_id',
         'title',
-        'description',
+        'short_description',
+        'long_description',
         'start_date',
         'end_date',
         'recurrence_interval',
@@ -113,7 +114,8 @@ class Event extends Model
 
                 $recurrences[] = new Event([
                     'title' => $this->title,
-                    'description' => $this->description,
+                    'short_description' => $this->short_description,
+                    'long_description' => $this->long_description,
                     'start_date' => $start,
                     'end_date' => $end,
                     'calendar_id' => $this->calendar_id,
