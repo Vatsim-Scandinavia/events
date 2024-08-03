@@ -19,7 +19,10 @@ class EventController extends Controller
     {
         $events = $calendar
             ->events()
+            ->where('start_date', '>=', Carbon::today())
+            ->orderBy('start_date', 'asc')
             ->get();
+
 
         // Set the full path on the image attribute and add a full url to event
         $events->transform(function ($event) {
