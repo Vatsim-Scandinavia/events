@@ -23,7 +23,7 @@
 
                                     <div class="form-group mb-4">
                                         <label for="calendar" class="form-label my-1 me-2">Calendar</label>
-                                        <select name="calendar_id" id="calendar" class="form-control my-1 me-sm-2 @error('calendar') is-invalid @enderror" required>
+                                        <select name="calendar_id" id="calendar" class="form-control my-1 me-sm-2 @error('calendar_id') is-invalid @enderror" required>
                                             <option disabled selected>Select Calendar</option>
                                             @foreach ($calendars as $calendar)
                                                 @can('view', $calendar)
@@ -31,8 +31,8 @@
                                                 @endcan
                                             @endforeach
                                         </select>
-                                        @error('calendar')
-                                            <span class="text-danger">{{ $errors->first('calendar') }}</span>
+                                        @error('calendar_id')
+                                            <span class="text-danger">{{ $errors->first('calendar_id') }}</span>
                                         @enderror
                                     </div>
 
@@ -89,21 +89,20 @@
                                     <hr class="my-4">
 
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="event_type" id="standard_event" value="2" {{ old('event_type') == 1 || old('event_type') == null ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="radio" name="event_type" id="standard_event" value="0" {{ old('event_type') == 0 ? 'checked' : '' }}>
                                         <label class="form-check-label" for="standard_event">
                                           Standard Event
                                         </label>
                                     </div>
 
                                     <div class="form-check mb-4">
-                                        <input type="hidden" name="event_type" value="0">
-                                        <input class="form-check-input" type="radio" name="event_type" id="is_recurring" value="1" data-toggle="collapse" data-target="#recurringOptions" aria-expanded="false" aria-controls="recurringOptions" {{ old('recurrence_interval') != null && old('recurrence_unit') != null ? 'checked' : '' }}>
+                                        <input class="form-check-input" type="radio" name="event_type" id="is_recurring" value="1" data-toggle="collapse" data-target="#recurringOptions" aria-expanded="false" aria-controls="recurringOptions" {{ old('event_type') == 1 ? 'checked' : '' }}>
                                         <label class="form-check-label" for="is_recurring">
                                             Recurring Event
                                         </label>
                                     </div>
                                     
-                                    <div id="recurringOptions" class="collapse col-xs-12 col-sm-12 col-md-12 mb-2">
+                                    <div id="recurringOptions" class="collapse col-xs-12 col-sm-12 col-md-12 mb-2 {{ old('event_type') == 1 ? 'show' : '' }}">
                                         <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                             <div class="form-group">
                                                 <label for="recurrence_unit" class="form-label my-1 me-2">Recurrence Type</label>

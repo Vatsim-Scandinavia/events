@@ -4,7 +4,6 @@ namespace App\Helpers;
 
 enum EventHelper: string 
 {
-    case NONE = '0';
     case DAY = 'day';
     case WEEK = 'week';
     case MONTH = 'month';
@@ -13,7 +12,6 @@ enum EventHelper: string
     public static function labels() : array 
     {
         return [
-            self::NONE->value => 'None',
             self::DAY->value => 'Daily',
             self::WEEK->value => 'Weekly',
             self::MONTH->value => 'Monthly',

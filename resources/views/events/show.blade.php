@@ -27,7 +27,7 @@
             </div>
             <div>
                 <i class="fas fa-calendar-alt"></i>
-                <strong>Recurrence End Date:</strong> {{ \Carbon\Carbon::parse($event->recurrence_end_date)->format('F j, Y, H:i') }}z
+                <strong>Recurrence End Date:</strong> {{ \Carbon\Carbon::parse($event->recurrence_end_date)->format('F j, Y') }}z
             </div>
         @endif
 

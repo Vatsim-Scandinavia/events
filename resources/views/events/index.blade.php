@@ -41,8 +41,11 @@
                                             <td>{{ \Carbon\Carbon::parse($event->start_date)->format('d-m-Y H:i') }}z</td>
                                             <td>{{ \Carbon\Carbon::parse($event->end_date)->format('d-m-Y H:i') }}z</td>
                                             <td class="text-center text-white">
-                                                @if ($event->parent_id != null && $event->recurrence_interval != null) 
-                                                    <a href="{{ route('events.edit', $event->parent) }}">{{ $event->parent->title }}</a>
+                                                @if ($event->children->isNotEmpty())
+                                                    <p class="text-success mb-0">Parent</p>
+                                                @elseif($event->parent_id != null)
+                                                    <a href="{{ route('events.edit', $event->parent) }}" class="flex-grow-1">{{ $event->parent->title }}</a>
+                                                    <p class="text-muted mt-auto">Id: {{ $event->parent_id }}</p>
                                                 @endif
                                             </td>
                                             <td>
@@ -55,7 +58,7 @@
                                                         onsubmit="return confirm('Are you sure you want to delete this event? - {{ $event->title }}')">
                                                         @method('DELETE')
                                                         @csrf
-                                                        <button class="btn btn-sm btn-danger" type="submit"><i class="fas fa-trash" aria-hidden="true"></i> Delete</button>
+                                                        <button class="btn btn-sm btn-danger" type="submit"><i class="fas fa-trash" aria-hidden="true"></i> Delete @if ($event->children->isNotEmpty()) all recurring  @elseif($event->parent_id != null) occurance @endif</button>
                                                     </form>
                                                 @endcan
                                             </td>
