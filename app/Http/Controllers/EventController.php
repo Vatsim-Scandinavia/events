@@ -52,9 +52,9 @@ class EventController extends Controller
             'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:today',
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
             'event_type' => 'integer',
-            'recurrence_interval' => 'required_if:event_type,1|integer',
-            'recurrence_unit' => 'required_if:event_type,1|string|max:255|not_in:0',
-            'recurrence_end_date' => 'required_if:event_type,1|date_format:Y-m-d H:i|after_or_equal:end_date',
+            'recurrence_interval' => 'nullable|required_if:event_type,1|integer',
+            'recurrence_unit' => 'nullable|required_if:event_type,1|string|max:255',
+            'recurrence_end_date' => 'nullable|required_if:event_type,1|date_format:Y-m-d H:i|after_or_equal:end_date',
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ]);
 
@@ -143,9 +143,9 @@ class EventController extends Controller
             'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:today',
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
             'event_type' => 'integer',
-            'recurrence_interval' => 'required_if:event_type,1|integer',
-            'recurrence_unit' => 'required_if:event_type,1|string|max:255|not_in:0',
-            'recurrence_end_date' => 'required_if:event_type,1|date_format:Y-m-d H:i|after_or_equal:end_date',
+            'recurrence_interval' => 'nullable|required_if:event_type,1|integer',
+            'recurrence_unit' => 'nullable|required_if:event_type,1|string|max:255',
+            'recurrence_end_date' => 'nullable|required_if:event_type,1|date_format:Y-m-d H:i|after_or_equal:end_date',
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ]);
 
