@@ -219,13 +219,14 @@ class EventController extends Controller
         $this->authorize('destroy', $event);
 
         // Delete the old image if it exists
-        if ($event->image && $event->parent()->isEmpty()) {
+        if ($event->image && $event->parent_id === null) {
             Storage::disk('public')->delete('banners/' . $event->image);
         }
 
-        $event->delete();
-
+        // Delete the event and any of its children
         $event->children()->delete();
+
+        $event->delete();
 
         return redirect()->route('events.index')->withSuccess('Event deleted successfully');
     }
