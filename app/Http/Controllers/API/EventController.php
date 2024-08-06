@@ -47,9 +47,9 @@ class EventController extends Controller
             'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:today',
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
             'event_type' => 'integer',
-            'recurrence_interval' => 'nullable|integer',
-            'recurrence_unit' => 'nullable|string|max:255',
-            'recurrence_end_date' => 'nullable|date_format:Y-m-d H:i|after_or_equal:end_date',
+            'recurrence_interval' => 'nullable|required_if:event_type,1|integer',
+            'recurrence_unit' => 'nullable|required_if:event_type,1|string|max:255',
+            'recurrence_end_date' => 'nullable|required_if:event_type,1|date_format:Y-m-d H:i|after_or_equal:end_date',
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ]);
 
@@ -62,7 +62,7 @@ class EventController extends Controller
         if ($request->hasFile('image')) {
             $image = $request->file('image');
             $imageName = now()->format('Y-m-d') . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-    
+            
             // Get image dimensions
             list($width, $height) = getimagesize($image->getPathName());
             if (round($width / $height, 2) != round(16 / 9, 2)) {
@@ -93,7 +93,7 @@ class EventController extends Controller
         ]);
 
         // Ensure user association
-        $event->user()->associate($user);
+        $event->user()->associate(\Auth::user());
         $event->save();
 
         // Generate and save recurrences if the event is recurring
@@ -129,9 +129,9 @@ class EventController extends Controller
             'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:today',
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
             'event_type' => 'integer',
-            'recurrence_interval' => 'nullable|integer',
-            'recurrence_unit' => 'nullable|string|max:255',
-            'recurrence_end_date' => 'nullable|date_format:Y-m-d H:i|after_or_equal:end_date',
+            'recurrence_interval' => 'nullable|required_if:event_type,1|integer',
+            'recurrence_unit' => 'nullable|required_if:event_type,1|string|max:255',
+            'recurrence_end_date' => 'nullable|required_if:event_type,1|date_format:Y-m-d H:i|after_or_equal:end_date',
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ]);
 
@@ -183,7 +183,10 @@ class EventController extends Controller
             'image' => $imageName,
         ]);
 
-        $event->user()->associate($user);
+        // Ensure user association
+        $event->user()->associate(\Auth::user());
+
+        // Save the event before handling recurrences
         $event->save();
 
         // Check if the event is a recurring event and delete old recurrences if they exist
@@ -206,6 +209,11 @@ class EventController extends Controller
      */
     public function destroy(Event $event) 
     {
+        // Delete the old image if it exists
+        if ($event->image && $event->parent()->isEmpty()) {
+            Storage::disk('public')->delete('banners/' . $event->image);
+        }
+
         $event->delete();
 
         $event->children()->delete();
