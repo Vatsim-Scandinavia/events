@@ -29,6 +29,7 @@
                                     <th data-field="start_date" data-sortable="true" data-filter-control="input">Start Date</th>
                                     <th data-field="end_date" data-sortable="true" data-filter-control="input">End Date</th>
                                     <th data-field="parent" data-sortable="true" data-filter-control="input">Parent Event</th>
+                                    <th data-field="createdby" data-sortable="true" data-filter-control="select">Created by</th>
                                     <th data-field="actions" data-sortable="false" data-filter-control="false">Actions</th>
                                 </tr>
                             </thead>
@@ -48,6 +49,7 @@
                                                     <p class="text-muted mt-auto">Id: {{ $event->parent_id }}</p>
                                                 @endif
                                             </td>
+                                            <td>{{ $event->user->name }}</td>
                                             <td>
                                                 <a class="btn btn-sm btn-info" href="{{ route('events.show', $event->id) }}"><i class="fas fa-eye"></i> Show</a>
                                                 @can('update', $event)
