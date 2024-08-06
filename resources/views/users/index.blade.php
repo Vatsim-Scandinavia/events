@@ -17,6 +17,7 @@
                                     <th data-field="id" data-sortable="true" data-filter-control="input">ID</th>
                                     <th data-field="firstname" data-sortable="true" data-filter-control="input">First Name</th>
                                     <th data-field="lastname" data-sortable="true" data-filter-control="input">Last Name</th>
+                                    <th data-field="permissions" data-sortable="true" data-filter-control="select">Permissions</th>
                                     <th data-field="actions" data-sortable="false" data-filter-control="false">Actions</th>
                                 </tr>
                             </thead>
@@ -27,6 +28,9 @@
                                             <td><a href="{{ route('users.show', $user) }}">{{ $user->id }}</a></td>
                                             <td>{{ $user->first_name }}</td>
                                             <td>{{ $user->last_name }}</td>
+                                            <td>
+                                                {{ $user->groups->pluck('name')->implode(', ')}}
+                                            </td>
                                             <td>
                                                 <a class="btn btn-sm btn-info" href="{{ route('users.show', $user->id) }}"><i class="fas fa-eye"></i> Show</a>
                                             </td>
