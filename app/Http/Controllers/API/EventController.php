@@ -26,7 +26,7 @@ class EventController extends Controller
 
         // Set the full path on the image attribute and add a full url to event
         $events->transform(function ($event) {
-            $event->image = isset($event->image) ? asset('storage/banners/' . $event->image) : null;
+            $event->image = isset($event->image) ? asset('storage/banners/' . $event->image) : asset('images/tba.jpg');
             $event->link = route('events.show', $event->id);
             return $event;
         });
