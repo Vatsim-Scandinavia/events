@@ -42,6 +42,7 @@
                                         @error('short_description')
                                             <span class="text-danger">{{ $errors->first('short_description') }}</span>
                                         @enderror
+                                        <small id="characterCount" class="form-text text-muted">0/280 characters</small>
                                     </div>
 
                                     <div class="form-group mb-4">
@@ -265,6 +266,29 @@
 
             // Initialize custom file input
             bsCustomFileInput.init();
+
+            /* Character counter */
+            function updateCharacterCount() {
+                const textarea = document.getElementById('short_description');
+                const characterCount = document.getElementById('characterCount');
+                const count = textarea.value.length;
+
+                characterCount.textContent = `${count}/280 characters`;
+
+                if (count > 280) {
+                    characterCount.classList.remove('text-muted');
+                    characterCount.classList.add('text-danger');
+                } else {
+                    characterCount.classList.remove('text-danger');
+                    characterCount.classList.add('text-muted');
+                }
+            }
+
+            // Add event listener for 'input' event
+            document.getElementById('short_description').addEventListener('input', updateCharacterCount);
+
+            // Initialize the character count on page load in case there's already text in the textarea
+            document.addEventListener('DOMContentLoaded', updateCharacterCount);
         });
     </script>
 @endsection
