@@ -113,7 +113,11 @@ class EventController extends Controller
      */
     public function show(Event $event) 
     {
-        return response()->json(['event' => $event,], 200);
+        // Set the full path on the image attribute and add a full url to event
+        $event->image = isset($event->image) ? asset('storage/banners/' . $event->image) : asset('images/tba.jpg');
+        $event->link = route('events.show', $event->id);
+
+        return response()->json(['event' => $event], 200);
     }
 
     /**
