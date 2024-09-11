@@ -20,9 +20,15 @@ class ApiToken
 
         if($key === null || ($args == 'edit' && $key->readonly == true))
         {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], 401);
+            // Exception for open calendar fetch
+            if (preg_match('/^\/api\/calendars\/\d+\/events$/', $request->getRequestUri())) {
+                $request->attributes->set('unauthenticated', true);
+                return $next($request);
+            } else {
+                return response()->json([
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
         }
 
         $key->update(['last_used_at', now()]);
