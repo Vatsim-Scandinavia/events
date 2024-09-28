@@ -56,6 +56,19 @@
                         <span>{{ $calendar->name }}</span></a>
                 </li>
             @endforeach
+
+            @auth
+                @if(\Auth::user()->isModeratorOrAbove())
+                    @foreach (App\Models\Calendar::where('public', 0)->get() as $calendar)
+                        <li class="nav-item {{ Route::is('events.show') && request()->route('event')->calendar_id == $calendar->id || Route::is('calendar') && request()->route('calendar')->id == $calendar->id ? 'active' : '' }}">
+                            <a class="nav-link" href="{{ route('calendar', $calendar->id) }}">
+                                <i class="fas fa-fw fa-calendar"></i>
+                                <span>{{ $calendar->name }}</span></a>
+                        </li>
+                    @endforeach
+                @endif
+            @endauth
+
             @auth
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('logout') }}">
