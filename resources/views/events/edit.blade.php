@@ -15,7 +15,7 @@
                             <div class="row pt-2">
                                 <div class="col-xl-12 col-md-12 mb-12">
 
-                                    @if($event->parent_id != null && $event->recurrence_interval != null)
+                                    @if($event->parent_id != null)
                                         <div class="alert alert-info">
                                             <i class="fas fa-circle-info"></i> <strong>Note</strong><br>
                                             You are only editing the occurance. Changes will only affect this event.
