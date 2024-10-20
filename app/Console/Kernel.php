@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command('events:check-recurrences')->daily();
+        $schedule->command('database:cleanup')->daily();
     }
 
     /**
