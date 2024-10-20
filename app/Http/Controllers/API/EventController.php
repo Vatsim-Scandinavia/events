@@ -130,7 +130,7 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'short_description' => 'required|max:280',
             'long_description' => 'required',
-            'start_date' => 'required|date_format:Y-m-d H:i|after_or_equal:today',
+            'start_date' => 'required|date_format:Y-m-d H:i',
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
             'event_type' => 'integer',
             'recurrence_interval' => 'nullable|required_if:event_type,1|integer',
