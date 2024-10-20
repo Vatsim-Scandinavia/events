@@ -14,6 +14,20 @@
                         <div class="container-fluid">
                             <div class="row pt-2">
                                 <div class="col-xl-12 col-md-12 mb-12">
+
+                                    @if($event->parent_id != null && $event->recurrence_interval != null)
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-circle-info"></i> <strong>Note</strong><br>
+                                            You are only editing the occurance. Changes will only affect this event.
+                                        </div>
+                                    @elseif($event->parent_id == null && $event->recurrence_interval != null)
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle"></i> <strong>Warning</strong><br>
+                                            You're editing the whole parent. Changes will affect all occurances.
+                                        </div>
+                                    @endif
+                                
+
                                     <div class="form-group mb-4">
                                         <label for="event" class="form-label my-1 me-2">Event Title</label>
                                         <input type="text" name="title" id="title" class="form-control @error('title') is-invalid @enderror" value="{{ $event->title }}" required>
