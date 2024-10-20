@@ -149,8 +149,7 @@ class EventController extends Controller
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
         ]);
 
-        $imageURL = $event->image;
-        $imageName = null;
+        $imageName = $event->image;
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
@@ -174,10 +173,6 @@ class EventController extends Controller
             if (!Storage::disk('public')->exists('banners/' . $imageName)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.']);
             }
-
-            $imageURL = asset('storage/banners/' . $imageName);
-    
-            $event->image = $imageURL;
         }
 
         $event->update([
