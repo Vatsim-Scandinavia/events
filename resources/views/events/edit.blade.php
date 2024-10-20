@@ -104,51 +104,57 @@
                                         </div>
                                     </div>
 
-                                    <hr class="my-4">
+                                    {{-- Only offer reccurency options if this is the parent --}}
+                                    @if($event->parent_id == null)
 
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="event_type" id="standard_event" value="2" {{ $event->recurrence_interval == null ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="standard_event">
-                                          Standard Event
-                                        </label>
-                                    </div>
+                                        <hr class="my-4">
+                                        
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="event_type" id="standard_event" value="2" {{ $event->recurrence_interval == null ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="standard_event">
+                                            Standard Event
+                                            </label>
+                                        </div>
 
-                                    <div class="form-check mb-4">
-                                        <input type="hidden" name="event_type" value="0">
-                                        <input class="form-check-input" type="radio" name="event_type" id="is_recurring" value="1" data-toggle="collapse" data-target="#recurringOptions" aria-expanded="false" aria-controls="recurringOptions" {{ $event->recurrence_interval != null && $event->recurrence_unit != null ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="is_recurring">
-                                            Recurring Event
-                                        </label>
-                                    </div>
-                                    
-                                    <div id="recurringOptions" class="collapse col-xs-12 col-sm-12 col-md-12 mb-2 {{ $event->recurrence_interval != null && $event->recurrence_unit != null ? 'show' : '' }}">
-                                        <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
-                                            <div class="form-group">
-                                                <label for="recurrence_unit" class="form-label my-1 me-2">Recurrence Type</label>
-                                                <select id="recurrence_unit" name="recurrence_unit" class="form-control my-1 me-sm-2 @error('recurrence_unit') is-invalid @enderror">
-                                                    <option value="0" selected>None</option>
-                                                    @foreach (\App\Helpers\EventHelper::labels() as $value => $label)
-                                                        <option value="{{ $value }}" {{ $event->recurrence_unit == $value ? 'selected' : '' }}>{{ $label }}</option>
-                                                    @endforeach
-                                                </select>
-                                                @error('recurrence_unit')
-                                                    <span class="text-danger">{{ $errors->first('recurrence_unit') }}</span>
-                                                @enderror
+                                        <div class="form-check mb-4">
+                                            <input type="hidden" name="event_type" value="0">
+                                            <input class="form-check-input" type="radio" name="event_type" id="is_recurring" value="1" data-toggle="collapse" data-target="#recurringOptions" aria-expanded="false" aria-controls="recurringOptions" {{ $event->recurrence_interval != null && $event->recurrence_unit != null ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="is_recurring">
+                                                Recurring Event
+                                            </label>
+                                        </div>
+                                        
+                                        <div id="recurringOptions" class="collapse col-xs-12 col-sm-12 col-md-12 mb-2 {{ $event->recurrence_interval != null && $event->recurrence_unit != null ? 'show' : '' }}">
+                                            <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
+                                                <div class="form-group">
+                                                    <label for="recurrence_unit" class="form-label my-1 me-2">Recurrence Type</label>
+                                                    <select id="recurrence_unit" name="recurrence_unit" class="form-control my-1 me-sm-2 @error('recurrence_unit') is-invalid @enderror">
+                                                        <option value="0" selected>None</option>
+                                                        @foreach (\App\Helpers\EventHelper::labels() as $value => $label)
+                                                            <option value="{{ $value }}" {{ $event->recurrence_unit == $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('recurrence_unit')
+                                                        <span class="text-danger">{{ $errors->first('recurrence_unit') }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
+                                                <div class="form-group">
+                                                    <label for="recurrence_interval">Recurrence Interval</label>
+                                                    <input type="number" id="recurrence_interval" name="recurrence_interval" class="form-control" value="{{ $event->recurrence_interval }}" placeholder="eg. 2 for every second day">
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
+                                                <div class="form-group">
+                                                    <label for="recurrence_end_date">Recurrence end date</label>
+                                                    <input type="date" id="recurrence_end_date" name="recurrence_end_date" class="datepicker form-control" value="{{ $event->recurrence_end_date }}">
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
-                                            <div class="form-group">
-                                                <label for="recurrence_interval">Recurrence Interval</label>
-                                                <input type="number" id="recurrence_interval" name="recurrence_interval" class="form-control" value="{{ $event->recurrence_interval }}" placeholder="eg. 2 for every second day">
-                                            </div>
-                                        </div>
-                                        <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
-                                            <div class="form-group">
-                                                <label for="recurrence_end_date">Recurrence end date</label>
-                                                <input type="date" id="recurrence_end_date" name="recurrence_end_date" class="datepicker form-control" value="{{ $event->recurrence_end_date }}">
-                                            </div>
-                                        </div>
-                                    </div>
+                                    @endif
                                 </div>
                                 
                                 <button type="submit" id="submit-btn" class="btn btn-success">Save Event</button>
@@ -222,18 +228,21 @@
                 }
             });
 
-            var recurrenceEndDatePicker = document.querySelector('#recurrence_end_date').flatpickr({
-                minDate: defaultDate1 || "{!! date('Y-m-d H:i') !!}",
-                dateFormat: "Y-m-d H:i",
-                altFormat: "d-m-Y H:i",
-                altInput: true,
-                enableTime: true,
-                time_24hr: true,
-                defaultDate: defaultDate3,
-                locale: {
-                    firstDayOfWeek: 1
-                }
-            });
+            var recurrenceEndDatePicker = document.querySelector('#recurrence_end_date')
+            if(recurrenceEndDatePicker){
+                recurrenceEndDatePicker = recurrenceEndDatePicker.flatpickr({
+                    minDate: defaultDate1 || "{!! date('Y-m-d H:i') !!}",
+                    dateFormat: "Y-m-d H:i",
+                    altFormat: "d-m-Y H:i",
+                    altInput: true,
+                    enableTime: true,
+                    time_24hr: true,
+                    defaultDate: defaultDate3,
+                    locale: {
+                        firstDayOfWeek: 1
+                    }
+                });
+            }
 
             // Initial setup to ensure correct restrictions
             if (defaultDate1) {
@@ -243,12 +252,12 @@
                 endDatePicker.set('minDate', startDate);
 
                 // Update recurrence_end_date picker
-                recurrenceEndDatePicker.set('minDate', startDate);
+                if(recurrenceEndDatePicker) recurrenceEndDatePicker.set('minDate', startDate);
 
                 // Calculate the maximum date for recurrence_end_date (6 months after the start date)
                 var maxRecurrenceEndDate = new Date(startDate);
                 maxRecurrenceEndDate.setMonth(maxRecurrenceEndDate.getMonth() + 6);
-                recurrenceEndDatePicker.set('maxDate', maxRecurrenceEndDate);
+                if(recurrenceEndDatePicker) recurrenceEndDatePicker.set('maxDate', maxRecurrenceEndDate);
             }
 
             var flatpickrInputs = document.querySelectorAll('.datepicker');
@@ -273,14 +282,16 @@
             }
 
             // Initial state based on selected radio
-            toggleRecurringOptions();
+            if(isRecurringRadio){
+                toggleRecurringOptions();
 
-            // Event listeners for radio button changes
-            isRecurringRadio.addEventListener('change', toggleRecurringOptions);
-            isFullDayRadio.addEventListener('change', function() {
-                // Hide the recurring options collapse when Full day event is selected
-                recurringOptionsCollapse.classList.remove('show');
-            });
+                // Event listeners for radio button changes
+                isRecurringRadio.addEventListener('change', toggleRecurringOptions);
+                isFullDayRadio.addEventListener('change', function() {
+                    // Hide the recurring options collapse when Full day event is selected
+                    recurringOptionsCollapse.classList.remove('show');
+                });
+            }
 
             // Initialize custom file input
             bsCustomFileInput.init();
