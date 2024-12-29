@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use App\Helpers\EventHelper;
 
 
 class EventController extends Controller
@@ -91,11 +92,22 @@ class EventController extends Controller
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
             'image' => $imageName,
+            'published' => true,
         ]);
 
         // Ensure user association
         $event->user()->associate(\Auth::user());
         $event->save();
+
+        // Post to Discord
+        EventHelper::discordPost(
+            ':calendar_spiral: A new event has been scheduled.', 
+            $event->title,
+            $event->long_description,
+            asset($event->image),
+            Carbon::parse($event->start_date),
+            Carbon::parse($event->end_date)
+        );
 
         // Generate and save recurrences if the event is recurring
         if ($event->recurrence_interval && $event->recurrence_unit) {

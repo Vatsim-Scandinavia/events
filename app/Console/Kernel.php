@@ -12,8 +12,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
-        $schedule->command('events:check-recurrences')->daily();
+        // Notify webhook about upcoming event
+        $schedule->command('events:notify')->everyMinute();
+
+        // Cleanup webhook notifications for past events
+        $schedule->command('notify:cleanup')->everyThirtyMinutes();
+
+        // Cleanup old database records
         $schedule->command('database:cleanup')->daily();
     }
 
