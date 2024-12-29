@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use League\OAuth2\Client\Provider\GenericProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+use League\OAuth2\Client\Provider\GenericProvider;
 
 class OAuthController extends GenericProvider
 {
@@ -21,16 +21,17 @@ class OAuthController extends GenericProvider
             'clientId' => config('oauth.id'),
             'clientSecret' => config('oauth.secret'),
             'redirectUri' => route('login'),
-            'urlAuthorize' => config('oauth.base') . '/oauth/authorize',
-            'urlAccessToken' => config('oauth.base') . '/oauth/token',
-            'urlResourceOwnerDetails' => config('oauth.base') . '/api/user',
+            'urlAuthorize' => config('oauth.base').'/oauth/authorize',
+            'urlAccessToken' => config('oauth.base').'/oauth/token',
+            'urlResourceOwnerDetails' => config('oauth.base').'/api/user',
             'scopes' => config('scopes'),
         ]);
     }
 
     /**
      * Gets an (updated) user token
-     * @param Token $token
+     *
+     * @param  Token  $token
      * @return Token
      * @return null
      */

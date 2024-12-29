@@ -20,12 +20,12 @@ class EventPolicy
         return $user && ($user->isModeratorOrAbove() || $user->isModerator() || $user->is($event->user)) || $event->calendar->public;
     }
 
-    public function create(User $user) 
+    public function create(User $user)
     {
         return $user->isModeratorOrAbove();
     }
 
-    public function update(User $user, Event $event) 
+    public function update(User $user, Event $event)
     {
         return $user->isModerator() || $user->isAdmin();
     }

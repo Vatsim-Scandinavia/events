@@ -14,6 +14,7 @@ class CalendarController extends Controller
     public function index()
     {
         $calendars = Calendar::all();
+
         return response()->json(['data' => $calendars->values()], 200);
     }
 
@@ -25,7 +26,7 @@ class CalendarController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'public' => 'required|boolean'
+            'public' => 'required|boolean',
         ]);
 
         $calendar = Calendar::create([
@@ -45,7 +46,7 @@ class CalendarController extends Controller
      */
     public function show(Calendar $calendar)
     {
-        return response()->json(['calendar' => $calendar,], 200);
+        return response()->json(['calendar' => $calendar], 200);
     }
 
     /**

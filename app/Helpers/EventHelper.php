@@ -2,18 +2,18 @@
 
 namespace App\Helpers;
 
+use App\Models\DiscordMessage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
-use App\Models\DiscordMessage;
 
-enum EventHelper: string 
+enum EventHelper: string
 {
     case DAY = 'day';
     case WEEK = 'week';
     case MONTH = 'month';
     case YEAR = 'year';
 
-    public static function labels() : array 
+    public static function labels(): array
     {
         return [
             self::DAY->value => 'Daily',
@@ -23,16 +23,16 @@ enum EventHelper: string
         ];
     }
 
-    public static function discordMention() : string
+    public static function discordMention(): string
     {
-        if(config('discord.mention_role') === null) {
+        if (config('discord.mention_role') === null) {
             return '';
         }
 
-        return '<@&' . config('discord.mention_role') . '>';
+        return '<@&'.config('discord.mention_role').'>';
     }
 
-    public static function discordPost( string $text, string $title, string $content, string $image = null, Carbon $timestamp, Carbon $expireMessageAt = null) : bool
+    public static function discordPost(string $text, string $title, string $content, ?string $image, Carbon $timestamp, ?Carbon $expireMessageAt = null): bool
     {
         $webhookUrl = config('discord.webhook');
         $payload = [
@@ -56,11 +56,11 @@ enum EventHelper: string
         ];
 
         // Send the message to Discord
-        $response = Http::post($webhookUrl."?wait=true", $payload);
+        $response = Http::post($webhookUrl.'?wait=true', $payload);
         $messageId = $response->json()['id'] ?? null;
 
         // Save the message for expiration
-        if($messageId !== null && $expireMessageAt !== null) {
+        if ($messageId !== null && $expireMessageAt !== null) {
             DiscordMessage::create([
                 'message_id' => $messageId,
                 'expires_at' => $expireMessageAt,
@@ -70,9 +70,9 @@ enum EventHelper: string
         return $messageId !== null;
     }
 
-    public static function discordDelete(int $messageId) : void
+    public static function discordDelete(int $messageId): void
     {
         $webhookUrl = config('discord.webhook');
-        Http::delete($webhookUrl . "/messages/{$messageId}");
+        Http::delete($webhookUrl."/messages/{$messageId}");
     }
 }

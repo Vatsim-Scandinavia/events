@@ -16,6 +16,7 @@ class StaffingController extends Controller
     public function index()
     {
         $staffings = Staffing::all();
+
         return view('staffing.index', compact('staffings'));
     }
 
@@ -27,8 +28,8 @@ class StaffingController extends Controller
         $client = Http::withHeaders([
             'Accept' => 'application/json',
         ])
-        ->withBasicAuth(Config::get('custom.forum_api_secret'), '');
-        
+            ->withBasicAuth(Config::get('custom.forum_api_secret'), '');
+
         $allData = []; // Initialize an empty array to store the combined results
 
         for ($currentPage = 1; $currentPage <= 2; $currentPage++) {
@@ -39,12 +40,12 @@ class StaffingController extends Controller
                 'calendars' => Config::get('custom.forum_calendar_type'),
                 'page' => $currentPage,
             ]);
-        
+
             $currentData = $response->json('results');
-        
+
             // Filter out data where the "recurrence" property is null
             $filteredData = array_filter($currentData, function ($item) {
-                return !empty($item['recurrence']);
+                return ! empty($item['recurrence']);
             });
 
             // Check for duplicate titles and select the newest entry for each unique title
@@ -54,7 +55,7 @@ class StaffingController extends Controller
                 // If a newer entry with the same title is found, replace the existing entry
                 if (isset($allData[$title]) && strtotime($item['start']) > strtotime($allData[$title]['start'])) {
                     $allData[$title] = $item;
-                } elseif (!isset($allData[$title])) {
+                } elseif (! isset($allData[$title])) {
                     $allData[$title] = $item;
                 } elseif (Staffing::find($item['id'])) {
                     unset($allData[$title]);
@@ -67,14 +68,15 @@ class StaffingController extends Controller
         return view('staffing.create', compact('allData', 'channels'));
     }
 
-    protected function getGuildChannels() {
+    protected function getGuildChannels()
+    {
         try {
             $response = Http::withHeaders([
-                'Authorization' => 'Bot ' . Config::get('custom.discord_bot_token'),
+                'Authorization' => 'Bot '.Config::get('custom.discord_bot_token'),
                 'Content-Type' => 'application/json',
-            ])->get('https://discord.com/api/v10/guilds/' . Config::get('custom.discord_guild_id') . '/channels');
+            ])->get('https://discord.com/api/v10/guilds/'.Config::get('custom.discord_guild_id').'/channels');
 
-            if($response->successful()) {
+            if ($response->successful()) {
                 $channelsData = $response->json();
 
                 // Filter channels where 'type' is equal to 0
@@ -87,10 +89,10 @@ class StaffingController extends Controller
 
                 return $filteredChannels;
             } else {
-                return "Error: Unable to fetch guild channels. HTTP status code: " . $response->status();
+                return 'Error: Unable to fetch guild channels. HTTP status code: '.$response->status();
             }
         } catch (\Exception $e) {
-            return 'Error: '. $e->getMessage();
+            return 'Error: '.$e->getMessage();
         }
     }
 
@@ -118,28 +120,30 @@ class StaffingController extends Controller
         //     'title' => $eventData->title,
         //     'date' => $this->getDate($eventData->start),
         // ])
-        
+
         var_dump($this->getDate($eventData->start));
     }
 
-    protected function getEvent($id) {
+    protected function getEvent($id)
+    {
         try {
             $response = Http::withHeaders([
                 'Accept' => 'application/json',
             ])
-            ->withBasicAuth(Config::get('custom.forum_api_secret'), '')
-            ->get(Config::get('custom.forum_api_url') . '/' . $id);
-            
+                ->withBasicAuth(Config::get('custom.forum_api_secret'), '')
+                ->get(Config::get('custom.forum_api_url').'/'.$id);
+
             if ($response->successful()) {
                 return $response->json();
             }
         } catch (\Exception $e) {
             return 'Error: '.$e->getMessage();
         }
-        
+
     }
 
-    protected function getDate($date) {
+    protected function getDate($date)
+    {
         $carbonDate = Carbon::parse($date);
 
         $dayofweek = $carbonDate->dayOfWeek->format('l');

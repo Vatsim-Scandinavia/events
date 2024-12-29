@@ -2,15 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\EventHelper;
 use App\Models\Calendar;
 use App\Models\Event;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\File;
-use App\Helpers\EventHelper;
-
 
 class EventController extends Controller
 {
@@ -22,7 +19,7 @@ class EventController extends Controller
         $this->authorize('index', Event::class);
 
         $events = Event::orderBy('start_date', 'ASC')->get();
-        
+
         return view('events.index', compact('events'));
     }
 
@@ -63,19 +60,19 @@ class EventController extends Controller
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = now()->format('Y-m-d') . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-            
+            $imageName = now()->format('Y-m-d').'-'.uniqid().'.'.$image->getClientOriginalExtension();
+
             // Get image dimensions
-            list($width, $height) = getimagesize($image->getPathName());
+            [$width, $height] = getimagesize($image->getPathName());
             if (round($width / $height, 2) != round(16 / 9, 2)) {
                 return back()->withErrors(['image' => 'Image must be in 16:9 aspect ratio.'])->withInput();
             }
-    
+
             // Store the image
             $storedPath = $image->storeAs('banners', $imageName, 'public');
-    
+
             // Check if the image was successfully uploaded
-            if (!$storedPath && !Storage::disk('public')->exists($storedPath)) {
+            if (! $storedPath && ! Storage::disk('public')->exists($storedPath)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.'])->withInput();
             }
 
@@ -101,7 +98,7 @@ class EventController extends Controller
 
         // Post to Discord
         EventHelper::discordPost(
-            ':calendar_spiral: A new event has been scheduled.', 
+            ':calendar_spiral: A new event has been scheduled.',
             $event->title,
             $event->long_description,
             asset($event->image),
@@ -165,24 +162,24 @@ class EventController extends Controller
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = now()->format('Y-m-d') . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-    
+            $imageName = now()->format('Y-m-d').'-'.uniqid().'.'.$image->getClientOriginalExtension();
+
             // Get image dimensions
-            list($width, $height) = getimagesize($image->getPathName());
+            [$width, $height] = getimagesize($image->getPathName());
             if (round($width / $height, 2) != round(16 / 9, 2)) {
                 return back()->withErrors(['image' => 'Image must be in 16:9 aspect ratio.']);
             }
-    
+
             // Delete the old image if it exists
             if ($event->image) {
-                Storage::disk('public')->delete('banners/' . $event->image);
+                Storage::disk('public')->delete('banners/'.$event->image);
             }
-    
+
             // Store the new image
             $image->storeAs('banners', $imageName, 'public');
-    
+
             // Check if the image was successfully uploaded
-            if (!Storage::disk('public')->exists('banners/' . $imageName)) {
+            if (! Storage::disk('public')->exists('banners/'.$imageName)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.']);
             }
         }
@@ -193,7 +190,7 @@ class EventController extends Controller
             'short_description' => $request->input('short_description'),
             'long_description' => $request->input('long_description'),
             'start_date' => Carbon::parse($request->input('start_date'))->format('Y-m-d H:i'),
-            'end_date' =>  Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
+            'end_date' => Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
             'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
@@ -227,7 +224,7 @@ class EventController extends Controller
 
         // Delete the old image if it exists
         if ($event->image && $event->parent_id === null) {
-            Storage::disk('public')->delete('banners/' . $event->image);
+            Storage::disk('public')->delete('banners/'.$event->image);
         }
 
         // Delete the event and any of its children

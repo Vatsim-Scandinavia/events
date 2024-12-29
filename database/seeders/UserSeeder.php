@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Group;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
@@ -16,13 +15,13 @@ class UserSeeder extends Seeder
     {
         $groups = Group::all();
 
-        for($i = 1; $i <= 11; $i++) {
+        for ($i = 1; $i <= 11; $i++) {
             $first_name = 'Web';
             $last_name = 'X';
-            $email = 'auth.dev' . $i .'@vatsim.net';
+            $email = 'auth.dev'.$i.'@vatsim.net';
             $group = null;
 
-            switch($i) {
+            switch ($i) {
                 case 1:
                     $last_name = 'One';
                     break;
@@ -67,13 +66,13 @@ class UserSeeder extends Seeder
                 'id' => 10000000 + $i,
                 'email' => $email,
                 'first_name' => $first_name,
-                'last_name' => $last_name
+                'last_name' => $last_name,
             ]);
 
             // Assign groups randomly, or specific group for user 10
             if ($i == 10) {
                 $user->groups()->attach(Group::find($group));
-            } else if ($i !== 11) {
+            } elseif ($i !== 11) {
                 $randomGroup = $groups->random(rand(0, $groups->count()))->pluck('id')->toArray();
                 $user->groups()->attach($randomGroup);
             }

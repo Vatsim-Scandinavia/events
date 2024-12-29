@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\Event;
 use App\Helpers\EventHelper;
+use App\Models\Event;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class EventsNotify extends Command
 {
@@ -36,9 +36,9 @@ class EventsNotify extends Command
 
         // Notify about upcoming events
         foreach ($events as $event) {
-            
+
             $result = EventHelper::discordPost(
-                EventHelper::discordMention() . "\n:clock2: **".$event->title.'** is starting in two hours!', 
+                EventHelper::discordMention()."\n:clock2: **".$event->title.'** is starting in two hours!',
                 $event->title,
                 $event->long_description,
                 asset($event->image),
@@ -47,14 +47,14 @@ class EventsNotify extends Command
             );
 
             // Save the message as published
-            if($result) {
+            if ($result) {
                 $event->published = true;
                 $event->save();
             }
 
-            $this->info('Notified about event: ' . $event->title);
+            $this->info('Notified about event: '.$event->title);
         }
 
-        $this->info('Notified about ' . $events->count() . ' upcoming events');
+        $this->info('Notified about '.$events->count().' upcoming events');
     }
 }

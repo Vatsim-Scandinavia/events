@@ -18,11 +18,11 @@ class ApiToken
     {
         $key = ApiKey::find($request->bearerToken());
 
-        if($key === null || ($args == 'edit' && $key->readonly == true))
-        {
+        if ($key === null || ($args == 'edit' && $key->readonly == true)) {
             // Exception for open calendar fetch
             if (preg_match('/^\/api\/calendars\/\d+\/events$/', $request->getRequestUri())) {
                 $request->attributes->set('unauthenticated', true);
+
                 return $next($request);
             } else {
                 return response()->json([
@@ -32,7 +32,7 @@ class ApiToken
         }
 
         $key->update(['last_used_at', now()]);
-        
+
         return $next($request);
     }
 }

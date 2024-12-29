@@ -17,7 +17,7 @@ class HomeController extends Controller
     {
         // Get events with start date today and the connected Calendar is public
         $upcomingEvents = Event::where('start_date', '>=', Carbon::today())
-            ->whereHas('calendar', function($query) {
+            ->whereHas('calendar', function ($query) {
                 $query->where('public', 1);
             })
             ->orderBy('start_date', 'asc')
@@ -26,9 +26,9 @@ class HomeController extends Controller
 
         $calendar = Calendar::where('public', 1)->first();
 
-        if($calendar) {
+        if ($calendar) {
             $allEvents = $calendar->events()->get();
-            $events = $allEvents->map(function ($event){
+            $events = $allEvents->map(function ($event) {
                 return [
                     'id' => $event->id,
                     'title' => $event->title,
@@ -40,7 +40,6 @@ class HomeController extends Controller
         } else {
             $events = collect();
         }
-        
 
         return view('home', compact('upcomingEvents', 'events', 'calendar'));
     }

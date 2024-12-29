@@ -10,27 +10,27 @@ class CalendarPolicy
 {
     use HandlesAuthorization;
 
-    public function index(User $user) 
+    public function index(User $user)
     {
         return $user->isAdmin();
     }
 
-    public function view(?User $user, Calendar $calendar) 
+    public function view(?User $user, Calendar $calendar)
     {
         return ($user && $user->isModeratorOrAbove()) || $calendar->public;
     }
 
-    public function create(User $user) 
-    {
-        return $user->isAdmin();    
-    }
-
-    public function update(User $user, Calendar $calendar) 
+    public function create(User $user)
     {
         return $user->isAdmin();
     }
 
-    public function destroy(User $user, Calendar $calendar) 
+    public function update(User $user, Calendar $calendar)
+    {
+        return $user->isAdmin();
+    }
+
+    public function destroy(User $user, Calendar $calendar)
     {
         return $user->isAdmin();
     }

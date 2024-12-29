@@ -44,6 +44,6 @@ class CreateApiKey extends Command
             'created_at' => now(),
         ]);
 
-        $this->comment('API key `' . $name . '` has been created with following token: `' . $secret . '`');
+        $this->comment('API key `'.$name.'` has been created with following token: `'.$secret.'`');
     }
 }

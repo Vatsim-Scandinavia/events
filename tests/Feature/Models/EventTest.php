@@ -14,7 +14,7 @@ use Tests\TestCase;
 
 class EventTest extends TestCase
 {
-    use WithFaker, RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     /**
      * A events page can be rendered.
@@ -49,7 +49,7 @@ class EventTest extends TestCase
     /**
      * A events create page can be rendered.
      */
-    public function test_events_create_page_can_be_rendered(): void 
+    public function test_events_create_page_can_be_rendered(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
@@ -79,7 +79,7 @@ class EventTest extends TestCase
     /**
      * A events edit page can be rendered.
      */
-    public function test_events_edit_page_can_be_rendered(): void 
+    public function test_events_edit_page_can_be_rendered(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
@@ -115,7 +115,7 @@ class EventTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_normal_event_can_be_created() : void 
+    public function test_normal_event_can_be_created(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
@@ -145,10 +145,10 @@ class EventTest extends TestCase
 
         // Check if the file exists
         $event = Event::latest()->first();
-        Storage::disk('public')->assertExists('banners/' . $event->image);
+        Storage::disk('public')->assertExists('banners/'.$event->image);
     }
 
-    public function test_recurrent_event_can_be_created() : void 
+    public function test_recurrent_event_can_be_created(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
@@ -205,7 +205,7 @@ class EventTest extends TestCase
         }
     }
 
-    public function test_event_can_be_updated(): void 
+    public function test_event_can_be_updated(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
@@ -234,7 +234,7 @@ class EventTest extends TestCase
         $response->assertSessionHas('success', 'Event updated successfully.');
     }
 
-    public function test_event_can_be_deleted(): void 
+    public function test_event_can_be_deleted(): void
     {
         // Setup user with permissions
         $user = $this->getUser();

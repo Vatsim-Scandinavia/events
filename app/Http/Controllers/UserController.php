@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Group;
 use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class UserController extends Controller
@@ -31,7 +30,7 @@ class UserController extends Controller
         $events = $user->events()
             ->orderBy('start_date', 'asc')
             ->get()
-            ->filter(function($event) {
+            ->filter(function ($event) {
                 return \Auth::user()->can('view', $event);
             });
 

@@ -16,7 +16,7 @@ class EventSeeder extends Seeder
 
         // Create Normal Events
         Event::factory()->count(5)->create([
-            'calendar_id' => rand(1,2),
+            'calendar_id' => rand(1, 2),
         ])->each(function ($event) {
             $event->user()->associate(User::whereHas('groups')->inRandomOrder()->first()->id);
             $event->save();
@@ -24,7 +24,7 @@ class EventSeeder extends Seeder
 
         // Create Recurring Events
         Event::factory()->count(3)->create([
-            'calendar_id' => rand(1,2),
+            'calendar_id' => rand(1, 2),
             'recurrence_interval' => 1, // Example: every 1 week
             'recurrence_unit' => 'week',
             'recurrence_end_date' => now()->addWeeks(5)->format('Y-m-d H:i:s'),

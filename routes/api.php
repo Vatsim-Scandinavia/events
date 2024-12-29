@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 //     return $request->user();
 // });
 
-Route::group(['middleware' => ['api-token:edit']], function() {
+Route::group(['middleware' => ['api-token:edit']], function () {
     // Calendars
     Route::post('/calendars', [App\Http\Controllers\API\CalendarController::class, 'store'])->name('api.calendars.store');
     Route::patch('/calendars/{calendar}', [App\Http\Controllers\API\CalendarController::class, 'update'])->name('api.calendars.update');
@@ -30,11 +30,11 @@ Route::group(['middleware' => ['api-token:edit']], function() {
     Route::delete('/events/{event}', [App\Http\Controllers\API\EventController::class, 'destroy'])->name('api.event.destroy');
 });
 
-Route::group(['middleware' => ['api-token']], function() {
+Route::group(['middleware' => ['api-token']], function () {
     // Calendars
     Route::get('/calendars', [App\Http\Controllers\API\CalendarController::class, 'index'])->name('api.calendars.index');
     Route::get('/calendars/{calendar}', [App\Http\Controllers\API\CalendarController::class, 'show'])->name('api.calendars.show');
-    
+
     // Events
     Route::get('/calendars/{calendar}/events', [App\Http\Controllers\API\EventController::class, 'index'])->name('api.event.index');
     Route::get('/events/{event}', [App\Http\Controllers\API\EventController::class, 'show'])->name('api.event.show');

@@ -53,7 +53,7 @@ class LoginController extends Controller
      */
     public function login(Request $request)
     {
-        if (!$request->has('code') || !$request->has('state')) {
+        if (! $request->has('code') || ! $request->has('state')) {
             $authorizationUrl = $this->provider->getAuthorizationUrl([
                 'required_scopes' => implode(' ', config('oauth.scopes')),
                 'scope' => implode(' ', config('oauth.scopes')),
@@ -81,17 +81,17 @@ class LoginController extends Controller
                 'code' => $request->input('code'),
             ]);
         } catch (IdentityProviderException $e) {
-            return redirect()->route('home')->withError('Authentication error: ' . $e->getMessage());
+            return redirect()->route('home')->withError('Authentication error: '.$e->getMessage());
         }
 
         $resourceOwner = json_decode(json_encode($this->provider->getResourceOwner($accessToken)->toArray()));
         $data = OAuthController::mapOAuthProperties($resourceOwner);
 
         if (
-            !$data['id'] ||
-            !$data['email'] ||
-            !$data['first_name'] ||
-            !$data['last_name']
+            ! $data['id'] ||
+            ! $data['email'] ||
+            ! $data['first_name'] ||
+            ! $data['last_name']
         ) {
             return redirect()->route('home')->withError('Missing data from sign-in request. You need to grant all permissions.');
         }

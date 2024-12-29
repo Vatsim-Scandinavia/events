@@ -14,10 +14,10 @@ class ApiKey extends Model
     public $incrementing = false;
 
     public $fillable = [
-        'id', 
-        'name', 
+        'id',
+        'name',
         'last_used_at',
         'readonly',
-        'created_at'
+        'created_at',
     ];
 }

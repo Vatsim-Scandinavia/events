@@ -10,7 +10,7 @@ use Tests\TestCase;
 
 class CalendarTest extends TestCase
 {
-    use WithFaker, RefreshDatabase;
+    use RefreshDatabase, WithFaker;
 
     /**
      * A calendars page can be rendered.
@@ -45,7 +45,7 @@ class CalendarTest extends TestCase
     /**
      * A calendars create page can be rendered.
      */
-    public function test_calendars_create_page_can_be_rendered(): void 
+    public function test_calendars_create_page_can_be_rendered(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
@@ -75,11 +75,10 @@ class CalendarTest extends TestCase
     /**
      * A calendars edit page can be rendered.
      */
-    public function test_calendars_edit_page_can_be_rendered(): void 
+    public function test_calendars_edit_page_can_be_rendered(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
-
 
         // Create a test calendar
         $calendar = Calendar::factory()->create();
@@ -112,11 +111,11 @@ class CalendarTest extends TestCase
     /**
      * A calendar page can be rendered.
      */
-    public function test_calendar_page_can_be_rendered(): void 
+    public function test_calendar_page_can_be_rendered(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
-        
+
         // Create a test calendar
         $calendar = Calendar::factory()->create();
 
@@ -145,7 +144,7 @@ class CalendarTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_calendar_can_be_created(): void 
+    public function test_calendar_can_be_created(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
@@ -162,7 +161,7 @@ class CalendarTest extends TestCase
         $response->assertSessionHas('success', 'Calendar has been created successfully');
     }
 
-    public function test_calendar_can_be_updated(): void 
+    public function test_calendar_can_be_updated(): void
     {
         // Setup user with permissions
         $user = $this->getUser();
@@ -182,7 +181,7 @@ class CalendarTest extends TestCase
         $response->assertSessionHas('success', 'Calendar updated successfully');
     }
 
-    public function test_calendar_can_be_deleted(): void 
+    public function test_calendar_can_be_deleted(): void
     {
         // Setup user with permissions
         $user = $this->getUser();

@@ -29,7 +29,7 @@ class Event extends Model
         'recurrence_end_date',
         'published',
         'image',
-        'user_id'
+        'user_id',
     ];
 
     protected $dates = [
@@ -42,17 +42,17 @@ class Event extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function calendar() 
+    public function calendar()
     {
         return $this->belongsTo(Calendar::class);
     }
 
-    public function children() 
+    public function children()
     {
         return $this->hasMany(Event::class, 'parent_id');
     }
 
-    public function parent() 
+    public function parent()
     {
         return $this->belongsTo(Event::class, 'parent_id');
     }
@@ -118,7 +118,7 @@ class Event extends Model
                     'recurrence_unit' => $this->recurrence_unit,
                     'recurrence_end_date' => $this->recurrence_end_date,
                     'image' => $this->image,
-                    'user_id' => $this->user_id
+                    'user_id' => $this->user_id,
                 ]);
 
                 // Move to the next recurrence date

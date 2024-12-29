@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\Event;
+use Illuminate\Console\Command;
 
 class DatabaseCleanup extends Command
 {

@@ -30,9 +30,9 @@ class User extends Authenticatable
     ];
 
     public $timestamps = false;
-    
+
     protected $dates = [
-        'last_login'
+        'last_login',
     ];
 
     /**
@@ -69,19 +69,19 @@ class User extends Authenticatable
      *
      * @return bool
      */
-    public function isModerator() 
+    public function isModerator()
     {
         return $this->groups->where('id', 2)->isNotEmpty();
     }
 
     /**
      * Return if user is a moderator or above
-     * 
+     *
      * @return bool
      */
-    public function isModeratorOrAbove() 
+    public function isModeratorOrAbove()
     {
-        return $this->groups->where('id', '<=', 2)->isNotEmpty();;
+        return $this->groups->where('id', '<=', 2)->isNotEmpty();
     }
 
     /**
@@ -89,7 +89,7 @@ class User extends Authenticatable
      *
      * @return bool
      */
-    public function isAdmin() 
+    public function isAdmin()
     {
         return $this->groups->contains('id', 1);
     }

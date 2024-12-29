@@ -19,7 +19,7 @@ class ApiKeyFactory extends Factory
         return [
             'id' => fake()->uuid(),
             'name' => fake()->sentence(1),
-            'readonly' => rand(0,1),
+            'readonly' => rand(0, 1),
         ];
     }
 }

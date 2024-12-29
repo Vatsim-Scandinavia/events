@@ -35,17 +35,17 @@ class CalendarController extends Controller
     public function store(Request $request)
     {
         $this->authorize('create', Calendar::class);
-        
+
         $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'public' => 'nullable|boolean'
+            'public' => 'nullable|boolean',
         ]);
 
         Calendar::create([
             'name' => $request->input('name'),
             'description' => $request->input('description'),
-            'public' => $request->input('public')
+            'public' => $request->input('public'),
         ]);
 
         return redirect()->route('calendars.index')->withSuccess('Calendar has been created successfully');
@@ -59,7 +59,7 @@ class CalendarController extends Controller
         $this->authorize('view', $calendar);
 
         $allEvents = $calendar->events()->get();
-        $events = $allEvents->map(function ($event){
+        $events = $allEvents->map(function ($event) {
             return [
                 'id' => $event->id,
                 'title' => $event->title,

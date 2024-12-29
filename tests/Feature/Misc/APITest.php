@@ -3,7 +3,6 @@
 namespace Tests\Feature\Misc;
 
 use App\Models\ApiKey;
-use App\Models\Calendar;
 use App\Models\Event;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -12,8 +11,8 @@ use Tests\TestCase;
 
 class APITest extends TestCase
 {
-    use WithFaker, RefreshDatabase;
-    
+    use RefreshDatabase, WithFaker;
+
     /**
      * Test a system administrator can create an API key with readonly rights.
      */
@@ -69,11 +68,11 @@ class APITest extends TestCase
 
         // Send a GET request to the API endpoint with the bearer token in the headers
         $response = $this->withHeaders([
-            'Authorization' => 'Bearer ' . $api->id,
-            'Accept' => 'application/json'
+            'Authorization' => 'Bearer '.$api->id,
+            'Accept' => 'application/json',
         ])->get(route('api.event.index', $event->calendar));
 
-        // Assert that the response status is 200 (OK) 
+        // Assert that the response status is 200 (OK)
         $response->assertStatus(200);
 
         // Assert that the response JSON structure contains the expected keys

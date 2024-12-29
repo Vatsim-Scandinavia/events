@@ -15,7 +15,7 @@ class EventController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Calendar $calendar) 
+    public function index(Calendar $calendar)
     {
         $events = $calendar
             ->events()
@@ -23,11 +23,11 @@ class EventController extends Controller
             ->orderBy('start_date', 'asc')
             ->get();
 
-
         // Set the full path on the image attribute and add a full url to event
         $events->transform(function ($event) {
-            $event->image = isset($event->image) ? asset('storage/banners/' . $event->image) : asset('images/tba.jpg');
+            $event->image = isset($event->image) ? asset('storage/banners/'.$event->image) : asset('images/tba.jpg');
             $event->link = route('events.show', $event->id);
+
             return $event;
         });
 
@@ -37,7 +37,7 @@ class EventController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request) 
+    public function store(Request $request)
     {
         $data = $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
@@ -61,19 +61,19 @@ class EventController extends Controller
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = now()->format('Y-m-d') . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-            
+            $imageName = now()->format('Y-m-d').'-'.uniqid().'.'.$image->getClientOriginalExtension();
+
             // Get image dimensions
-            list($width, $height) = getimagesize($image->getPathName());
+            [$width, $height] = getimagesize($image->getPathName());
             if (round($width / $height, 2) != round(16 / 9, 2)) {
                 return back()->withErrors(['image' => 'Image must be in 16:9 aspect ratio.'])->withInput();
             }
-    
+
             // Store the image
             $storedPath = $image->storeAs('banners', $imageName, 'public');
-    
+
             // Check if the image was successfully uploaded
-            if (!$storedPath && !Storage::disk('public')->exists($storedPath)) {
+            if (! $storedPath && ! Storage::disk('public')->exists($storedPath)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.'])->withInput();
             }
 
@@ -111,10 +111,10 @@ class EventController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Event $event) 
+    public function show(Event $event)
     {
         // Set the full path on the image attribute and add a full url to event
-        $event->image = isset($event->image) ? asset('storage/banners/' . $event->image) : asset('images/tba.jpg');
+        $event->image = isset($event->image) ? asset('storage/banners/'.$event->image) : asset('images/tba.jpg');
         $event->link = route('events.show', $event->id);
 
         return response()->json(['event' => $event], 200);
@@ -123,7 +123,7 @@ class EventController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Event $event) 
+    public function update(Request $request, Event $event)
     {
         $data = $this->validate($request, [
             'calendar_id' => 'required|exists:calendars,id',
@@ -148,29 +148,29 @@ class EventController extends Controller
 
         if ($request->hasFile('image')) {
             $image = $request->file('image');
-            $imageName = now()->format('Y-m-d') . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
-    
+            $imageName = now()->format('Y-m-d').'-'.uniqid().'.'.$image->getClientOriginalExtension();
+
             // Get image dimensions
-            list($width, $height) = getimagesize($image->getPathName());
+            [$width, $height] = getimagesize($image->getPathName());
             if (round($width / $height, 2) != round(16 / 9, 2)) {
                 return back()->withErrors(['image' => 'Image must be in 16:9 aspect ratio.']);
             }
-    
+
             // Delete the old image if it exists
             if ($event->image) {
-                Storage::disk('public')->delete('banners/' . $event->image);
+                Storage::disk('public')->delete('banners/'.$event->image);
             }
-    
+
             // Store the new image
             $image->storeAs('banners', $imageName, 'public');
-    
+
             // Check if the image was successfully uploaded
-            if (!Storage::disk('public')->exists('banners/' . $imageName)) {
+            if (! Storage::disk('public')->exists('banners/'.$imageName)) {
                 return back()->withErrors(['image' => 'Failed to upload the image.']);
             }
 
-            $imageURL = asset('storage/banners/' . $imageName);
-    
+            $imageURL = asset('storage/banners/'.$imageName);
+
             $event->image = $imageURL;
         }
 
@@ -180,7 +180,7 @@ class EventController extends Controller
             'short_description' => $request->input('short_description'),
             'long_description' => $request->input('long_description'),
             'start_date' => Carbon::parse($request->input('start_date'))->format('Y-m-d H:i'),
-            'end_date' =>  Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
+            'end_date' => Carbon::parse($request->input('end_date'))->format('Y-m-d H:i'),
             'recurrence_interval' => $request->input('event_type') == '0' ? null : $request->input('recurrence_interval'),
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
@@ -211,16 +211,16 @@ class EventController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Event $event) 
+    public function destroy(Event $event)
     {
         // Delete the old image if it exists
         if ($event->image && $event->parent_id === null) {
-            Storage::disk('public')->delete('banners/' . $event->image);
+            Storage::disk('public')->delete('banners/'.$event->image);
         }
 
         // Delete the event and any of its children
         $event->children()->delete();
-        
+
         $event->delete();
 
         return response()->json([
