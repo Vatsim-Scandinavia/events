@@ -28,7 +28,6 @@ enum EventHelper: string
 
     /**
      * Get code to mention a Discord role.
-     * @codeCoverageIgnore
      */
     public static function discordMention(): string
     {
@@ -41,12 +40,11 @@ enum EventHelper: string
 
     /**
      * Post a message to Discord.
-     * @codeCoverageIgnore
      */
     public static function discordPost(string $text, string $title, string $content, ?string $image, Carbon $timestamp, ?Carbon $expireMessageAt = null): bool
     {
         $webhookUrl = config('discord.webhook');
-        if($webhookUrl === null) {
+        if ($webhookUrl === null) {
             return false;
         }
 
@@ -87,12 +85,11 @@ enum EventHelper: string
 
     /**
      * Delete a message from Discord.
-     * @codeCoverageIgnore
      */
     public static function discordDelete(int $messageId): void
     {
         $webhookUrl = config('discord.webhook');
-        if($webhookUrl === null) {
+        if ($webhookUrl === null) {
             return;
         }
 
