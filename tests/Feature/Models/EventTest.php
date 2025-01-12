@@ -138,6 +138,7 @@ class EventTest extends TestCase
             'recurrence_unit' => null,
             'recurrence_end_date' => null,
             'image' => $image,
+            'published' => true,
         ]);
 
         $response->assertRedirect(route('events.index'));

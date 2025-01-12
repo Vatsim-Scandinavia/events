@@ -13,6 +13,9 @@ enum EventHelper: string
     case MONTH = 'month';
     case YEAR = 'year';
 
+    /**
+     * Get the interval labels for the event types.
+     */
     public static function labels(): array
     {
         return [
@@ -23,6 +26,10 @@ enum EventHelper: string
         ];
     }
 
+    /**
+     * Get code to mention a Discord role.
+     * @codeCoverageIgnore
+     */
     public static function discordMention(): string
     {
         if (config('discord.mention_role') === null) {
@@ -32,9 +39,17 @@ enum EventHelper: string
         return '<@&'.config('discord.mention_role').'>';
     }
 
+    /**
+     * Post a message to Discord.
+     * @codeCoverageIgnore
+     */
     public static function discordPost(string $text, string $title, string $content, ?string $image, Carbon $timestamp, ?Carbon $expireMessageAt = null): bool
     {
         $webhookUrl = config('discord.webhook');
+        if($webhookUrl === null) {
+            return false;
+        }
+
         $payload = [
             'content' => $text,
             'embeds' => [
@@ -70,9 +85,17 @@ enum EventHelper: string
         return $messageId !== null;
     }
 
+    /**
+     * Delete a message from Discord.
+     * @codeCoverageIgnore
+     */
     public static function discordDelete(int $messageId): void
     {
         $webhookUrl = config('discord.webhook');
+        if($webhookUrl === null) {
+            return;
+        }
+
         Http::delete($webhookUrl."/messages/{$messageId}");
     }
 }
