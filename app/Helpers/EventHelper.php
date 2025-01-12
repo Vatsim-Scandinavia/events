@@ -44,7 +44,7 @@ enum EventHelper: string
     public static function discordPost(string $text, string $title, string $content, ?string $image, Carbon $timestamp, ?Carbon $expireMessageAt = null): bool
     {
         $webhookUrl = config('discord.webhook');
-        if ($webhookUrl === null) {
+        if ($webhookUrl === null || $webhookUrl == '') {
             return false;
         }
 
@@ -89,7 +89,7 @@ enum EventHelper: string
     public static function discordDelete(int $messageId): void
     {
         $webhookUrl = config('discord.webhook');
-        if ($webhookUrl === null) {
+        if ($webhookUrl === null || $webhookUrl == '') {
             return;
         }
 
