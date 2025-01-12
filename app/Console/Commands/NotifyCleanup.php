@@ -6,7 +6,7 @@ use App\Helpers\EventHelper;
 use App\Models\DiscordMessage;
 use Illuminate\Console\Command;
 
-class EventsCleanup extends Command
+class NotifyCleanup extends Command
 {
     /**
      * The name and signature of the console command.
