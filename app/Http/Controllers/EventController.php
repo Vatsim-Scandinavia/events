@@ -101,7 +101,7 @@ class EventController extends Controller
             ':calendar_spiral: A new event has been scheduled.',
             $event->title,
             $event->long_description,
-            asset($event->image),
+            asset('storage/banners/' . $event->image),
             Carbon::parse($event->start_date),
             Carbon::parse($event->end_date)
         );
