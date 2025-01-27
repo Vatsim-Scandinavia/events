@@ -41,7 +41,7 @@ class EventsNotify extends Command
                 EventHelper::discordMention()."\n:clock2: **".$event->title.'** is starting in two hours!',
                 $event->title,
                 $event->long_description,
-                asset($event->image),
+                asset('storage/banners/' . $event->image),
                 Carbon::parse($event->start_date),
                 Carbon::parse($event->end_date)
             );
