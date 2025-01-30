@@ -89,7 +89,7 @@ class EventController extends Controller
             'recurrence_unit' => $request->input('event_type') == '0' ? null : $request->input('recurrence_unit'),
             'recurrence_end_date' => $request->input('event_type') == '0' ? null : $request->input('recurrence_end_date'),
             'image' => $imageName,
-            'published' => true,
+            'published' => false,
         ]);
 
         // Ensure user association
@@ -101,7 +101,7 @@ class EventController extends Controller
             ':calendar_spiral: A new event has been scheduled.',
             $event->title,
             $event->long_description,
-            asset('storage/banners/' . $event->image),
+            asset('storage/banners/'.$event->image),
             Carbon::parse($event->start_date),
             Carbon::parse($event->end_date)
         );
