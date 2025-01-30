@@ -72,6 +72,12 @@ enum EventHelper: string
         $response = Http::post($webhookUrl.'?wait=true', $payload);
         $messageId = $response->json()['id'] ?? null;
 
+        if ($response->failed()) {
+            throw new \Exception('Failed to post message to Discord: '.$response->body());
+
+            return false;
+        }
+
         // Save the message for expiration
         if ($messageId !== null && $expireMessageAt !== null) {
             DiscordMessage::create([

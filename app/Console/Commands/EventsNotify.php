@@ -50,6 +50,8 @@ class EventsNotify extends Command
             if ($result) {
                 $event->published = true;
                 $event->save();
+            } else {
+                $this->error('Failed to notify about event: '.$event->title);
             }
 
             $this->info('Notified about event: '.$event->title);
