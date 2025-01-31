@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  web:
+    container_name: events
+    build: .
+    ports:
+      - 8083:80
+      - 8446:443
+    extra_hosts:
+        - "vatsca.local:host-gateway"
+    volumes:
+      - sessions:/app/storage/framework/sessions
+
+volumes:
+  sessions:

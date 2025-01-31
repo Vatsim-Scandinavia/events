@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Event;
 use App\Models\Staffing;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -25,43 +26,7 @@ class StaffingController extends Controller
      */
     public function create()
     {
-        $client = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
-            ->withBasicAuth(Config::get('custom.forum_api_secret'), '');
-
-        $allData = []; // Initialize an empty array to store the combined results
-
-        for ($currentPage = 1; $currentPage <= 2; $currentPage++) {
-            $response = $client->get(Config::get('custom.forum_api_url'), [
-                'perPage' => 25,
-                'hidden' => 0,
-                'sortDir' => 'desc',
-                'calendars' => Config::get('custom.forum_calendar_type'),
-                'page' => $currentPage,
-            ]);
-
-            $currentData = $response->json('results');
-
-            // Filter out data where the "recurrence" property is null
-            $filteredData = array_filter($currentData, function ($item) {
-                return ! empty($item['recurrence']);
-            });
-
-            // Check for duplicate titles and select the newest entry for each unique title
-            foreach ($filteredData as $item) {
-                $title = $item['title'];
-
-                // If a newer entry with the same title is found, replace the existing entry
-                if (isset($allData[$title]) && strtotime($item['start']) > strtotime($allData[$title]['start'])) {
-                    $allData[$title] = $item;
-                } elseif (! isset($allData[$title])) {
-                    $allData[$title] = $item;
-                } elseif (Staffing::find($item['id'])) {
-                    unset($allData[$title]);
-                }
-            }
-        }
+        $events = Event::where('start', '>=', Carbon::now())->get();
 
         $channels = $this->getGuildChannels();
 

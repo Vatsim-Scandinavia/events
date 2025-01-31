@@ -12,19 +12,20 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('staffings', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->date('date');
+            $table->increments('id');
             $table->text('description');
             $table->bigInteger('channel_id');
-            $table->bigInteger('message_id')->nullable();
-            $table->integer('week_int');
-            $table->text('section_1_title');
+            $table->bigInteger('message_id');
+            $table->text('section_1_title')->nullable();
             $table->text('section_2_title')->nullable();
             $table->text('section_3_title')->nullable();
             $table->text('section_4_title')->nullable();
-            $table->integer('restrict_bookings');
+            $table->unsignedInteger('event_id');
             $table->timestamps();
+        });
+
+        Schema::table('staffings', function (Blueprint $table) {
+            $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
         });
     }
 
