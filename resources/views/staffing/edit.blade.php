@@ -1,6 +1,5 @@
 @extends('layouts.app')
-
-@section('title', 'Create Staffing')
+@section('title', 'Edit Staffing - ' . $staffing->event->title)
 @section('content')
     <div class="row">
         <div class="col-xl-12 col-md-12 mb-12">
@@ -9,7 +8,8 @@
                     <h6 class="m-0 fw-bold text-white">User input</h6> 
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('staffings.store') }}" method="post">
+                    <form action="{{ route('staffings.update', $staffing) }}" method="post">
+                        @method('patch')
                         @csrf
                         <div class="container-fluid">
                             <div class="row pt-2">
@@ -17,11 +17,10 @@
                                     <div class="form-group">
                                         <label for="event" class="form-label my-1 me-2">Event <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="event" id="event" class="form-control my-1 me-sm-2" required>
-                                            <option disabled selected>Select Event</option>
+                                            <option disabled>Select Event</option>
+                                            <option value="{{ $staffing->event->id }}" selected>{{ $staffing->event->title }} | {{ \Carbon\Carbon::parse($staffing->event->start_date)->format('d/m/Y, H:i') }}z - {{ \Carbon\Carbon::parse($staffing->event->end_date)->format('H:i') }}z</option>
                                             @foreach ($events as $event)
-                                                @if (!$event->staffing()->exists() && ($event->children()->exists() || $event->parent()->exists()))
-                                                    <option value="{{ $event->id }}">{{ $event->title }} | {{ \Carbon\Carbon::parse($event->start_date)->format('d/m/Y, H:i') }}z - {{ \Carbon\Carbon::parse($event->end_date)->format('d/m/Y') == \Carbon\Carbon::parse($event->start_date)->format('d/m/Y') ? \Carbon\Carbon::parse($event->end_date)->format('H:i') : \Carbon\Carbon::parse($event->end_date)->format('d/m/Y, H:i') }}z</option>
-                                                @endif
+                                                <option value="{{ $event->id }}">{{ $event->title }} | {{ \Carbon\Carbon::parse($event->start_date)->format('d/m/Y, H:i') }}z - {{ \Carbon\Carbon::parse($event->end_date)->format('d/m/Y') == \Carbon\Carbon::parse($event->start_date)->format('d/m/Y') ? \Carbon\Carbon::parse($event->end_date)->format('H:i') : \Carbon\Carbon::parse($event->end_date)->format('d/m/Y, H:i') }}z</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -29,7 +28,7 @@
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-group">
                                         <label for="description" class="form-label my-1 me-2">Description <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
-                                        <textarea class="form-control @error('description') is-invalid @enderror" name="description" id="description" rows="8">{{ old('description') }}</textarea>
+                                        <textarea class="form-control @error('description') is-invalid @enderror" name="description" id="description" rows="8">{{ $staffing->description }}</textarea>
                                         @error('description')
                                             <span class="text-danger">{{ $errors->first('description') }}</span>
                                         @enderror
@@ -38,7 +37,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="section_1_title" class="form-label my-1 me-2">Section 1 Title <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
-                                        <textarea class="form-control @error('section_1_title') is-invalid @enderror" name="section_1_title" id="section_1_title">{{ old('section_1_title') }}</textarea>
+                                        <textarea class="form-control @error('section_1_title') is-invalid @enderror" name="section_1_title" id="section_1_title">{{ $staffing->section_1_title }}</textarea>
                                         @error('section_1_title')
                                             <span class="text-danger">{{ $errors->first('section_1_title') }}</span>
                                         @enderror
@@ -47,7 +46,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="section_2_title" class="form-label my-1 me-2">Section 2 Title</label>
-                                        <textarea class="form-control @error('section_2_title') is-invalid @enderror" name="section_2_title" id="section_2_title">{{ old('section_2_title') }}</textarea>
+                                        <textarea class="form-control @error('section_2_title') is-invalid @enderror" name="section_2_title" id="section_2_title">{{ $staffing->section_2_title }}</textarea>
                                         @error('section_2_title')
                                             <span class="text-danger">{{ $errors->first('section_2_title') }}</span>
                                         @enderror
@@ -56,7 +55,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="section_3_title" class="form-label my-1 me-2">Section 3 Title</label>
-                                        <textarea class="form-control @error('section_3_title') is-invalid @enderror" name="section_3_title" id="section_3_title">{{ old('section_3_title') }}</textarea>
+                                        <textarea class="form-control @error('section_3_title') is-invalid @enderror" name="section_3_title" id="section_3_title">{{ $staffing->section_3_title }}</textarea>
                                         @error('section_3_title')
                                             <span class="text-danger">{{ $errors->first('section_3_title') }}</span>
                                         @enderror
@@ -65,7 +64,7 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="section_4_title" class="form-label my-1 me-2">Section 4 Title</label>
-                                        <textarea class="form-control @error('section_4_title') is-invalid @enderror" name="section_4_title" id="section_4_title">{{ old('section_4_title') }}</textarea>
+                                        <textarea class="form-control @error('section_4_title') is-invalid @enderror" name="section_4_title" id="section_4_title">{{ $staffing->section_4_title }}</textarea>
                                         @error('section_4_title')
                                             <span class="text-danger">{{ $errors->first('section_4_title') }}</span>
                                         @enderror
@@ -80,7 +79,7 @@
                                         <select name="channel_id" id="channel_id" class="form-control my-1 me-sm-2" required>
                                             <option disabled selected>Select Discord Channel</option>
                                             @foreach ($channels as $channel)
-                                                <option value="{{ $channel['id']}}">#{{ $channel['name'] }}</option>
+                                                <option value="{{ $channel['id']}}" {{ $channel['id'] == $staffing->channel_id ? 'selected' : '' }}>#{{ $channel['name'] }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -88,7 +87,59 @@
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-group">
                                         <label for="positions" class="form-label my-1 me-2">Positions <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
-                                        <div id="positions-container"></div>
+                                        <div id="positions-container">
+                                            @foreach ($staffing->positions as $position)
+                                                <div class="position-entry mb-3 p-2 border rounded">
+                                                    <div class="row">
+                                                        <div class="col-md-4">
+                                                            <div class="form-group">
+                                                                <label class="form-label my-1 me-2">Callsign</label>
+                                                                <select class="form-control callsign-select {{ $position->local_booking == 1 ? 'd-none' : '' }}" name="positions[{{ $positionIndex }}][callsign]" {{ $position->local_booking == 1 ? 'disabled' : '' }} required>
+                                                                    <option disabled>Select a position</option>
+                                                                    @foreach ($positions as $pos)
+                                                                        <option value="{{ $pos['callsign'] }}" {{ $pos['callsign'] == $position->callsign ? 'selected' : '' }}>{{ $pos['callsign'] }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                                <input type="text" class="form-control callsign-input {{ $position->local_booking == 0 ? 'd-none' : '' }}" name="positions[{{ $positionIndex }}][callsign]" value="{{ $position->callsign }}" {{ $position->local_booking == 0 ? 'disabled' : '' }} required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="form-group">
+                                                                <label class="form-label my-1 me-2">Section</label>
+                                                                <select class="form-control" name="positions[{{ $positionIndex }}][section]" required>
+                                                                    @for ($i = 1; $i < 4; $i++)
+                                                                        <option value="{{ $i }}" {{ $i == $position->section ? 'selected' : '' }}>{{ $i }}</option>
+                                                                    @endfor
+                                                                </select>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="form-group">
+                                                                <label class="form-label d-flex align-items-center my-1 me-2">Local Booking</label>
+                                                                <input type="hidden" name="positions[{{ $positionIndex }}][local_booking]" value="0">
+                                                                <input type="checkbox" class="local-booking" name="positions[{{ $positionIndex }}][local_booking]" value="1" {{ $position->local_booking == 1 ? 'checked' : '' }}>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="form-group">
+                                                                <label class="form-label my-1 me-2">Start Time</label>
+                                                                <input type="time" class="form-control" name="positions[{{ $positionIndex }}][start_time]" value="{{ $position->start_time }}" required>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-2">
+                                                            <div class="form-group">
+                                                                <label class="form-label my-1 me-2">End Time</label>
+                                                                <input type="time" class="form-control" name="positions[{{ $positionIndex }}][end_time]" value="{{ $position->end_time }}" required>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" class="btn btn-danger btn-sm remove-position">Remove</button>
+                                                    @php
+                                                        $positionIndex++;
+                                                    @endphp
+                                                </div>
+                                            @endforeach
+                                        </div>
                                         <button type="button" class="btn btn-primary mt-2" id="add-position">Add Position</button>
                                     </div>
                                 </div>
@@ -101,7 +152,6 @@
         </div>
     </div>
 @endsection
-
 @section('js')
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
     <script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
@@ -122,6 +172,38 @@
             let positionsContainer = document.getElementById("positions-container");
             let addPositionBtn = document.getElementById("add-position");
             let positionsData = @json($positions);
+
+            function setupPositionListeners(positionDiv)
+            {
+                let callsignSelect = positionDiv.querySelector(".callsign-select");
+                let callsignInput = positionDiv.querySelector(".callsign-input");
+                let localBookingCheckbox = positionDiv.querySelector(".local-booking");
+                let removeBtn = positionDiv.querySelector(".remove-position");
+
+                if (localBookingCheckbox) {
+                    localBookingCheckbox.addEventListener("change", function() {
+                        if (this.checked) {
+                            callsignSelect.classList.add("d-none");
+                            callsignSelect.disabled = true;
+                            callsignInput.classList.remove("d-none");
+                            callsignInput.disabled = false;
+                            callsignInput.value = "";
+                        } else {
+                            callsignInput.classList.add("d-none");
+                            callsignInput.disabled = true;
+                            callsignInput.value = "";
+                            callsignSelect.classList.remove("d-none");
+                            callsignSelect.disabled = false;
+                        }
+                    });
+                }
+
+                if (removeBtn) {
+                    removeBtn.addEventListener("click", function() {
+                        positionDiv.remove();
+                    });
+                }
+            }
 
             function createPositionField() {
                 let positionIndex = document.querySelectorAll(".position-entry").length;
@@ -176,35 +258,10 @@
 
                 positionsContainer.appendChild(positionDiv);
 
-                // Remove position button
-                positionDiv.querySelector(".remove-position").addEventListener("click", function () {
-                    positionDiv.remove();
-                });
-
-                // Get elements
-                let callsignSelect = positionDiv.querySelector(".callsign-select");
-                let callsignInput = positionDiv.querySelector(".callsign-input");
-                let localBookingCheckbox = positionDiv.querySelector(".local-booking");
-
-                // Handle local booking toggle
-                localBookingCheckbox.addEventListener("change", function () {
-                    if (this.checked) {
-                        callsignSelect.classList.add("d-none"); // Hide dropdown
-                        callsignSelect.disabled = true;
-
-                        callsignInput.classList.remove("d-none"); // Show text input
-                        callsignInput.disabled = false;
-                        callsignInput.value = "";
-                    } else {
-                        callsignInput.classList.add("d-none"); // Hide text input
-                        callsignInput.disabled = true;
-                        callsignInput.value = "";
-
-                        callsignSelect.classList.remove("d-none"); // Show dropdown
-                        callsignSelect.disabled = false;
-                    }
-                });
+                setupPositionListeners(positionDiv);
             }
+
+            document.querySelectorAll(".position-entry").forEach(setupPositionListeners);
 
             addPositionBtn.addEventListener("click", createPositionField);
         });

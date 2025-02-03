@@ -1,4 +1,4 @@
-@extends('layouts.auth.app')
+@extends('layouts.app')
 
 @section('title', 'Staffings')
 @section('title-flex')
@@ -19,12 +19,13 @@
 
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-striped table-sm table-hover table-leftpadded mb-0" width="100%" cellspacing="0" data-page-size="15" data-toggle="table" data-pagination="true" data-filter-control="true" data-sort-reset="true">
+                        <table class="table table-striped table-sm table-hover table-leftpadded mb-0" width="100%" cellspacing="0" data-page-size="10" data-page-size="10" data-toggle="table" data-pagination="true" data-filter-control="true" data-sort-reset="true" data-sort-select-options="true">
                             <thead class="table-light">
                                 <tr>
                                     <th data-field="id" data-sortable="true" data-filter-control="input">ID</th>
                                     <th data-field="title" data-sortable="true" data-filter-control="input">Title</th>
                                     <th data-field="date" data-sortable="true" data-filter-control="input">Date</th>
+                                    <th data-field="actions" data-sortable="false" data-filter-control="false">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -32,8 +33,21 @@
                                     @can('view', $staffing)
                                         <tr>
                                             <td>{{ $staffing->id }}</td>
-                                            <td>{{ $staffing->title }}</td>
-                                            <td>{{ $staffing->date }}</td>
+                                            <td>{{ $staffing->event->title }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($staffing->event->start_date)->format('d/m/Y, H:i') }}z - {{ \Carbon\Carbon::parse($staffing->event->end_date)->format('d/m/Y') == \Carbon\Carbon::parse($staffing->event->start_date)->format('d/m/Y') ? \Carbon\Carbon::parse($staffing->event->end_date)->format('H:i') : \Carbon\Carbon::parse($staffing->event->end_date)->format('d/m/Y, H:i') }}z</td>
+                                            <td>
+                                                @can('update', $staffing)
+                                                    <a class="btn btn-sm btn-primary" href="{{ route('staffings.edit', $staffing->id) }}"><i class="fas fa-edit"></i> Edit</a>
+                                                @endcan
+                                                @can('destroy', $staffing)
+                                                    <form method="POST" action="{{ route('staffings.destroy', $staffing->id) }}" style="display:inline"
+                                                        onsubmit="return confirm('Are you sure you want to delete this event? - {{ $staffing->event->title }}')">
+                                                        @method('DELETE')
+                                                        @csrf
+                                                        <button class="btn btn-sm btn-danger" type="submit"><i class="fas fa-trash" aria-hidden="true"></i> Delete Staffing</button>
+                                                    </form>
+                                                @endcan
+                                            </td>
                                         </tr>
                                     @endcan
                                 @endforeach

@@ -39,6 +39,14 @@
                             </a>
                         </li>
                     @endcan
+                    @can('index', \App\Models\Staffing::class)
+                        <li class="nav-item">
+                            <a class="nav-link {{ Route::is('staffings.index') || Route::is('staffings.create') || Route::is('staffings.edit') ? 'active' : '' }}" href="{{ route('staffings.index') }}">
+                                <i class="fas fa-fw fa-calendar-alt"></i>
+                                <span>Staffings</span>
+                            </a>
+                        </li>
+                    @endcan
                 @endif
                 @if (\Auth::user()->isAdmin())
                     <li class="nav-item {{ Route::is('users.index') || Route::is('users.show') ? 'active' : '' }}">

@@ -57,6 +57,11 @@ class Event extends Model
         return $this->belongsTo(Event::class, 'parent_id');
     }
 
+    public function staffing()
+    {
+        return $this->hasOne(Staffing::class);
+    }
+
     public function generateRecurrences()
     {
         $recurrences = [];

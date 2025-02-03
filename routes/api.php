@@ -30,8 +30,8 @@ Route::group(['middleware' => ['api-token:edit']], function () {
     Route::delete('/events/{event}', [App\Http\Controllers\API\EventController::class, 'destroy'])->name('api.event.destroy');
 
     // Staffing
-    Route::post('/staffing/book', [App\Http\Controllers\API\StaffingController::class, 'book'])->name('api.staffing.book');
-    Route::post('/staffing/unbook', [App\Http\Controllers\API\StaffingController::class, 'unbook'])->name('api.staffing.unbook');
+    Route::post('/staffings/book', [App\Http\Controllers\API\StaffingController::class, 'store'])->name('api.staffing.book');
+    Route::post('/staffings/unbook', [App\Http\Controllers\API\StaffingController::class, 'destroy'])->name('api.staffing.unbook');
 });
 
 Route::group(['middleware' => ['api-token']], function () {

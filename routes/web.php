@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\StaffingController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\EventController;
@@ -58,12 +59,14 @@ Route::middleware(['auth'])->group(function () {
         Route::patch('/users/{user}', 'update')->name('users.update');
     });
 
-    // Route::get('/staffings', [App\Http\Controllers\StaffingController::class, 'index'])->name('staffings.index');
-    // Route::get('/staffings/create', [App\Http\Controllers\StaffingController::class, 'create'])->name('staffings.create');
-    // Route::get('/staffings/edit/{staffing}', [App\Http\Controllers\StaffingController::class, 'edit'])->name('staffings.edit');
-    // Route::post('/staffings/store', [App\Http\Controllers\StaffingController::class, 'store'])->name('staffings.store');
-    // Route::patch('/staffings/edit/{staffing}', [App\Http\Controllers\StaffingController::class, 'update'])->name('staffings.update');
-    // Route::delete('/staffings/delete/{staffing}', [App\Http\Controllers\StaffingController::class, 'delete'])->name('staffings.delete');
+    Route::controller(StaffingController::class)->group(function () {
+        Route::get('/staffings', 'index')->name('staffings.index');
+        Route::get('/staffings/create', 'create')->name('staffings.create');
+        Route::get('/staffings/{staffing}/edit', 'edit')->name('staffings.edit');
+        Route::post('/staffings', 'store')->name('staffings.store');
+        Route::patch('/staffings/{staffing}', 'update')->name('staffings.update');
+        Route::delete('/staffings/{staffing}', 'destroy')->name('staffings.destroy');
+    });
 
 });
 

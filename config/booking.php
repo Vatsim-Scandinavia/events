@@ -24,4 +24,24 @@ return [
 
     'cc_api_token' => env('CC_API_TOKEN', null),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Discord API URL Endpoint
+    |--------------------------------------------------------------------------
+    |
+    | Set the URL for the Discord API
+    |
+    */
+    'discord_api_url' => env('DISCORD_API_URL', null),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Discord API Token
+    |--------------------------------------------------------------------------
+    |
+    | Set the Discord API Token
+    |
+    */
+    'discord_api_token' => env('DISCORD_API_TOKEN', null),
+
 ];

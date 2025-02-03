@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('positions', function (Blueprint $table) {
             $table->increments('id');
-            $table->string('name');
+            $table->string('callsign');
             $table->bigInteger('booking_id')->nullable();
-            $table->bigInteger('discord_user');
+            $table->bigInteger('discord_user')->nullable();
             $table->integer('section');
             $table->boolean('local_booking')->default(false);
             $table->time('start_time')->nullable();

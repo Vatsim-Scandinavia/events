@@ -15,8 +15,8 @@ return new class extends Migration
             $table->increments('id');
             $table->text('description');
             $table->bigInteger('channel_id');
-            $table->bigInteger('message_id');
-            $table->text('section_1_title')->nullable();
+            $table->bigInteger('message_id')->nullable();
+            $table->text('section_1_title');
             $table->text('section_2_title')->nullable();
             $table->text('section_3_title')->nullable();
             $table->text('section_4_title')->nullable();

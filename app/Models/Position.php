@@ -16,7 +16,7 @@ class Position extends Model
      */
     protected $fillable = [
         'id',
-        'name',
+        'callsign',
         'booking_id',
         'discord_user',
         'section',

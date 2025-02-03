@@ -12,7 +12,7 @@ class StaffingHelper
     public static function resetStaffing(Event $event, Staffing $staffing) 
     {
         if ($event->recurrence_interval && $event->recurrence_unit) {
-            $childEvent = $event->recurrences()->where('start_date', '>', Carbon::now())->first();
+            $childEvent = $event->children()->where('start_date', '>', Carbon::now())->first();
             $staffing->event()->associate($childEvent);
             $staffing->save();
         }
@@ -29,8 +29,8 @@ class StaffingHelper
     public static function updateDiscordMessage(Staffing $staffing)
     {
         // Send a api request to the discord bot to update the staffing message
-        Http::withToken(config('discord.bot_token'))->patch(
-            config('discord.api_url') . '/staffing/update', [
+        Http::withToken(config('booking.discord_api_token'))->patch(
+            config('booking.discord_api_url') . '/staffing/update', [
                 'channel_id' => $staffing->channel_id,
                 'message_id' => $staffing->message_id,
                 'section_1_title' => $staffing->section_1_title,
