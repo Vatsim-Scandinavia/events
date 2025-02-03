@@ -123,6 +123,38 @@
             let addPositionBtn = document.getElementById("add-position");
             let positionsData = @json($positions);
 
+            function setupPositionListeners(positionDiv)
+            {
+                let callsignSelect = positionDiv.querySelector(".callsign-select");
+                let callsignInput = positionDiv.querySelector(".callsign-input");
+                let localBookingCheckbox = positionDiv.querySelector(".local-booking");
+                let removeBtn = positionDiv.querySelector(".remove-position");
+
+                if (localBookingCheckbox) {
+                    localBookingCheckbox.addEventListener("change", function() {
+                        if (this.checked) {
+                            callsignSelect.classList.add("d-none");
+                            callsignSelect.disabled = true;
+                            callsignInput.classList.remove("d-none");
+                            callsignInput.disabled = false;
+                            callsignInput.value = "";
+                        } else {
+                            callsignInput.classList.add("d-none");
+                            callsignInput.disabled = true;
+                            callsignInput.value = "";
+                            callsignSelect.classList.remove("d-none");
+                            callsignSelect.disabled = false;
+                        }
+                    });
+                }
+
+                if (removeBtn) {
+                    removeBtn.addEventListener("click", function() {
+                        positionDiv.remove();
+                    });
+                }
+            }
+
             function createPositionField() {
                 let positionIndex = document.querySelectorAll(".position-entry").length;
                 let positionDiv = document.createElement("div");
@@ -176,35 +208,10 @@
 
                 positionsContainer.appendChild(positionDiv);
 
-                // Remove position button
-                positionDiv.querySelector(".remove-position").addEventListener("click", function () {
-                    positionDiv.remove();
-                });
-
-                // Get elements
-                let callsignSelect = positionDiv.querySelector(".callsign-select");
-                let callsignInput = positionDiv.querySelector(".callsign-input");
-                let localBookingCheckbox = positionDiv.querySelector(".local-booking");
-
-                // Handle local booking toggle
-                localBookingCheckbox.addEventListener("change", function () {
-                    if (this.checked) {
-                        callsignSelect.classList.add("d-none"); // Hide dropdown
-                        callsignSelect.disabled = true;
-
-                        callsignInput.classList.remove("d-none"); // Show text input
-                        callsignInput.disabled = false;
-                        callsignInput.value = "";
-                    } else {
-                        callsignInput.classList.add("d-none"); // Hide text input
-                        callsignInput.disabled = true;
-                        callsignInput.value = "";
-
-                        callsignSelect.classList.remove("d-none"); // Show dropdown
-                        callsignSelect.disabled = false;
-                    }
-                });
+                setupPositionListeners(positionDiv);
             }
+
+            document.querySelectorAll(".position-entry").forEach(setupPositionListeners);
 
             addPositionBtn.addEventListener("click", createPositionField);
         });
