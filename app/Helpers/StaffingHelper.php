@@ -9,27 +9,28 @@ use Illuminate\Support\Facades\Http;
 
 class StaffingHelper
 {
-    public static function resetStaffing(Event $event, Staffing $staffing) 
+    public static function resetStaffing(Staffing $staffing) 
     {
-        if ($event->recurrence_interval && $event->recurrence_unit) {
-            $childEvent = $event->children()->where('start_date', '>', Carbon::now())->first();
-            $staffing->event()->associate($childEvent);
-            $staffing->save();
+        $event = $staffing->event;
+
+        $childEvent = $event->parent()->exists() ? $event->parent->children()->where('start_date', '>', Carbon::now())->first() : $event->children()->where('start_date', '>', Carbon::now())->first();
+
+        if(!$childEvent) {
+            throw new \Exception('No future events found.');
+            return false;
         }
 
-        // Clear all bookings
-        $staffing->positions()->update([
-            'discord_user' => null,
-        ]);
+        $staffing->event()->associate($childEvent);
+        $staffing->positions()->update(['discord_user' => null]);
+        $staffing->save();
 
-        StaffingHelper::updateDiscordMessage($staffing);
-
+        return true;
     }
 
     public static function updateDiscordMessage(Staffing $staffing)
     {
         // Send a api request to the discord bot to update the staffing message
-        Http::withToken(config('booking.discord_api_token'))->patch(
+        $response = Http::withToken(config('booking.discord_api_token'))->patch(
             config('booking.discord_api_url') . '/staffing/update', [
                 'channel_id' => $staffing->channel_id,
                 'message_id' => $staffing->message_id,
@@ -48,5 +49,12 @@ class StaffingHelper
                 }),
             ]
         );
+
+        if ($response->failed()) {
+            throw new \Exception('Failed to update Discord message.');
+            return false;
+        }
+
+        return $response->json();
     }
 }

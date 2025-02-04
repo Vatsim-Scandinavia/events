@@ -63,6 +63,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/staffings', 'index')->name('staffings.index');
         Route::get('/staffings/create', 'create')->name('staffings.create');
         Route::get('/staffings/{staffing}/edit', 'edit')->name('staffings.edit');
+        Route::get('/staffings/{staffing}/refresh', 'refresh')->name('staffings.refresh');
+        Route::get('/staffings/{staffing}/manreset', 'manreset')->name('staffings.manreset');
         Route::post('/staffings', 'store')->name('staffings.store');
         Route::patch('/staffings/{staffing}', 'update')->name('staffings.update');
         Route::delete('/staffings/{staffing}', 'destroy')->name('staffings.destroy');

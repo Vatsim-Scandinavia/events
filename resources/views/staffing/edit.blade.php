@@ -18,10 +18,7 @@
                                         <label for="event" class="form-label my-1 me-2">Event <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="event" id="event" class="form-control my-1 me-sm-2" required>
                                             <option disabled>Select Event</option>
-                                            <option value="{{ $staffing->event->id }}" selected>{{ $staffing->event->title }} | {{ \Carbon\Carbon::parse($staffing->event->start_date)->format('d/m/Y, H:i') }}z - {{ \Carbon\Carbon::parse($staffing->event->end_date)->format('H:i') }}z</option>
-                                            @foreach ($events as $event)
-                                                <option value="{{ $event->id }}">{{ $event->title }} | {{ \Carbon\Carbon::parse($event->start_date)->format('d/m/Y, H:i') }}z - {{ \Carbon\Carbon::parse($event->end_date)->format('d/m/Y') == \Carbon\Carbon::parse($event->start_date)->format('d/m/Y') ? \Carbon\Carbon::parse($event->end_date)->format('H:i') : \Carbon\Carbon::parse($event->end_date)->format('d/m/Y, H:i') }}z</option>
-                                            @endforeach
+                                            <option value="{{ $staffing->event->id }}" selected disabled>{{ $staffing->event->title }}</option>
                                         </select>
                                     </div>
                                 </div>

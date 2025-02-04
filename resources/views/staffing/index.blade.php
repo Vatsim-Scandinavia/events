@@ -36,16 +36,29 @@
                                             <td>{{ $staffing->event->title }}</td>
                                             <td>{{ \Carbon\Carbon::parse($staffing->event->start_date)->format('d/m/Y, H:i') }}z - {{ \Carbon\Carbon::parse($staffing->event->end_date)->format('d/m/Y') == \Carbon\Carbon::parse($staffing->event->start_date)->format('d/m/Y') ? \Carbon\Carbon::parse($staffing->event->end_date)->format('H:i') : \Carbon\Carbon::parse($staffing->event->end_date)->format('d/m/Y, H:i') }}z</td>
                                             <td>
+                                                <div class="btn-group">
+                                                    <a class="btn btn-sm btn-info dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        <i class="fas fa-gears"></i> Actions
+                                                    </a>
+                                                    <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                                                        <a class="dropdown-item" href="#" data-toggle="tooltip" data-placement="top" title="Refreshes the data of the event on discord">Refresh Event data</a>
+                                                        <a class="dropdown-item" href="#" data-toggle="tooltip" data-placement="top" title="Manually resets the whole staffing, removes all staffings and selects next event date. Use with caution.">Manual reset (Use with cation)</a>
+                                                    </div>
+                                                </div>
                                                 @can('update', $staffing)
-                                                    <a class="btn btn-sm btn-primary" href="{{ route('staffings.edit', $staffing->id) }}"><i class="fas fa-edit"></i> Edit</a>
+                                                    <div class="btn-group">
+                                                        <a class="btn btn-sm btn-primary" href="{{ route('staffings.edit', $staffing->id) }}"><i class="fas fa-edit"></i> Edit</a>
+                                                    </div>
                                                 @endcan
                                                 @can('destroy', $staffing)
-                                                    <form method="POST" action="{{ route('staffings.destroy', $staffing->id) }}" style="display:inline"
-                                                        onsubmit="return confirm('Are you sure you want to delete this event? - {{ $staffing->event->title }}')">
-                                                        @method('DELETE')
-                                                        @csrf
-                                                        <button class="btn btn-sm btn-danger" type="submit"><i class="fas fa-trash" aria-hidden="true"></i> Delete Staffing</button>
-                                                    </form>
+                                                    <div class="btn-group">
+                                                        <form method="POST" action="{{ route('staffings.destroy', $staffing->id) }}" style="display:inline"
+                                                            onsubmit="return confirm('Are you sure you want to delete this event? - {{ $staffing->event->title }}')">
+                                                            @method('DELETE')
+                                                            @csrf
+                                                            <button class="btn btn-sm btn-danger" type="submit"><i class="fas fa-trash" aria-hidden="true"></i> Delete Staffing</button>
+                                                        </form>
+                                                    </div>
                                                 @endcan
                                             </td>
                                         </tr>

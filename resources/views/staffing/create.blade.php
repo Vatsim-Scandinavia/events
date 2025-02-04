@@ -19,9 +19,7 @@
                                         <select name="event" id="event" class="form-control my-1 me-sm-2" required>
                                             <option disabled selected>Select Event</option>
                                             @foreach ($events as $event)
-                                                @if (!$event->staffing()->exists() && ($event->children()->exists() || $event->parent()->exists()))
-                                                    <option value="{{ $event->id }}">{{ $event->title }} | {{ \Carbon\Carbon::parse($event->start_date)->format('d/m/Y, H:i') }}z - {{ \Carbon\Carbon::parse($event->end_date)->format('d/m/Y') == \Carbon\Carbon::parse($event->start_date)->format('d/m/Y') ? \Carbon\Carbon::parse($event->end_date)->format('H:i') : \Carbon\Carbon::parse($event->end_date)->format('d/m/Y, H:i') }}z</option>
-                                                @endif
+                                                <option value="{{ $event->id }}">{{ $event->title }}</option>
                                             @endforeach
                                         </select>
                                     </div>

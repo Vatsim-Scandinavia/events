@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\StaffingHelper;
 use App\Models\Event;
 use App\Models\Staffing;
 use Carbon\Carbon;
@@ -21,6 +22,30 @@ class StaffingController extends Controller
         return view('staffing.index', compact('staffings'));
     }
 
+    public function refresh(Staffing $staffing)
+    {
+        $this->authorize('update', $staffing);
+
+        $response = StaffingHelper::updateDiscordMessage($staffing);
+
+        if (!$response) {
+            return redirect()->route('staffings.index')->withErrors('Failed to update Discord message.');
+        }
+
+        return redirect()->route('staffings.index')->withSuccess('Staffing refreshed successfully.');
+    }
+
+    public function manreset(Staffing $staffing)
+    {
+        $this->authorize('update', $staffing);
+
+        if (StaffingHelper::resetStaffing($staffing)) {
+            return redirect()->route('staffings.index')->withSuccess('Staffing reset successfully.');
+        }
+
+        return redirect()->route('staffings.index')->withErrors('Failed to reset staffing. No valid parent or future child event found.');
+    }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -28,7 +53,13 @@ class StaffingController extends Controller
     {
         $this->authorize('create', Staffing::class);
 
-        $events = Event::where('start_date', '>=', Carbon::now())->get();
+        $events = Event::whereNull('parent_id')
+            ->whereDoesntHave('staffing')
+            ->whereHas('children', function ($query) {
+                $query->where('start_date', '>', Carbon::now())
+                    ->whereDoesntHave('staffing');
+            })
+            ->get();
 
         $positions = $this->getPositions();
 
@@ -86,7 +117,7 @@ class StaffingController extends Controller
     public function store(Request $request)
     {
         $this->validate($request, [
-            'event' => 'required|integer',
+            'event' => 'required|integer|exists:events,id',
             'description' => 'required',
             'channel_id' => 'required|integer',
             'section_1_title' => 'required',
@@ -126,11 +157,11 @@ class StaffingController extends Controller
             'section_4_title' => $request->input('section_4_title'),
         ]);
 
-        if (!$request->input('event')) {
-            return redirect()->route('staffings.index')->withError('Event not found.');
+        $event = Event::findOrFail($request->input('event'));
+        if ($event->start_date < Carbon::now()) {
+            $event = $event->children()->where('start_date', '>', Carbon::now())->first();
         }
 
-        $event = Event::findOrFail($request->input('event'));
         $staffing->event()->associate($event);
         $staffing->save();
 
@@ -153,15 +184,13 @@ class StaffingController extends Controller
             }
         }
 
-        $events = $staffing->event()->first()->children()->where('start_date', '>', Carbon::now())->get() ?? $staffing->event()->first()->parent()->children()->where('start_date', '>', Carbon::now())->get();
-
         $positions = $this->getPositions();
 
         $channels = $this->getGuildChannels();
 
         $positionIndex = 0;
 
-        return view('staffing.edit', compact('staffing', 'events', 'channels', 'positions', 'positionIndex'));
+        return view('staffing.edit', compact('staffing', 'channels', 'positions', 'positionIndex'));
     }
 
     /**
@@ -170,7 +199,6 @@ class StaffingController extends Controller
     public function update(Request $request, Staffing $staffing)
     {
         $this->validate($request, [
-            'event' => 'required|integer',
             'description' => 'required',
             'channel_id' => 'required|integer',
             'section_1_title' => 'required',
@@ -216,15 +244,6 @@ class StaffingController extends Controller
             'section_3_title' => $request->input('section_3_title'),
             'section_4_title' => $request->input('section_4_title'),
         ]);
-
-        // Ensure event is valid
-        if (!$request->input('event')) {
-            return redirect()->route('staffings.index')->withError('Event not found.');
-        }
-
-        $event = Event::findOrFail($request->input('event'));
-        $staffing->event()->associate($event);
-        $staffing->save();
 
         // Sync positions: delete removed ones, update existing, and add new ones
         $staffing->positions()->delete();  // Remove old positions
