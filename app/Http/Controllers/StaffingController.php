@@ -40,6 +40,12 @@ class StaffingController extends Controller
         $this->authorize('update', $staffing);
 
         if (StaffingHelper::resetStaffing($staffing)) {
+            $response = StaffingHelper::updateDiscordMessage($staffing);
+
+            if (!$response) {
+                return redirect()->route('staffings.index')->withErrors('Failed to update Discord message.');
+            }
+
             return redirect()->route('staffings.index')->withSuccess('Staffing reset successfully.');
         }
 
@@ -76,6 +82,7 @@ class StaffingController extends Controller
             if ($response->successful()) {
                 return $response->json()['data'];
             } else {
+                throw new \Exception('Error: Unable to fetch positions. HTTP status code: '.$response->status());
                 return 'Error: Unable to fetch positions. HTTP status code: '.$response->status();
             }
         } catch (\Exception $e) {
@@ -160,6 +167,10 @@ class StaffingController extends Controller
         $event = Event::findOrFail($request->input('event'));
         if ($event->start_date < Carbon::now()) {
             $event = $event->children()->where('start_date', '>', Carbon::now())->first();
+
+            if (!$event) {
+                return redirect()->back()->withErrors('Failed to find a valid parent or future child event.');
+            }
         }
 
         $staffing->event()->associate($event);
@@ -167,7 +178,11 @@ class StaffingController extends Controller
 
         $staffing->positions()->createMany($request->input('positions'));
 
-        return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
+        if (StaffingHelper::setupStaffing($staffing)) {
+            return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
+        }
+
+        return redirect()->back('staffings.index')->withErrors('Staffing message was not created. Please contact the Tech Team.');
     }
 
     /**
@@ -200,7 +215,6 @@ class StaffingController extends Controller
     {
         $this->validate($request, [
             'description' => 'required',
-            'channel_id' => 'required|integer',
             'section_1_title' => 'required',
             'section_2_title' => 'nullable',
             'section_3_title' => 'nullable',
@@ -238,7 +252,6 @@ class StaffingController extends Controller
 
         $staffing->update([
             'description' => $request->input('description'),
-            'channel_id' => $request->input('channel_id'),
             'section_1_title' => $request->input('section_1_title'),
             'section_2_title' => $request->input('section_2_title'),
             'section_3_title' => $request->input('section_3_title'),
@@ -248,6 +261,12 @@ class StaffingController extends Controller
         // Sync positions: delete removed ones, update existing, and add new ones
         $staffing->positions()->delete();  // Remove old positions
         $staffing->positions()->createMany($positions); // Add new ones
+
+        $resp = StaffingHelper::updateDiscordMessage($staffing);
+
+        if (!$resp) {
+            return redirect()->back()->withErrors('Failed to update Discord message.');
+        }
 
         return redirect()->route('staffings.index')->withSuccess('Staffing updated successfully.');
     }

@@ -39,6 +39,12 @@ class ResetStaffing extends Command
                 continue;
             }
 
+            $resp = StaffingHelper::updateDiscordMessage($staffing);
+
+            if (!$resp) {
+                return $this->error('Failed to update Discord message: '.$staffing->id);
+            }
+
             $this->info('Staffing reset successfully: '.$staffing->id);
         }
 

@@ -2,7 +2,6 @@
 
 namespace App\Helpers;
 
-use App\Models\Event;
 use App\Models\Staffing;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Http;
@@ -21,7 +20,22 @@ class StaffingHelper
         }
 
         $staffing->event()->associate($childEvent);
-        $staffing->positions()->update(['discord_user' => null]);
+        $staffing->positions()->each(function($position) {
+            if ($position->booking_id) {
+                $response = Http::withToken(config('booking.cc_api_token'))->delete(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
+
+                if ($response->failed()) {
+                    throw new \Exception('Failed to delete booking. Error: ' . $response->body());
+                    return false;
+                }
+
+                $position->booking_id = null;
+            }
+
+            $position->discord_user = null;
+            $position->save();
+        });
+
         $staffing->save();
 
         return true;
@@ -30,28 +44,26 @@ class StaffingHelper
     public static function updateDiscordMessage(Staffing $staffing)
     {
         // Send a api request to the discord bot to update the staffing message
-        $response = Http::withToken(config('booking.discord_api_token'))->patch(
-            config('booking.discord_api_url') . '/staffing/update', [
-                'channel_id' => $staffing->channel_id,
-                'message_id' => $staffing->message_id,
-                'section_1_title' => $staffing->section_1_title,
-                'section_2_title' => $staffing->section_2_title,
-                'section_3_title' => $staffing->section_3_title,
-                'section_4_title' => $staffing->section_4_title,
-                'positions' => $staffing->positions->map(function ($position) {
-                    return [
-                        'name' => $position->name,
-                        'discord_user' => $position->discord_user,
-                        'section' => $position->section,
-                        'start_time' => $position->start_time,
-                        'end_time' => $position->end_time,
-                    ];
-                }),
-            ]
-        );
+        $response = Http::withToken(config('booking.discord_api_token'))->asForm()->post(config('booking.discord_api_url') . '/staffings/update', [
+            'id' => $staffing->id
+        ]);
 
         if ($response->failed()) {
-            throw new \Exception('Failed to update Discord message.');
+            throw new \Exception('Failed to update Discord message. Error: ' . $response->body());
+            return false;
+        }
+
+        return $response->json();
+    }
+
+    public static function setupStaffing(Staffing $staffing)
+    {
+        $response = Http::withToken(config('booking.discord_api_token'))->asForm()->post(config('booking.discord_api_url') . '/staffings/setup', [
+            'id' => $staffing->id
+        ]);
+
+        if ($response->failed()) {
+            throw new \Exception('Failed to setup Discord message.');
             return false;
         }
 
