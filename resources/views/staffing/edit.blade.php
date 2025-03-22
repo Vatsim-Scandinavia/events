@@ -120,13 +120,13 @@
                                                         <div class="col-md-2">
                                                             <div class="form-group">
                                                                 <label class="form-label my-1 me-2">Start Time</label>
-                                                                <input type="time" class="form-control" name="positions[{{ $positionIndex }}][start_time]" value="{{ $position->start_time }}" required>
+                                                                <input type="time" class="form-control" name="positions[{{ $positionIndex }}][start_time]" value="{{ $position->start_time }}">
                                                             </div>
                                                         </div>
                                                         <div class="col-md-2">
                                                             <div class="form-group">
                                                                 <label class="form-label my-1 me-2">End Time</label>
-                                                                <input type="time" class="form-control" name="positions[{{ $positionIndex }}][end_time]" value="{{ $position->end_time }}" required>
+                                                                <input type="time" class="form-control" name="positions[{{ $positionIndex }}][end_time]" value="{{ $position->end_time }}">
                                                             </div>
                                                         </div>
                                                     </div>
@@ -240,13 +240,13 @@
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label class="form-label my-1 me-2">Start Time</label>
-                                <input type="time" class="form-control" name="positions[${positionIndex}][start_time]" required>
+                                <input type="time" class="form-control" name="positions[${positionIndex}][start_time]">
                             </div>
                         </div>
                         <div class="col-md-2">
                             <div class="form-group">
                                 <label class="form-label my-1 me-2">End Time</label>
-                                <input type="time" class="form-control" name="positions[${positionIndex}][end_time]" required>
+                                <input type="time" class="form-control" name="positions[${positionIndex}][end_time]">
                             </div>
                         </div>
                     </div>

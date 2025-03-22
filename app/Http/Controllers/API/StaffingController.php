@@ -75,8 +75,8 @@ class StaffingController extends Controller
                 'cid' => $request->input('cid'),
                 'date' => Carbon::parse($staffing->event->start_date)->format('d/m/Y'),
                 'position' => $position->callsign,
-                'start_at' => Carbon::parse($position->start_time)->format('H:i'),
-                'end_at' => Carbon::parse($position->end_time)->format('H:i'),
+                'start_at' => Carbon::parse($position->start_time ?? $staffing->event->start_time)->format('H:i'),
+                'end_at' => Carbon::parse($position->end_time ?? $staffing->event->end_time)->format('H:i'),
                 'tag' => 3,
                 'source' => 'Discord',
             ]

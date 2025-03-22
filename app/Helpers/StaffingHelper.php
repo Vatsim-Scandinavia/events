@@ -41,12 +41,18 @@ class StaffingHelper
         return true;
     }
 
-    public static function updateDiscordMessage(Staffing $staffing)
+    public static function updateDiscordMessage(Staffing $staffing, $reset = null)
     {
-        // Send a api request to the discord bot to update the staffing message
-        $response = Http::withToken(config('booking.discord_api_token'))->asForm()->post(config('booking.discord_api_url') . '/staffings/update', [
+        $payload = [
             'id' => $staffing->id
-        ]);
+        ];
+
+        if ($reset) {
+            $payload['reset'] = $reset;
+        }
+
+        // Send a api request to the discord bot to update the staffing message
+        $response = Http::withToken(config('booking.discord_api_token'))->asForm()->post(config('booking.discord_api_url') . '/staffings/update', $payload);
 
         if ($response->failed()) {
             throw new \Exception('Failed to update Discord message. Error: ' . $response->body());

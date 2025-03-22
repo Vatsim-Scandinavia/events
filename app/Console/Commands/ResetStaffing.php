@@ -30,8 +30,16 @@ class ResetStaffing extends Command
         // Get all staffings
         $staffings = Staffing::all();
 
-        // Reset staffing to the next event
+        $i = 0;
         foreach ($staffings as $staffing) {
+            $event = $staffing->event;
+
+            // Skip if event has not ended yet
+            if (!$event || $event->end_date > now()) {
+                continue;
+            }
+
+            // Reset staffing to the next event
             $response = StaffingHelper::resetStaffing($staffing);
 
             if (!$response) {
@@ -39,15 +47,17 @@ class ResetStaffing extends Command
                 continue;
             }
 
-            $resp = StaffingHelper::updateDiscordMessage($staffing);
-
-            if (!$resp) {
-                return $this->error('Failed to update Discord message: '.$staffing->id);
+            try {
+                $resp = StaffingHelper::updateDiscordMessage($staffing, true);
+            } catch (\Exception $e) {
+                $this->error('Failed to update Discord message: '.$staffing->id.' | Error: '.$e->getMessage());
+                continue;
             }
 
-            $this->info('Staffing reset successfully: '.$staffing->id);
+            $i++;
+            $this->info('Staffing reset successfully: ID = '.$staffing->id);
         }
 
-        $this->info('Reset staffing for '.$staffings->count().' staffings.');
+        $this->info('Reset staffing for '.$i.' staffing(s).');
     }
 }
