@@ -29,6 +29,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::table('staffings', function (Blueprint $table) {
+            $table->string('title')->after('id');
+            $table->date('date')->after('title');
+            $table->integer('week_int')->after('date');
+            $table->integer('restrict_bookings')->after('week_int');
+            $table->dropForeign(['event_id']);
+            $table->dropColumn('event_id');
+        });
     }
 };
