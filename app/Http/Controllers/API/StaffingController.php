@@ -74,7 +74,7 @@ class StaffingController extends Controller
             config('booking.cc_api_url') . '/bookings/create', [
                 'cid' => $request->input('cid'),
                 'date' => Carbon::parse($staffing->event->start_date)->format('d/m/Y'),
-                'position' => $position->input('callsign'),
+                'position' => $position->callsign,
                 'start_at' => Carbon::parse($position->start_time ?? $staffing->event->start_date)->format('H:i'),
                 'end_at' => Carbon::parse($position->end_time ?? $staffing->event->end_date)->format('H:i'),
                 'tag' => 3,
