@@ -104,7 +104,7 @@
                                                             <div class="form-group">
                                                                 <label class="form-label my-1 me-2">Section</label>
                                                                 <select class="form-control" name="positions[{{ $positionIndex }}][section]" required>
-                                                                    @for ($i = 1; $i < 4; $i++)
+                                                                    @for ($i = 1; $i < 5; $i++)
                                                                         <option value="{{ $i }}" {{ $i == $position->section ? 'selected' : '' }}>{{ $i }}</option>
                                                                     @endfor
                                                                 </select>
