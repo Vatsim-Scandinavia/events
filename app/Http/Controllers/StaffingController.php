@@ -17,6 +17,8 @@ class StaffingController extends Controller
      */
     public function index()
     {
+        $this->authorize('index', Staffing::class);
+
         $staffings = Staffing::all();
 
         return view('staffing.index', compact('staffings'));
