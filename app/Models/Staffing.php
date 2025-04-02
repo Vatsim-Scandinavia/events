@@ -15,6 +15,23 @@ class Staffing extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'id', 'title', 'date', 'description', 'channel_id', 'message_id', 'week_int', 'section_1_title', 'section_2_title', 'section_3_title', 'section_4_title', 'restrict_bookings',
+        'id',
+        'description',
+        'channel_id',
+        'message_id',
+        'section_1_title',
+        'section_2_title',
+        'section_3_title',
+        'section_4_title',
     ];
+
+    public function event() 
+    {
+        return $this->belongsTo(Event::class);
+    }
+
+    public function positions() 
+    {
+        return $this->hasMany(Position::class);
+    }
 }

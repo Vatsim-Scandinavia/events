@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\StaffingHelper;
+use App\Models\Event;
 use App\Models\Staffing;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -20,52 +22,72 @@ class StaffingController extends Controller
         return view('staffing.index', compact('staffings'));
     }
 
+    public function refresh(Staffing $staffing)
+    {
+        $this->authorize('update', $staffing);
+
+        $response = StaffingHelper::updateDiscordMessage($staffing);
+
+        if (!$response) {
+            return redirect()->route('staffings.index')->withErrors('Failed to update Discord message.');
+        }
+
+        return redirect()->route('staffings.index')->withSuccess('Staffing refreshed successfully.');
+    }
+
+    public function manreset(Staffing $staffing)
+    {
+        $this->authorize('update', $staffing);
+
+        if (StaffingHelper::resetStaffing($staffing)) {
+            $response = StaffingHelper::updateDiscordMessage($staffing);
+
+            if (!$response) {
+                return redirect()->route('staffings.index')->withErrors('Failed to update Discord message.');
+            }
+
+            return redirect()->route('staffings.index')->withSuccess('Staffing reset successfully.');
+        }
+
+        return redirect()->route('staffings.index')->withErrors('Failed to reset staffing. No valid parent or future child event found.');
+    }
+
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
-        $client = Http::withHeaders([
-            'Accept' => 'application/json',
-        ])
-            ->withBasicAuth(Config::get('custom.forum_api_secret'), '');
+        $this->authorize('create', Staffing::class);
 
-        $allData = []; // Initialize an empty array to store the combined results
+        $events = Event::whereNull('parent_id')
+            ->whereDoesntHave('staffing')
+            ->whereHas('children', function ($query) {
+                $query->where('start_date', '>', Carbon::now())
+                    ->whereDoesntHave('staffing');
+            })
+            ->get();
 
-        for ($currentPage = 1; $currentPage <= 2; $currentPage++) {
-            $response = $client->get(Config::get('custom.forum_api_url'), [
-                'perPage' => 25,
-                'hidden' => 0,
-                'sortDir' => 'desc',
-                'calendars' => Config::get('custom.forum_calendar_type'),
-                'page' => $currentPage,
-            ]);
-
-            $currentData = $response->json('results');
-
-            // Filter out data where the "recurrence" property is null
-            $filteredData = array_filter($currentData, function ($item) {
-                return ! empty($item['recurrence']);
-            });
-
-            // Check for duplicate titles and select the newest entry for each unique title
-            foreach ($filteredData as $item) {
-                $title = $item['title'];
-
-                // If a newer entry with the same title is found, replace the existing entry
-                if (isset($allData[$title]) && strtotime($item['start']) > strtotime($allData[$title]['start'])) {
-                    $allData[$title] = $item;
-                } elseif (! isset($allData[$title])) {
-                    $allData[$title] = $item;
-                } elseif (Staffing::find($item['id'])) {
-                    unset($allData[$title]);
-                }
-            }
-        }
+        $positions = $this->getPositions();
 
         $channels = $this->getGuildChannels();
 
-        return view('staffing.create', compact('allData', 'channels'));
+        return view('staffing.create', compact('events', 'channels', 'positions'));
+    }
+
+    protected function getPositions()
+    {
+        try {
+            $response = Http::get(config('booking.cc_api_url').'/positions');
+
+            if ($response->successful()) {
+                return $response->json()['data'];
+            } else {
+                throw new \Exception('Error: Unable to fetch positions. HTTP status code: '.$response->status());
+                return 'Error: Unable to fetch positions. HTTP status code: '.$response->status();
+            }
+        } catch (\Exception $e) {
+            return 'Error: '.$e->getMessage();
+        }
     }
 
     protected function getGuildChannels()
@@ -102,67 +124,65 @@ class StaffingController extends Controller
     public function store(Request $request)
     {
         $this->validate($request, [
-            'event' => 'required|integer',
+            'event' => 'required|integer|exists:events,id',
             'description' => 'required',
             'channel_id' => 'required|integer',
-            'week_int' => 'required|integer|between:1,4',
             'section_1_title' => 'required',
             'section_2_title' => 'nullable',
             'section_3_title' => 'nullable',
             'section_4_title' => 'nullable',
-            'restrict_booking' => 'required|integer',
+            'positions' => 'required|array',
         ]);
 
-        $eventData = $this->getEvent($request->input('event'));
+        $this->authorize('create', Staffing::class);
 
-        // Staffing::create([
-        //     'id' => $eventData->id,
-        //     'title' => $eventData->title,
-        //     'date' => $this->getDate($eventData->start),
-        // ])
+        // Check for duplicate positions within sections
+        $positions = $request->input('positions');
+        $sections = [];
 
-        var_dump($this->getDate($eventData->start));
-    }
+        foreach ($positions as $position) {
+            $section = $position['section']; 
+            $callsign = $position['callsign'];
 
-    protected function getEvent($id)
-    {
-        try {
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])
-                ->withBasicAuth(Config::get('custom.forum_api_secret'), '')
-                ->get(Config::get('custom.forum_api_url').'/'.$id);
-
-            if ($response->successful()) {
-                return $response->json();
+            if (!isset($sections[$section])) {
+                $sections[$section] = [];
             }
-        } catch (\Exception $e) {
-            return 'Error: '.$e->getMessage();
+
+            if (in_array($callsign, $sections[$section])) {
+                return redirect()->back()->withErrors(['positions' => "Duplicate callsign '$callsign' found in section '$section'."]);
+            }
+
+            $sections[$section][] = $callsign;
         }
 
-    }
+        $staffing = Staffing::create([
+            'description' => $request->input('description'),
+            'channel_id' => $request->input('channel_id'),
+            'section_1_title' => $request->input('section_1_title'),
+            'section_2_title' => $request->input('section_2_title'),
+            'section_3_title' => $request->input('section_3_title'),
+            'section_4_title' => $request->input('section_4_title'),
+        ]);
 
-    protected function getDate($date)
-    {
-        $carbonDate = Carbon::parse($date);
+        $event = Event::findOrFail($request->input('event'));
+        if ($event->start_date < Carbon::now()) {
+            $event = $event->children()->where('start_date', '>', Carbon::now())->first();
 
-        $dayofweek = $carbonDate->dayOfWeek->format('l');
-
-        $currentDate = Carbon::now();
-
-        while ($currentDate->dayOfWeek !== $dayofweek) {
-            $currentDate->addDay();
+            if (!$event) {
+                return redirect()->back()->withErrors('Failed to find a valid parent or future child event.');
+            }
         }
 
-        return $currentDate;
-    }
+        $staffing->event()->associate($event);
+        $staffing->save();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Staffing $staffing)
-    {
-        //
+        $staffing->positions()->createMany($request->input('positions'));
+
+        if (StaffingHelper::setupStaffing($staffing)) {
+            return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
+        }
+
+        return redirect()->back('staffings.index')->withErrors('Staffing message was not created. Please contact the Tech Team.');
     }
 
     /**
@@ -170,7 +190,22 @@ class StaffingController extends Controller
      */
     public function edit(Staffing $staffing)
     {
-        //
+        $this->authorize('update', $staffing);
+
+        foreach ($staffing->positions as $position) {
+            if ($position->discord_user || $position->booking_id)
+            {
+                return redirect()->route('staffings.index')->withErrors('Staffing cannot be edited because it has bookings.');
+            }
+        }
+
+        $positions = $this->getPositions();
+
+        $channels = $this->getGuildChannels();
+
+        $positionIndex = 0;
+
+        return view('staffing.edit', compact('staffing', 'channels', 'positions', 'positionIndex'));
     }
 
     /**
@@ -178,7 +213,62 @@ class StaffingController extends Controller
      */
     public function update(Request $request, Staffing $staffing)
     {
-        //
+        $this->validate($request, [
+            'description' => 'required',
+            'section_1_title' => 'required',
+            'section_2_title' => 'nullable',
+            'section_3_title' => 'nullable',
+            'section_4_title' => 'nullable',
+            'positions' => 'required|array',
+        ]);
+
+        $this->authorize('update', $staffing);
+
+        foreach ($staffing->positions as $position) {
+            if ($position->discord_user || $position->booking_id)
+            {
+                return redirect()->route('staffings.index')->withErrors('Staffing cannot be updated because it has bookings.');
+            }
+        }
+
+        // Check for duplicate positions within sections
+        $positions = $request->input('positions');
+        $sections = [];
+
+        foreach ($positions as $position) {
+            $section = $position['section']; 
+            $callsign = $position['callsign'];
+
+            if (!isset($sections[$section])) {
+                $sections[$section] = [];
+            }
+
+            if (in_array($callsign, $sections[$section])) {
+                return redirect()->back()->withErrors(['positions' => "Duplicate callsign '$callsign' found in section '$section'."]);
+            }
+
+            $sections[$section][] = $callsign;
+        }
+
+        $staffing->update([
+            'description' => $request->input('description'),
+            'section_1_title' => $request->input('section_1_title'),
+            'section_2_title' => $request->input('section_2_title'),
+            'section_3_title' => $request->input('section_3_title'),
+            'section_4_title' => $request->input('section_4_title'),
+        ]);
+
+        // Sync positions: delete removed ones, update existing, and add new ones
+        $staffing->positions()->delete();  // Remove old positions
+        $staffing->positions()->createMany($positions); // Add new ones
+
+        $resp = StaffingHelper::updateDiscordMessage($staffing);
+
+        if (!$resp) {
+            return redirect()->back()->withErrors('Failed to update Discord message.');
+        }
+
+        return redirect()->route('staffings.index')->withSuccess('Staffing updated successfully.');
     }
 
     /**
@@ -186,6 +276,17 @@ class StaffingController extends Controller
      */
     public function destroy(Staffing $staffing)
     {
-        //
+        $this->authorize('destroy', $staffing);
+
+        $staffing->positions()->each(function ($position) {
+            if ($position->discord_user || $position->booking_id)
+            {
+                return redirect()->route('staffings.index')->withError('Staffing cannot be deleted because it has bookings.');
+            }
+        });
+
+        $staffing->delete();
+
+        return redirect()->route('staffings.index')->withSuccess('Staffing deleted successfully.');
     }
 }

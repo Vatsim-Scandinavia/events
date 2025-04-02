@@ -20,6 +20,9 @@ class Kernel extends ConsoleKernel
 
         // Cleanup old database records
         $schedule->command('database:cleanup')->daily();
+
+        // Reset staffings
+        $schedule->command('staffing:reset')->hourly();
     }
 
     /**
