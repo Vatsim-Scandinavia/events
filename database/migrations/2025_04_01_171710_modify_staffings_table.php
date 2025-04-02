@@ -15,10 +15,19 @@ return new class extends Migration
         Schema::table('staffings', function (Blueprint $table) {
             $table->unsignedInteger('id')->change();
             $table->dropColumn('title');
-            $table->dropColumn('date');
-            $table->dropColumn('week_int');
-            $table->dropColumn('restrict_bookings');
             $table->unsignedInteger('event_id')->nullable()->after('section_4_title');
+        });
+
+        Schema::table('staffings', function (Blueprint $table) {
+            $table->dropColumn('date');
+        });
+
+        Schema::table('staffings', function (Blueprint $table) {
+            $table->dropColumn('week_int');
+        });
+
+        Schema::table('staffings', function (Blueprint $table) {
+            $table->dropColumn('restrict_bookings');
         });
 
         Schema::table('staffings', function (Blueprint $table) {
