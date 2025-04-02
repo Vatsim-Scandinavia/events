@@ -40,7 +40,7 @@ class StaffingController extends Controller
         $this->authorize('update', $staffing);
 
         if (StaffingHelper::resetStaffing($staffing)) {
-            $response = StaffingHelper::updateDiscordMessage($staffing);
+            $response = StaffingHelper::updateDiscordMessage($staffing, true);
 
             if (!$response) {
                 return redirect()->route('staffings.index')->withErrors('Failed to update Discord message.');
