@@ -179,6 +179,7 @@ class StaffingController extends Controller
         $staffing->positions()->createMany($request->input('positions'));
 
         if (StaffingHelper::setupStaffing($staffing)) {
+            StaffingHelper::updateDiscordMessage($staffing, true);
             return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
         }
 
