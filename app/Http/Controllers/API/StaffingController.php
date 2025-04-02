@@ -70,9 +70,7 @@ class StaffingController extends Controller
             ]);
         }
 
-        $response = Http::withToken(config('booking.cc_api_token'))->withHeaders([
-            'Accept' => 'application/json'
-        ])->post(
+        $response = Http::withToken(config('booking.cc_api_token'))->acceptJson()->post(
             config('booking.cc_api_url') . '/bookings/create', [
                 'cid' => $request->input('cid'),
                 'date' => Carbon::parse($staffing->event->start_date)->format('d/m/Y'),
