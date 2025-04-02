@@ -23,10 +23,6 @@ return new class extends Migration
             $table->unsignedInteger('staffing_id');
             $table->timestamps();
         });
-
-        Schema::table('positions', function (Blueprint $table) {
-            $table->foreign('staffing_id')->references('id')->on('staffings')->onDelete('cascade');
-        });
     }
 
     /**

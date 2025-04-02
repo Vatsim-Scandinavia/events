@@ -11,7 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+
         Schema::table('staffings', function (Blueprint $table) {
+            $table->unsignedInteger('id')->change();
             $table->dropColumn('title');
             $table->dropColumn('date');
             $table->dropColumn('week_int');
@@ -21,6 +23,10 @@ return new class extends Migration
 
         Schema::table('staffings', function (Blueprint $table) {
             $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
+        });
+
+        Schema::table('positions', function (Blueprint $table) {
+            $table->foreign('staffing_id')->references('id')->on('staffings')->onDelete('cascade');
         });
     }
 
