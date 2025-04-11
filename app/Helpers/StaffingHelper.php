@@ -22,11 +22,15 @@ class StaffingHelper
         $staffing->event()->associate($childEvent);
         $staffing->positions()->each(function($position) {
             if ($position->booking_id) {
-                $response = Http::withToken(config('booking.cc_api_token'))->delete(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
+                $bookingExists = Http::withToken(config('booking.cc_api_token'))->acceptJson()->get(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
 
-                if ($response->failed()) {
-                    throw new \Exception('Failed to delete booking. Error: ' . $response->body());
-                    return false;
+                if($bookingExists->ok()) {
+                    $response = Http::withToken(config('booking.cc_api_token'))->acceptJson()->delete(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
+
+                    if ($response->failed()) {
+                        throw new \Exception('Failed to delete booking. Error: ' . $response->body());
+                        return false;
+                    }
                 }
 
                 $position->booking_id = null;
