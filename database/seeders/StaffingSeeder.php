@@ -18,7 +18,7 @@ class StaffingSeeder extends Seeder
         Staffing::factory()->count(5)->create()->each(function ($staffing) {
             $staffing->event()->associate(Event::whereHas('user')->inRandomOrder()->first()->id);
             $staffing->positions()->createMany(
-                Position::factory()->count(rand(1, 3))->create()->toArray()
+                Position::factory()->count(rand(1, 3))->make()->toArray()
             );
             $staffing->save();
         });
