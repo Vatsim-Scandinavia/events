@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Event;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,21 +18,18 @@ class StaffingFactory extends Factory
     public function definition(): array
     {
         return [
-            'title' => fake()->sentence(),
-            'date' => fake()->dateTimeBetween('+1 month', '+6 month'),
-            'description' => fake()->paragraph(),
+            'description' => $this->faker->paragraph(),
             'channel_id' => $this->ranNumbers(),
             'message_id' => $this->ranNumbers(),
-            'week_int' => rand(1, 4),
-            'section_1_title' => fake()->sentence(),
-            'section_2_title' => fake()->sentence(),
-            'section_3_title' => fake()->sentence(),
-            'section_4_title' => fake()->sentence(),
-            'restrict_bookings' => rand(0, 1),
+            'section_1_title' => $this->faker->sentence(1),
+            'section_2_title' => $this->faker->sentence(1),
+            'section_3_title' => $this->faker->sentence(1),
+            'section_4_title' => $this->faker->sentence(1),
+            'event_id' => Event::factory()->create()->id,
         ];
     }
 
-    public function ranNumbers()
+    protected function ranNumbers()
     {
         $random_17_digits = mt_rand(1e16, 1e17 - 1);
         $random_two_digits = str_pad(mt_rand(0, 99), 2, '0', STR_PAD_LEFT);

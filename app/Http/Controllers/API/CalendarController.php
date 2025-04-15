@@ -37,7 +37,7 @@ class CalendarController extends Controller
 
         return response()->json([
             'success' => 'Calendar created',
-            'calendar' => $calendar,
+            'data' => $calendar,
         ], 200);
     }
 
@@ -68,7 +68,7 @@ class CalendarController extends Controller
 
         return response()->json([
             'success' => 'Calendar updated',
-            'calendar' => $calendar,
+            'data' => $calendar,
         ], 200);
     }
 
@@ -81,7 +81,7 @@ class CalendarController extends Controller
 
         return response()->json([
             'success' => 'Calendar deleted',
-            'calendar' => $calendar,
+            'data' => $calendar,
         ], 200);
     }
 }
