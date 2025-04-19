@@ -22,10 +22,10 @@ class StaffingHelper
         $staffing->event()->associate($childEvent);
         $staffing->positions()->each(function($position) {
             if ($position->booking_id) {
-                $bookingExists = Http::withToken(config('booking.cc_api_token'))->acceptJson()->get(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
+                $bookingExists = Http::retry(config('booking.api_retry_times', 3), config('booking.api_retry_delay', 1000))->withToken(config('booking.cc_api_token'))->acceptJson()->get(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
 
                 if($bookingExists->ok()) {
-                    $response = Http::withToken(config('booking.cc_api_token'))->acceptJson()->delete(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
+                    $response = Http::retry(config('booking.api_retry_times', 3), config('booking.api_retry_delay', 1000))->withToken(config('booking.cc_api_token'))->acceptJson()->delete(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
 
                     if ($response->failed()) {
                         throw new \Exception('Failed to delete booking. Error: ' . $response->body());
@@ -56,7 +56,7 @@ class StaffingHelper
         }
 
         // Send a api request to the discord bot to update the staffing message
-        $response = Http::withToken(config('booking.discord_api_token'))->asForm()->post(config('booking.discord_api_url') . '/staffings/update', $payload);
+        $response = Http::retry(config('booking.api_retry_times', 3), config('booking.api_retry_delay', 1000))->withToken(config('booking.discord_api_token'))->asForm()->post(config('booking.discord_api_url') . '/staffings/update', $payload);
 
         if ($response->failed()) {
             throw new \Exception('Failed to update Discord message. Error: ' . $response->body());
@@ -68,7 +68,7 @@ class StaffingHelper
 
     public static function setupStaffing(Staffing $staffing)
     {
-        $response = Http::withToken(config('booking.discord_api_token'))->asForm()->post(config('booking.discord_api_url') . '/staffings/setup', [
+        $response = Http::retry(config('booking.api_retry_times', 3), config('booking.api_retry_delay', 1000))->withToken(config('booking.discord_api_token'))->asForm()->post(config('booking.discord_api_url') . '/staffings/setup', [
             'id' => $staffing->id
         ]);
 

@@ -70,7 +70,7 @@ class StaffingController extends Controller
             ]);
         }
 
-        $response = Http::withToken(config('booking.cc_api_token'))->acceptJson()->post(
+        $response = Http::retry(config('booking.api_retry_times', 3), config('booking.api_retry_delay', 1000))->withToken(config('booking.cc_api_token'))->acceptJson()->post(
             config('booking.cc_api_url') . '/bookings/create', [
                 'cid' => $request->input('cid'),
                 'date' => Carbon::parse($staffing->event->start_date)->format('d/m/Y'),
@@ -194,7 +194,7 @@ class StaffingController extends Controller
             }
     
             // Attempt to unbook via external API
-            $response = Http::withToken(config('booking.cc_api_token'))
+            $response = Http::retry(config('booking.api_retry_times', 3), config('booking.api_retry_delay', 1000))->withToken(config('booking.cc_api_token'))
                 ->delete(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
     
             if (!$response->successful()) {

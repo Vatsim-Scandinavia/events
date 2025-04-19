@@ -42,6 +42,12 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('events', function (Blueprint $table) {
+            $table->dropForeign(['calendar_id']);
+            $table->dropForeign(['user_id']);
+            $table->dropForeign(['parent_id']);
+        });
+    
         Schema::dropIfExists('events');
     }
 };

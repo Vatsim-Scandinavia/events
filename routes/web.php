@@ -41,7 +41,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/calendars/edit/{calendar}', 'edit')->name('calendars.edit');
         Route::post('/calendars', 'store')->name('calendars.store');
         Route::patch('/calendars/{calendar}', 'update')->name('calendars.update');
-        Route::delete('/calendars', 'destroy')->name('calendars.destroy');
+        Route::delete('/calendars/{calendar}', 'destroy')->name('calendars.destroy');
     });
 
     Route::controller(EventController::class)->group(function () {
