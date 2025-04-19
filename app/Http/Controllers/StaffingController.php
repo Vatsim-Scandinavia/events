@@ -125,10 +125,10 @@ class StaffingController extends Controller
 
                 return $filteredChannels;
             } else {
-                return 'Error: Unable to fetch guild channels. HTTP status code: '.$response->status();
+                throw new \Exception('Unable to fetch channels. HTTP status code: '.$response->status());
             }
         } catch (\Exception $e) {
-            return 'Error: '.$e->getMessage();
+            return ['Error: '.$e->getMessage()];
         }
     }
 

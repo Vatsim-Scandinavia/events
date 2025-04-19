@@ -81,13 +81,14 @@
                                         <label for="channel_id" class="form-label my-1 me-2">Discord Channels <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="channel_id" id="channel_id" class="form-control my-1 me-sm-2" required>
                                             <option disabled selected>Select Discord Channel</option>
-                                            @if (!empty($channels))
-                                                @foreach ($channels as $channel)
+                                            @foreach ($channels as $channel)
+                                                @if(isset($channels[0]) && str_starts_with($channels[0], 'Error:'))
+                                                    <option disabled>{{ $channels[0] }}</option>
+                                                    @break
+                                                @else
                                                     <option value="{{ $channel['id']}}">#{{ $channel['name'] }}</option>
-                                                @endforeach
-                                            @else
-                                                <option disabled>No channels available</option>
-                                            @endif
+                                                @endif
+                                            @endforeach
                                         </select>
                                     </div>
                                 </div>
