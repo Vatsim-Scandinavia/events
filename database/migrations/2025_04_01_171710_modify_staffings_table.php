@@ -12,34 +12,28 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('staffings');
 
-        Schema::table('staffings', function (Blueprint $table) {
-            $table->unsignedInteger('id')->change();
-            $table->dropColumn('title');
-            if (!Schema::hasColumn('staffings', 'event_id')) {
-                if (DB::getDriverName() === 'mysql') {
-                    $table->unsignedInteger('event_id')->nullable()->after('section_4_title');
-                } else {
-                    $table->unsignedInteger('event_id')->nullable();
-                }
-            }
-        });
+        Schema::create('staffings', function (Blueprint $table) {
+            $table->id();
+            $table->text('description');
+            $table->bigInteger('channel_id');
+            $table->bigInteger('message_id')->nullable();
 
-        Schema::table('staffings', function (Blueprint $table) {
-            $table->dropColumn('date');
-        });
+            $table->text('section_1_title');
+            $table->text('section_2_title')->nullable();
+            $table->text('section_3_title')->nullable();
+            $table->text('section_4_title')->nullable();
 
-        Schema::table('staffings', function (Blueprint $table) {
-            $table->dropColumn('week_int');
-        });
+            $table->unsignedInteger('event_id')->nullable();
+            $table->timestamps();
 
-        Schema::table('staffings', function (Blueprint $table) {
-            $table->dropColumn('restrict_bookings');
-        });
-
-        Schema::table('staffings', function (Blueprint $table) {
             $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
         });
+
+        // Schema::table('staffings', function (Blueprint $table) {
+        //     $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
+        // });
 
         Schema::table('positions', function (Blueprint $table) {
             $table->foreign('staffing_id')->references('id')->on('staffings')->onDelete('cascade');
@@ -51,13 +45,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('staffings', function (Blueprint $table) {
-            $table->string('title')->after('id');
-            $table->date('date')->after('title');
-            $table->integer('week_int')->after('date');
-            $table->integer('restrict_bookings')->after('week_int');
-            $table->dropForeign(['event_id']);
-            $table->dropColumn('event_id');
-        });
+        Schema::dropIfExists('staffings');
     }
 };
