@@ -31,10 +31,6 @@ return new class extends Migration
             $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
         });
 
-        // Schema::table('staffings', function (Blueprint $table) {
-        //     $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
-        // });
-
         Schema::table('positions', function (Blueprint $table) {
             $table->foreign('staffing_id')->references('id')->on('staffings')->onDelete('cascade');
         });

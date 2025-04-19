@@ -75,9 +75,13 @@
                                         <label for="channel_id" class="form-label my-1 me-2">Discord Channels <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="channel_id" id="channel_id" class="form-control my-1 me-sm-2" disabled>
                                             <option disabled selected>Select Discord Channel</option>
-                                            @foreach ($channels as $channel)
-                                                <option value="{{ $channel['id']}}" {{ $channel['id'] == $staffing->channel_id ? 'selected' : '' }}>#{{ $channel['name'] }}</option>
-                                            @endforeach
+                                            @if (!empty($channels))
+                                                @foreach ($channels as $channel)
+                                                    <option value="{{ $channel['id']}}" {{ $channel['id'] == $staffing->channel_id ? 'selected' : '' }}>#{{ $channel['name'] }}</option>
+                                                @endforeach
+                                            @else
+                                                <option disabled>No channels available</option>
+                                            @endif
                                         </select>
                                     </div>
                                 </div>
