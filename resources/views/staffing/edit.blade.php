@@ -74,13 +74,13 @@
                                     <div class="form-group">
                                         <label for="channel_id" class="form-label my-1 me-2">Discord Channels <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="channel_id" id="channel_id" class="form-control my-1 me-sm-2" disabled>
-                                            <option disabled selected>Select Discord Channel</option>
+                                            <option disabled>Select Discord Channel</option>
                                             @foreach ($channels as $channel)
-                                                @if(isset($channels[0]) && str_starts_with($channels[0], 'Error:'))
+                                                @if(isset($channels[0]) && !is_array($channels[0]) && str_starts_with($channels[0], 'Error:'))
                                                     <option disabled>{{ $channels[0] }}</option>
                                                     @break
                                                 @else
-                                                    <option value="{{ $channel['id']}}">#{{ $channel['name'] }}</option>
+                                                    <option value="{{ $channel['id'] }}" {{ $channel['id'] == $staffing->channel_id ? 'selected' : '' }}>#{{ $channel['name'] }}</option>
                                                 @endif
                                             @endforeach
                                         </select>
