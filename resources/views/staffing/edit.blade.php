@@ -76,7 +76,12 @@
                                         <select name="channel_id" id="channel_id" class="form-control my-1 me-sm-2" disabled>
                                             <option disabled selected>Select Discord Channel</option>
                                             @foreach ($channels as $channel)
-                                                <option value="{{ $channel['id']}}" {{ $channel['id'] == $staffing->channel_id ? 'selected' : '' }}>#{{ $channel['name'] }}</option>
+                                                @if(isset($channels[0]) && str_starts_with($channels[0], 'Error:'))
+                                                    <option disabled>{{ $channels[0] }}</option>
+                                                    @break
+                                                @else
+                                                    <option value="{{ $channel['id']}}">#{{ $channel['name'] }}</option>
+                                                @endif
                                             @endforeach
                                         </select>
                                     </div>

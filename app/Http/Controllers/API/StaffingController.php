@@ -132,7 +132,7 @@ class StaffingController extends Controller
 
             return response()->json([
                 'message' => 'Staffing updated successfully',
-            ]);
+            ], 200);
         }
 
         return response()->json([

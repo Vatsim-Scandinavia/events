@@ -51,11 +51,10 @@ class EventController extends Controller
             'recurrence_unit' => 'nullable|required_if:event_type,1|string|max:255',
             'recurrence_end_date' => 'nullable|required_if:event_type,1|date_format:Y-m-d H:i|after_or_equal:end_date',
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+            'user' => 'required|exists:users,id',
         ]);
 
         $user = User::findorFail($data['user']);
-
-        $this->authorize('create', Event::class);
 
         $imageName = null;
 
@@ -93,7 +92,7 @@ class EventController extends Controller
         ]);
 
         // Ensure user association
-        $event->user()->associate(\Auth::user());
+        $event->user()->associate($user);
         $event->save();
 
         // Generate and save recurrences if the event is recurring
@@ -137,11 +136,10 @@ class EventController extends Controller
             'recurrence_unit' => 'nullable|required_if:event_type,1|string|max:255',
             'recurrence_end_date' => 'nullable|required_if:event_type,1|date_format:Y-m-d H:i|after_or_equal:end_date',
             'image' => 'nullable|image|mimes:jpeg,jpg,png|max:2048',
+            'user' => 'required|exists:users,id',
         ]);
 
         $user = User::findorFail($data['user']);
-
-        $this->authorize('create', Event::class, $user);
 
         $imageURL = $event->image;
         $imageName = null;
@@ -188,7 +186,7 @@ class EventController extends Controller
         ]);
 
         // Ensure user association
-        $event->user()->associate(\Auth::user());
+        $event->user()->associate($user);
 
         // Save the event before handling recurrences
         $event->save();

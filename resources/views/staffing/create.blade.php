@@ -18,9 +18,13 @@
                                         <label for="event" class="form-label my-1 me-2">Event <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="event" id="event" class="form-control my-1 me-sm-2" required>
                                             <option disabled selected>Select Event</option>
-                                            @foreach ($events as $event)
-                                                <option value="{{ $event->id }}">{{ $event->title }}</option>
-                                            @endforeach
+                                            @if (!$events->isEmpty())
+                                                @foreach ($events as $event)
+                                                    <option value="{{ $event->id }}">{{ $event->title }}</option>
+                                                @endforeach
+                                            @else
+                                                <option disabled>No events available</option>
+                                            @endif
                                         </select>
                                     </div>
                                 </div>
@@ -78,7 +82,12 @@
                                         <select name="channel_id" id="channel_id" class="form-control my-1 me-sm-2" required>
                                             <option disabled selected>Select Discord Channel</option>
                                             @foreach ($channels as $channel)
-                                                <option value="{{ $channel['id']}}">#{{ $channel['name'] }}</option>
+                                                @if(isset($channels[0]) && str_starts_with($channels[0], 'Error:'))
+                                                    <option disabled>{{ $channels[0] }}</option>
+                                                    @break
+                                                @else
+                                                    <option value="{{ $channel['id']}}">#{{ $channel['name'] }}</option>
+                                                @endif
                                             @endforeach
                                         </select>
                                     </div>

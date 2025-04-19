@@ -111,12 +111,24 @@ class StaffingController extends Controller
                 // Reset array keys to start from 0 if needed
                 $filteredChannels = array_values($filteredChannels);
 
+                // Make sure channels already in the database are not included
+                $existingChannelIds = Staffing::pluck('channel_id')->toArray();
+
+                $filteredChannels = array_filter($filteredChannels, function ($channel) use ($existingChannelIds) {
+                    return !in_array($channel['id'], $existingChannelIds);
+                });
+
+                // Sort channels by name
+                usort($filteredChannels, function ($a, $b) {
+                    return strcmp($a['name'], $b['name']);
+                });
+
                 return $filteredChannels;
             } else {
-                return 'Error: Unable to fetch guild channels. HTTP status code: '.$response->status();
+                throw new \Exception('Unable to fetch channels. HTTP status code: '.$response->status());
             }
         } catch (\Exception $e) {
-            return 'Error: '.$e->getMessage();
+            return ['Error: '.$e->getMessage()];
         }
     }
 

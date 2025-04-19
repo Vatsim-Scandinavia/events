@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CalendarSeeder::class,
             EventSeeder::class,
+            StaffingSeeder::class,
             APIKeySeeder::class,
         ]);
     }
