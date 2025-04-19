@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -15,7 +16,13 @@ return new class extends Migration
         Schema::table('staffings', function (Blueprint $table) {
             $table->unsignedInteger('id')->change();
             $table->dropColumn('title');
-            $table->unsignedInteger('event_id')->nullable()->after('section_4_title');
+            if (!Schema::hasColumn('staffings', 'event_id')) {
+                if (DB::getDriverName() === 'mysql') {
+                    $table->unsignedInteger('event_id')->nullable()->after('section_4_title');
+                } else {
+                    $table->unsignedInteger('event_id')->nullable();
+                }
+            }
         });
 
         Schema::table('staffings', function (Blueprint $table) {
