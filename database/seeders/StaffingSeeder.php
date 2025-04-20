@@ -15,8 +15,16 @@ class StaffingSeeder extends Seeder
      */
     public function run(): void
     {
-        Staffing::factory()->count(5)->create()->each(function ($staffing) {
-            $staffing->event()->associate(Event::whereHas('user')->inRandomOrder()->first()->id);
+        $event = Event::has('calendar')->inRandomOrder()->first();
+
+        if (!$event) {
+            $this->command->warn('No events with calendars found. Skipping StaffingSeeder.');
+            return;
+        }
+        
+        Staffing::factory()->count(5)->create([
+            'event_id' => $event->id,
+        ])->each(function ($staffing) {
             $staffing->positions()->createMany(
                 Position::factory()->count(rand(1, 3))->make()->toArray()
             );
