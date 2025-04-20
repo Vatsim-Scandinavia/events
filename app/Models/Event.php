@@ -71,7 +71,7 @@ class Event extends Model
             $start = Carbon::parse($this->start_date);
             $end = Carbon::parse($this->end_date);
 
-            $interval = $this->recurrence_interval ?? 1;
+            $interval = (int) ($this->recurrence_interval ?? 1);
             $unit = $this->recurrence_unit ?? 'day';
 
             // Calculate the max allowed recurrence end date (6 months from the start date)

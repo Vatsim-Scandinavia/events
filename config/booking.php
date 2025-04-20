@@ -44,4 +44,24 @@ return [
     */
     'discord_api_token' => env('DISCORD_API_TOKEN', null),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Discord API Retry Delay Times
+    |--------------------------------------------------------------------------
+    |
+    | Set the Discord API Retry Delay Times
+    |
+    */
+    'booking.api_retry_times' => env('API_RETRY_TIMES', 3),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Discord API Retry Delay in ms
+    |--------------------------------------------------------------------------
+    |
+    | Set the Discord API Retry Delay in ms
+    |
+    */
+    'booking.api_retry_delay' => env('API_RETRY_DELAY', 1000),
+
 ];

@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::drop('positions');
-
-        Schema::table('staffings', function (Blueprint $table) {
-            $table->unsignedInteger('id')->autoIncrement()->change();
-        });
+        Schema::dropIfExists('positions');
 
         Schema::create('positions', function (Blueprint $table) {
             $table->increments('id');
@@ -37,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('positions');
     }
 };

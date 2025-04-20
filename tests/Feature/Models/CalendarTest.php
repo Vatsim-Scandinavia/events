@@ -195,6 +195,11 @@ class CalendarTest extends TestCase
         // Check redirect and session is correct
         $response->assertRedirect(route('calendars.index'));
         $response->assertSessionHas('success', 'Successfully deleted calendar');
+
+        // Check if the calendar is deleted
+        $this->assertDatabaseMissing('calendars', [
+            'id' => $calendar->id,
+        ]);
     }
 
     protected function getUser()

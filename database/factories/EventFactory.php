@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Calendar;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -18,7 +19,7 @@ class EventFactory extends Factory
     public function definition(): array
     {
         return [
-            'calendar_id' => Calendar::factory()->create()->id,
+            'calendar_id' => Calendar::inRandomOrder()->first()?->id ?? Calendar::factory()->create()->id,
             'title' => $this->faker->sentence(1),
             'short_description' => $this->faker->text(280),
             'long_description' => $this->faker->paragraph(),
@@ -27,6 +28,7 @@ class EventFactory extends Factory
             'recurrence_interval' => null,
             'recurrence_unit' => null,
             'recurrence_end_date' => null,
+            'user_id' => User::inRandomOrder()->first()?->id ?? User::factory()->create()->id,
         ];
     }
 }

@@ -249,6 +249,13 @@ class EventTest extends TestCase
         // Check redirect and session is correct
         $response->assertRedirect(route('events.index'));
         $response->assertSessionHas('success', 'Event deleted successfully');
+
+        // Check if the event is deleted using soft delete logic
+        $this->assertDatabaseHas('events', [
+            'id' => $event->id,
+            'deleted_at' => now(),
+        ]);
+
     }
 
     protected function getUser()

@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::dropIfExists('staffings');
 
         Schema::create('staffings', function (Blueprint $table) {
-            $table->id();
+            $table->increments('id');
             $table->text('description');
             $table->bigInteger('channel_id');
             $table->bigInteger('message_id')->nullable();
@@ -29,10 +29,6 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
-        });
-
-        Schema::table('positions', function (Blueprint $table) {
-            $table->foreign('staffing_id')->references('id')->on('staffings')->onDelete('cascade');
         });
     }
 

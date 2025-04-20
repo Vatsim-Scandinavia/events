@@ -71,7 +71,7 @@ class StaffingController extends Controller
 
         $positions = $this->getPositions();
 
-        $channels = $this->getGuildChannels();
+        $channels = $this->getGuildChannels(True);
 
         return view('staffing.create', compact('events', 'channels', 'positions'));
     }
@@ -92,7 +92,7 @@ class StaffingController extends Controller
         }
     }
 
-    protected function getGuildChannels()
+    protected function getGuildChannels($create = null)
     {
         try {
             $response = Http::withHeaders([
@@ -111,12 +111,14 @@ class StaffingController extends Controller
                 // Reset array keys to start from 0 if needed
                 $filteredChannels = array_values($filteredChannels);
 
-                // Make sure channels already in the database are not included
-                $existingChannelIds = Staffing::pluck('channel_id')->toArray();
+                if ($create) {
+                    // Make sure channels already in the database are not included
+                    $existingChannelIds = Staffing::pluck('channel_id')->toArray();
 
-                $filteredChannels = array_filter($filteredChannels, function ($channel) use ($existingChannelIds) {
-                    return !in_array($channel['id'], $existingChannelIds);
-                });
+                    $filteredChannels = array_filter($filteredChannels, function ($channel) use ($existingChannelIds) {
+                        return !in_array($channel['id'], $existingChannelIds);
+                    });
+                }
 
                 // Sort channels by name
                 usort($filteredChannels, function ($a, $b) {

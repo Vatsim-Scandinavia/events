@@ -82,7 +82,7 @@
                                         <select name="channel_id" id="channel_id" class="form-control my-1 me-sm-2" required>
                                             <option disabled selected>Select Discord Channel</option>
                                             @foreach ($channels as $channel)
-                                                @if(isset($channels[0]) && str_starts_with($channels[0], 'Error:'))
+                                                @if(isset($channels[0]) && !is_array($channels[0]) && str_starts_with($channels[0], 'Error:'))
                                                     <option disabled>{{ $channels[0] }}</option>
                                                     @break
                                                 @else
