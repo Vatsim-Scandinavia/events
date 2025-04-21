@@ -11,8 +11,18 @@ class DiscordMessage extends Model
 
     public $timestamps = false;
 
+    public $incrementing = false;
+
+    public $primaryKey = 'message_id';
+
     protected $fillable = [
         'message_id',
         'expires_at',
+        'event_id',
     ];
+
+    public function event()
+    {
+        return $this->belongsTo(Event::class);
+    }
 }

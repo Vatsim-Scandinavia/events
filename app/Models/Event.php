@@ -136,4 +136,9 @@ class Event extends Model
 
         return $recurrences;
     }
+
+    public function discordMessage()
+    {
+        return $this->hasOne(DiscordMessage::class);
+    }
 }

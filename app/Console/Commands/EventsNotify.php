@@ -43,6 +43,7 @@ class EventsNotify extends Command
             }
 
             $result = EventHelper::discordPost(
+                $event->id,
                 EventHelper::discordMention()."\n:clock2: **".$event->title.'** is starting in two hours!',
                 $event->title,
                 $event->long_description,
