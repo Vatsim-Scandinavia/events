@@ -28,4 +28,21 @@ class Handler extends ExceptionHandler
             Integration::captureUnhandledException($e);
         });
     }
+
+    public function render($request, Throwable $exception)
+    {
+        if ($exception instanceof EventException) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $exception->getMessage()], $exception->getCode() ?: 500);
+            }
+
+            if($exception->getRoute()) {
+                return redirect()->route($exception->getRoute())->withErrors(['error' => $exception->getMessage()]);
+            }
+
+            return redirect()->back()->withErrors(['error' => $exception->getMessage()]);
+        }
+
+        return parent::render($request, $exception);
+    }
 }

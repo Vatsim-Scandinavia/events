@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\EventException;
 use App\Helpers\StaffingHelper;
 use App\Models\Event;
 use App\Models\Staffing;
@@ -28,11 +29,7 @@ class StaffingController extends Controller
     {
         $this->authorize('update', $staffing);
 
-        $response = StaffingHelper::updateDiscordMessage($staffing);
-
-        if (!$response) {
-            return redirect()->route('staffings.index')->withErrors('Failed to update Discord message.');
-        }
+        StaffingHelper::updateDiscordMessage($staffing, null , 'staffings.index');
 
         return redirect()->route('staffings.index')->withSuccess('Staffing refreshed successfully.');
     }
@@ -41,17 +38,11 @@ class StaffingController extends Controller
     {
         $this->authorize('update', $staffing);
 
-        if (StaffingHelper::resetStaffing($staffing)) {
-            $response = StaffingHelper::updateDiscordMessage($staffing, true);
+        StaffingHelper::resetStaffing($staffing, 'staffings.index');
 
-            if (!$response) {
-                return redirect()->route('staffings.index')->withErrors('Failed to update Discord message.');
-            }
+        StaffingHelper::updateDiscordMessage($staffing, true, 'staffings.index');
 
-            return redirect()->route('staffings.index')->withSuccess('Staffing reset successfully.');
-        }
-
-        return redirect()->route('staffings.index')->withErrors('Failed to reset staffing. No valid parent or future child event found.');
+        return redirect()->route('staffings.index')->withSuccess('Staffing reset successfully.');
     }
 
     /**
@@ -193,13 +184,11 @@ class StaffingController extends Controller
         $staffing->save();
 
         $staffing->positions()->createMany($request->input('positions'));
+        
+        StaffingHelper::setupStaffing($staffing, 'staffings.index');
+        StaffingHelper::updateDiscordMessage($staffing, true, 'staffings.index');
 
-        if (StaffingHelper::setupStaffing($staffing)) {
-            StaffingHelper::updateDiscordMessage($staffing, true);
-            return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
-        }
-
-        return redirect()->back('staffings.index')->withErrors('Staffing message was not created. Please contact the Tech Team.');
+        return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
     }
 
     /**
@@ -244,7 +233,7 @@ class StaffingController extends Controller
         foreach ($staffing->positions as $position) {
             if ($position->discord_user || $position->booking_id)
             {
-                return redirect()->route('staffings.index')->withErrors('Staffing cannot be updated because it has bookings.');
+                throw new EventException('Staffing cannot be edited because it has bookings.', 500, null, 'staffings.index');
             }
         }
 
@@ -279,11 +268,7 @@ class StaffingController extends Controller
         $staffing->positions()->delete();  // Remove old positions
         $staffing->positions()->createMany($positions); // Add new ones
 
-        $resp = StaffingHelper::updateDiscordMessage($staffing);
-
-        if (!$resp) {
-            return redirect()->back()->withErrors('Failed to update Discord message.');
-        }
+        StaffingHelper::updateDiscordMessage($staffing);
 
         return redirect()->route('staffings.index')->withSuccess('Staffing updated successfully.');
     }
@@ -298,7 +283,7 @@ class StaffingController extends Controller
         $staffing->positions()->each(function ($position) {
             if ($position->discord_user || $position->booking_id)
             {
-                return redirect()->route('staffings.index')->withError('Staffing cannot be deleted because it has bookings.');
+                throw new EventException('Staffing cannot be deleted because it has bookings.', 500, null, 'staffings.index');
             }
         });
 
