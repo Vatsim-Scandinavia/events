@@ -96,15 +96,18 @@ class EventController extends Controller
         $event->user()->associate(\Auth::user());
         $event->save();
 
-        // Post to Discord
-        EventHelper::discordPost(
-            ':calendar_spiral: A new event has been scheduled.',
-            $event->title,
-            $event->long_description,
-            asset('storage/banners/'.$event->image),
-            Carbon::parse($event->start_date),
-            Carbon::parse($event->end_date)
-        );
+        if($event->calendar->public) {
+            // Post to Discord
+            EventHelper::discordPost(
+                $event->id,
+                ':calendar_spiral: A new event has been scheduled.',
+                $event->title,
+                $event->long_description,
+                asset('storage/banners/'.$event->image),
+                Carbon::parse($event->start_date),
+                Carbon::parse($event->end_date)
+            );
+        }
 
         // Generate and save recurrences if the event is recurring
         if ($event->recurrence_interval && $event->recurrence_unit) {
@@ -203,6 +206,19 @@ class EventController extends Controller
         // Save the event before handling recurrences
         $event->save();
 
+        if($event->calendar->public && $event->discordMessage) {
+            // Post to Discord
+            EventHelper::discordUpdate(
+                $event->id,
+                ':calendar_spiral: A new event has been scheduled.',
+                $event->title,
+                $event->long_description,
+                asset('storage/banners/'.$event->image),
+                Carbon::parse($event->start_date),
+                Carbon::parse($event->end_date)
+            );
+        }
+
         // Check if the event is a recurring event and delete old recurrences if they exist
         if ($event->recurrence_interval && $event->recurrence_unit) {
             $event->children()->delete();
@@ -225,6 +241,12 @@ class EventController extends Controller
         // Delete the old image if it exists
         if ($event->image && $event->parent_id === null) {
             Storage::disk('public')->delete('banners/'.$event->image);
+        }
+
+        if($event->calendar->public && $event->discordMessage) {
+            // Delete the Discord message
+            EventHelper::discordDelete($event->discordMessage->message_id);
+            $event->discordMessage->delete();
         }
 
         // Delete the event and any of its children
