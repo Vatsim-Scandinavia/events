@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Exceptions\EventException;
 use App\Helpers\StaffingHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Staffing;
@@ -47,14 +48,20 @@ class StaffingController extends Controller
         ]);
 
         $staffing = Staffing::where('message_id', $request->input('message_id'))->first();
+
+        if (!$staffing) {
+            throw new EventException('Staffing  not found', 404);
+            return response()->json(['error' => 'Staffing not found'], 404);
+        }
+
         $position = $request->input('section') ? $staffing->positions()->where('callsign', $request->input('position'))->where('section', $request->input('section'))->first() : $staffing->positions()->where('callsign', $request->input('position'))->first();
 
-        if (!$staffing || !$position) {
-            return response()->json(['error' => 'Staffing or position not found'], 404);
+        if (!$position) {
+            throw new EventException('Position not found', 404);
         }
 
         if ($position->discord_user) {
-            return response()->json(['error' => 'Position already booked'], 400);
+            throw new EventException('Position already booked', 422);
         }
 
         if ($position->local_booking) {
@@ -82,19 +89,15 @@ class StaffingController extends Controller
             ]
         );
 
-        if (!$response->successful()) {
-            return response()->json(['error' => 'Error booking position in CC. CC responded with error: ' . $response->json()['message']], 500);
+        if ($response->failed()) {
+            throw new EventException('Error booking position in CC. CC responded with error: ' . $response->json()['message'], 500);
         }
 
-        if ($response->successful()) {
-            $position->discord_user = $request->input('discord_user_id');
-            $position->booking_id = $response->json()['booking']['id'];
-            $position->save();
+        $position->discord_user = $request->input('discord_user_id');
+        $position->booking_id = $response->json()['booking']['id'];
+        $position->save();
 
-            if (!StaffingHelper::updateDiscordMessage($staffing)) {
-                return response()->json(['error' => 'Failed to update Discord message'], 500);
-            }
-        }
+        StaffingHelper::updateDiscordMessage($staffing);
 
         return response()->json([
             'message' => 'Position booked successfully',
@@ -115,7 +118,7 @@ class StaffingController extends Controller
         foreach ($staffing->positions as $position) {
             if ($position->discord_user || $position->booking_id)
             {
-                return response()->json(['error' => 'Staffing cannot be updated because it has bookings.'], 500);
+                throw new EventException('Staffing cannot be updated because it has bookings.', 500);
             }
         }
 
@@ -124,39 +127,26 @@ class StaffingController extends Controller
         if (!empty($updateData)) {
             $staffing->update($updateData);
 
-            $response = StaffingHelper::updateDiscordMessage($staffing);
-
-            if (!$response) {
-                return response()->json(['error' => 'Failed to update Discord message'], 500);
-            }
+            StaffingHelper::updateDiscordMessage($staffing);
 
             return response()->json([
                 'message' => 'Staffing updated successfully',
             ], 200);
         }
 
-        return response()->json([
-            'error' => 'No valid data provided for update',
-        ], 422);
+        throw new EventException('No valid data provided to update', 422);
     }
 
     public function reset(Staffing $staffing)
     {
-        if (StaffingHelper::resetStaffing($staffing)) {
-            $response = StaffingHelper::updateDiscordMessage($staffing);
-
-            if (!$response) {
-                return response()->json(['error' => 'Failed to update Discord message'], 500);
-            }
-
-            return response()->json([
-                'message' => 'Staffing reset successfully',
-            ], 200);
-        }
-
+        StaffingHelper::resetStaffing($staffing);
+        StaffingHelper::updateDiscordMessage($staffing);
+        
         return response()->json([
-            'error' => 'Failed to reset staffing. No valid parent or future child event found.',
-        ], 500);
+            'message' => 'Staffing reset successfully',
+        ], 200);
+
+        throw new EventException('Failed to reset staffing. No valid parent or future child event found.', 500);
     }
 
     /**
@@ -174,7 +164,7 @@ class StaffingController extends Controller
         $staffing = Staffing::where('message_id', $validated['message_id'])->first();
         
         if (!$staffing) {
-            return response()->json(['error' => 'Staffing not found'], 404);
+            throw new EventException('Staffing not found', 404);
         }
 
         $positions = $staffing->positions()
@@ -184,7 +174,7 @@ class StaffingController extends Controller
         ->get();
         
         if ($positions->isEmpty()) {
-            return response()->json(['error' => 'Positions not found'], 404);
+            throw new EventException('Position not found', 404);
         }
 
         foreach ($positions as $position) {
@@ -197,8 +187,8 @@ class StaffingController extends Controller
             $response = Http::retry(config('booking.api_retry_times', 3), config('booking.api_retry_delay', 1000))->withToken(config('booking.cc_api_token'))
                 ->delete(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);
     
-            if (!$response->successful()) {
-                return response()->json(['error' => 'Error unbooking position in CC. CC responded with error: ' . $response->json()['message']], 500);
+            if ($response->failed()) {
+                throw new EventException('Error unbooking position in CC. CC responded with error: ' . $response->json()['message'], 500);
             }
     
             // Update position after successful API unbooking
@@ -208,9 +198,7 @@ class StaffingController extends Controller
             ]);
         }
 
-        if (!StaffingHelper::updateDiscordMessage($staffing)) {
-            return response()->json(['error' => 'Failed to update Discord message.'], 500);
-        }
+        StaffingHelper::updateDiscordMessage($staffing);
 
         return response()->json([
             'message' => 'Position unbooked successfully',
