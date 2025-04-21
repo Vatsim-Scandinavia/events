@@ -96,15 +96,17 @@ class EventController extends Controller
         $event->user()->associate(\Auth::user());
         $event->save();
 
-        // Post to Discord
-        EventHelper::discordPost(
-            ':calendar_spiral: A new event has been scheduled.',
-            $event->title,
-            $event->long_description,
-            asset('storage/banners/'.$event->image),
-            Carbon::parse($event->start_date),
-            Carbon::parse($event->end_date)
-        );
+        if($event->calendar->public) {
+            // Post to Discord
+            EventHelper::discordPost(
+                ':calendar_spiral: A new event has been scheduled.',
+                $event->title,
+                $event->long_description,
+                asset('storage/banners/'.$event->image),
+                Carbon::parse($event->start_date),
+                Carbon::parse($event->end_date)
+            );
+        }
 
         // Generate and save recurrences if the event is recurring
         if ($event->recurrence_interval && $event->recurrence_unit) {

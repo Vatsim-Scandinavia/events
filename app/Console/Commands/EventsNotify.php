@@ -37,6 +37,11 @@ class EventsNotify extends Command
         // Notify about upcoming events
         foreach ($events as $event) {
 
+            if (!$event->calendar->public) {
+                $this->info('Skipping event: '.$event->title.' (private calendar)');
+                continue;
+            }
+
             $result = EventHelper::discordPost(
                 EventHelper::discordMention()."\n:clock2: **".$event->title.'** is starting in two hours!',
                 $event->title,
