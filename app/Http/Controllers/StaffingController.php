@@ -99,6 +99,11 @@ class StaffingController extends Controller
                     return isset($channel['type']) && $channel['type'] == 0;
                 });
 
+                // Filter away channels who don't have "staffing" or "signup" in the name
+                $filteredChannels = array_filter($filteredChannels, function ($channel) {
+                    return strpos($channel['name'], 'staffing') !== false || strpos($channel['name'], 'signup') !== false;
+                });
+
                 // Reset array keys to start from 0 if needed
                 $filteredChannels = array_values($filteredChannels);
 
