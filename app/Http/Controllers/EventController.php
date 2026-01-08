@@ -296,6 +296,42 @@ class EventController extends Controller
     {
         $this->authorize('destroy', $event);
 
+        // Handle staffings associated with this event before deletion
+        if ($event->staffing) {
+            $staffing = $event->staffing;
+            $nextEvent = null;
+
+            // Find the next appropriate event in the series
+            if ($event->parent_id) {
+                // This is a child event, look for next sibling or parent
+                $parent = $event->parent;
+                if ($parent && $parent->start_date > now()) {
+                    $nextEvent = $parent;
+                } else {
+                    $nextEvent = $parent->children()
+                        ->where('start_date', '>', now())
+                        ->where('id', '!=', $event->id)
+                        ->orderBy('start_date')
+                        ->first();
+                }
+            } else {
+                // This is a parent event, look for next child
+                $nextEvent = $event->children()
+                    ->where('start_date', '>', now())
+                    ->orderBy('start_date')
+                    ->first();
+            }
+
+            if ($nextEvent) {
+                // Move staffing to the next event
+                $staffing->event()->associate($nextEvent);
+                $staffing->save();
+            } else {
+                // No future events found, delete the staffing
+                $staffing->delete();
+            }
+        }
+
         // Delete the old image if it exists
         if ($event->image && $event->parent_id === null) {
             Storage::disk('public')->delete('banners/'.$event->image);
