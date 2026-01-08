@@ -13,14 +13,30 @@ class StaffingHelper
     {
         $event = $staffing->event;
 
-        $childEvent = $event->parent()->exists() ? $event->parent->children()->where('start_date', '>', Carbon::now())->first() : $event->children()->where('start_date', '>', Carbon::now())->first();
+        $nextEvent = null;
+        
+        if ($event->parent()->exists()) {
+            // Current event is a child event, so check parent and siblings
+            $parent = $event->parent;
+            
+            // Check if parent is in the future (first occurrence)
+            if ($parent->start_date > Carbon::now()) {
+                $nextEvent = $parent;
+            } else {
+                // Parent is in past, find next future sibling
+                $nextEvent = $parent->children()->where('start_date', '>', Carbon::now())->first();
+            }
+        } else {
+            // Current event is a parent, find next future child
+            $nextEvent = $event->children()->where('start_date', '>', Carbon::now())->first();
+        }
 
-        if(!$childEvent) {
+        if(!$nextEvent) {
             throw new EventException('No child event found', 500);
             return false;
         }
 
-        $staffing->event()->associate($childEvent);
+        $staffing->event()->associate($nextEvent);
         $staffing->positions()->each(function($position) use ($staffing, $route) {
             if ($position->booking_id) {
                 $bookingExists = Http::retry(config('booking.api_retry_times', 3), config('booking.api_retry_delay', 1000))->withToken(config('booking.cc_api_token'))->acceptJson()->get(config('booking.cc_api_url') . '/bookings/' . $position->booking_id);

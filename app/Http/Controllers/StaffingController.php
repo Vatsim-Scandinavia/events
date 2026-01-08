@@ -73,7 +73,14 @@ class StaffingController extends Controller
             $response = Http::get(config('booking.cc_api_url').'/positions');
 
             if ($response->successful()) {
-                return $response->json()['data'];
+                $positions = $response->json()['data'];
+                
+                // Sort positions alphabetically by callsign
+                usort($positions, function ($a, $b) {
+                    return strcmp($a['callsign'], $b['callsign']);
+                });
+                
+                return $positions;
             } else {
                 throw new \Exception('Error: Unable to fetch positions. HTTP status code: '.$response->status());
                 return 'Error: Unable to fetch positions. HTTP status code: '.$response->status();

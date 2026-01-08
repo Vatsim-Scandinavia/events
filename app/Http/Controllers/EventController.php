@@ -219,16 +219,74 @@ class EventController extends Controller
             );
         }
 
-        // Check if the event is a recurring event and delete old recurrences if they exist
+        // Check if the event is a recurring event and handle recurrences intelligently
         if ($event->recurrence_interval && $event->recurrence_unit) {
+            $this->updateEventRecurrences($event);
+        } else {
+            // If the event is no longer recurring, delete all children
             $event->children()->delete();
-
-            // Generate and save new recurrences
-            $recurrences = $event->generateRecurrences();
-            $event->children()->saveMany($recurrences);
         }
 
         return redirect()->route('events.index')->withSuccess('Event updated successfully.');
+    }
+
+    /**
+     * Intelligently update recurring event children without recreating them
+     */
+    private function updateEventRecurrences(Event $event)
+    {
+        $existingChildren = $event->children()->orderBy('start_date', 'ASC')->get();
+        $newRecurrences = $event->generateRecurrences();
+        
+        // Remove the parent event from generated recurrences (first element is always the parent)
+        $newRecurrenceData = collect($newRecurrences)->slice(1)->values(); // Add values() to reindex
+        
+        $existingCount = $existingChildren->count();
+        $newCount = $newRecurrenceData->count();
+        
+        // Update existing children with new data
+        foreach ($existingChildren as $index => $existingChild) {
+            if ($index < $newCount) {
+                $newData = $newRecurrenceData[$index];
+                $existingChild->update([
+                    'title' => $newData->title,
+                    'short_description' => $newData->short_description,
+                    'long_description' => $newData->long_description,
+                    'start_date' => $newData->start_date,
+                    'end_date' => $newData->end_date,
+                    'calendar_id' => $newData->calendar_id,
+                    'recurrence_interval' => $newData->recurrence_interval,
+                    'recurrence_unit' => $newData->recurrence_unit,
+                    'recurrence_end_date' => $newData->recurrence_end_date,
+                    'image' => $newData->image,
+                ]);
+            } else {
+                // Delete excess children
+                $existingChild->delete();
+            }
+        }
+        
+        // Create new children if needed
+        if ($newCount > $existingCount) {
+            $newChildren = $newRecurrenceData->slice($existingCount)->map(function ($newData) use ($event) {
+                return new Event([
+                    'title' => $newData->title,
+                    'short_description' => $newData->short_description,
+                    'long_description' => $newData->long_description,
+                    'start_date' => $newData->start_date,
+                    'end_date' => $newData->end_date,
+                    'calendar_id' => $newData->calendar_id,
+                    'parent_id' => $event->id,
+                    'recurrence_interval' => $newData->recurrence_interval,
+                    'recurrence_unit' => $newData->recurrence_unit,
+                    'recurrence_end_date' => $newData->recurrence_end_date,
+                    'image' => $newData->image,
+                    'user_id' => $event->user_id,
+                ]);
+            });
+            
+            $event->children()->saveMany($newChildren);
+        }
     }
 
     /**
