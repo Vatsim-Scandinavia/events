@@ -44,7 +44,7 @@
                                                     </a>
                                                     <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
                                                         <a class="dropdown-item" href="{{ route('staffings.refresh', $staffing) }}" data-toggle="tooltip" data-placement="top" title="Refreshes the data of the event on discord">Refresh Event data</a>
-                                                        <a class="dropdown-item" href="{{ route('staffings.manreset', $staffing) }}" data-toggle="tooltip" data-placement="top" title="Manually resets the whole staffing, removes all staffings and selects next event date. Use with caution.">Manual reset (Use with cation)</a>
+                                                        <a class="dropdown-item" href="{{ route('staffings.manreset', $staffing) }}" data-toggle="tooltip" data-placement="top" title="Manually resets the whole staffing, removes all staffings and selects next event date. Use with caution.">Manual reset (Use with caution)</a>
                                                     </div>
                                                 </div>
                                                 @can('update', $staffing)
