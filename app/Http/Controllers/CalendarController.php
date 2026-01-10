@@ -58,14 +58,15 @@ class CalendarController extends Controller
     {
         $this->authorize('view', $calendar);
 
-        $allEvents = $calendar->events()->get();
-        $events = $allEvents->map(function ($event) {
+        $allInstances = $calendar->instances()->with('event')->get();
+        $events = $allInstances->map(function ($instance) {
             return [
-                'id' => $event->id,
-                'title' => $event->title,
-                'start' => $event->start_date,
-                'end' => $event->end_date,
-                'url' => route('events.show', $event->id),
+                'id'    => $instance->id,
+                'title' => $instance->event->title, // Pull title from parent
+                'start' => $instance->start_time->toIso8601String(),
+                'end'   => $instance->end_time->toIso8601String(),
+                'url'   => route('events.show', [$instance->event->id, 'instance' => $instance->id]),
+                'image' => $instance->event->image ? asset('storage/banners/' . $instance->event->image) : null,
             ];
         });
 
