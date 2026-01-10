@@ -37,6 +37,26 @@ class Event extends Model
         'end_date',
     ];
 
+    public function instances()
+    {
+        return $this->hasMany(EventInstance::class);
+    }
+
+    public function getNextInstanceAttribute()
+    {
+        return $this->instances()
+            ->where('start_time', '>=', Carbon::now())
+            ->orderBy('start_time', 'asc')
+            ->first();
+    }
+
+    public function nextInstance()
+    {
+        return $this->hasOne(EventInstance::class)
+            ->where('start_time', '>=', Carbon::now())
+            ->orderBy('start_time', 'asc');
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
