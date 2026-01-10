@@ -11,13 +11,13 @@
         <div class="mt-4">
             <i class="fas fa-clock"></i>
             <strong>Start:</strong>
-            {{ \Carbon\Carbon::parse($event->start_date)->format('F j, Y, H:i') }}z
+            {{ \Carbon\Carbon::parse($displayInstance->start_time)->format('F j, Y, H:i') }}z
         </div>
 
         <div class="mb-4">
             <i class="fas fa-clock"></i>
             <strong>End:</strong>
-            {{ \Carbon\Carbon::parse($event->end_date)->format('F j, Y, H:i') }}z
+            {{ \Carbon\Carbon::parse($displayInstance->end_time)->format('F j, Y, H:i') }}z
         </div>
 
         @if($event->recurrence_interval)
