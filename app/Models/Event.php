@@ -22,19 +22,12 @@ class Event extends Model
         'title',
         'short_description',
         'long_description',
-        'start_date',
-        'end_date',
         'recurrence_interval',
         'recurrence_unit',
         'recurrence_end_date',
         'published',
         'image',
         'user_id',
-    ];
-
-    protected $dates = [
-        'start_date',
-        'end_date',
     ];
 
     public function instances()
