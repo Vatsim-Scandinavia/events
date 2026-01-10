@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EventInstance extends Model
 {
@@ -22,5 +23,10 @@ class EventInstance extends Model
     public function event()
     {
         return $this->belongsTo(Event::class);
+    }
+
+    public function staffing()
+    {
+        return $this->hasOne(Staffing::class, 'event_id');
     }
 }
