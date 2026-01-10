@@ -21,7 +21,7 @@ class EventController extends Controller
     {
         $this->authorize('index', Event::class);
 
-        $events = Event::orderBy('start_date', 'ASC')->get();
+        $events = Event::with('nextInstance')->get();
 
         return view('events.index', compact('events'));
     }
