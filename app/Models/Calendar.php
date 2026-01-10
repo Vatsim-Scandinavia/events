@@ -15,8 +15,8 @@ class Calendar extends Model
         'public',
     ];
 
-    public function events()
+    public function instances()
     {
-        return $this->hasMany(Event::class);
+        return $this->hasManyThrough(EventInstance::class, Event::class);
     }
 }
