@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\EventInstance;
+
 
 class Calendar extends Model
 {
@@ -15,7 +17,7 @@ class Calendar extends Model
         'public',
     ];
 
-    public function instances()
+    public function instances(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
     {
         return $this->hasManyThrough(EventInstance::class, Event::class);
     }
