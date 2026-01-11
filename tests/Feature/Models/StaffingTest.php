@@ -49,14 +49,29 @@ class StaffingTest extends TestCase
      */
     public function test_staffing_create_page_can_be_rendered(): void
     {
-        // Setup user with permissions
+        \Illuminate\Support\Facades\Http::fake([
+            '*' => \Illuminate\Support\Facades\Http::response([
+                'data' => [
+                    [
+                        "callsign" => "EKAH_APP",
+                        "name" => "Aarhus Approach",
+                        "frequency" => "119.280"
+                    ],
+                    [
+                        "callsign" => "EKCH_DEL",
+                        "name" => "Kastrup Delivery",
+                        "frequency" => "119.905"
+                    ]
+                ]
+            ], 200),
+        ]);
+
         $user = $this->getUser();
 
-        // Render the form
         $response = $this->actingAs($user)->get(route('staffings.create'));
 
-        // Check status code
         $response->assertStatus(200);
+        $response->assertSee('Aarhus Approach');
     }
 
     /**
@@ -79,17 +94,34 @@ class StaffingTest extends TestCase
      */
     public function test_staffing_edit_page_can_be_rendered(): void
     {
-        // Setup user with permissions
-        $user = $this->getUser();
+        \Illuminate\Support\Facades\Http::fake([
+            '*' => \Illuminate\Support\Facades\Http::response([
+                'data' => [
+                    [
+                        "callsign" => "ESGG_DEL",
+                        "name" => "Clearance Delivery",
+                        "frequency" => "121.680"
+                    ],
+                    [
+                        "callsign" => "ESGG_GND",
+                        "name" => "Landvetter Ground",
+                        "frequency" => "121.905"
+                    ],
+                    [
+                        "callsign" => "ESGG_TWR",
+                        "name" => "Landvetter Tower",
+                        "frequency" => "118.605"
+                    ]
+                ]
+            ], 200),
+        ]);
 
-        // Create a staffing record
+        $user = $this->getUser();
         $staffing = Staffing::factory()->create();
 
-        // Render the form
         $response = $this->actingAs($user)->get(route('staffings.edit', $staffing));
-
-        // Check status code
         $response->assertStatus(200);
+        $response->assertSee('ESGG_TWR');
     }
 
     /**
@@ -124,8 +156,8 @@ class StaffingTest extends TestCase
         // Submit the form
         $response = $this->actingAs($user)->delete(route('staffings.destroy', $staffing));
 
-        $response->assertRedirect(route('staffings.index')); // Check if redirected to the index page
-        $response->assertSessionHas('success', 'Staffing deleted successfully.'); // Check if success message is set
+        $response->assertRedirect(route('staffings.index'));
+        $response->assertSessionHas('success', 'Staffing deleted successfully.');
 
         // Check if the record was deleted
         $this->assertNull(Staffing::find($staffing->id));
@@ -146,7 +178,6 @@ class StaffingTest extends TestCase
 
         $random_19_digits = $random_17_digits.$random_two_digits;
 
-        // If you need to use it as an integer, you can cast it to an integer
         return (int) $random_19_digits;
     }
 }
