@@ -17,7 +17,6 @@ class Event extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'id',
         'calendar_id',
         'title',
         'short_description',
@@ -35,19 +34,19 @@ class Event extends Model
         return $this->hasMany(EventInstance::class);
     }
 
-    public function getNextInstanceAttribute()
-    {
-        return $this->instances()
-            ->where('start_time', '>=', Carbon::now())
-            ->orderBy('start_time', 'asc')
-            ->first();
-    }
-
     public function nextInstance()
     {
         return $this->hasOne(EventInstance::class)
-            ->where('start_time', '>=', Carbon::now())
-            ->orderBy('start_time', 'asc');
+            ->ofMany([
+                'start_time' => 'min',
+            ], function ($query) {
+                $query->where('end_time', '>=', now());
+            });
+    }
+
+    public function scopeUpcoming($query)
+    {
+        return $query->whereHas('instances', fn($q) => $q->where('end_time', '>=', now()));
     }
 
     public function user()
@@ -60,26 +59,37 @@ class Event extends Model
         return $this->belongsTo(Calendar::class);
     }
 
-    public function children()
-    {
-        return $this->hasMany(Event::class, 'parent_id');
-    }
-
-    public function parent()
-    {
-        return $this->belongsTo(Event::class, 'parent_id');
-    }
-
     public function staffing()
     {
-        return $this->hasOne(Staffing::class);
+        return $this->hasOneThrough(
+            Staffing::class,
+            EventInstance::class,
+            'event_id',
+            'event_instance_id',
+            'id',
+            'id'
+        );
+    }
+
+    /**
+     * Get the staffing record via the event instances.
+     */
+    public function instanceStaffings()
+    {
+        return $this->hasManyThrough(
+            Staffing::class,
+            EventInstance::class,
+            'event_id',
+            'event_instance_id',
+            'id',
+            'id'
+        );
     }
 
     public function generateRecurrences()
     {
         $recurrences = [];
 
-        // Check if recurrence_interval and recurrence_unit are set
         if ($this->recurrence_interval && $this->recurrence_unit) {
             $start = Carbon::parse($this->start_date);
             $end = Carbon::parse($this->end_date);
@@ -87,10 +97,8 @@ class Event extends Model
             $interval = (int) ($this->recurrence_interval ?? 1);
             $unit = $this->recurrence_unit ?? 'day';
 
-            // Calculate the max allowed recurrence end date (6 months from the start date)
             $maxRecurrenceEnd = $start->copy()->addMonths(6)->endOfDay();
 
-            // Determine the actual recurrence end date, limited to the max allowed end date
             $recurrenceEnd = $this->recurrence_end_date ? Carbon::parse($this->recurrence_end_date)->endOfDay() : Carbon::now()->addYear()->endOfDay();
             if ($recurrenceEnd > $maxRecurrenceEnd) {
                 $recurrenceEnd = $maxRecurrenceEnd;
@@ -114,11 +122,9 @@ class Event extends Model
                     break;
             }
 
-            // Calculate the first recurrence start date
             $start = $start->copy()->add($interval, $intervalType);
             $end = $end->copy()->add($interval, $intervalType);
 
-            // Start generating recurrences
             while ($start <= $recurrenceEnd) {
                 if ($start > $end) {
                     break;
@@ -139,7 +145,6 @@ class Event extends Model
                     'user_id' => $this->user_id,
                 ]);
 
-                // Move to the next recurrence date
                 $start = $start->copy()->add($interval, $intervalType);
                 $end = $end->copy()->add($interval, $intervalType);
             }

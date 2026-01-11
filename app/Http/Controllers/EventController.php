@@ -21,9 +21,46 @@ class EventController extends Controller
     {
         $this->authorize('index', Event::class);
 
-        $events = Event::with('nextInstance')->get();
+        $events = Event::upcoming()->with('nextInstance', 'calendar', 'user')->get();
 
         return view('events.index', compact('events'));
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(Request $request, Event $event)
+    {
+        $displayInstance = $event->instances()->find($request->instance_id)
+            ?? $event->instances()->upcoming()->first();
+
+        return view('events.show', compact('event', 'displayInstance'));
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StoreEventRequest $request, EventService $eventService)
+    {
+        $this->authorize('create', Event::class);
+    
+        $event = $eventService->createEventWithInstances(
+            $request->validated(), 
+            $request->file('image')
+            
+        );
+
+        return redirect()->route('events.index')->withSuccess('Event created!');
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateEventRequest $request, Event $event, EventService $eventService)
+    {
+        $eventService->updateEvent($event, $request->validated(), $request->file('image'));
+
+        return redirect()->route('events.index')->withSuccess('Event and series updated!');
     }
 
     /**
@@ -39,95 +76,16 @@ class EventController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(Request $request, Event $event)
-    {
-        // 1. Check if a specific instance was requested in the URL (?instance=105)
-        $instanceId = $request->query('instance');
-        
-        if ($instanceId) {
-            $displayInstance = $event->instances()->find($instanceId);
-        }
-
-        // 2. Fallback: If no instance ID or ID is invalid, get the next upcoming one
-        if (!$displayInstance) {
-            $displayInstance = $event->instances()
-                ->where('start_time', '>=', now())
-                ->orderBy('start_time')
-                ->first() ?? $event->instances()->latest('start_time')->first();
-        }
-
-        return view('events.show', compact('event', 'displayInstance'));
-    }
-
-    /**
      * Show the form for editing the specified resource.
      */
     public function edit(Event $event)
     {
         $this->authorize('update', $event);
 
+        $event->load('instances');
         $calendars = Calendar::all();
 
-        return view('events.edit', compact('calendars', 'event'));
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(StoreEventRequest $request, EventService $eventService)
-    {
-        $this->authorize('create', Event::class);
-    
-        $data = $request->validated();
-
-        $data['start_date'] = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d H:i:s');
-        $data['end_date'] = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d H:i:s');
-        $data['user_id'] = auth()->id();
-
-        if ($request->input('event_type') == '0') {
-            $data['recurrence_interval'] = null;
-            $data['recurrence_unit'] = null;
-            $data['recurrence_end_date'] = null;
-        } else {
-            $data['recurrence_end_date'] = \Carbon\Carbon::parse($request->recurrence_end_date)->format('Y-m-d H:i:s');
-        }
-
-        $event = $eventService->createEventWithInstances($data, $request->file('image'));
-
-        // ... Discord ...
-        
-        return redirect()->route('events.index')
-            ->withSuccess('Event created!');
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateEventRequest $request, Event $event, EventService $eventService)
-    {
-        $this->authorize('update', $event);
-
-        $data = $request->validated();
-
-        // Format dates for the parent DB table
-        $data['start_date'] = \Carbon\Carbon::parse($request->start_date)->format('Y-m-d H:i:s');
-        $data['end_date'] = \Carbon\Carbon::parse($request->end_date)->format('Y-m-d H:i:s');
-
-        // Handle single event cleanup
-        if ($request->input('event_type') == '0') {
-            $data['recurrence_interval'] = null;
-            $data['recurrence_unit'] = null;
-            $data['recurrence_end_date'] = null;
-        } else {
-            $data['recurrence_end_date'] = \Carbon\Carbon::parse($request->recurrence_end_date)->format('Y-m-d H:i:s');
-        }
-
-        $eventService->updateEvent($event, $data, $request->file('image'));
-
-        return redirect()->route('events.index')
-            ->withSuccess('Event updated and schedule regenerated.');
+        return view('events.edit', compact('event', 'calendars'));
     }
 
     /**
@@ -139,7 +97,6 @@ class EventController extends Controller
 
         $eventService->deleteEvent($event);
 
-        return redirect()->route('events.index')
-            ->withSuccess('Event and all scheduled instances have been removed.');
+        return redirect()->route('events.index')->withSuccess('Event removed.');
     }
 }

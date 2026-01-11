@@ -10,33 +10,47 @@ use Carbon\Carbon;
 
 class EventService
 {
-    public function createEventWithInstances(array $data, $imageFile = null)
+    public function createEventWithInstances(array $data, $imageFile = null): Event
     {
-        if ($imageFile) {
-            $imageName = now()->format('Y-m-d') . '-' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
-            $imageFile->storeAs('banners', $imageName, 'public');
-            
-            $data['image'] = $imageName;
+        if($imageFile) {
+            $data['image'] = $this->uploadBanner($imageFile);
         }
 
-        return \DB::transaction(function () use ($data) {
-            if (!isset($data['user_id'])) {
-                $data['user_id'] = auth()->id();
-            }
-
+        return DB::transaction(function () use ($data) {
             $event = Event::create($data);
-            $this->generateInstances($event);
-            
+            $this->generateInstances($event, $data);
             return $event;
         });
     }
 
-    public function generateInstances(Event $event)
+    public function updateEvent(Event $event, array $data, $imageFile = null): Event
     {
-        $start = Carbon::parse($event->start_date);
-        $end = Carbon::parse($event->end_date);
-        
-        $durationInMinutes = $start->diffInMinutes($end);
+        if ($imageFile) {
+            $this->deleteBanner($event->image);
+            $data['image'] = $this->uploadBanner($imageFile);
+        }
+
+        return DB::transaction(function () use ($event, $data) {
+            $event->update($data);
+            
+            if (!$event->recurrence_unit) {
+                $event->instances()->first()?->update([
+                    'start_time' => $data['start_date'],
+                    'end_time'   => $data['end_date'],
+                ]);
+            } else {
+                $this->syncInstances($event, $data);
+            }
+
+            return $event;
+        });
+    }
+
+    public function generateInstances(Event $event, array $data): void
+    {
+        $start = $data['start_date'];
+        $end = $data['end_date'];
+        $duration = $start->diffInMinutes($end);
 
         if (!$event->recurrence_unit) {
             $event->instances()->create([
@@ -48,105 +62,86 @@ class EventService
 
         $instances = [];
         $seriesLimit = Carbon::parse($event->recurrence_end_date);
-        $currentStart = $start->copy();
+        $current = $start->copy();
 
-        while ($currentStart <= $seriesLimit) {
-
-            $currentEnd = $currentStart->copy()->addMinutes($durationInMinutes);
-
+        while ($current <= $seriesLimit) {
             $instances[] = [
                 'event_id'   => $event->id,
-                'start_time' => $currentStart->toDateTimeString(),
-                'end_time'   => $currentEnd->toDateTimeString(),
+                'start_time' => $current->toDateTimeString(),
+                'end_time'   => $current->copy()->addMinutes($duration)->toDateTimeString(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
 
-            $currentStart->add($event->recurrence_unit, (int) $event->recurrence_interval ?? 1);
+            $current->add($event->recurrence_unit, (int) $event->recurrence_interval);
         }
 
         EventInstance::insert($instances);
     }
 
-    public function updateEvent(Event $event, array $data, $imageFile = null)
+    protected function syncInstances(Event $event, array $data): void
     {
-        if ($imageFile) {
-            if ($event->image) {
-                \Storage::disk('public')->delete('banners/' . $event->image);
+        $newStart = $data['start_date'];
+        $duration = $newStart->diffInMinutes($data['end_date']);
+
+        $event->instances()->where('start_time', '>=', $newStart)->forceDelete();
+
+        $excludedDates = $event->instances()
+            ->onlyTrashed()
+            ->pluck('start_time')
+            ->map(fn($date) => \Carbon\Carbon::parse($date)->toDateTimeString())
+            ->toArray();
+
+        $limit = \Carbon\Carbon::parse($data['recurrence_end_date'] ?? $event->recurrence_end_date);
+        $current = $newStart->copy();
+        $batch = [];
+
+        $interval = (int) ($data['recurrence_interval'] ?? $event->recurrence_interval) ?: 1;
+        $unit = $data['recurrence_unit'] ?? $event->recurrence_unit;
+
+        while ($current <= $limit) {
+            $currentTimeString = $current->toDateTimeString();
+
+            if (!in_array($currentTimeString, $excludedDates)) {
+                $batch[] = [
+                    'event_id'   => $event->id,
+                    'start_time' => $currentTimeString,
+                    'end_time'   => $current->copy()->addMinutes($duration)->toDateTimeString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
             }
-            
-            $imageName = now()->format('Y-m-d') . '-' . uniqid() . '.' . $imageFile->getClientOriginalExtension();
-            $imageFile->storeAs('banners', $imageName, 'public');
-            $data['image'] = $imageName;
+
+            $current->add($unit, $interval);
+
+            // Safety break
+            if (count($batch) >= 500) break;
         }
 
-        return \DB::transaction(function () use ($event, $data) {
-            $event->update($data);
-
-            if (!$event->recurrence_unit) {
-                $event->instances()->update([
-                    'start_time' => $event->start_date,
-                    'end_time'   => $event->end_date,
-                ]);
-                return $event;
-            }
-
-            $this->syncInstances($event);
-
-            return $event;
-        });
+        if (!empty($batch)) {
+            \App\Models\EventInstance::insert($batch);
+        }
     }
 
-    public function deleteEvent(Event $event)
+    private function uploadBanner($file): string
     {
-        return \DB::transaction(function () use ($event) {
+        $name = now()->format('Y-m-d') . '-' . uniqid() . '.' . $file->getClientOriginalExtension();
+        return $file->storeAs('banners', $name, 'public') ? $name : '';
+    }
+
+    private function deleteBanner($filename): void
+    {
+        if ($filename && \Illuminate\Support\Facades\Storage::disk('public')->exists('banners/' . $filename)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete('banners/' . $filename);
+        }
+    }
+
+    public function deleteEvent(Event $event): bool
+    {
+        return DB::transaction(function () use ($event) {
             $event->instances()->delete();
-            $event->delete();
-
-            return true;
+            $this->deleteBanner($event->image);
+            return $event->delete();
         });
-    }
-
-    protected function syncInstances(Event $event)
-    {
-        $currentStart = \Carbon\Carbon::parse($event->start_date);
-        $seriesLimit = \Carbon\Carbon::parse($event->recurrence_end_date);
-        $duration = \Carbon\Carbon::parse($event->start_date)->diffInMinutes($event->end_date);
-
-        $existingInstances = $event->instances()
-            ->where('start_time', '>=', now())
-            ->orderBy('start_time')
-            ->get();
-
-        $instanceIndex = 0;
-
-        while ($currentStart <= $seriesLimit) {
-            $newStart = $currentStart->toDateTimeString();
-            $newEnd = $currentStart->copy()->addMinutes($duration)->toDateTimeString();
-
-            if (isset($existingInstances[$instanceIndex])) {
-                $existingInstances[$instanceIndex]->update([
-                    'start_time' => $newStart,
-                    'end_time'   => $newEnd,
-                ]);
-            } else {
-                $event->instances()->create([
-                    'start_time' => $newStart,
-                    'end_time'   => $newEnd,
-                ]);
-            }
-
-            $currentStart->add($event->recurrence_unit, (int)$event->recurrence_interval);
-            $instanceIndex++;
-        }
-
-        if ($instanceIndex < $existingInstances->count()) {
-            $event->instances()
-                ->where('start_time', '>=', now())
-                ->orderBy('start_time')
-                ->skip($instanceIndex)
-                ->take($existingInstances->count() - $instanceIndex)
-                ->delete();
-        }
     }
 }

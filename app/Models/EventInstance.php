@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EventInstance extends Model
 {
+
     use SoftDeletes;
 
     protected $fillable = [
@@ -20,13 +23,26 @@ class EventInstance extends Model
         'end_time' => 'datetime',
     ];
 
-    public function event()
+    protected $dates = ['deleted_at'];
+
+    /**
+     * Relationship back to the parent "Template"
+     */
+    public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
-    public function staffing()
+    /**
+     * Relationship to the staffing roster
+     */
+    public function staffing(): HasOne
     {
-        return $this->hasOne(Staffing::class, 'event_id');
+        return $this->hasOne(Staffing::class);
+    }
+
+    public function scopeUpcoming($query)
+    {
+        return $query->where('end_time', '>=', now());
     }
 }
