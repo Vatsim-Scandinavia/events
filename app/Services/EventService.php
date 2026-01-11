@@ -84,7 +84,7 @@ class EventService
         $newStart = $data['start_date'];
         $duration = $newStart->diffInMinutes($data['end_date']);
 
-        $event->instances()->where('start_time', '>=', $newStart)->forceDelete();
+        $event->instances()->where('start_time', '>=', $newStart)->whereDoesntHave('staffing')->forceDelete();
 
         $excludedDates = $event->instances()
             ->onlyTrashed()

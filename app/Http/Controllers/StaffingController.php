@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\EventException;
-use App\Helpers\StaffingHelper;
 use App\Models\Event;
 use App\Models\Staffing;
 use Carbon\Carbon;
@@ -11,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
 use App\Models\EventInstance;
+use App\Services\StaffingService;
 
 class StaffingController extends Controller
 {
@@ -28,19 +28,25 @@ class StaffingController extends Controller
     {
         $this->authorize('update', $staffing);
 
-        StaffingHelper::updateDiscordMessage($staffing, null , 'staffings.index');
+        try {
+            StaffingService::updateDiscordMessage($staffing);
 
-        return redirect()->route('staffings.index')->withSuccess('Staffing refreshed successfully.');
+            return redirect()->route('staffings.index')->withSuccess('Staffing refreshed successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Failed to refresh staffing: ' . $e->getMessage()]);
+        }
     }
 
-    public function manreset(Staffing $staffing)
+    public function manualReset(Staffing $staffing)
     {
         $this->authorize('update', $staffing);
 
-        StaffingHelper::resetStaffing($staffing, 'staffings.index');
-        StaffingHelper::updateDiscordMessage($staffing, true, 'staffings.index');
-
-        return redirect()->route('staffings.index')->withSuccess('Staffing reset successfully.');
+        try {
+            StaffingService::resetAndSync($staffing);
+            return redirect()->route('staffings.index')->withSuccess('Staffing reset successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Failed to reset staffing: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -143,9 +149,8 @@ class StaffingController extends Controller
                 return redirect()->back()->withErrors(['positions' => "Duplicate callsign '{$duplicates->first()}' in section $section."])->withInput();
             }
         }
-        
-        //StaffingHelper::setupStaffing($staffing, 'staffings.index');
-        //StaffingHelper::updateDiscordMessage($staffing, true, 'staffings.index');
+
+        StaffingService::setupStaffing($staffing);
 
         return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
     }
@@ -169,13 +174,17 @@ class StaffingController extends Controller
     public function update(Request $request, Staffing $staffing)
     {
         $this->validate($request, [
-            'event_id' => 'required|integer|exists:events,id',
-            'description' => 'required|string',
-            'section_1_title' => 'required|string',
+            'description' => 'required',
+            'section_1_title' => 'required',
+            'section_2_title' => 'nullable',
+            'section_3_title' => 'nullable',
+            'section_4_title' => 'nullable',
             'positions' => 'required|array',
             'positions.*.callsign' => 'required|string',
             'positions.*.section' => 'required|integer',
         ]);
+        
+        $this->authorize('update', $staffing);
 
         foreach ($staffing->positions as $position) {
             if ($position->discord_user || $position->booking_id) {
@@ -183,38 +192,38 @@ class StaffingController extends Controller
             }
         }
 
-        $this->authorize('update', $staffing);
-
-        $positions = collect($request->positions);
-        foreach ($positions->groupBy('section') as $section => $posList) {
+        $submittedPositions = collect($request->positions);
+        
+        foreach ($submittedPositions->groupBy('section') as $section => $posList) {
             $duplicates = $posList->map(fn($p) => strtoupper(trim($p['callsign'])))->duplicates();
-
             if ($duplicates->isNotEmpty()) {
                 return redirect()->back()->withErrors(['positions' => "Duplicate callsign '{$duplicates->first()}' in section $section."])->withInput();
             }
         }
 
-        foreach ($staffing->positions as $position) {
-            if ($position->discord_user || $position->booking_id)
-            {
-                throw new EventException('Staffing cannot be edited because it has bookings.', 500, null, 'staffings.index');
+        \DB::transaction(function () use ($staffing, $request, $submittedPositions) {
+            $staffing->update($request->only([
+                'description', 'section_1_title', 'section_2_title', 'section_3_title', 'section_4_title',
+            ]));
+
+            $keptIds = $submittedPositions->pluck('id')->filter()->toArray();
+            $staffing->positions()->whereNotIn('id', $keptIds)->delete();
+
+            foreach ($submittedPositions as $data) {
+                $staffing->positions()->updateOrCreate(
+                    ['id' => $data['id'] ?? null],
+                    [
+                        'callsign' => $data['callsign'],
+                        'section' => $data['section'],
+                        'start_time' => $data['start_time'],
+                        'end_time' => $data['end_time'],
+                        'local_booking' => $data['local_booking'],
+                    ]
+                );
             }
-        }
-
-        \DB::transaction(function () use ($staffing, $request, $positions) {
-            $staffing->update([
-                'description' => $request->input('description'),
-                'section_1_title' => $request->input('section_1_title'),
-                'section_2_title' => $request->input('section_2_title'),
-                'section_3_title' => $request->input('section_3_title'),
-                'section_4_title' => $request->input('section_4_title'),
-            ]);
-
-            $staffing->positions()->delete();
-            $staffing->positions()->createMany($positions);
         });
 
-        // StaffingHelper::updateDiscordMessage($staffing);
+        StaffingService::updateDiscordMessage($staffing);
 
         return redirect()->route('staffings.index')->withSuccess('Staffing updated successfully.');
     }

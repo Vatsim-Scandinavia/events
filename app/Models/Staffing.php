@@ -4,18 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Staffing extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'id',
         'description',
         'channel_id',
         'message_id',
@@ -26,23 +22,32 @@ class Staffing extends Model
         'event_instance_id',
     ];
 
-    public function event() 
-    {
-        return $this->belongsTo(Event::class);
-    }
-
-    public function positions() 
-    {
-        return $this->hasMany(Position::class);
-    }
-
-    public function instance()
+    /**
+     * The specific date/time occurrence this staffing belongs to.
+     */
+    public function instance(): BelongsTo
     {
         return $this->belongsTo(EventInstance::class, 'event_instance_id');
     }
 
+    /**
+     * Shortcut to the parent Event template.
+     */
+    public function event()
+    {
+        return $this->instance->event();
+    }
+
+    public function positions(): HasMany
+    {
+        return $this->hasMany(Position::class);
+    }
+
+    /**
+     * Clean accessor for the event title.
+     */
     public function getEventTitleAttribute()
     {
-        return $this->instance->event->title ?? 'Unknown Event';
+        return $this->instance?->event?->title ?? 'Unknown Event';
     }
 }

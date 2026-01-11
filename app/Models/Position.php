@@ -15,7 +15,7 @@ class Position extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'id',
+        'staffing_id',
         'callsign',
         'booking_id',
         'discord_user',
@@ -25,6 +25,9 @@ class Position extends Model
         'end_time',
     ];
 
+    /**
+     * Relationship to the parent Staffing.
+     */
     public function staffing() 
     {
         return $this->belongsTo(Staffing::class);

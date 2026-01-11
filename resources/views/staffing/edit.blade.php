@@ -99,6 +99,7 @@
                                         <div id="positions-container">
                                             @foreach ($staffing->positions as $index => $position)
                                                 <div class="position-entry mb-3 p-3 border rounded shadow-sm">
+                                                    <input type="hidden" name="positions[{{ $index }}][id]" value="{{ $position->id }}">
                                                     <div class="row align-items-end">
                                                         <div class="col-md-3">
                                                             <label class="form-label small fw-bold">Callsign</label>
@@ -209,8 +210,10 @@
                 }
             }
 
+            let newPositionCounter = 0;
+
             function createPositionField() {
-                let positionIndex = Date.now();
+                let positionIndex = 'new_' + Date.now() + '_' + (newPositionCounter++);
                 let positionDiv = document.createElement("div");
                 positionDiv.classList.add("position-entry", "mb-3", "p-3", "border", "rounded", "shadow-sm");
 
