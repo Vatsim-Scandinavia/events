@@ -83,8 +83,7 @@ class EventController extends Controller
 
         $event->update($request->only('title', 'short_description', 'long_description'));
 
-        // Update instances: For a simple API, we clear old and add new
-        $event->instances()->delete();
+        $event->instances()->whereDoesntHave('staffing')->delete();
         $event->instances()->create([
             'start_time' => Carbon::parse($request->start_date),
             'end_time' => Carbon::parse($request->end_date),
