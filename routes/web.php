@@ -4,6 +4,7 @@ use App\Http\Controllers\StaffingController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventInstanceController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -51,6 +52,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/events', 'store')->name('events.store');
         Route::patch('/events/{event}', 'update')->name('events.update');
         Route::delete('/events/{event}', 'destroy')->name('events.destroy');
+    });
+
+    Route::controller(EventInstanceController::class)->group(function () { 
+        Route::delete('/event-instances/{instance}', 'destroy')->name('event-instances.destroy');
+        Route::post('/event-instances/{instance}/restore', 'restore')->name('event-instances.restore');
     });
 
     Route::controller(UserController::class)->group(function () {
