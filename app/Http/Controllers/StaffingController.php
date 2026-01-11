@@ -19,8 +19,9 @@ class StaffingController extends Controller
      */
     public function index()
     {
-        $staffings = Staffing::with(['instance.event', 'positions'])->get();
+        $this->authorize('index', Staffing::class);
 
+        $staffings = Staffing::with(['instance.event', 'positions'])->get();
         return view('staffing.index', compact('staffings'));
     }
 
@@ -187,6 +188,8 @@ class StaffingController extends Controller
      */
     public function edit(Staffing $staffing)
     {
+        $this->authorize('update', $staffing);
+
         $staffing->load(['instance.event', 'positions']);
         
         $positions = $this->getPositions(); 
