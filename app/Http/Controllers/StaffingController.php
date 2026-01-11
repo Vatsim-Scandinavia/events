@@ -36,7 +36,8 @@ class StaffingController extends Controller
 
             return redirect()->route('staffings.index')->withSuccess('Staffing refreshed successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Failed to refresh staffing: ' . $e->getMessage()]);
+            Log::error('Failed to refresh staffing', ['staffing_id' => $staffing->id, 'exception' => $e]);
+            return redirect()->back()->withErrors(['error' => 'Failed to refresh staffing. Please try again or contact support.']);
         }
     }
 
@@ -48,7 +49,8 @@ class StaffingController extends Controller
             StaffingService::resetAndSync($staffing);
             return redirect()->route('staffings.index')->withSuccess('Staffing reset successfully.');
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Failed to reset staffing: ' . $e->getMessage()]);
+            Log::error('Failed to reset staffing', ['staffing_id' => $staffing->id, 'exception' => $e]);
+            return redirect()->back()->withErrors(['error' => 'Failed to reset staffing. Please try again or contact support.']);
         }
     }
 
@@ -82,12 +84,24 @@ class StaffingController extends Controller
     protected function getPositions()
     {
         return cache()->remember('staffing_positions', 300, function () {
-            $response = Http::get(config('booking.cc_api_url').'/positions');
-            if ($response->successful()) {
-                $positions = $response->json()['data'];
-                usort($positions, fn($a, $b) => strcmp($a['callsign'], $b['callsign']));
-                return $positions;
+            $apiUrl = config('booking.cc_api_url');
+            
+            if (!$apiUrl) {
+                Log::warning('CC_API_URL not configured, returning empty positions list');
+                return [];
             }
+            
+            try {
+                $response = Http::timeout(config('booking.http_timeout', 5))->get($apiUrl . '/positions');
+                if ($response->successful()) {
+                    $positions = $response->json()['data'];
+                    usort($positions, fn($a, $b) => strcmp($a['callsign'], $b['callsign']));
+                    return $positions;
+                }
+            } catch (\Exception $e) {
+                Log::error('Failed to fetch positions from API', ['exception' => $e, 'api_url' => $apiUrl]);
+            }
+            
             return [];
         });
     }

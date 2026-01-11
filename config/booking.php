@@ -64,4 +64,14 @@ return [
     */
     'booking.api_retry_delay' => env('API_RETRY_DELAY', 1000),
 
+    /*
+    |--------------------------------------------------------------------------
+    | HTTP Request Timeout
+    |--------------------------------------------------------------------------
+    |
+    | Set the timeout in seconds for HTTP requests to external APIs
+    |
+    */
+    'http_timeout' => env('BOOKING_HTTP_TIMEOUT', 5),
+
 ];
