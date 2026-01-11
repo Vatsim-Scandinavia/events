@@ -152,6 +152,9 @@ class StaffingController extends Controller
             'positions' => 'required|array',
             'positions.*.callsign' => 'required|string',
             'positions.*.section' => 'required|integer',
+            'positions.*.start_time' => 'nullable|date',
+            'positions.*.end_time' => 'nullable|date',
+            'positions.*.local_booking' => 'nullable|boolean',
         ]);
 
         // 1. Check for duplicates
@@ -184,6 +187,17 @@ class StaffingController extends Controller
                 'section_3_title' => $validated['section_3_title'] ?? null,
                 'section_4_title' => $validated['section_4_title'] ?? null,
             ]);
+
+            // Create the positions
+            foreach ($validated['positions'] as $positionData) {
+                $staffing->positions()->create([
+                    'callsign' => $positionData['callsign'],
+                    'section' => $positionData['section'],
+                    'start_time' => $positionData['start_time'] ?? null,
+                    'end_time' => $positionData['end_time'] ?? null,
+                    'local_booking' => $positionData['local_booking'] ?? false,
+                ]);
+            }
 
             // Setup staffing with positions
             StaffingService::setupStaffing($staffing);
@@ -227,6 +241,9 @@ class StaffingController extends Controller
             'positions' => 'required|array',
             'positions.*.callsign' => 'required|string',
             'positions.*.section' => 'required|integer',
+            'positions.*.start_time' => 'nullable|date',
+            'positions.*.end_time' => 'nullable|date',
+            'positions.*.local_booking' => 'nullable|boolean',
         ]);
         
         $this->authorize('update', $staffing);

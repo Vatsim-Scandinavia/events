@@ -20,8 +20,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            //
-        });
+        // IRREVERSIBLE: Child events with parent_id have been permanently deleted.
+        // This migration cannot be rolled back as the deleted data cannot be restored.
+        // To restore the data, you must restore from a database backup.
+        throw new \Exception('This migration is irreversible. Child events have been permanently deleted. Restore from backup if needed.');
     }
 };
