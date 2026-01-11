@@ -98,4 +98,36 @@ class StaffingService
             throw new \Exception("External booking cancellation failed for ID: $bookingId");
         }
     }
+
+    /**
+     * Check if the staffing's current instance has already ended.
+     */
+    public function needsReset(Staffing $staffing): bool
+    {
+        // Note the use of ->instance instead of ->event_instance
+        return $staffing->instance && $staffing->instance->end_time <= now();
+    }
+
+    // app/Services/StaffingService.php
+
+    /**
+     * Find the next instance and move the staffing to it.
+     */
+    public function moveToNextInstance(Staffing $staffing): bool
+    {
+        if (!$staffing->instance) {
+            return false;
+        }
+
+        $nextInstance = \App\Models\EventInstance::where('event_id', $staffing->instance->event_id)
+            ->where('start_time', '>', now())
+            ->orderBy('start_time', 'asc')
+            ->first();
+
+        if (!$nextInstance) {
+            return false;
+        }
+
+        return $staffing->update(['event_instance_id' => $nextInstance->id]);
+    }
 }

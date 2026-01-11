@@ -144,4 +144,12 @@ class EventService
             return $event->delete();
         });
     }
+
+    public function getNextInstance(int $eventId)
+    {
+        return EventInstance::where('event_id', $eventId)
+            ->where('start_time', '>', now()) // Ensure the future instance start_time is strictly > setTestNow()
+            ->orderBy('start_time', 'asc')
+            ->first();
+    }
 }

@@ -2,9 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Helpers\StaffingHelper;
 use App\Models\Staffing;
 use Illuminate\Console\Command;
+use App\Services\StaffingService;
+use App\Services\EventService;
 
 class ResetStaffing extends Command
 {
@@ -25,39 +26,27 @@ class ResetStaffing extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(StaffingService $service)
     {
-        // Get all staffings
-        $staffings = Staffing::all();
+        // Use the relationship name you confirmed earlier: 'instance'
+        $staffings = Staffing::with('instance')->get();
+        $count = 0;
 
-        $i = 0;
         foreach ($staffings as $staffing) {
-            $event = $staffing->event;
-
-            // Skip if event has not ended yet
-            if (!$event || $event->end_date > now()) {
-                continue;
+            // 1. Check if it needs a reset using the instance logic
+            if ($service->needsReset($staffing)) {
+                try {
+                    // 2. This method handles everything: instance move, positions, and Discord
+                    StaffingService::resetAndSync($staffing);
+                    
+                    $count++;
+                    $this->info("Successfully reset and synced Staffing ID: {$staffing->id}");
+                } catch (\Exception $e) {
+                    $this->error("Failed to reset Staffing ID: {$staffing->id}. Error: " . $e->getMessage());
+                }
             }
-
-            // Reset staffing to the next event
-            $response = StaffingHelper::resetStaffing($staffing);
-
-            if (!$response) {
-                $this->error('Failed to reset staffing: '.$staffing->id);
-                continue;
-            }
-
-            try {
-                $resp = StaffingHelper::updateDiscordMessage($staffing, true);
-            } catch (\Exception $e) {
-                $this->error('Failed to update Discord message: '.$staffing->id.' | Error: '.$e->getMessage());
-                continue;
-            }
-
-            $i++;
-            $this->info('Staffing reset successfully: ID = '.$staffing->id);
         }
 
-        $this->info('Reset staffing for '.$i.' staffing(s).');
+        $this->info("Total staffings reset: $count");
     }
 }
