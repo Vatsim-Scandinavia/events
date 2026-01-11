@@ -64,6 +64,8 @@ class EventController extends Controller
      */
     public function update(UpdateEventRequest $request, Event $event, EventService $eventService)
     {
+        $this->authorize('update', $event);
+
         $eventService->updateEvent($event, $request->validated(), $request->file('image'));
 
         return redirect()->route('events.index')->withSuccess('Event and/or series updated!');
