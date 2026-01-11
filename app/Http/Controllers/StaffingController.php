@@ -174,7 +174,7 @@ class StaffingController extends Controller
             return redirect()->back()->withErrors(['event_id' => 'This event has no upcoming instances to staff.'])->withInput();
         }
 
-        // 3. Wrap Staffing creation and setup in a transaction
+        // 3. Wrap Staffing creation in a transaction (external services handled separately)
         DB::beginTransaction();
         try {
             // Create the staffing record
@@ -199,14 +199,19 @@ class StaffingController extends Controller
                 ]);
             }
 
-            // Setup staffing with positions
-            StaffingService::setupStaffing($staffing);
-
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Staffing creation failed', ['exception' => $e]);
             return redirect()->back()->withErrors(['error' => 'Failed to create staffing. Please try again.'])->withInput();
+        }
+
+        // Handle external service calls outside the transaction
+        try {
+            StaffingService::setupStaffing($staffing);
+        } catch (\Exception $e) {
+            Log::error('Staffing Discord setup failed', ['staffing_id' => $staffing->id, 'exception' => $e]);
+            return redirect()->route('staffings.index')->withWarning('Staffing created successfully, but Discord setup failed. Please check the staffing manually.');
         }
 
         return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
@@ -285,7 +290,13 @@ class StaffingController extends Controller
             }
         });
 
-        StaffingService::updateDiscordMessage($staffing);
+        // Handle Discord update separately to avoid affecting committed DB state
+        try {
+            StaffingService::updateDiscordMessage($staffing);
+        } catch (\Exception $e) {
+            Log::error('Discord message update failed', ['staffing_id' => $staffing->id, 'exception' => $e]);
+            return redirect()->route('staffings.index')->withWarning('Staffing updated successfully, but Discord message update failed. Please check the message manually.');
+        }
 
         return redirect()->route('staffings.index')->withSuccess('Staffing updated successfully.');
     }
