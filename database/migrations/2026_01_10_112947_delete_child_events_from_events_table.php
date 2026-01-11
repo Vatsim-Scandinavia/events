@@ -12,9 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            DB::table('events')->whereNotNull('parent_id')->delete();
-        });
+        DB::table('events')->whereNotNull('parent_id')->delete();
     }
 
     /**

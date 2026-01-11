@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class EventController extends Controller
 {
@@ -70,6 +71,8 @@ class EventController extends Controller
             ]);
 
             DB::commit();
+            
+            return response()->json(['success' => 'Event created', 'data' => $event->load('instances')], 201);
         } catch (\Exception $e) {
             DB::rollBack();
             
@@ -77,11 +80,9 @@ class EventController extends Controller
                 Storage::disk('public')->delete('banners/'.$imageName);
             }
 
-            throw $e;
+            Log::error('Event creation failed', ['exception' => $e]);
+            return response()->json(['error' => 'Internal Server Error'], 500);
         }
-        
-
-        return response()->json(['success' => 'Event created', 'data' => $event->load('instances')], 201);
     }
 
     public function update(Request $request, Event $event)
@@ -90,19 +91,23 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'start_date' => 'required|date_format:Y-m-d H:i',
             'end_date' => 'required|date_format:Y-m-d H:i|after_or_equal:start_date',
+            'short_description' => 'nullable|string|max:255',
+            'long_description' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $event->update($request->only('title', 'short_description', 'long_description'));
+        DB::transaction(function () use ($event, $request) {
+            $event->update($request->only('title', 'short_description', 'long_description'));
 
-        $event->instances()->whereDoesntHave('staffing')->delete();
-        $event->instances()->create([
-            'start_time' => Carbon::parse($request->start_date),
-            'end_time' => Carbon::parse($request->end_date),
-        ]);
+            $event->instances()->whereDoesntHave('staffing')->get()->each->delete();
+            $event->instances()->create([
+                'start_time' => Carbon::parse($request->start_date),
+                'end_time' => Carbon::parse($request->end_date),
+            ]);
+        });
 
         return response()->json(['success' => 'Event updated', 'data' => $event->load('instances')], 200);
     }

@@ -9,6 +9,8 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Models\EventInstance;
 use App\Services\StaffingService;
 
@@ -137,20 +139,23 @@ class StaffingController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Staffing::class);
+
         $validated = $request->validate([
             'event_id' => 'required|integer|exists:events,id',
             'description' => 'required|string',
             'channel_id' => 'required|string',
             'section_1_title' => 'required|string',
+            'section_2_title' => 'nullable|string',
+            'section_3_title' => 'nullable|string',
+            'section_4_title' => 'nullable|string',
             'positions' => 'required|array',
             'positions.*.callsign' => 'required|string',
             'positions.*.section' => 'required|integer',
         ]);
 
-        $this->authorize('create', Staffing::class);
-
         // 1. Check for duplicates
-        $positions = collect($request->positions);
+        $positions = collect($validated['positions']);
         foreach ($positions->groupBy('section') as $section => $posList) {
             $duplicates = $posList->map(fn($p) => strtoupper(trim($p['callsign'])))->duplicates();
             if ($duplicates->isNotEmpty()) {
@@ -159,26 +164,36 @@ class StaffingController extends Controller
         }
 
         // 2. Determine the correct instance behind the scenes
-        $event = Event::findOrFail($request->event_id);
+        $event = Event::findOrFail($validated['event_id']);
         $instance = $event->getDisplayInstance(); // Or $event->nextInstance
 
         if (!$instance) {
             return redirect()->back()->withErrors(['event_id' => 'This event has no upcoming instances to staff.'])->withInput();
         }
 
-        // 3. Create the staffing record (Defining $staffing)
-        $staffing = Staffing::create([
-            'event_instance_id' => $instance->id,
-            'description' => $request->description,
-            'channel_id' => $request->channel_id,
-            'section_1_title' => $request->section_1_title,
-            'section_2_title' => $request->section_2_title,
-            'section_3_title' => $request->section_3_title,
-            'section_4_title' => $request->section_4_title,
-        ]);
+        // 3. Wrap Staffing creation and setup in a transaction
+        DB::beginTransaction();
+        try {
+            // Create the staffing record
+            $staffing = Staffing::create([
+                'event_instance_id' => $instance->id,
+                'description' => $validated['description'],
+                'channel_id' => $validated['channel_id'],
+                'section_1_title' => $validated['section_1_title'],
+                'section_2_title' => $validated['section_2_title'] ?? null,
+                'section_3_title' => $validated['section_3_title'] ?? null,
+                'section_4_title' => $validated['section_4_title'] ?? null,
+            ]);
 
-        // 4. Now pass the defined variable to the service
-        StaffingService::setupStaffing($staffing);
+            // Setup staffing with positions
+            StaffingService::setupStaffing($staffing);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Staffing creation failed', ['exception' => $e]);
+            return redirect()->back()->withErrors(['error' => 'Failed to create staffing. Please try again.'])->withInput();
+        }
 
         return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
     }
