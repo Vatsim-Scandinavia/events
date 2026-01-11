@@ -19,4 +19,9 @@ class Calendar extends Model
     {
         return $this->hasManyThrough(EventInstance::class, Event::class);
     }
+
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
 }
