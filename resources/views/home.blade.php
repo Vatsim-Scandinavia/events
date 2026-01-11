@@ -10,23 +10,41 @@
                 @if ($upcomingEvents->isNotEmpty())
                     @foreach($upcomingEvents as $event)
                         <li class="list-group-item d-flex justify-content-between align-items-center flex-wrap">
+                            {{-- Image Section --}}
                             @if ($event->image)
-                                <img src={{ asset('storage/banners/' . $event->image) }} height="100">
+                                <img src="{{ asset('storage/banners/' . $event->image) }}" height="100">
                             @else
                                 <img src="{{ asset('images/tba.jpg') }}" height="100">
                             @endif
+
+                            {{-- Text Section --}}
                             <span class="d-none d-md-block">
-                                {{ $event->title }}
+                                <strong>{{ $event->title }}</strong>
                                 <br>
-                                {{ \Carbon\Carbon::parse($event->start_date)->format('F j, Y, H:i') }}z
+                                {{-- Change: Accessing the date from the relationship --}}
+                                @if($event->instances->first())
+                                    {{ $event->instances->first()->start_time->format('F j, Y, H:i') }}z
+                                @else
+                                    <span class="text-muted">No upcoming dates scheduled</span>
+                                @endif
                             </span>
+
+                            {{-- Action Section --}}
                             <div>
-                                <a href="{{ route('events.show', $event->id) }}" class="btn btn-info btn-sm">View Event</a>
+                                {{-- Get the ID of the first instance from the pre-loaded collection --}}
+                                @php $firstInstance = $event->instances->first(); @endphp
+                                
+                                <a href="{{ route('events.show', [$event->id, 'displayInstance' => $firstInstance->id]) }}" 
+                                class="btn btn-info btn-sm">
+                                View Event
+                                </a>
                             </div>
                         </li>
                     @endforeach
                 @else
-                    <span>No Events Available</span>
+                    <li class="list-group-item">
+                        <span>No Events Available</span>
+                    </li>
                 @endif
             </ul>
         </div>
