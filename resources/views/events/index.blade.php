@@ -40,48 +40,46 @@
                                             <td>{{ $event->title }}</td>
                                             <td>
                                                 @if($event->nextInstance)
-                                                    {{ $event->nextInstance->start_time->format('d-m-Y H:i') }}z
+                                                    <span class="badge badge-light text-dark">
+                                                        <i class="far fa-calendar-alt"></i> {{ $event->nextInstance->start_time->format('d-m-Y H:i') }}z
+                                                    </span>
                                                 @else
-                                                    <span class="text-muted">TBD</span>
+                                                    <span class="text-muted small italic">No upcoming dates</span>
                                                 @endif
                                             </td>
                                             <td>
                                                 @if($event->nextInstance)
                                                     {{ $event->nextInstance->end_time->format('d-m-Y H:i') }}z
                                                 @else
-                                                    <span class="text-muted">TBD</span>
+                                                    <span class="text-muted">-</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $event->recurrence_interval ? 'Yes' : 'No' }}</td>
+                                            <td class="text-center">
+                                                @if($event->recurrence_unit)
+                                                    <i class="fas fa-sync-alt text-success" title="Repeats {{ $event->recurrence_unit }}"></i>
+                                                @else
+                                                    <i class="fas fa-minus text-gray-400"></i>
+                                                @endif
+                                            </td>
                                             <td>{{ $event->calendar->name }}</td>
                                             <td>{{ $event->user->name }}</td>
                                             <td>
                                                 <div class="d-flex flex-column" style="gap: 0.25rem;">
                                                     @if($event->nextInstance)
-                                                        <a class="btn btn-sm btn-info" href="{{ route('events.show', ['event' => $event->id, 'instance' => $event->nextInstance->id]) }}">
+                                                        {{-- Pointing to the specific instance is key for the staffing sheet --}}
+                                                        <a class="btn btn-sm btn-info" href="{{ route('events.show', $event->id) }}?instance={{ $event->nextInstance->id }}">
                                                             <i class="fas fa-eye fa-fw"></i> Show
                                                         </a>
                                                     @else
-                                                        <a class="btn btn-sm btn-info disabled" href="#">
-                                                            <i class="fas fa-eye fa-fw"></i> No occurrences
-                                                        </a>
+                                                        <button class="btn btn-sm btn-secondary disabled" disabled>
+                                                            <i class="fas fa-ban fa-fw"></i> Ended
+                                                        </button>
                                                     @endif
 
                                                     @can('update', $event)
                                                         <a class="btn btn-sm btn-primary" href="{{ route('events.edit', $event->id) }}">
                                                             <i class="fas fa-edit fa-fw"></i> Edit
                                                         </a>
-                                                    @endcan
-
-                                                    @can('destroy', $event)
-                                                        <form method="POST" action="{{ route('events.destroy', $event->id) }}" class="d-grid"
-                                                            onsubmit="return confirm('Are you sure you want to delete this event? - {{ $event->title }}')">
-                                                            @method('DELETE')
-                                                            @csrf
-                                                            <button class="btn btn-sm btn-danger" type="submit">
-                                                                <i class="fas fa-trash fa-fw" aria-hidden="true"></i> Delete
-                                                            </button>
-                                                        </form>
                                                     @endcan
                                                 </div>
                                             </td>

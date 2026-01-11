@@ -57,7 +57,10 @@
                                             @foreach($events as $event)
                                                 <tr>
                                                     <td>
-                                                        <a href="{{ route('events.show', $event) }}">{{ $event->title }}</a>
+                                                        {{-- Add the ?instance parameter to the title link --}}
+                                                        <a href="{{ route('events.show', $event) }}{{ $event->nextInstance ? '?instance=' . $event->nextInstance->id : '' }}">
+                                                            {{ $event->title }}
+                                                        </a>
                                                     </td>
                                                     <td>
                                                         @can('view', $event->calendar)
@@ -67,10 +70,10 @@
                                                         @endcan 
                                                     </td>
                                                     <td>
-                                                        {{ \Carbon\Carbon::parse($event->start_date)->format('d-m-Y H:i') }}
+                                                        {{ $event->nextInstance?->start_time->format('d-m-Y H:i') ?? 'No upcoming dates' }}
                                                     </td>
                                                     <td>
-                                                        {{ \Carbon\Carbon::parse($event->end_date)->format('d-m-Y H:i') }}
+                                                        {{ $event->nextInstance?->end_time->format('d-m-Y H:i') ?? 'N/A' }}
                                                     </td>
                                                 </tr>
                                             @endforeach

@@ -65,9 +65,20 @@ class Event extends Model
     }
 
     public function scopeUpcoming($query)
-{
-    return $query->whereHas('instances', function ($q) {
-        $q->where('start_time', '>=', now());
-    });
-}
+    {
+        return $query->whereHas('instances', function ($q) {
+            $q->where('start_time', '>=', now());
+        });
+    }
+
+    public function getDisplayInstance()
+    {
+        $instanceId = request('instance');
+
+        if ($instanceId) {
+            return $this->instances()->find($instanceId);
+        }
+
+        return $this->nextInstance ?: $this->instances()->latest('start_time')->first();
+    }
 }

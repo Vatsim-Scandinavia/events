@@ -29,10 +29,16 @@ class EventController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request, Event $event)
+    public function show(Event $event)
     {
-        $displayInstance = $event->instances()->find($request->instance_id)
-            ?? $event->instances()->upcoming()->first();
+        $this->authorize('view', $event);
+
+        // Get the instance based on the ?instance parameter
+        $displayInstance = $event->getDisplayInstance();
+
+        if ($displayInstance) {
+            $displayInstance->load(['staffing.positions.user']);
+        }
 
         return view('events.show', compact('event', 'displayInstance'));
     }

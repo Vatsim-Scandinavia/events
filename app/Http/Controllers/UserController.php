@@ -24,20 +24,24 @@ class UserController extends Controller
      * Display the specified resource.
      */
     public function show(User $user)
-    {
-        $this->authorize('view', $user);
+{
+    $this->authorize('view', $user);
 
-        $events = $user->events()
-            ->orderBy('start_date', 'asc')
-            ->get()
-            ->filter(function ($event) {
-                return \Auth::user()->can('view', $event);
-            });
+    $events = $user->events()
+        ->upcoming() 
+        ->with('nextInstance')
+        ->get()
+        ->filter(function ($event) {
+            return \Auth::user()->can('view', $event);
+        })
+        ->sortBy(function ($event) {
+            return $event->nextInstance?->start_time;
+        });
 
-        $groups = Group::all();
+    $groups = Group::all();
 
-        return view('users.show', compact('user', 'events', 'groups'));
-    }
+    return view('users.show', compact('user', 'events', 'groups'));
+}
 
     /**
      * Update the specified resource in storage.

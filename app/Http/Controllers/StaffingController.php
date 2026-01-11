@@ -56,12 +56,18 @@ class StaffingController extends Controller
     {
         $this->authorize('create', Staffing::class);
 
+        // Get unique events that have at least one upcoming instance without staffing
         $events = Event::whereNotNull('recurrence_unit')
             ->whereHas('instances', function ($query) {
                 $query->where('start_time', '>', now())
                     ->whereDoesntHave('staffing');
             })
-            ->whereDoesntHave('instances.staffing') 
+            ->with(['instances' => function ($query) {
+                // Load the instances so the blade can show the "Next:" date
+                $query->where('start_time', '>', now())
+                    ->whereDoesntHave('staffing')
+                    ->orderBy('start_time', 'asc');
+            }])
             ->get();
 
         $positions = $this->getPositions();
@@ -133,6 +139,7 @@ class StaffingController extends Controller
         $validated = $request->validate([
             'event_id' => 'required|integer|exists:events,id',
             'description' => 'required|string',
+            'channel_id' => 'required|string',
             'section_1_title' => 'required|string',
             'positions' => 'required|array',
             'positions.*.callsign' => 'required|string',
@@ -141,15 +148,35 @@ class StaffingController extends Controller
 
         $this->authorize('create', Staffing::class);
 
+        // 1. Check for duplicates
         $positions = collect($request->positions);
         foreach ($positions->groupBy('section') as $section => $posList) {
             $duplicates = $posList->map(fn($p) => strtoupper(trim($p['callsign'])))->duplicates();
-
             if ($duplicates->isNotEmpty()) {
                 return redirect()->back()->withErrors(['positions' => "Duplicate callsign '{$duplicates->first()}' in section $section."])->withInput();
             }
         }
 
+        // 2. Determine the correct instance behind the scenes
+        $event = Event::findOrFail($request->event_id);
+        $instance = $event->getDisplayInstance(); // Or $event->nextInstance
+
+        if (!$instance) {
+            return redirect()->back()->withErrors(['event_id' => 'This event has no upcoming instances to staff.'])->withInput();
+        }
+
+        // 3. Create the staffing record (Defining $staffing)
+        $staffing = Staffing::create([
+            'instance_id' => $instance->id,
+            'description' => $request->description,
+            'channel_id' => $request->channel_id,
+            'section_1_title' => $request->section_1_title,
+            'section_2_title' => $request->section_2_title,
+            'section_3_title' => $request->section_3_title,
+            'section_4_title' => $request->section_4_title,
+        ]);
+
+        // 4. Now pass the defined variable to the service
         StaffingService::setupStaffing($staffing);
 
         return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');

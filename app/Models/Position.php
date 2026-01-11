@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Position extends Model
 {
@@ -31,5 +32,14 @@ class Position extends Model
     public function staffing() 
     {
         return $this->belongsTo(Staffing::class);
+    }
+
+    /**
+     * Get the user assigned to this position.
+     */
+    public function user(): BelongsTo
+    {
+        // This assumes your positions table has a 'user_id' column
+        return $this->belongsTo(User::class);
     }
 }
