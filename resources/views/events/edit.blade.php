@@ -16,16 +16,9 @@
                         @csrf
                         @method('PATCH')
 
-                        {{-- Series Warnings --}}
-                        @if($event->parent_id != null)
-                            <div class="alert alert-info border-left-info">
-                                <i class="fas fa-circle-info"></i> <strong>Note:</strong> You are editing a <strong>single occurrence</strong>.
-                            </div>
-                        @elseif($event->parent_id == null && $event->recurrence_interval != null)
-                            <div class="alert alert-warning border-left-warning">
-                                <i class="fas fa-exclamation-triangle"></i> <strong>Warning:</strong> You are editing the <strong>entire series</strong>. Saving changes will apply to all occurrences of this event.
-                            </div>
-                        @endif
+                        <div class="alert alert-warning border-left-warning">
+                            <i class="fas fa-exclamation-triangle"></i> <strong>Warning:</strong> You are editing the <strong>entire series</strong>. Saving changes will apply to all occurrences of this event.
+                        </div>
 
                         <div class="form-group mb-4">
                             <label for="title" class="form-label fw-bold">Event Title</label>
@@ -86,43 +79,41 @@
                             </div>
                         </div>
 
-                        @if($event->parent_id == null)
-                            <div class="bg-light p-3 rounded border">
-                                <h6 class="fw-bold mb-3">Recurrence Settings</h6>
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input" type="radio" name="event_type" id="standard_event" value="2" {{ old('event_type', $event->recurrence_interval == null ? '2' : '1') == '2' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="standard_event">One-time Event</label>
-                                </div>
+                        <div class="bg-light p-3 rounded border">
+                            <h6 class="fw-bold mb-3">Recurrence Settings</h6>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="event_type" id="standard_event" value="2" {{ old('event_type', $event->recurrence_interval == null ? '2' : '1') == '2' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="standard_event">One-time Event</label>
+                            </div>
 
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="radio" name="event_type" id="is_recurring" value="1" {{ old('event_type', $event->recurrence_interval != null ? '1' : '2') == '1' ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="is_recurring">Recurring Event</label>
-                                </div>
-                                
-                                <div id="recurringOptions" class="collapse {{ old('event_type', $event->recurrence_interval != null ? '1' : '2') == '1' ? 'show' : '' }} mt-3">
-                                    <div class="row">
-                                        <div class="col-md-6 mb-3">
-                                            <label for="recurrence_unit" class="form-label small fw-bold text-uppercase">Frequency</label>
-                                            <select name="recurrence_unit" id="recurrence_unit" class="form-control">
-                                                <option value="0">None</option>
-                                                @foreach (\App\Helpers\EventHelper::labels() as $val => $lab)
-                                                    <option value="{{ $val }}" {{ old('recurrence_unit', $event->recurrence_unit) == $val ? 'selected' : '' }}>{{ $lab }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="col-md-6 mb-3">
-                                            <label for="recurrence_interval" class="form-label small fw-bold text-uppercase">Every X Interval</label>
-                                            <input type="number" name="recurrence_interval" class="form-control" value="{{ old('recurrence_interval', $event->recurrence_interval) }}">
-                                        </div>
-                                        <div class="col-md-12">
-                                            <label for="recurrence_end_date" class="form-label small fw-bold text-uppercase text-danger">Series Ends On</label>
-                                            <input type="text" id="recurrence_end_date" name="recurrence_end_date" class="form-control" 
-                                                value="{{ old('recurrence_end_date', $event->recurrence_end_date ? \Carbon\Carbon::parse($event->recurrence_end_date)->format('Y-m-d H:i') : '') }}">
-                                        </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="radio" name="event_type" id="is_recurring" value="1" {{ old('event_type', $event->recurrence_interval != null ? '1' : '2') == '1' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="is_recurring">Recurring Event</label>
+                            </div>
+                            
+                            <div id="recurringOptions" class="collapse {{ old('event_type', $event->recurrence_interval != null ? '1' : '2') == '1' ? 'show' : '' }} mt-3">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recurrence_unit" class="form-label small fw-bold text-uppercase">Frequency</label>
+                                        <select name="recurrence_unit" id="recurrence_unit" class="form-control">
+                                            <option value="0">None</option>
+                                            @foreach (\App\Helpers\EventHelper::labels() as $val => $lab)
+                                                <option value="{{ $val }}" {{ old('recurrence_unit', $event->recurrence_unit) == $val ? 'selected' : '' }}>{{ $lab }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="recurrence_interval" class="form-label small fw-bold text-uppercase">Every X Interval</label>
+                                        <input type="number" name="recurrence_interval" class="form-control" value="{{ old('recurrence_interval', $event->recurrence_interval) }}">
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label for="recurrence_end_date" class="form-label small fw-bold text-uppercase text-danger">Series Ends On</label>
+                                        <input type="text" id="recurrence_end_date" name="recurrence_end_date" class="form-control" 
+                                            value="{{ old('recurrence_end_date', $event->recurrence_end_date ? \Carbon\Carbon::parse($event->recurrence_end_date)->format('Y-m-d H:i') : '') }}">
                                     </div>
                                 </div>
                             </div>
-                        @endif
+                        </div>
 
                         <button type="submit" class="btn btn-success btn-lg mt-4 w-100 shadow-sm">
                             <i class="fas fa-save me-2"></i> Save Changes
