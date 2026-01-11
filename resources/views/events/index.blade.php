@@ -40,7 +40,7 @@
                                             <td>{{ $event->title }}</td>
                                             <td>
                                                 @if($event->nextInstance)
-                                                    {{ $event->nextInstance->end_time->format('d-m-Y H:i') }}z
+                                                    {{ $event->nextInstance->start_time->format('d-m-Y H:i') }}z
                                                 @else
                                                     <span class="text-muted">-</span>
                                                 @endif
