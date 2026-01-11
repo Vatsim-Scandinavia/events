@@ -109,7 +109,7 @@ class StaffingController extends Controller
         });
     }
 
-    protected function getGuildChannels($create = null)
+    protected function getGuildChannels($allowedChannelId = null)
     {
         try {
             $response = Http::withHeaders([
@@ -130,7 +130,15 @@ class StaffingController extends Controller
 
                 $filteredChannels = array_values($filteredChannels);
 
-                if ($create) {
+                // Filter out channels already in use, but preserve the allowed channel ID
+                if ($allowedChannelId !== null) {
+                    $existingChannelIds = Staffing::pluck('channel_id')->toArray();
+
+                    $filteredChannels = array_filter($filteredChannels, function ($channel) use ($existingChannelIds, $allowedChannelId) {
+                        return !in_array($channel['id'], $existingChannelIds) || $channel['id'] == $allowedChannelId;
+                    });
+                } elseif ($allowedChannelId === true) {
+                    // Legacy behavior: filter out all used channels
                     $existingChannelIds = Staffing::pluck('channel_id')->toArray();
 
                     $filteredChannels = array_filter($filteredChannels, function ($channel) use ($existingChannelIds) {
@@ -244,7 +252,7 @@ class StaffingController extends Controller
         $staffing->load(['instance.event', 'positions']);
         
         $positions = $this->getPositions(); 
-        $channels = $this->getGuildChannels(true);
+        $channels = $this->getGuildChannels($staffing->channel_id);
 
         return view('staffing.edit', compact('staffing', 'positions', 'channels'));
     }
@@ -299,9 +307,9 @@ class StaffingController extends Controller
                     [
                         'callsign' => $data['callsign'],
                         'section' => $data['section'],
-                        'start_time' => $data['start_time'],
-                        'end_time' => $data['end_time'],
-                        'local_booking' => $data['local_booking'],
+                        'start_time' => $data['start_time'] ?? null,
+                        'end_time' => $data['end_time'] ?? null,
+                        'local_booking' => $data['local_booking'] ?? null,
                     ]
                 );
             }
