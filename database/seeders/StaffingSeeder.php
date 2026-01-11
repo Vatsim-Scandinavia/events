@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use App\Models\Event;
+use App\Models\EventInstance;
 use App\Models\Position;
 use App\Models\Staffing;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class StaffingSeeder extends Seeder
@@ -15,20 +14,24 @@ class StaffingSeeder extends Seeder
      */
     public function run(): void
     {
-        $event = Event::has('calendar')->inRandomOrder()->first();
+        // Get instances that don't have staffing yet
+        $instances = EventInstance::whereDoesntHave('staffing')->inRandomOrder()->take(10)->get();
 
-        if (!$event) {
-            $this->command->warn('No events with calendars found. Skipping StaffingSeeder.');
+        if ($instances->isEmpty()) {
+            $this->command->warn('No event instances found. Run EventSeeder first!');
             return;
         }
-        
-        Staffing::factory()->count(5)->create([
-            'event_id' => $event->id,
-        ])->each(function ($staffing) {
+
+        foreach ($instances as $instance) {
+            // Create exactly one Staffing record per Instance
+            $staffing = Staffing::factory()->create([
+                'event_instance_id' => $instance->id,
+            ]);
+
+            // Add some positions to the staffing
             $staffing->positions()->createMany(
-                Position::factory()->count(rand(1, 3))->make()->toArray()
+                Position::factory()->count(rand(2, 5))->make()->toArray()
             );
-            $staffing->save();
-        });
+        }
     }
 }
