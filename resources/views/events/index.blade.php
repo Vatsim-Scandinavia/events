@@ -40,11 +40,9 @@
                                             <td>{{ $event->title }}</td>
                                             <td>
                                                 @if($event->nextInstance)
-                                                    <span class="badge badge-light text-dark">
-                                                        <i class="far fa-calendar-alt"></i> {{ $event->nextInstance->start_time->format('d-m-Y H:i') }}z
-                                                    </span>
+                                                    {{ $event->nextInstance->end_time->format('d-m-Y H:i') }}z
                                                 @else
-                                                    <span class="text-muted small italic">No upcoming dates</span>
+                                                    <span class="text-muted">-</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -56,14 +54,14 @@
                                             </td>
                                             <td class="text-center">
                                                 @if($event->recurrence_unit)
-                                                    <i class="fas fa-sync-alt text-success" title="Repeats {{ $event->recurrence_unit }}"></i>
+                                                    <i class="fas fa-sync-alt text-success" title="Repeats {{ $event->recurrence_interval }} {{ $event->recurrence_unit }}"></i>
                                                 @else
                                                     <i class="fas fa-minus text-gray-400"></i>
                                                 @endif
                                             </td>
                                             <td>{{ $event->calendar->name }}</td>
                                             <td>{{ $event->user->name }}</td>
-                                            <td>
+                                            <td class="align-middle text-right">
                                                 <div class="d-flex flex-column" style="gap: 0.25rem;">
                                                     @if($event->nextInstance)
                                                         {{-- Pointing to the specific instance is key for the staffing sheet --}}
@@ -80,6 +78,18 @@
                                                         <a class="btn btn-sm btn-primary" href="{{ route('events.edit', $event->id) }}">
                                                             <i class="fas fa-edit fa-fw"></i> Edit
                                                         </a>
+                                                    @endcan
+
+                                                    @can('destroy', $event)
+                                                        <form action="{{ route('events.destroy', $event->id) }}" method="POST" 
+                                                            onsubmit="return confirm('Are you sure you want to delete this event and all its instances?');" 
+                                                            style="display: block; width: 100%;">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-danger w-100">
+                                                                <i class="fas fa-trash fa-fw"></i> Delete
+                                                            </button>
+                                                        </form>
                                                     @endcan
                                                 </div>
                                             </td>

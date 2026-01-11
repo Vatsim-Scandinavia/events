@@ -37,7 +37,7 @@
                                     <tr>
                                         <td class="align-middle">{{ $staffing->id }}</td>
                                         <td class="align-middle">
-                                            <strong>{{ $staffing->instance->event->title ?? 'Unkown Event' }}</strong>
+                                            <strong>{{ $staffing->instance->event->title ?? 'Unknown Event' }}</strong>
                                         </td>
                                         <td class="align-middle">
                                             @if($staffing->instance)
@@ -48,43 +48,43 @@
                                             @endif
                                         </td>
                                         <td class="text-right align-middle">
-                                            <div class="btn-group" role="group">
-                                                {{-- Primary Action: Edit --}}
-                                                @can('update', $staffing)
-                                                    <a class="btn btn-sm btn-outline-primary" href="{{ route('staffings.edit', $staffing->id) }}">
-                                                        <i class="fas fa-edit"></i> Edit
+                                            {{-- 1. Actions Dropdown --}}
+                                            <div class="btn-group">
+                                                <a class="btn btn-sm btn-info dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                    <i class="fas fa-gears"></i> Actions
+                                                </a>
+                                                <div class="dropdown-menu">
+                                                    <a class="dropdown-item" href="{{ route('staffings.refresh', $staffing) }}" data-toggle="tooltip" title="Refreshes the data of the event on discord">Refresh Event data</a>
+                                                    
+                                                    <a class="dropdown-item" href="{{ route('staffings.manreset', $staffing) }}" 
+                                                    data-toggle="tooltip" title="Manually resets the whole staffing. Use with caution."
+                                                    onclick="return confirm('This will clear all current bookings. Are you sure?')">
+                                                    Manual reset (Use with caution)
                                                     </a>
-                                                @endcan
-
-                                                {{-- Utility Dropdown --}}
-                                                <div class="btn-group" role="group">
-                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
-                                                        <i class="fas fa-cog"></i>
-                                                    </button>
-                                                    <div class="dropdown-menu dropdown-menu-right">
-                                                        <a class="dropdown-item" href="{{ route('staffings.refresh', $staffing) }}">
-                                                            <i class="fas fa-sync-alt fa-sm fa-fw mr-2 text-gray-400"></i> Refresh Data
-                                                        </a>
-                                                        <a class="dropdown-item text-warning" 
-                                                        href="{{ route('staffings.manreset', $staffing) }}" 
-                                                        onclick="return confirm('This will clear all current bookings for this event. Are you sure?')">
-                                                        <i class="fas fa-exclamation-triangle"></i> Manual Reset
-                                                        </a>
-                                                        
-                                                        @can('destroy', $staffing)
-                                                            <div class="dropdown-divider"></div>
-                                                            <form method="POST" action="{{ route('staffings.destroy', $staffing->id) }}" 
-                                                                  onsubmit="return confirm('Careful! This will permanently delete the staffing for: {{ $staffing->instance->event->title }}')">
-                                                                @method('DELETE')
-                                                                @csrf
-                                                                <button class="dropdown-item text-danger" type="submit">
-                                                                    <i class="fas fa-trash fa-sm fa-fw mr-2"></i> Delete Staffing
-                                                                </button>
-                                                            </form>
-                                                        @endcan
-                                                    </div>
                                                 </div>
                                             </div>
+
+                                            {{-- 2. Edit Button --}}
+                                            @can('update', $staffing)
+                                            <div class="btn-group">
+                                                <a class="btn btn-sm btn-primary" href="{{ route('staffings.edit', $staffing->id) }}">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                            </div>
+                                            @endcan
+
+                                            {{-- 3. Delete Button --}}
+                                            @can('destroy', $staffing)
+                                            <div class="btn-group">
+                                                <form method="POST" action="{{ route('staffings.destroy', $staffing->id) }}" style="display:inline" onsubmit="return confirm('Are you sure you want to delete this event? - {{ $staffing->instance->event->title ?? '' }}')">
+                                                    @method('DELETE')
+                                                    @csrf
+                                                    <button class="btn btn-sm btn-danger" type="submit">
+                                                        <i class="fas fa-trash"></i> Delete Staffing
+                                                    </button>
+                                                </form>
+                                            </div>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @endcan
