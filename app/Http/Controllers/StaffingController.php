@@ -168,7 +168,7 @@ class StaffingController extends Controller
 
         // 3. Create the staffing record (Defining $staffing)
         $staffing = Staffing::create([
-            'instance_id' => $instance->id,
+            'event_instance_id' => $instance->id,
             'description' => $request->description,
             'channel_id' => $request->channel_id,
             'section_1_title' => $request->section_1_title,
