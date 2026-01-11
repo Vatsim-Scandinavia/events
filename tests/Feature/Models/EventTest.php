@@ -129,20 +129,18 @@ class EventTest extends TestCase
         // Post request to create a normal event
         $response = $this->actingAs($user)->post(route('events.store'), [
             'calendar_id' => $calendar->id,
+            'event_type' => 0,
             'title' => $this->faker->sentence(1),
             'short_description' => $this->faker->text(280),
             'long_description' => $this->faker->paragraph(),
             'start_date' => now()->addDays(1)->format('Y-m-d H:i'),
             'end_date' => now()->addDays(1)->addHours(2)->format('Y-m-d H:i'),
-            'recurrence_interval' => null,
-            'recurrence_unit' => null,
-            'recurrence_end_date' => null,
             'image' => $image,
             'published' => false,
         ]);
 
         $response->assertRedirect(route('events.index'));
-        $response->assertSessionHas('success', 'Event created successfully.');
+        $response->assertSessionHas('success', 'Event created!');
 
         // Check if the file exists
         $event = Event::latest()->first();
@@ -162,9 +160,10 @@ class EventTest extends TestCase
         $endDate = now()->addDays(1)->addHours(2)->format('Y-m-d H:i');
         $recurrenceEndDate = now()->addWeeks(5)->format('Y-m-d H:i');
 
-        // Post request to create a normal event
+        // Post request to create a recurrent event
         $response = $this->actingAs($user)->post(route('events.store'), [
             'calendar_id' => $calendar->id,
+            'event_type' => 1,
             'title' => 'Test Event',
             'short_description' => $this->faker->text(280),
             'long_description' => $this->faker->paragraph(),
@@ -173,10 +172,12 @@ class EventTest extends TestCase
             'recurrence_interval' => 1,
             'recurrence_unit' => 'week',
             'recurrence_end_date' => $recurrenceEndDate,
+            'published' => true,
         ]);
 
         $response->assertRedirect(route('events.index'));
-        $response->assertSessionHas('success', 'Event created successfully.');
+        // Updated success message
+        $response->assertSessionHas('success', 'Event created!');
 
         // Get the event from the database
         $event = Event::where('title', 'Test Event')->first();
@@ -184,25 +185,35 @@ class EventTest extends TestCase
         // Assert the event exists
         $this->assertNotNull($event);
 
-        // Assert the event has recurrences
-        $recurrences = $event->children;
-        $this->assertNotEmpty($recurrences);
+        // Update: Check the instances relationship instead of 'children'
+        $instances = $event->instances; 
+        $this->assertNotEmpty($instances);
 
         // Calculate expected number of recurrences
-        $expectedRecurrences = collect();
-        $currentDate = Carbon::parse($startDate)->addWeek();
+        // Note: The first instance is usually created for the start_date itself
+        $expectedDates = collect();
+        $currentDate = Carbon::parse($startDate);
         while ($currentDate <= Carbon::parse($recurrenceEndDate)) {
-            $expectedRecurrences->push($currentDate->copy());
+            $expectedDates->push($currentDate->copy());
             $currentDate->addWeek();
         }
 
-        // Assert the number of recurrences matches the expected number
-        $this->assertCount($expectedRecurrences->count(), $recurrences);
+        // Assert the number of instances matches the expected count
+        $this->assertCount($expectedDates->count(), $instances);
 
-        // Assert the dates of recurrences match expected dates
-        foreach ($recurrences as $index => $recurrence) {
-            $this->assertEquals(Carbon::parse($expectedRecurrences[$index])->format('Y-m-d H:i'), Carbon::parse($recurrence->start_date)->format('Y-m-d H:i'));
-            $this->assertEquals(Carbon::parse($expectedRecurrences[$index])->addHours(2)->format('Y-m-d H:i'), Carbon::parse($recurrence->end_date)->format('Y-m-d H:i'));
+        // Assert the dates of instances match expected dates
+        // Using sortBy('start_time') ensures we compare them in order
+        $instances = $instances->sortBy('start_time')->values();
+
+        foreach ($instances as $index => $instance) {
+            $this->assertEquals(
+                Carbon::parse($expectedDates[$index])->format('Y-m-d H:i'), 
+                Carbon::parse($instance->start_time)->format('Y-m-d H:i')
+            );
+            $this->assertEquals(
+                Carbon::parse($expectedDates[$index])->addHours(2)->format('Y-m-d H:i'), 
+                Carbon::parse($instance->end_time)->format('Y-m-d H:i')
+            );
         }
     }
 
@@ -214,25 +225,31 @@ class EventTest extends TestCase
         // Create a test calendar
         $calendar = Calendar::factory()->create();
 
-        // Create a test event
+        // Create a test event (The factory should handle creating the initial instance)
         $event = Event::factory()->create();
 
-        // Patch request to update the calendar
+        $newTitle = 'Updated Event Title';
+
+        // Patch request to update the event
         $response = $this->actingAs($user)->patch(route('events.update', $event), [
             'calendar_id' => $calendar->id,
-            'title' => $this->faker->sentence(1),
+            'event_type' => 0, // Added boolean (0 for single)
+            'title' => $newTitle,
             'short_description' => $this->faker->text(280),
             'long_description' => $this->faker->paragraph(),
-            'start_date' => now()->addDays(1)->format('Y-m-d H:i'),
-            'end_date' => now()->addDays(1)->addHours(2)->format('Y-m-d H:i'),
+            'start_date' => now()->addDays(2)->format('Y-m-d H:i'),
+            'end_date' => now()->addDays(2)->addHours(2)->format('Y-m-d H:i'),
             'recurrence_interval' => null,
             'recurrence_unit' => null,
             'recurrence_end_date' => null,
         ]);
 
-        // Check redirect and session is correct
+        // Check redirect and updated success message
         $response->assertRedirect(route('events.index'));
-        $response->assertSessionHas('success', 'Event updated successfully.');
+        $response->assertSessionHas('success', 'Event and/or series updated!');
+
+        // Refresh model and assert changes
+        $this->assertEquals($newTitle, $event->refresh()->title);
     }
 
     public function test_event_can_be_deleted(): void
@@ -248,7 +265,7 @@ class EventTest extends TestCase
 
         // Check redirect and session is correct
         $response->assertRedirect(route('events.index'));
-        $response->assertSessionHas('success', 'Event deleted successfully');
+        $response->assertSessionHas('success', 'Event removed.');
 
         // Check if the event is deleted using soft delete logic
         $this->assertDatabaseHas('events', [

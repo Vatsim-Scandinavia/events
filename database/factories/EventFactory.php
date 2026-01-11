@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Calendar;
 use App\Models\User;
+use App\Models\Event;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -11,6 +12,19 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class EventFactory extends Factory
 {
+
+    public function configure()
+    {
+        return $this->afterCreating(function (Event $event) {
+            // Automatically create a default instance if one doesn't exist
+            if ($event->instances()->count() === 0) {
+                $event->instances()->create([
+                    'start_time' => now()->addDay(),
+                    'end_time' => now()->addDay()->addHours(2),
+                ]);
+            }
+        });
+    }
     /**
      * Define the model's default state.
      *
@@ -19,16 +33,13 @@ class EventFactory extends Factory
     public function definition(): array
     {
         return [
-            'calendar_id' => Calendar::inRandomOrder()->first()?->id ?? Calendar::factory()->create()->id,
-            'title' => $this->faker->sentence(1),
+            // Using factory() directly is cleaner for testing
+            'calendar_id' => Calendar::factory(), 
+            'user_id' => User::factory(),
+            'title' => $this->faker->sentence(3),
             'short_description' => $this->faker->text(280),
             'long_description' => $this->faker->paragraph(),
-            'start_date' => now()->addDays(1)->format('Y-m-d H:i:s'),
-            'end_date' => now()->addDays(1)->addHours(2)->format('Y-m-d H:i:s'),
-            'recurrence_interval' => null,
-            'recurrence_unit' => null,
-            'recurrence_end_date' => null,
-            'user_id' => User::inRandomOrder()->first()?->id ?? User::factory()->create()->id,
+            'image' => null,
         ];
     }
 }

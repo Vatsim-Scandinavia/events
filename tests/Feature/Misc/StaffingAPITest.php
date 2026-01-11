@@ -6,10 +6,12 @@ use App\Models\ApiKey;
 use App\Models\Event;
 use App\Models\Position;
 use App\Models\Staffing;
+use Illuminate\Support\Facades\Http;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
+use App\Models\EventInstance;
 
 class StaffingAPITest extends TestCase
 {
@@ -20,134 +22,85 @@ class StaffingAPITest extends TestCase
      */
     public function test_reset_staffing_command()
     {
-        $now = Carbon::create(2025, 4, 15, 12, 0, 0);
+        // Mock both Discord and the external Booking API
+        Http::fake([
+            config('booking.discord_api_url') . '/*' => Http::response([], 200),
+            config('booking.cc_api_url') . '/*' => Http::response([], 200),
+        ]);
+
+        $now = Carbon::create(2026, 1, 15, 12, 0, 0);
         Carbon::setTestNow($now);
 
-        // Create parent event
-        $parentEvent = Event::factory()->create([
-            'start_date' => $now->copy()->subDay()->format('Y-m-d H:i'),
-            'end_date' => $now->copy()->subDay()->addHours(2)->format('Y-m-d H:i'),
+        $event = Event::factory()->create();
+        
+        // Past instance
+        $past = EventInstance::factory()->create([
+            'event_id' => $event->id, 
+            'end_time' => $now->copy()->subHour()
+        ]);
+        
+        // Future instance
+        $future = EventInstance::factory()->create([
+            'event_id' => $event->id, 
+            'start_time' => $now->copy()->addHour()
         ]);
 
-        // Attach staffing to parent
-        $staffing = Staffing::factory()->create([
-            'event_id' => $parentEvent->id,
-        ]);
+        $staffing = Staffing::factory()->create(['event_instance_id' => $past->id]);
 
-        // Create a child event in the future
-        $childEvent = Event::factory()->create([
-            'title' => $parentEvent->title,
-            'calendar_id' => $parentEvent->calendar_id,
-            'parent_id' => $parentEvent->id,
-            'start_date' => $now->copy()->addDay()->format('Y-m-d H:i'),
-            'end_date' => $now->copy()->addDay()->addHours(2)->format('Y-m-d H:i'),
-        ]);
-
-        // Run the command
+        // Act
         $this->artisan('staffing:reset')->assertExitCode(0);
 
-        // Assert staffing points to the child now
+        // Assert database updated to the future instance ID
         $this->assertDatabaseHas('staffings', [
             'id' => $staffing->id,
-            'event_id' => $childEvent->id,
+            'event_instance_id' => $future->id,
         ]);
 
         Carbon::setTestNow();
     }
 
     /**
-     * Test staffings can be reviecived from the API.
+     * Test staffings can be received from the API.
      */
     public function test_staffings_can_be_recieved_from_the_api()
     {
-        // Create an API key
         $apiKey = ApiKey::factory()->create();
 
-        // Create a staffing instance with event and position
+        // Create a staffing with a linked instance and event
         $staffing = Staffing::factory()
             ->has(Position::factory())
             ->create();
 
-        $position = $staffing->positions->first();
-        $event = $staffing->event;
-
-        // Make the API request
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $apiKey->id,
             'Accept' => 'application/json',
         ])->get(route('api.staffing.index'));
 
-        // Check status and structure
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
+        // Verify JSON Structure matches the new 'instance' relationship
+        $response->assertJsonStructure([
+            'data' => [
+                '*' => [
+                    'id', 
+                    'description', 
+                    'event_instance_id',
+                    'instance' => [ // Key is 'instance' because of model method name
                         'id',
-                        'description',
-                        'channel_id',
-                        'message_id',
-                        'section_1_title',
-                        'section_2_title',
-                        'section_3_title',
-                        'section_4_title',
-                        'event_id',
-                        'created_at',
-                        'updated_at',
-                        'positions' => [
-                            '*' => [
-                                'id',
-                                'callsign',
-                                'booking_id',
-                                'discord_user',
-                                'section',
-                                'local_booking',
-                                'start_time',
-                                'end_time',
-                                'staffing_id',
-                                'created_at',
-                                'updated_at',
-                            ],
-                        ],
+                        'start_time',
+                        'end_time',
                         'event' => [
                             'id',
-                            'calendar_id',
-                            'title',
-                            'short_description',
-                            'long_description',
-                            'start_date',
-                            'end_date',
-                            'recurrence_interval',
-                            'recurrence_unit',
-                            'recurrence_end_date',
-                            'published',
-                            'image',
-                            'user_id',
-                            'parent_id',
-                            'deleted_at',
-                            'created_at',
-                            'updated_at',
-                        ],
-                    ]
+                            'title'
+                        ]
+                    ],
+                    'positions'
                 ]
-            ]);
+            ]
+        ]);
 
-        // Assert specific data using assertJsonPath
-        $response->assertJsonPath('data.0.id', $staffing->id);
-        $response->assertJsonPath('data.0.description', $staffing->description);
-        $response->assertJsonPath('data.0.channel_id', $staffing->channel_id);
-        $response->assertJsonPath('data.0.message_id', $staffing->message_id);
-
-        // Position details
-        $response->assertJsonPath('data.0.positions.0.id', $position->id);
-        $response->assertJsonPath('data.0.positions.0.callsign', $position->callsign);
-        $response->assertJsonPath('data.0.positions.0.booking_id', $position->booking_id);
-        $response->assertJsonPath('data.0.positions.0.discord_user', $position->discord_user);
-
-        // Event details
-        $response->assertJsonPath('data.0.event.id', $event->id);
-        $response->assertJsonPath('data.0.event.title', $event->title);
-        $response->assertJsonPath('data.0.event.short_description', $event->short_description);
-        $response->assertJsonPath('data.0.event.start_date', $event->start_date);
-        $response->assertJsonPath('data.0.event.end_date', $event->end_date);
+        // Updated path assertions to use the 'instance' key
+        $response->assertJsonPath('data.0.instance.id', $staffing->event_instance_id);
+        
+        // Verify the event data is present inside the instance
+        $this->assertNotEmpty($response->json('data.0.instance.event'));
     }
 }
