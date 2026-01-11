@@ -33,13 +33,4 @@ class Position extends Model
     {
         return $this->belongsTo(Staffing::class);
     }
-
-    /**
-     * Get the user assigned to this position.
-     */
-    public function user(): BelongsTo
-    {
-        // This assumes your positions table has a 'user_id' column
-        return $this->belongsTo(User::class);
-    }
 }
