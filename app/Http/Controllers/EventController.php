@@ -66,7 +66,7 @@ class EventController extends Controller
     {
         $eventService->updateEvent($event, $request->validated(), $request->file('image'));
 
-        return redirect()->route('events.index')->withSuccess('Event and series updated!');
+        return redirect()->route('events.index')->withSuccess('Event and/or series updated!');
     }
 
     /**
