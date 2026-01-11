@@ -33,9 +33,12 @@ class EventFactory extends Factory
     public function definition(): array
     {
         return [
-            // Using factory() directly is cleaner for testing
-            'calendar_id' => Calendar::factory(), 
-            'user_id' => User::factory(),
+            // This checks if a calendar exists first
+            'calendar_id' => Calendar::query()->inRandomOrder()->first()?->id ?? Calendar::factory(), 
+            
+            // Same logic for users to avoid creating 100s of users
+            'user_id' => User::query()->inRandomOrder()->first()?->id ?? User::factory(),
+            
             'title' => $this->faker->sentence(3),
             'short_description' => $this->faker->text(280),
             'long_description' => $this->faker->paragraph(),
