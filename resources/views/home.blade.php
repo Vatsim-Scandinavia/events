@@ -34,10 +34,12 @@
                                 {{-- Get the ID of the first instance from the pre-loaded collection --}}
                                 @php $firstInstance = $event->instances->first(); @endphp
                                 
-                                <a href="{{ route('events.show', [$event->id, 'displayInstance' => $firstInstance->id]) }}" 
-                                class="btn btn-info btn-sm">
-                                View Event
-                                </a>
+                                @if($firstInstance)
+                                    <a href="{{ route('events.show', [$event->id, 'displayInstance' => $firstInstance->id]) }}" 
+                                    class="btn btn-info btn-sm">
+                                        View Event
+                                    </a>
+                                @endif
                             </div>
                         </li>
                     @endforeach
