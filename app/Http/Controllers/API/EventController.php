@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class EventController extends Controller
 {
@@ -52,19 +53,33 @@ class EventController extends Controller
             $request->file('image')->storeAs('banners', $imageName, 'public');
         }
 
-        $event = Event::create([
-            'calendar_id' => $request->calendar_id,
-            'user_id' => $request->user,
-            'title' => $request->title,
-            'short_description' => $request->short_description,
-            'long_description' => $request->long_description,
-            'image' => $imageName,
-        ]);
+        DB::beginTransaction();
+        try {
+            $event = Event::create([
+                'calendar_id' => $request->calendar_id,
+                'user_id' => $request->user,
+                'title' => $request->title,
+                'short_description' => $request->short_description,
+                'long_description' => $request->long_description,
+                'image' => $imageName,
+            ]);
 
-        $event->instances()->create([
-            'start_time' => Carbon::parse($request->start_date),
-            'end_time' => Carbon::parse($request->end_date),
-        ]);
+            $event->instances()->create([
+                'start_time' => Carbon::parse($request->start_date),
+                'end_time' => Carbon::parse($request->end_date),
+            ]);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            if ($imageName) {
+                Storage::disk('public')->delete('banners/'.$imageName);
+            }
+
+            throw $e;
+        }
+        
 
         return response()->json(['success' => 'Event created', 'data' => $event->load('instances')], 201);
     }
