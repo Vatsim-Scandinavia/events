@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Http;
+use App\Models\EventInstance;
 
 class StaffingController extends Controller
 {
@@ -18,9 +19,7 @@ class StaffingController extends Controller
      */
     public function index()
     {
-        $this->authorize('index', Staffing::class);
-
-        $staffings = Staffing::all();
+        $staffings = Staffing::with(['instance.event', 'positions'])->get();
 
         return view('staffing.index', compact('staffings'));
     }
@@ -39,7 +38,6 @@ class StaffingController extends Controller
         $this->authorize('update', $staffing);
 
         StaffingHelper::resetStaffing($staffing, 'staffings.index');
-
         StaffingHelper::updateDiscordMessage($staffing, true, 'staffings.index');
 
         return redirect()->route('staffings.index')->withSuccess('Staffing reset successfully.');
@@ -52,42 +50,31 @@ class StaffingController extends Controller
     {
         $this->authorize('create', Staffing::class);
 
-        $events = Event::whereNull('parent_id')
-            ->whereDoesntHave('staffing')
-            ->whereHas('children', function ($query) {
-                $query->where('start_date', '>', Carbon::now())
+        $events = Event::whereNotNull('recurrence_unit')
+            ->whereHas('instances', function ($query) {
+                $query->where('start_time', '>', now())
                     ->whereDoesntHave('staffing');
             })
+            ->whereDoesntHave('instances.staffing') 
             ->get();
 
         $positions = $this->getPositions();
-
-        $channels = $this->getGuildChannels(True);
+        $channels = $this->getGuildChannels(true);
 
         return view('staffing.create', compact('events', 'channels', 'positions'));
     }
 
     protected function getPositions()
     {
-        try {
+        return cache()->remember('staffing_positions', 300, function () {
             $response = Http::get(config('booking.cc_api_url').'/positions');
-
             if ($response->successful()) {
                 $positions = $response->json()['data'];
-                
-                // Sort positions alphabetically by callsign
-                usort($positions, function ($a, $b) {
-                    return strcmp($a['callsign'], $b['callsign']);
-                });
-                
+                usort($positions, fn($a, $b) => strcmp($a['callsign'], $b['callsign']));
                 return $positions;
-            } else {
-                throw new \Exception('Error: Unable to fetch positions. HTTP status code: '.$response->status());
-                return 'Error: Unable to fetch positions. HTTP status code: '.$response->status();
             }
-        } catch (\Exception $e) {
-            return 'Error: '.$e->getMessage();
-        }
+            return [];
+        });
     }
 
     protected function getGuildChannels($create = null)
@@ -101,21 +88,17 @@ class StaffingController extends Controller
             if ($response->successful()) {
                 $channelsData = $response->json();
 
-                // Filter channels where 'type' is equal to 0
                 $filteredChannels = array_filter($channelsData, function ($channel) {
                     return isset($channel['type']) && $channel['type'] == 0;
                 });
 
-                // Filter away channels who don't have "staffing" or "signup" in the name
                 $filteredChannels = array_filter($filteredChannels, function ($channel) {
                     return strpos($channel['name'], 'staffing') !== false || strpos($channel['name'], 'signup') !== false;
                 });
 
-                // Reset array keys to start from 0 if needed
                 $filteredChannels = array_values($filteredChannels);
 
                 if ($create) {
-                    // Make sure channels already in the database are not included
                     $existingChannelIds = Staffing::pluck('channel_id')->toArray();
 
                     $filteredChannels = array_filter($filteredChannels, function ($channel) use ($existingChannelIds) {
@@ -123,7 +106,6 @@ class StaffingController extends Controller
                     });
                 }
 
-                // Sort channels by name
                 usort($filteredChannels, function ($a, $b) {
                     return strcmp($a['name'], $b['name']);
                 });
@@ -142,63 +124,28 @@ class StaffingController extends Controller
      */
     public function store(Request $request)
     {
-        $this->validate($request, [
-            'event' => 'required|integer|exists:events,id',
-            'description' => 'required',
-            'channel_id' => 'required|integer',
-            'section_1_title' => 'required',
-            'section_2_title' => 'nullable',
-            'section_3_title' => 'nullable',
-            'section_4_title' => 'nullable',
+        $validated = $request->validate([
+            'event_id' => 'required|integer|exists:events,id',
+            'description' => 'required|string',
+            'section_1_title' => 'required|string',
             'positions' => 'required|array',
+            'positions.*.callsign' => 'required|string',
+            'positions.*.section' => 'required|integer',
         ]);
 
         $this->authorize('create', Staffing::class);
 
-        // Check for duplicate positions within sections
-        $positions = $request->input('positions');
-        $sections = [];
+        $positions = collect($request->positions);
+        foreach ($positions->groupBy('section') as $section => $posList) {
+            $duplicates = $posList->map(fn($p) => strtoupper(trim($p['callsign'])))->duplicates();
 
-        foreach ($positions as $position) {
-            $section = $position['section']; 
-            $callsign = $position['callsign'];
-
-            if (!isset($sections[$section])) {
-                $sections[$section] = [];
-            }
-
-            if (in_array($callsign, $sections[$section])) {
-                return redirect()->back()->withErrors(['positions' => "Duplicate callsign '$callsign' found in section '$section'."]);
-            }
-
-            $sections[$section][] = $callsign;
-        }
-
-        $staffing = Staffing::create([
-            'description' => $request->input('description'),
-            'channel_id' => $request->input('channel_id'),
-            'section_1_title' => $request->input('section_1_title'),
-            'section_2_title' => $request->input('section_2_title'),
-            'section_3_title' => $request->input('section_3_title'),
-            'section_4_title' => $request->input('section_4_title'),
-        ]);
-
-        $event = Event::findOrFail($request->input('event'));
-        if ($event->start_date < Carbon::now()) {
-            $event = $event->children()->where('start_date', '>', Carbon::now())->first();
-
-            if (!$event) {
-                return redirect()->back()->withErrors('Failed to find a valid parent or future child event.');
+            if ($duplicates->isNotEmpty()) {
+                return redirect()->back()->withErrors(['positions' => "Duplicate callsign '{$duplicates->first()}' in section $section."])->withInput();
             }
         }
-
-        $staffing->event()->associate($event);
-        $staffing->save();
-
-        $staffing->positions()->createMany($request->input('positions'));
         
-        StaffingHelper::setupStaffing($staffing, 'staffings.index');
-        StaffingHelper::updateDiscordMessage($staffing, true, 'staffings.index');
+        //StaffingHelper::setupStaffing($staffing, 'staffings.index');
+        //StaffingHelper::updateDiscordMessage($staffing, true, 'staffings.index');
 
         return redirect()->route('staffings.index')->withSuccess('Staffing created successfully.');
     }
@@ -208,22 +155,12 @@ class StaffingController extends Controller
      */
     public function edit(Staffing $staffing)
     {
-        $this->authorize('update', $staffing);
+        $staffing->load(['instance.event', 'positions']);
+        
+        $positions = $this->getPositions(); 
+        $channels = $this->getGuildChannels(true);
 
-        foreach ($staffing->positions as $position) {
-            if ($position->discord_user || $position->booking_id)
-            {
-                return redirect()->route('staffings.index')->withErrors('Staffing cannot be edited because it has bookings.');
-            }
-        }
-
-        $positions = $this->getPositions();
-
-        $channels = $this->getGuildChannels();
-
-        $positionIndex = 0;
-
-        return view('staffing.edit', compact('staffing', 'channels', 'positions', 'positionIndex'));
+        return view('staffing.edit', compact('staffing', 'positions', 'channels'));
     }
 
     /**
@@ -232,15 +169,30 @@ class StaffingController extends Controller
     public function update(Request $request, Staffing $staffing)
     {
         $this->validate($request, [
-            'description' => 'required',
-            'section_1_title' => 'required',
-            'section_2_title' => 'nullable',
-            'section_3_title' => 'nullable',
-            'section_4_title' => 'nullable',
+            'event_id' => 'required|integer|exists:events,id',
+            'description' => 'required|string',
+            'section_1_title' => 'required|string',
             'positions' => 'required|array',
+            'positions.*.callsign' => 'required|string',
+            'positions.*.section' => 'required|integer',
         ]);
 
+        foreach ($staffing->positions as $position) {
+            if ($position->discord_user || $position->booking_id) {
+                throw new EventException('Staffing cannot be edited because it has bookings.', 500, null, 'staffings.index');
+            }
+        }
+
         $this->authorize('update', $staffing);
+
+        $positions = collect($request->positions);
+        foreach ($positions->groupBy('section') as $section => $posList) {
+            $duplicates = $posList->map(fn($p) => strtoupper(trim($p['callsign'])))->duplicates();
+
+            if ($duplicates->isNotEmpty()) {
+                return redirect()->back()->withErrors(['positions' => "Duplicate callsign '{$duplicates->first()}' in section $section."])->withInput();
+            }
+        }
 
         foreach ($staffing->positions as $position) {
             if ($position->discord_user || $position->booking_id)
@@ -249,38 +201,20 @@ class StaffingController extends Controller
             }
         }
 
-        // Check for duplicate positions within sections
-        $positions = $request->input('positions');
-        $sections = [];
+        \DB::transaction(function () use ($staffing, $request, $positions) {
+            $staffing->update([
+                'description' => $request->input('description'),
+                'section_1_title' => $request->input('section_1_title'),
+                'section_2_title' => $request->input('section_2_title'),
+                'section_3_title' => $request->input('section_3_title'),
+                'section_4_title' => $request->input('section_4_title'),
+            ]);
 
-        foreach ($positions as $position) {
-            $section = $position['section']; 
-            $callsign = $position['callsign'];
+            $staffing->positions()->delete();
+            $staffing->positions()->createMany($positions);
+        });
 
-            if (!isset($sections[$section])) {
-                $sections[$section] = [];
-            }
-
-            if (in_array($callsign, $sections[$section])) {
-                return redirect()->back()->withErrors(['positions' => "Duplicate callsign '$callsign' found in section '$section'."]);
-            }
-
-            $sections[$section][] = $callsign;
-        }
-
-        $staffing->update([
-            'description' => $request->input('description'),
-            'section_1_title' => $request->input('section_1_title'),
-            'section_2_title' => $request->input('section_2_title'),
-            'section_3_title' => $request->input('section_3_title'),
-            'section_4_title' => $request->input('section_4_title'),
-        ]);
-
-        // Sync positions: delete removed ones, update existing, and add new ones
-        $staffing->positions()->delete();  // Remove old positions
-        $staffing->positions()->createMany($positions); // Add new ones
-
-        StaffingHelper::updateDiscordMessage($staffing);
+        // StaffingHelper::updateDiscordMessage($staffing);
 
         return redirect()->route('staffings.index')->withSuccess('Staffing updated successfully.');
     }

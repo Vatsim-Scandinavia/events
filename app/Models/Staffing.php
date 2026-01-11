@@ -23,6 +23,7 @@ class Staffing extends Model
         'section_2_title',
         'section_3_title',
         'section_4_title',
+        'event_instance_id',
     ];
 
     public function event() 
@@ -33,5 +34,15 @@ class Staffing extends Model
     public function positions() 
     {
         return $this->hasMany(Position::class);
+    }
+
+    public function instance()
+    {
+        return $this->belongsTo(EventInstance::class, 'event_instance_id');
+    }
+
+    public function getEventTitleAttribute()
+    {
+        return $this->instance->event->title ?? 'Unknown Event';
     }
 }

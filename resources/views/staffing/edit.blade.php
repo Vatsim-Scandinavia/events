@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Edit Staffing - ' . $staffing->event->title)
+@section('title', 'Edit Staffing - ' . $staffing->instance->event->title)
 @section('content')
     <div class="row">
         <div class="col-xl-12 col-md-12 mb-12">
@@ -18,7 +18,9 @@
                                         <label for="event" class="form-label my-1 me-2">Event <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
                                         <select name="event" id="event" class="form-control my-1 me-sm-2" required>
                                             <option disabled>Select Event</option>
-                                            <option value="{{ $staffing->event->id }}" selected disabled>{{ $staffing->event->title }}</option>
+                                            <option value="{{ $staffing->instance->event->id }}" selected disabled>
+                                                {{ $staffing->instance->event->title }}
+                                            </option>
                                         </select>
                                     </div>
                                 </div>
@@ -89,56 +91,56 @@
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-group">
                                         <label for="positions" class="form-label my-1 me-2">Positions <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                        @error('positions')
+                                            <div class="alert alert-danger py-2">
+                                                <i class="fas fa-exclamation-circle me-2"></i> {{ $message }}
+                                            </div>
+                                        @enderror
                                         <div id="positions-container">
-                                            @foreach ($staffing->positions as $position)
-                                                <div class="position-entry mb-3 p-2 border rounded">
-                                                    <div class="row">
-                                                        <div class="col-md-4">
-                                                            <div class="form-group">
-                                                                <label class="form-label my-1 me-2">Callsign</label>
-                                                                <select class="form-control callsign-select {{ $position->local_booking == 1 ? 'd-none' : '' }}" name="positions[{{ $positionIndex }}][callsign]" {{ $position->local_booking == 1 ? 'disabled' : '' }} required>
-                                                                    <option disabled>Select a position</option>
-                                                                    @foreach ($positions as $pos)
-                                                                        <option value="{{ $pos['callsign'] }}" {{ $pos['callsign'] == $position->callsign ? 'selected' : '' }}>{{ $pos['callsign'] }}</option>
-                                                                    @endforeach
-                                                                </select>
-                                                                <input type="text" class="form-control callsign-input {{ $position->local_booking == 0 ? 'd-none' : '' }}" name="positions[{{ $positionIndex }}][callsign]" value="{{ $position->callsign }}" {{ $position->local_booking == 0 ? 'disabled' : '' }} required>
-                                                            </div>
+                                            @foreach ($staffing->positions as $index => $position)
+                                                <div class="position-entry mb-3 p-3 border rounded shadow-sm">
+                                                    <div class="row align-items-end">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label small fw-bold">Callsign</label>
+                                                            <select class="form-control callsign-select {{ $position->local_booking ? 'd-none' : '' }}" name="positions[{{ $index }}][callsign]" {{ $position->local_booking ? 'disabled' : '' }} required>
+                                                                @foreach ($positions as $pos)
+                                                                    <option value="{{ $pos['callsign'] }}" {{ $pos['callsign'] == $position->callsign ? 'selected' : '' }}>{{ $pos['callsign'] }}</option>
+                                                                @endforeach
+                                                            </select>
+                                                            <input type="text" class="form-control callsign-input {{ !$position->local_booking ? 'd-none' : '' }}" name="positions[{{ $index }}][callsign]" value="{{ $position->callsign }}" {{ !$position->local_booking ? 'disabled' : '' }} required>
                                                         </div>
+
                                                         <div class="col-md-2">
-                                                            <div class="form-group">
-                                                                <label class="form-label my-1 me-2">Section</label>
-                                                                <select class="form-control" name="positions[{{ $positionIndex }}][section]" required>
-                                                                    @for ($i = 1; $i < 5; $i++)
-                                                                        <option value="{{ $i }}" {{ $i == $position->section ? 'selected' : '' }}>{{ $i }}</option>
-                                                                    @endfor
-                                                                </select>
-                                                            </div>
+                                                            <label class="form-label small fw-bold">Section</label>
+                                                            <select class="form-control" name="positions[{{ $index }}][section]" required>
+                                                                @for ($i = 1; $i <= 4; $i++)
+                                                                    <option value="{{ $i }}" {{ $i == $position->section ? 'selected' : '' }}>{{ $i }}</option>
+                                                                @endfor
+                                                            </select>
                                                         </div>
+
                                                         <div class="col-md-2">
-                                                            <div class="form-group">
-                                                                <label class="form-label d-flex align-items-center my-1 me-2">Local Booking</label>
-                                                                <input type="hidden" name="positions[{{ $positionIndex }}][local_booking]" value="0">
-                                                                <input type="checkbox" class="local-booking" name="positions[{{ $positionIndex }}][local_booking]" value="1" {{ $position->local_booking == 1 ? 'checked' : '' }}>
-                                                            </div>
+                                                            <label class="form-label small fw-bold">Start</label>
+                                                            <input type="time" class="form-control" name="positions[{{ $index }}][start_time]" value="{{ $position->start_time }}">
                                                         </div>
+
                                                         <div class="col-md-2">
-                                                            <div class="form-group">
-                                                                <label class="form-label my-1 me-2">Start Time</label>
-                                                                <input type="time" class="form-control" name="positions[{{ $positionIndex }}][start_time]" value="{{ $position->start_time }}">
-                                                            </div>
+                                                            <label class="form-label small fw-bold">End</label>
+                                                            <input type="time" class="form-control" name="positions[{{ $index }}][end_time]" value="{{ $position->end_time }}">
                                                         </div>
-                                                        <div class="col-md-2">
-                                                            <div class="form-group">
-                                                                <label class="form-label my-1 me-2">End Time</label>
-                                                                <input type="time" class="form-control" name="positions[{{ $positionIndex }}][end_time]" value="{{ $position->end_time }}">
-                                                            </div>
+
+                                                        <div class="col-md-2 text-center">
+                                                            <label class="form-label small fw-bold d-block">Local</label>
+                                                            <input type="hidden" name="positions[{{ $index }}][local_booking]" value="0">
+                                                            <input type="checkbox" class="local-booking" name="positions[{{ $index }}][local_booking]" value="1" {{ $position->local_booking ? 'checked' : '' }}>
+                                                        </div>
+
+                                                        <div class="col-md-1">
+                                                            <button type="button" class="btn btn-outline-danger btn-sm remove-position w-100">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                    <button type="button" class="btn btn-danger btn-sm remove-position">Remove</button>
-                                                    @php
-                                                        $positionIndex++;
-                                                    @endphp
                                                 </div>
                                             @endforeach
                                         </div>
@@ -208,64 +210,92 @@
             }
 
             function createPositionField() {
-                let positionIndex = document.querySelectorAll(".position-entry").length;
+                let positionIndex = Date.now();
                 let positionDiv = document.createElement("div");
-                positionDiv.classList.add("position-entry", "mb-3", "p-2", "border", "rounded");
+                positionDiv.classList.add("position-entry", "mb-3", "p-3", "border", "rounded", "shadow-sm");
 
                 positionDiv.innerHTML = `
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label class="form-label my-1 me-2">Callsign</label>
-                                <select class="form-control callsign-select" name="positions[${positionIndex}][callsign]" required>
-                                    <option value="" disabled selected>Select a position</option>
-                                    ${positionsData.map(pos => `<option value="${pos["callsign"]}">${pos["callsign"]}</option>`).join("")}
-                                </select>
-                                <input type="text" class="form-control callsign-input d-none" name="positions[${positionIndex}][callsign]" disabled required>
-                            </div>
+                    <div class="row align-items-end">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Callsign</label>
+                            <select class="form-control callsign-select" name="positions[${positionIndex}][callsign]" required>
+                                <option value="" disabled selected>Select a position</option>
+                                ${positionsData.map(pos => `<option value="${pos["callsign"]}">${pos["callsign"]}</option>`).join("")}
+                            </select>
+                            <input type="text" class="form-control callsign-input d-none" name="positions[${positionIndex}][callsign]" disabled required>
                         </div>
                         <div class="col-md-2">
-                            <div class="form-group">
-                                <label class="form-label my-1 me-2">Section</label>
-                                <select class="form-control" name="positions[${positionIndex}][section]" required>
-                                    <option value="1">1</option>
-                                    <option value="2">2</option>
-                                    <option value="3">3</option>
-                                    <option value="4">4</option>
-                                </select>
-                            </div>
+                            <label class="form-label small fw-bold">Section</label>
+                            <select class="form-control" name="positions[${positionIndex}][section]" required>
+                                <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                            </select>
                         </div>
                         <div class="col-md-2">
-                            <div class="form-group">
-                                <label class="form-label d-flex align-items-center my-1 me-2">Local Booking</label>
-                                <input type="hidden" name="positions[${positionIndex}][local_booking]" value="0">
-                                <input type="checkbox" class="local-booking" name="positions[${positionIndex}][local_booking]" value="1">
-                            </div>
+                            <label class="form-label small fw-bold">Start</label>
+                            <input type="time" class="form-control" name="positions[${positionIndex}][start_time]">
                         </div>
                         <div class="col-md-2">
-                            <div class="form-group">
-                                <label class="form-label my-1 me-2">Start Time</label>
-                                <input type="time" class="form-control" name="positions[${positionIndex}][start_time]">
-                            </div>
+                            <label class="form-label small fw-bold">End</label>
+                            <input type="time" class="form-control" name="positions[${positionIndex}][end_time]">
                         </div>
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label class="form-label my-1 me-2">End Time</label>
-                                <input type="time" class="form-control" name="positions[${positionIndex}][end_time]">
-                            </div>
+                        <div class="col-md-2 text-center">
+                            <label class="form-label small fw-bold d-block">Local</label>
+                            <input type="hidden" name="positions[${positionIndex}][local_booking]" value="0">
+                            <input type="checkbox" class="local-booking" name="positions[${positionIndex}][local_booking]" value="1">
+                        </div>
+                        <div class="col-md-1">
+                            <button type="button" class="btn btn-outline-danger btn-sm remove-position w-100">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-danger btn-sm remove-position">Remove</button>
                 `;
 
                 positionsContainer.appendChild(positionDiv);
-
                 setupPositionListeners(positionDiv);
             }
 
             document.querySelectorAll(".position-entry").forEach(setupPositionListeners);
 
             addPositionBtn.addEventListener("click", createPositionField);
+
+            $('form').on('submit', function(e) {
+                let sections = {};
+                let hasDuplicate = false;
+                let duplicateInfo = "";
+
+                // Loop through every position entry currently in the form
+                $('.position-entry').each(function() {
+                    // Find the callsign (check both select and manual input)
+                    let callsignSelect = $(this).find('.callsign-select');
+                    let callsignInput = $(this).find('.callsign-input');
+                    
+                    // Determine which one is currently active/visible
+                    let callsign = callsignSelect.is(':visible') ? callsignSelect.val() : callsignInput.val();
+                    let section = $(this).find('select[name*="[section]"]').val();
+
+                    if (callsign && section) {
+                        callsign = callsign.trim().toUpperCase(); // Standardize for comparison
+
+                        if (!sections[section]) {
+                            sections[section] = [];
+                        }
+                        
+                        if (sections[section].includes(callsign)) {
+                            hasDuplicate = true;
+                            duplicateInfo = `Callsign: ${callsign} in Section: ${section}`;
+                            return false; // Break the .each loop
+                        }
+                        
+                        sections[section].push(callsign);
+                    }
+                });
+
+                if (hasDuplicate) {
+                    e.preventDefault(); // Stop form from sending to the server
+                    alert(`Duplicate Entry Detected!\n\n${duplicateInfo}\n\nPlease ensure each callsign is unique within its section.`);
+                }
+            });
         });
     </script>
 @endsection

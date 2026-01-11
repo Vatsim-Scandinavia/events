@@ -16,16 +16,26 @@
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-group">
                                         <label for="event" class="form-label my-1 me-2">Event <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
-                                        <select name="event" id="event" class="form-control my-1 me-sm-2" required>
-                                            <option disabled selected>Select Event</option>
-                                            @if (!$events->isEmpty())
+                                        <select name="event_id" id="event" class="form-control my-1 me-sm-2" required>
+                                            <option disabled selected value="">Select Event</option>
+                                            @if ($events->isNotEmpty())
                                                 @foreach ($events as $event)
-                                                    <option value="{{ $event->id }}">{{ $event->title }}</option>
+                                                    <option value="{{ $event->id }}" {{ old('event_id') == $event->id ? 'selected' : '' }}>
+                                                        {{ $event->title }} 
+                                                        @if($event->nextInstance)
+                                                            — Next: {{ $event->nextInstance->start_time->format('D, d-m-Y @ H:i') }}z
+                                                        @else
+                                                            — (No upcoming instances)
+                                                        @endif
+                                                    </option>
                                                 @endforeach
                                             @else
-                                                <option disabled>No events available</option>
+                                                <option disabled>No recurring events available for staffing</option>
                                             @endif
                                         </select>
+                                        @error('event_id')
+                                            <span class="text-danger text-sm">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                 </div>
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
@@ -95,6 +105,11 @@
                                 <div class="col-xs-12 col-sm-12 col-md-12 mb-2">
                                     <div class="form-group">
                                         <label for="positions" class="form-label my-1 me-2">Positions <i class="fas fa-xs fa-asterisk" style="color: red;"></i></label>
+                                        @error('positions')
+                                            <div class="alert alert-danger py-2">
+                                                <i class="fas fa-exclamation-circle me-2"></i> {{ $message }}
+                                            </div>
+                                        @enderror
                                         <div id="positions-container"></div>
                                         <button type="button" class="btn btn-primary mt-2" id="add-position">Add Position</button>
                                     </div>
@@ -124,6 +139,32 @@
                         link: ["[","](link)"],
                     }
                 });
+            });
+
+            $('form').on('submit', function(e) {
+                let sections = {};
+                let hasDuplicate = false;
+
+                $('.position-entry').each(function() {
+                    // Get the value from the visible input (select or text input)
+                    let callsign = $(this).find('.callsign-select:not(.d-none), .callsign-input:not(.d-none)').val();
+                    let section = $(this).find('select[name*="[section]"]').val();
+
+                    if (callsign && section) {
+                        if (!sections[section]) sections[section] = [];
+                        
+                        if (sections[section].includes(callsign)) {
+                            alert(`Duplicate callsign "${callsign}" detected in Section ${section}. Please resolve before saving.`);
+                            hasDuplicate = true;
+                            return false; // Break loop
+                        }
+                        sections[section].push(callsign);
+                    }
+                });
+
+                if (hasDuplicate) {
+                    e.preventDefault(); // Stop form submission
+                }
             });
 
             let positionsContainer = document.getElementById("positions-container");
@@ -162,8 +203,11 @@
                 }
             }
 
+            let positionCounter = 0;
+
             function createPositionField() {
-                let positionIndex = document.querySelectorAll(".position-entry").length;
+                positionCounter++;
+                let positionIndex = positionCounter;
                 let positionDiv = document.createElement("div");
                 positionDiv.classList.add("position-entry", "mb-3", "p-2", "border", "rounded");
 
