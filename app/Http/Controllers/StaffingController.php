@@ -177,10 +177,16 @@ class StaffingController extends Controller
             'positions' => 'required|array',
             'positions.*.callsign' => 'required|string',
             'positions.*.section' => 'required|integer',
-            'positions.*.start_time' => 'nullable|date',
-            'positions.*.end_time' => 'nullable|date',
+            'positions.*.start_time' => 'nullable',
+            'positions.*.end_time' => 'nullable',
             'positions.*.local_booking' => 'nullable|boolean',
         ]);
+
+        // Clean up date fields - convert empty strings to null
+        foreach ($validated['positions'] as &$position) {
+            $position['start_time'] = empty($position['start_time']) ? null : $position['start_time'];
+            $position['end_time'] = empty($position['end_time']) ? null : $position['end_time'];
+        }
 
         // 1. Check for duplicates
         $positions = collect($validated['positions']);
@@ -271,10 +277,18 @@ class StaffingController extends Controller
             'positions' => 'required|array',
             'positions.*.callsign' => 'required|string',
             'positions.*.section' => 'required|integer',
-            'positions.*.start_time' => 'nullable|date',
-            'positions.*.end_time' => 'nullable|date',
+            'positions.*.start_time' => 'nullable',
+            'positions.*.end_time' => 'nullable',
             'positions.*.local_booking' => 'nullable|boolean',
         ]);
+        
+        // Clean up date fields - convert empty strings to null
+        $positions = $request->input('positions', []);
+        foreach ($positions as &$position) {
+            $position['start_time'] = empty($position['start_time']) ? null : $position['start_time'];
+            $position['end_time'] = empty($position['end_time']) ? null : $position['end_time'];
+        }
+        $request->merge(['positions' => $positions]);
         
         $this->authorize('update', $staffing);
 
@@ -333,12 +347,17 @@ class StaffingController extends Controller
     {
         $this->authorize('destroy', $staffing);
 
-        $staffing->positions()->each(function ($position) {
-            if ($position->discord_user || $position->booking_id)
-            {
-                throw new EventException('Staffing cannot be deleted because it has bookings.', 500, null, 'staffings.index');
-            }
-        });
+        // Allow deletion of orphaned staffings (no valid event instance)
+        $isOrphaned = !$staffing->instance || !$staffing->instance->event;
+        
+        if (!$isOrphaned) {
+            // Only check for bookings if the staffing is not orphaned
+            $staffing->positions()->each(function ($position) {
+                if ($position->discord_user || $position->booking_id) {
+                    throw new EventException('Staffing cannot be deleted because it has bookings.', 500, null, 'staffings.index');
+                }
+            });
+        }
 
         $staffing->delete();
 
