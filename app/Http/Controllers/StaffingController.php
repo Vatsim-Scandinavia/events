@@ -131,7 +131,7 @@ class StaffingController extends Controller
                 $filteredChannels = array_values($filteredChannels);
 
                 // Filter out channels already in use, but preserve the allowed channel ID
-                if ($allowedChannelId !== null) {
+                if (is_int($allowedChannelId) || is_string($allowedChannelId)) {
                     $existingChannelIds = Staffing::pluck('channel_id')->toArray();
 
                     $filteredChannels = array_filter($filteredChannels, function ($channel) use ($existingChannelIds, $allowedChannelId) {
@@ -323,7 +323,7 @@ class StaffingController extends Controller
                         'section' => $data['section'],
                         'start_time' => $data['start_time'] ?? null,
                         'end_time' => $data['end_time'] ?? null,
-                        'local_booking' => $data['local_booking'] ?? null,
+                        'local_booking' => $data['local_booking'] ?? false,
                     ]
                 );
             }
