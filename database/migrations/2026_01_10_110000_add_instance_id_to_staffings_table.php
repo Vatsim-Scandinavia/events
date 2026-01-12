@@ -53,7 +53,11 @@ return new class extends Migration
         Schema::table('staffings', function (Blueprint $table) {
             $table->dropConstrainedForeignId('event_id');
             
-            $table->foreignId('event_instance_id')->nullable(false)->change();
+            // Change existing column to be non-nullable
+            $table->unsignedBigInteger('event_instance_id')->nullable(false)->change();
+            
+            // Add foreign key constraint separately
+            $table->foreign('event_instance_id')->references('id')->on('event_instances')->onDelete('cascade');
         });
     }
 
