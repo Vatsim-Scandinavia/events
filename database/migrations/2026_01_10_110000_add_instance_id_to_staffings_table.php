@@ -67,7 +67,10 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('staffings', function (Blueprint $table) {
-            //
+            throw new \RuntimeException(
+                'This migration is not reversible. Staffing records without event instances were deleted. '
+                . 'Restore from a pre-migration backup if rollback is needed.'
+            );
         });
     }
 };
