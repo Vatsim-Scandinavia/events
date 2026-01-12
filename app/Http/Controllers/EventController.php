@@ -37,7 +37,7 @@ class EventController extends Controller
         $displayInstance = $event->getDisplayInstance();
 
         if ($displayInstance) {
-            $displayInstance->load(['staffing.positions.user']);
+            $displayInstance->load(['staffing.positions']);
         }
 
         return view('events.show', compact('event', 'displayInstance'));
