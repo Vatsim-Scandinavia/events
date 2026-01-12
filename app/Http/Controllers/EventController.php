@@ -56,7 +56,7 @@ class EventController extends Controller
             
         );
 
-        return redirect()->route('events.index')->withSuccess('Event created!');
+        return redirect()->route('events.show', $event)->withSuccess("Event '{$event->title}' created!");
     }
 
     /**
