@@ -16,7 +16,7 @@ class StaffingService
     {
         return DB::transaction(function () use ($staffing) {
             $nextInstance = EventInstance::where('event_id', $staffing->instance->event_id)
-                ->where('start_time', '>', now())
+                ->where('start_time', '>', \Carbon\Carbon::now())
                 ->where('id', '!=', $staffing->event_instance_id)
                 ->orderBy('start_time', 'asc')
                 ->first();
@@ -105,7 +105,7 @@ class StaffingService
     public function needsReset(Staffing $staffing): bool
     {
         // Note the use of ->instance instead of ->event_instance
-        return $staffing->instance && $staffing->instance->end_time <= now();
+        return $staffing->instance && $staffing->instance->end_time <= \Carbon\Carbon::now();
     }
 
     // app/Services/StaffingService.php
@@ -120,7 +120,7 @@ class StaffingService
         }
 
         $nextInstance = \App\Models\EventInstance::where('event_id', $staffing->instance->event_id)
-            ->where('start_time', '>', now())
+            ->where('start_time', '>', \Carbon\Carbon::now())
             ->orderBy('start_time', 'asc')
             ->first();
 

@@ -22,35 +22,34 @@ class StaffingAPITest extends TestCase
      */
     public function test_reset_staffing_command()
     {
-        // Mock both Discord and the external Booking API
-        Http::fake([
-            config('booking.discord_api_url') . '/*' => Http::response([], 200),
-            config('booking.cc_api_url') . '/*' => Http::response([], 200),
-        ]);
+        // Mock all HTTP requests to prevent real API calls
+        Http::fake();
 
         $now = Carbon::create(2026, 1, 15, 12, 0, 0);
         Carbon::setTestNow($now);
 
         $event = Event::factory()->create();
         
-        // Past instance
+        // Past instance - completely in the past
         $past = EventInstance::factory()->create([
             'event_id' => $event->id, 
+            'start_time' => $now->copy()->subHours(3),
             'end_time' => $now->copy()->subHour()
         ]);
         
-        // Future instance
+        // Future instance - completely in the future  
         $future = EventInstance::factory()->create([
             'event_id' => $event->id, 
-            'start_time' => $now->copy()->addHour()
+            'start_time' => $now->copy()->addHour(),
+            'end_time' => $now->copy()->addHours(3)
         ]);
 
         $staffing = Staffing::factory()->create(['event_instance_id' => $past->id]);
 
-        // Act
+        // Act: Run the reset command
         $this->artisan('staffing:reset')->assertExitCode(0);
 
-        // Assert database updated to the future instance ID
+        // Assert: Database should be updated to the future instance ID
         $this->assertDatabaseHas('staffings', [
             'id' => $staffing->id,
             'event_instance_id' => $future->id,
