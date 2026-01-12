@@ -67,7 +67,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('events', function (Blueprint $table) {
-            //
+            // Rollback not implemented: Cannot reliably distinguish backfilled instances
+            // from instances created through normal application flow.
         });
     }
 };
