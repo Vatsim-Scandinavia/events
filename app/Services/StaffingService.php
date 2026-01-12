@@ -42,11 +42,24 @@ class StaffingService
         });
 
         // Cancel external bookings after successful DB commit
+        $cancellationErrors = [];
         foreach ($bookingIds as $bookingId) {
-            self::cancelExternalBooking($bookingId);
+            try {
+                self::cancelExternalBooking($bookingId);
+            } catch (\Exception $e) {
+                $cancellationErrors[] = "Failed to cancel booking ID $bookingId: " . $e->getMessage();
+            }
         }
 
         self::updateDiscordMessage($staffing->fresh(), true);
+
+        // Log any cancellation errors after Discord message is updated
+        if (!empty($cancellationErrors)) {
+            \Illuminate\Support\Facades\Log::warning('Some external booking cancellations failed during staffing reset', [
+                'staffing_id' => $staffing->id,
+                'errors' => $cancellationErrors
+            ]);
+        }
 
         return true;
     }
@@ -57,6 +70,7 @@ class StaffingService
     public static function setupStaffing(Staffing $staffing)
     {
         $response = Http::retry(3, 1000)
+            ->timeout(config('booking.http_timeout'))
             ->withToken(config('booking.discord_api_token'))
             ->asForm()
             ->post(config('booking.discord_api_url') . '/staffings/setup', [
@@ -81,6 +95,7 @@ class StaffingService
         }
 
         $response = Http::retry(3, 1000)
+            ->timeout(config('booking.http_timeout'))
             ->withToken(config('booking.discord_api_token'))
             ->asForm()
             ->post(config('booking.discord_api_url') . '/staffings/update', $payload);
@@ -98,6 +113,7 @@ class StaffingService
     protected static function cancelExternalBooking($bookingId)
     {
         $response = Http::retry(3, 1000)
+            ->timeout(config('booking.http_timeout'))
             ->withToken(config('booking.cc_api_token'))
             ->delete(config('booking.cc_api_url') . '/bookings/' . $bookingId);
 
