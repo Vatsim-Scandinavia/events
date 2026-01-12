@@ -25,12 +25,26 @@ return new class extends Migration
         foreach ($staffings as $staffing) {
             $eventInstanceId = DB::table('event_instances')
                 ->where('event_id', $staffing->event_id)
+                ->whereNull('deleted_at') // Only consider non-soft-deleted instances
+                ->orderBy('id') // Get the first non-deleted instance
                 ->value('id');
 
-            DB::table('staffings')
-                ->where('id', $staffing->id)
-                ->update(['event_instance_id' => $eventInstanceId]);
+            // Only update if we found a valid event instance
+            if ($eventInstanceId) {
+                DB::table('staffings')
+                    ->where('id', $staffing->id)
+                    ->update(['event_instance_id' => $eventInstanceId]);
+            }
         }
+
+        // Clean up orphaned staffings that don't have a corresponding active event instance
+        DB::table('staffings')
+            ->leftJoin('event_instances', function ($join) {
+                $join->on('staffings.event_id', '=', 'event_instances.event_id')
+                     ->whereNull('event_instances.deleted_at'); // Only join with non-deleted instances
+            })
+            ->whereNull('event_instances.id')
+            ->delete();
 
         // CLEANUP
         Schema::table('staffings', function (Blueprint $table) {
