@@ -139,8 +139,10 @@ class EventTest extends TestCase
             'published' => false,
         ]);
 
-        $response->assertRedirect(route('events.index'));
-        $response->assertSessionHas('success', 'Event created!');
+        $response->assertRedirect(route('events.show', Event::latest()->first()));
+        $response->assertSessionHas('success', function($value) {
+            return str_contains($value, "Event '" ) && str_contains($value, "' created!");
+        });
 
         // Check if the file exists
         $event = Event::latest()->first();
@@ -175,9 +177,9 @@ class EventTest extends TestCase
             'published' => true,
         ]);
 
-        $response->assertRedirect(route('events.index'));
+        $response->assertRedirect(route('events.show', Event::latest()->first()));
         // Updated success message
-        $response->assertSessionHas('success', 'Event created!');
+        $response->assertSessionHas('success', "Event 'Test Event' created!");
 
         // Get the event from the database
         $event = Event::where('title', 'Test Event')->first();
