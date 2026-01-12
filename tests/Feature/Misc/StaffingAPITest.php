@@ -63,6 +63,9 @@ class StaffingAPITest extends TestCase
      */
     public function test_staffings_can_be_recieved_from_the_api()
     {
+        // Mock all HTTP requests to prevent real network calls
+        Http::fake();
+        
         $apiKey = ApiKey::factory()->create();
 
         // Create a staffing with a linked instance and event
