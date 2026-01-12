@@ -14,7 +14,13 @@ class StaffingService
      */
     public static function resetAndSync(Staffing $staffing)
     {
-        return DB::transaction(function () use ($staffing) {
+        // Collect booking IDs before transaction
+        $bookingIds = $staffing->positions
+            ->filter(fn($p) => $p->booking_id)
+            ->pluck('booking_id')
+            ->toArray();
+
+        DB::transaction(function () use ($staffing) {
             $nextInstance = EventInstance::where('event_id', $staffing->instance->event_id)
                 ->where('start_time', '>', \Carbon\Carbon::now())
                 ->where('id', '!=', $staffing->event_instance_id)
@@ -26,21 +32,23 @@ class StaffingService
             }
 
             foreach ($staffing->positions as $position) {
-                if ($position->booking_id) {
-                    self::cancelExternalBooking($position->booking_id);
-                    $position->booking_id = null;
-                }
+                $position->booking_id = null;
                 $position->discord_user = null;
                 $position->save();
             }
 
             $staffing->event_instance_id = $nextInstance->id;
             $staffing->save();
-
-            self::updateDiscordMessage($staffing, true);
-
-            return true;
         });
+
+        // Cancel external bookings after successful DB commit
+        foreach ($bookingIds as $bookingId) {
+            self::cancelExternalBooking($bookingId);
+        }
+
+        self::updateDiscordMessage($staffing->fresh(), true);
+
+        return true;
     }
 
     /**
