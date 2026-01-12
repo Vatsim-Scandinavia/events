@@ -21,21 +21,24 @@ return new class extends Migration
         });
 
         // DATA MIGRATION
-        $staffings = DB::table('staffings')->get();
-        foreach ($staffings as $staffing) {
-            $eventInstanceId = DB::table('event_instances')
-                ->where('event_id', $staffing->event_id)
-                ->whereNull('deleted_at') // Only consider non-soft-deleted instances
-                ->orderBy('id') // Get the first non-deleted instance
-                ->value('id');
+        DB::table('staffings')
+            ->orderBy('id')
+            ->chunkById(1000, function ($staffings) {
+                foreach ($staffings as $staffing) {
+                    $eventInstanceId = DB::table('event_instances')
+                        ->where('event_id', $staffing->event_id)
+                        ->whereNull('deleted_at') // Only consider non-soft-deleted instances
+                        ->orderBy('id') // Get the first non-deleted instance
+                        ->value('id');
 
-            // Only update if we found a valid event instance
-            if ($eventInstanceId) {
-                DB::table('staffings')
-                    ->where('id', $staffing->id)
-                    ->update(['event_instance_id' => $eventInstanceId]);
-            }
-        }
+                    // Only update if we found a valid event instance
+                    if ($eventInstanceId) {
+                        DB::table('staffings')
+                            ->where('id', $staffing->id)
+                            ->update(['event_instance_id' => $eventInstanceId]);
+                    }
+                }
+            });
 
         // Clean up orphaned staffings that don't have a corresponding active event instance
         DB::table('staffings')
