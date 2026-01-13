@@ -103,7 +103,7 @@ class StaffingService
             throw new \Exception('Staffing created, but the Discord message failed to initialize.');
         }
 
-        return $response->json();
+        return $response->json() ?? [];
     }
 
     /**
@@ -134,7 +134,7 @@ class StaffingService
             throw new \Exception('Database updated, but failed to sync with Discord.');
         }
 
-        return $response->json();
+        return $response->json() ?? [];
     }
 
     /**
