@@ -42,9 +42,12 @@ class EventsNotify extends Command
      */
     public function handle()
     {
-        $events = Event::where('start_date', '>=', now())
-            ->where('start_date', '<=', now()->addHours(2))
-            ->where('published', false)
+        $events = Event::where('published', false)
+            ->whereHas('instances', function ($query) {
+                $query->where('start_time', '>=', now())
+                      ->where('start_time', '<=', now()->addHours(2));
+            })
+            ->with(['nextInstance', 'calendar'])
             ->get();
 
         $notifiedCount = 0;
@@ -55,6 +58,12 @@ class EventsNotify extends Command
                 continue;
             }
 
+            $instance = $event->nextInstance;
+            if (!$instance) {
+                $this->info('Skipping event: '.$event->title.' (no next instance found)');
+                continue;
+            }
+
             try {
                 $result = EventHelper::discordPost(
                     $event->id,
@@ -62,8 +71,8 @@ class EventsNotify extends Command
                     $event->title,
                     $event->long_description,
                     asset('storage/banners/' . $event->image),
-                    Carbon::parse($event->start_date),
-                    Carbon::parse($event->end_date)
+                    Carbon::parse($instance->start_time),
+                    Carbon::parse($instance->end_time)
                 );
 
                 if ($result) {
@@ -78,6 +87,7 @@ class EventsNotify extends Command
                 $this->error('Failed to notify about event: '.$event->title.' - '.$e->getMessage());
                 Log::error('Event notification failed', [
                     'event_id' => $event->id,
+                    'instance_id' => $instance->id,
                     'event_title' => $event->title,
                     'exception' => $e->getMessage()
                 ]);
