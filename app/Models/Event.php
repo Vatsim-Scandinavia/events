@@ -9,7 +9,29 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasOneThrough;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Event Model
+ *
+ * Represents a VATSIM event which can be either a single occurrence or a recurring series.
+ * Events contain metadata and generate EventInstance records for specific dates/times.
+ *
+ * @property int $id
+ * @property int $calendar_id
+ * @property int $user_id
+ * @property string $title
+ * @property string|null $short_description
+ * @property string|null $long_description
+ * @property int|null $recurrence_interval Number of units between recurrences
+ * @property string|null $recurrence_unit Unit of recurrence (day, week, month)
+ * @property \Carbon\Carbon|null $recurrence_end_date When recurrence series ends
+ * @property bool $published Whether event is visible to public
+ * @property string|null $image Banner image filename
+ * @property \Carbon\Carbon|null $deleted_at Soft delete timestamp
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ */
 class Event extends Model
 {
     use HasFactory, SoftDeletes;
@@ -21,7 +43,12 @@ class Event extends Model
     ];
 
     /**
-     * Relationship to all specific occurrences.
+     * Get all instances (occurrences) of this event.
+     *
+     * For single events, returns one instance.
+     * For recurring events, returns multiple instances across the date range.
+     *
+     * @return HasMany
      */
     public function instances(): HasMany
     {
@@ -29,7 +56,12 @@ class Event extends Model
     }
 
     /**
-     * Gets the single closest upcoming instance.
+     * Get the next upcoming instance of this event.
+     *
+     * Returns the closest future instance where end_time hasn't passed.
+     * Useful for displaying "Next occurrence" information.
+     *
+     * @return HasOne
      */
     public function nextInstance(): HasOne
     {
@@ -40,30 +72,53 @@ class Event extends Model
     }
 
     /**
-     * Access the staffing sheet directly via the instances.
+     * Get the staffing record through an event instance.
+     *
+     * Provides direct access to staffing data for recurring events.
+     * Note: A recurring event may have multiple staffings (one per instance).
+     *
+     * @return HasOneThrough
      */
     public function staffing(): HasOneThrough
     {
         return $this->hasOneThrough(
             Staffing::class,
             EventInstance::class,
-            'event_id',          // Foreign key on EventInstance
-            'event_instance_id', // Foreign key on Staffing
-            'id',                // Local key on Event
-            'id'                 // Local key on EventInstance
+            'event_id',
+            'event_instance_id',
+            'id',
+            'id'
         );
     }
 
-    public function user()
+    /**
+     * Get the user who created this event.
+     *
+     * @return BelongsTo
+     */
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    public function calendar()
+    /**
+     * Get the calendar this event belongs to.
+     *
+     * @return BelongsTo
+     */
+    public function calendar(): BelongsTo
     {
         return $this->belongsTo(Calendar::class);
     }
 
+    /**
+     * Scope to filter events that have upcoming instances.
+     *
+     * Only returns events where at least one instance hasn't ended yet.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
     public function scopeUpcoming($query)
     {
         return $query->whereHas('instances', function ($q) {
@@ -71,6 +126,14 @@ class Event extends Model
         });
     }
 
+    /**
+     * Gets the appropriate instance to display based on request parameter or next available.
+     *
+     * Checks for ?instance=X query parameter first, falls back to nextInstance,
+     * then falls back to the most recent instance if event has ended.
+     *
+     * @return EventInstance|null
+     */
     public function getDisplayInstance()
     {
         $instanceId = request('instance');

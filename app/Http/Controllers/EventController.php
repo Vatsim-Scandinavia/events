@@ -12,10 +12,21 @@ use App\Http\Requests\StoreEventRequest;
 use App\Http\Requests\UpdateEventRequest;
 use App\Services\EventService;
 
+/**
+ * Event Controller
+ *
+ * Handles CRUD operations for events including recurring event series.
+ * Events can be single occurrences or recurring with multiple instances.
+ */
 class EventController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Display a paginated list of upcoming events.
+     *
+     * Only shows events with at least one future instance.
+     * Requires moderator permission or above.
+     *
+     * @return \Illuminate\View\View
      */
     public function index()
     {
@@ -27,13 +38,18 @@ class EventController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Display a specific event with its details and staffing information.
+     *
+     * Accepts optional ?instance=X query parameter to show a specific occurrence.
+     * Falls back to showing the next upcoming instance.
+     *
+     * @param Event $event
+     * @return \Illuminate\View\View
      */
     public function show(Event $event)
     {
         $this->authorize('view', $event);
 
-        // Get the instance based on the ?instance parameter
         $displayInstance = $event->getDisplayInstance();
 
         if ($displayInstance) {
@@ -44,7 +60,15 @@ class EventController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created event with instances.
+     *
+     * Creates the event and automatically generates instances based on:
+     * - Single event: one instance
+     * - Recurring: multiple instances per recurrence rules
+     *
+     * @param StoreEventRequest $request Validated event data
+     * @param EventService $eventService
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(StoreEventRequest $request, EventService $eventService)
     {
