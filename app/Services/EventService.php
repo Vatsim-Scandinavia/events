@@ -97,10 +97,18 @@ class EventService
         $duration = $start->diffInMinutes($end);
 
         if (!$event->recurrence_unit) {
-            $event->instances()->create([
-                'start_time' => $start,
-                'end_time'   => $end,
-            ]);
+            // Check if instance already exists before creating
+            $exists = $event->instances()
+                ->where('start_time', $start->toDateTimeString())
+                ->where('end_time', $end->toDateTimeString())
+                ->exists();
+            
+            if (!$exists) {
+                $event->instances()->create([
+                    'start_time' => $start,
+                    'end_time'   => $end,
+                ]);
+            }
             return;
         }
 
@@ -109,18 +117,31 @@ class EventService
         $current = $start->copy();
 
         while ($current <= $seriesLimit) {
-            $instances[] = [
-                'event_id'   => $event->id,
-                'start_time' => $current->toDateTimeString(),
-                'end_time'   => $current->copy()->addMinutes($duration)->toDateTimeString(),
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+            $instanceStart = $current->toDateTimeString();
+            $instanceEnd = $current->copy()->addMinutes($duration)->toDateTimeString();
+            
+            // Check if this instance already exists
+            $exists = $event->instances()
+                ->where('start_time', $instanceStart)
+                ->where('end_time', $instanceEnd)
+                ->exists();
+            
+            if (!$exists) {
+                $instances[] = [
+                    'event_id'   => $event->id,
+                    'start_time' => $instanceStart,
+                    'end_time'   => $instanceEnd,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
 
             $current->add($event->recurrence_unit, (int) $event->recurrence_interval);
         }
 
-        EventInstance::insert($instances);
+        if (!empty($instances)) {
+            EventInstance::insert($instances);
+        }
     }
 
     /**
