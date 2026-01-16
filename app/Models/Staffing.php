@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 /**
  * Staffing Model
@@ -56,13 +57,21 @@ class Staffing extends Model
     /**
      * Get the parent event through the instance relationship.
      *
-     * Convenience method to access event details without loading the instance first.
+     * Allows accessing the event both as a relationship method and property.
+     * Example: $staffing->event()->where(...) or $staffing->event->title
      *
-     * @return BelongsTo
+     * @return HasOneThrough
      */
-    public function event()
+    public function event(): HasOneThrough
     {
-        return $this->instance->event();
+        return $this->hasOneThrough(
+            Event::class,
+            EventInstance::class,
+            'id',                    // Foreign key on EventInstance table
+            'id',                    // Foreign key on Event table
+            'event_instance_id',     // Local key on Staffing table
+            'event_id'               // Local key on EventInstance table
+        );
     }
 
     /**
