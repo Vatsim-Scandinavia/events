@@ -35,23 +35,14 @@ return new class extends Migration
             }
         }
         
-        // Step 1: Drop existing foreign key if it exists
-        $foreignKeys = DB::select("
-            SELECT CONSTRAINT_NAME 
-            FROM information_schema.KEY_COLUMN_USAGE 
-            WHERE TABLE_SCHEMA = DATABASE() 
-            AND TABLE_NAME = 'staffings' 
-            AND COLUMN_NAME = 'event_instance_id'
-            AND REFERENCED_TABLE_NAME IS NOT NULL
-        ");
-        
-        foreach ($foreignKeys as $fk) {
-            // Drop foreign key using raw SQL (dropForeign with array prepends table name incorrectly)
-            try {
-                DB::statement("ALTER TABLE staffings DROP FOREIGN KEY `{$fk->CONSTRAINT_NAME}`");
-            } catch (\Exception $e) {
-                // Continue - might already be dropped
-            }
+        // Step 1: Drop existing foreign key if it exists (using Laravel Schema builder)
+        // This is safe to call even if the foreign key doesn't exist
+        try {
+            Schema::table('staffings', function (Blueprint $table) {
+                $table->dropForeign(['event_instance_id']);
+            });
+        } catch (\Exception $e) {
+            // Foreign key might not exist, continue
         }
         
         // Step 2: Ensure column exists (create if not)
@@ -153,23 +144,16 @@ return new class extends Migration
         }
         
         // Step 6: Add foreign key constraint (data is now guaranteed valid)
-        // Check if foreign key already exists before adding
-        $existingFk = DB::select("
-            SELECT CONSTRAINT_NAME 
-            FROM information_schema.KEY_COLUMN_USAGE 
-            WHERE TABLE_SCHEMA = DATABASE() 
-            AND TABLE_NAME = 'staffings' 
-            AND COLUMN_NAME = 'event_instance_id'
-            AND REFERENCED_TABLE_NAME IS NOT NULL
-        ");
-        
-        if (empty($existingFk)) {
+        // Using Laravel Schema builder - will throw if foreign key already exists, so we catch it
+        try {
             Schema::table('staffings', function (Blueprint $table) {
                 $table->foreign('event_instance_id')
                     ->references('id')
                     ->on('event_instances')
                     ->onDelete('cascade');
             });
+        } catch (\Exception $e) {
+            // Foreign key might already exist (e.g., if migration was partially run), continue
         }
         
         // Step 7: Clean-up - drop old event_id and make new column non-nullable
