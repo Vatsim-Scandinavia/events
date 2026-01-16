@@ -49,6 +49,9 @@ class StaffingTest extends TestCase
      */
     public function test_staffing_create_page_can_be_rendered(): void
     {
+        // Clear cache to ensure fresh data
+        \Illuminate\Support\Facades\Cache::flush();
+        
         \Illuminate\Support\Facades\Http::fake([
             '*' => \Illuminate\Support\Facades\Http::response([
                 'data' => [
@@ -94,6 +97,9 @@ class StaffingTest extends TestCase
      */
     public function test_staffing_edit_page_can_be_rendered(): void
     {
+        // Clear cache to ensure fresh data
+        \Illuminate\Support\Facades\Cache::flush();
+        
         \Illuminate\Support\Facades\Http::fake([
             '*' => \Illuminate\Support\Facades\Http::response([
                 'data' => [

@@ -139,7 +139,10 @@ class EventTest extends TestCase
             'published' => false,
         ]);
 
-        $response->assertRedirect(route('events.show', Event::latest()->first()));
+        // Get the created event - it should exist after successful creation
+        $createdEvent = Event::latest()->first();
+        $this->assertNotNull($createdEvent, 'Event should be created');
+        $response->assertRedirect(route('events.show', $createdEvent));
         $response->assertSessionHas('success', function($value) {
             return str_contains($value, "Event '" ) && str_contains($value, "' created!");
         });
@@ -177,7 +180,10 @@ class EventTest extends TestCase
             'published' => true,
         ]);
 
-        $response->assertRedirect(route('events.show', Event::latest()->first()));
+        // Get the created event - it should exist after successful creation
+        $createdEvent = Event::latest()->first();
+        $this->assertNotNull($createdEvent, 'Event should be created');
+        $response->assertRedirect(route('events.show', $createdEvent));
         // Updated success message
         $response->assertSessionHas('success', "Event 'Test Event' created!");
 
