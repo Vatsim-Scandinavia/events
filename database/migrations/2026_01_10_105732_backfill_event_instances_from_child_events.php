@@ -18,7 +18,7 @@ return new class extends Migration
             ->chunkById(500, function ($children) {
                 $now = now();
                 $rows = [];
-                $seenCombinations = []; // Track combinations within this chunk
+                $seenCombinations = [];
 
                 foreach ($children as $child) {
                     if (empty($child->parent_id) || empty($child->start_date)) {
@@ -56,7 +56,7 @@ return new class extends Migration
                 }
 
                 if ($rows) {
-                    DB::table('event_instances')->insert($rows);
+                    DB::table('event_instances')->insertOrIgnore($rows);
                 }
             });
     }

@@ -21,6 +21,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
+
+            $table->unique(['event_id', 'start_time', 'end_time'], 'event_instance_unique');
         });
     }
 

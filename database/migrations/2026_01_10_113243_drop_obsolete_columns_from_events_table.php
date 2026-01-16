@@ -23,7 +23,13 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('events', function (Blueprint $table) {
-            //
+            // Restore the columns
+            $table->timestamp('start_date')->nullable();
+            $table->timestamp('end_date')->nullable();
+            $table->unsignedInteger('parent_id')->nullable();
+
+            // Restore the foreign key constraint
+            $table->foreign('parent_id')->references('id')->on('events')->onDelete('cascade');
         });
     }
 };
