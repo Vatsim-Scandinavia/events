@@ -42,11 +42,11 @@ class EventFactory extends Factory
     public function definition(): array
     {
         return [
-            // This checks if a calendar exists first
-            'calendar_id' => Calendar::query()->inRandomOrder()->first()?->id ?? Calendar::factory(), 
+            // This checks if a calendar exists first, otherwise creates one
+            'calendar_id' => Calendar::query()->inRandomOrder()->first()?->id ?? Calendar::factory()->create()->id, 
             
             // Same logic for users to avoid creating 100s of users
-            'user_id' => User::query()->inRandomOrder()->first()?->id ?? User::factory(),
+            'user_id' => User::query()->inRandomOrder()->first()?->id ?? User::factory()->create()->id,
             
             'title' => $this->faker->sentence(3),
             'short_description' => $this->faker->text(280),
