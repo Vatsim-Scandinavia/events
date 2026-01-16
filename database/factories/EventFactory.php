@@ -17,10 +17,19 @@ class EventFactory extends Factory
     {
         return $this->afterCreating(function (Event $event) {
             // Automatically create a default instance if one doesn't exist
-            if ($event->instances()->count() === 0) {
+            // Check both count and if an instance with the default times already exists
+            $defaultStart = now()->addDay();
+            $defaultEnd = $defaultStart->copy()->addHours(2);
+            
+            $hasDefaultInstance = $event->instances()
+                ->where('start_time', $defaultStart->toDateTimeString())
+                ->where('end_time', $defaultEnd->toDateTimeString())
+                ->exists();
+            
+            if ($event->instances()->count() === 0 && !$hasDefaultInstance) {
                 $event->instances()->create([
-                    'start_time' => now()->addDay(),
-                    'end_time' => now()->addDay()->addHours(2),
+                    'start_time' => $defaultStart,
+                    'end_time' => $defaultEnd,
                 ]);
             }
         });
