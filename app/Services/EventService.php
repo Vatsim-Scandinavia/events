@@ -162,8 +162,15 @@ class EventService
 
         $event->instances()->where('start_time', '>=', $newStart)->whereDoesntHave('staffing')->forceDelete();
 
+        // Get soft-deleted instances to exclude from regeneration
         $excludedDates = $event->instances()
             ->onlyTrashed()
+            ->pluck('start_time')
+            ->map(fn($date) => \Carbon\Carbon::parse($date)->toDateTimeString())
+            ->toArray();
+
+        // Get existing (non-deleted) instances to prevent duplicates
+        $existingDates = $event->instances()
             ->pluck('start_time')
             ->map(fn($date) => \Carbon\Carbon::parse($date)->toDateTimeString())
             ->toArray();
@@ -178,7 +185,8 @@ class EventService
         while ($current <= $limit) {
             $currentTimeString = $current->toDateTimeString();
 
-            if (!in_array($currentTimeString, $excludedDates)) {
+            // Skip if this date was manually removed (soft-deleted) or already exists
+            if (!in_array($currentTimeString, $excludedDates) && !in_array($currentTimeString, $existingDates)) {
                 $batch[] = [
                     'event_id'   => $event->id,
                     'start_time' => $currentTimeString,
