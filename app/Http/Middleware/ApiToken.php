@@ -31,7 +31,7 @@ class ApiToken
             }
         }
 
-        $key->update(['last_used_at', now()]);
+        $key->update(['last_used_at' => now()]);
 
         return $next($request);
     }
