@@ -48,6 +48,10 @@ class StaffingController extends Controller
 
         return DB::transaction(function () use ($staffing, $position, $request) {
             
+            if (!$staffing->instance) {
+                return response()->json(['error' => 'Staffing instance not found'], 500);
+            }
+            
             // Handle External Booking if not a local-only position
             if (!$position->local_booking) {
                 $response = Http::retry(3, 1000)
