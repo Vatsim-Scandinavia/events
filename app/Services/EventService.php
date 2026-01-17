@@ -136,7 +136,7 @@ class EventService
                 ];
             }
 
-            $current->add($event->recurrence_unit, (int) $event->recurrence_interval);
+            $current->add((int) $event->recurrence_interval, $event->recurrence_unit);
         }
 
         if (!empty($instances)) {
@@ -188,7 +188,7 @@ class EventService
                 ];
             }
 
-            $current->add($unit, $interval);
+            $current->add($interval, $unit);
 
             if (count($batch) >= 500) {
                 break; // Safety limit to prevent infinite loops or memory issues
