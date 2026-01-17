@@ -38,6 +38,10 @@ class StaffingService
             ->toArray();
 
         DB::transaction(function () use ($staffing) {
+            if (!$staffing->instance) {
+                throw new \Exception('Cannot reset staffing: associated event instance not found.');
+            }
+
             $nextInstance = EventInstance::where('event_id', $staffing->instance->event_id)
                 ->where('start_time', '>', \Carbon\Carbon::now())
                 ->where('id', '!=', $staffing->event_instance_id)
