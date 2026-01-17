@@ -83,30 +83,46 @@ class StaffingController extends Controller
 
     protected function getPositions()
     {
-        return cache()->remember('staffing_positions', 300, function () {
-            $apiUrl = config('booking.cc_api_url');
+        $cacheKey = 'staffing_positions';
+        
+        // Try to get from cache first
+        $cached = cache()->get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
+        
+        $apiUrl = config('booking.cc_api_url');
+        
+        // Allow testing with HTTP fakes even when CC_API_URL is not configured
+        if (!$apiUrl && !app()->environment('testing')) {
+            Log::warning('CC_API_URL not configured, returning empty positions list');
+            return [];
+        }
+        
+        try {
+            // Use a placeholder URL for testing when API URL is not configured but we're in test environment
+            $url = $apiUrl ? $apiUrl . '/positions' : 'http://test-api.local/positions';
+            $response = Http::timeout(config('booking.http_timeout', 5))->get($url);
             
-            // Allow testing with HTTP fakes even when CC_API_URL is not configured
-            if (!$apiUrl && !app()->environment('testing')) {
-                Log::warning('CC_API_URL not configured, returning empty positions list');
-                return [];
-            }
-            
-            try {
-                // Use a placeholder URL for testing when API URL is not configured but we're in test environment
-                $url = $apiUrl ?: 'http://test-api.local/positions';
-                $response = Http::timeout(config('booking.http_timeout', 5))->get($url);
-                if ($response->successful()) {
-                    $positions = $response->json()['data'];
+            if ($response->successful()) {
+                $positions = $response->json()['data'] ?? [];
+                
+                // Only cache if we have actual data
+                if (!empty($positions)) {
                     usort($positions, fn($a, $b) => strcmp($a['callsign'], $b['callsign']));
+                    cache()->put($cacheKey, $positions, 300); // Cache for 5 minutes
                     return $positions;
                 }
-            } catch (\Exception $e) {
-                Log::error('Failed to fetch positions from API', ['exception' => $e, 'api_url' => $apiUrl]);
+                
+                Log::warning('Positions API returned empty data, not caching');
+            } else {
+                Log::warning('Positions API request failed', ['status' => $response->status()]);
             }
-            
-            return [];
-        });
+        } catch (\Exception $e) {
+            Log::error('Failed to fetch positions from API', ['exception' => $e, 'api_url' => $apiUrl]);
+        }
+        
+        return [];
     }
 
     protected function getGuildChannels($allowedChannelId = null)
