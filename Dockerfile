@@ -4,10 +4,12 @@ FROM docker.io/library/node:22.5.1-alpine as frontend
 LABEL stage=build
 
 WORKDIR /app
-COPY ./ /app/
+COPY package.json package-lock.json /app/
 
-RUN npm ci --omit dev && \
-    npm run build
+RUN npm ci
+
+COPY ./ /app/
+RUN npm run build
 
 ####################################################################################################
 # Primary container
@@ -45,7 +47,7 @@ RUN install-php-extensions pdo_mysql opcache
 COPY --from=docker.io/library/composer:latest /usr/bin/composer /usr/bin/composer
 # Copy over the application, static files, plus the ones built/transpiled by Mix in the frontend stage further up
 COPY --chown=www-data:www-data ./ /app/
-COPY --from=frontend --chown=www-data:www-data /app/public/ /app/public/
+COPY --from=frontend --chown=www-data:www-data /app/public/build /app/public/build
 
 WORKDIR /app
 
