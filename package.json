@@ -8,6 +8,7 @@
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",
+        "@vitejs/plugin-react": "^5.1.2",
         "axios": "^1.11.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
@@ -18,7 +19,6 @@
         "@headlessui/react": "^2.2.9",
         "@heroicons/react": "^2.2.0",
         "@inertiajs/react": "^2.3.10",
-        "@vitejs/plugin-react": "^5.1.2",
         "date-fns": "^4.1.0",
         "date-fns-tz": "^3.2.0",
         "easymde": "^2.20.0",
