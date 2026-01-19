@@ -104,7 +104,8 @@ class DiscordChannelService
             // AND channels that contain "staffing" in their name (case-insensitive)
             $textChannels = array_filter($channels, function($channel) {
                 return $channel['type'] === 0 && 
-                       stripos($channel['name'], 'staffing') !== false;
+                       (stripos($channel['name'], 'staffing') !== false || 
+                        stripos($channel['name'], 'signup') !== false);
             });
 
             if (empty($textChannels)) {
