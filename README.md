@@ -331,7 +331,7 @@ resources/js/
 
 ## License
 
-This project is proprietary software for VATSIM Scandinavia.
+This project is released under the GPL v3 license.
 
 ## Support
 
