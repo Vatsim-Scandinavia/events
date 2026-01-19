@@ -46,6 +46,8 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ env.TARGET_PLATFORMS }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   test-app:
     name: Event Manager Test Suite
