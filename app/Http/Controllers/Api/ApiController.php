@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Services\ControlCenterService;
+use App\Services\RecurringEventService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -14,7 +15,10 @@ use Illuminate\Http\Request;
  */
 class ApiController extends Controller
 {
-    public function __construct(protected ControlCenterService $controlCenterService)
+    public function __construct(
+        protected ControlCenterService $controlCenterService,
+        protected RecurringEventService $recurringEventService
+    )
     {
     }
 
@@ -354,15 +358,63 @@ class ApiController extends Controller
         ]);
 
         // Create booking in Control Center
+        // For recurring events, position times contain the full occurrence datetime
+        // If position times are null, calculate next occurrence date with event times
+        if ($position->start_time && $position->end_time) {
+            $startDatetime = $position->start_time;
+            $endDatetime = $position->end_time;
+            $usedPositionTime = true;
+        } else {
+            // Calculate next occurrence date for recurring events
+            if ($event->isRecurring()) {
+                $instances = $this->recurringEventService->generateInstances(
+                    $event->recurrence_rule,
+                    $event->start_datetime,
+                    now()->addMonths(3),
+                    10,
+                    $event->cancelled_occurrences ?? []
+                );
+                
+                // Find next upcoming occurrence
+                $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
+                
+                if ($nextOccurrence) {
+                    // Use occurrence date with event's original time
+                    $occurrenceDate = $nextOccurrence['start']->format('Y-m-d');
+                    $startDatetime = Carbon::parse($occurrenceDate . ' ' . $event->start_datetime->format('H:i:s'));
+                    $endDatetime = Carbon::parse($occurrenceDate . ' ' . $event->end_datetime->format('H:i:s'));
+                } else {
+                    // No future occurrence found, use event times
+                    $startDatetime = $event->start_datetime;
+                    $endDatetime = $event->end_datetime;
+                }
+            } else {
+                // Non-recurring event, use event times directly
+                $startDatetime = $event->start_datetime;
+                $endDatetime = $event->end_datetime;
+            }
+            $usedPositionTime = false;
+        }
+        
         $bookingData = [
             'cid' => $validated['cid'],
-            'date' => Carbon::parse($position->start_time ?? $event->start_datetime)->format('d/m/Y'),
+            'date' => $startDatetime->format('d/m/Y'),
             'position' => $position->position_id,
-            'start_at' => Carbon::parse($position->start_time ?? $event->start_datetime)->format('H:i'),
-            'end_at' => Carbon::parse($position->end_time ?? $event->end_datetime)->format('H:i'),
+            'start_at' => $startDatetime->format('H:i'),
+            'end_at' => $endDatetime->format('H:i'),
             'tag' => 3,
             'source' => 'Discord',
         ];
+
+        \Log::info('Booking data prepared for Control Center', [
+            'booking_data' => $bookingData,
+            'position_start_time' => $position->start_time?->toDateTimeString() ?? 'null',
+            'position_end_time' => $position->end_time?->toDateTimeString() ?? 'null',
+            'event_start_datetime' => $event->start_datetime->toDateTimeString(),
+            'event_title' => $event->title,
+            'event_is_recurring' => $event->isRecurring(),
+            'used_position_time' => $usedPositionTime,
+        ]);
 
         $bookingId = $this->controlCenterService->createBooking($bookingData);
         
