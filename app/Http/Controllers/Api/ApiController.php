@@ -547,19 +547,54 @@ class ApiController extends Controller
             return response()->json(['error' => 'Staffing reset is only available for recurring events'], 400);
         }
 
-        // Get all booked positions for this event (not just this staffing section)
-        $bookedPositions = $event->staffings()
+        \Log::info('Starting staffing reset', [
+            'event_id' => $event->id,
+            'event_title' => $event->title,
+            'event_start_datetime_BEFORE' => $event->start_datetime->toDateTimeString(),
+            'event_end_datetime_BEFORE' => $event->end_datetime->toDateTimeString(),
+        ]);
+
+        // Calculate next occurrence date for updating position times
+        $nextOccurrenceStart = null;
+        $nextOccurrenceEnd = null;
+        if ($event->isRecurring()) {
+            $instances = $this->recurringEventService->generateInstances(
+                $event->recurrence_rule,
+                $event->start_datetime,
+                now()->addMonths(3),
+                10,
+                $event->cancelled_occurrences ?? []
+            );
+            
+            $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
+            if ($nextOccurrence) {
+                $nextOccurrenceStart = $nextOccurrence['start'];
+                $nextOccurrenceEnd = $nextOccurrence['end'];
+                \Log::info('Next occurrence calculated', [
+                    'next_occurrence_start' => $nextOccurrenceStart->toDateTimeString(),
+                    'next_occurrence_end' => $nextOccurrenceEnd->toDateTimeString(),
+                ]);
+            }
+        }
+
+        // Get all positions for this event (not just booked ones, we need to update all their times)
+        $allPositions = $event->staffings()
             ->with('positions')
             ->get()
             ->flatMap(function ($staffing) {
                 return $staffing->positions;
-            })
-            ->filter(function ($position) {
-                return $position->isBooked();
             });
 
-        // Delete Control Center bookings and clear position bookings
-        foreach ($bookedPositions as $position) {
+        \Log::info('Found positions to reset', ['count' => $allPositions->count()]);
+
+        // Delete Control Center bookings, clear bookings, and update times to next occurrence
+        foreach ($allPositions as $position) {
+            \Log::info('Processing position', [
+                'position_id' => $position->position_id,
+                'old_start_time' => $position->start_time?->toDateTimeString() ?? 'null',
+                'old_end_time' => $position->end_time?->toDateTimeString() ?? 'null',
+            ]);
+
             // Delete from Control Center if there's a booking ID
             if ($position->control_center_booking_id) {
                 try {
@@ -572,14 +607,41 @@ class ApiController extends Controller
                 }
             }
 
-            // Clear all booking fields
-            $position->update([
+            $updateData = [
                 'booked_by_user_id' => null,
                 'discord_user_id' => null,
                 'vatsim_cid' => null,
                 'control_center_booking_id' => null,
+            ];
+            
+            // Update position times to next occurrence if available
+            if ($nextOccurrenceStart && $position->start_time) {
+                // Keep the time-of-day from the position, update the date to next occurrence
+                $timeOfDay = $position->start_time->format('H:i:s');
+                $updateData['start_time'] = $nextOccurrenceStart->copy()->setTimeFromTimeString($timeOfDay);
+            }
+            if ($nextOccurrenceEnd && $position->end_time) {
+                $timeOfDay = $position->end_time->format('H:i:s');
+                $updateData['end_time'] = $nextOccurrenceEnd->copy()->setTimeFromTimeString($timeOfDay);
+            }
+
+            $position->update($updateData);
+
+            \Log::info('Updated position', [
+                'position_id' => $position->position_id,
+                'new_start_time' => $updateData['start_time']?->toDateTimeString() ?? 'not updated',
+                'new_end_time' => $updateData['end_time']?->toDateTimeString() ?? 'not updated',
             ]);
         }
+
+        // Reload event to confirm it wasn't modified
+        $event->refresh();
+        \Log::info('Staffing reset complete - Event verification', [
+            'event_id' => $event->id,
+            'event_start_datetime_AFTER' => $event->start_datetime->toDateTimeString(),
+            'event_end_datetime_AFTER' => $event->end_datetime->toDateTimeString(),
+            'event_modified' => false,
+        ]);
 
         // Update Discord message to reflect the reset
         $notificationService = app(\App\Services\DiscordBotNotificationService::class);
