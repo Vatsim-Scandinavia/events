@@ -67,15 +67,15 @@ export default function Show({ event, instances, bannerUrl }) {
                     <div className="grid grid-cols-2 gap-4 mb-6">
                         <div>
                             <h3 className="text-sm font-medium text-gray-500 dark:text-dark-text-secondary">Start Time</h3>
-                            <p className="mt-1 text-lg">
+                            <div className="mt-1 text-lg">
                                 <DateTimeDisplay datetime={event.display_datetime || event.start_datetime} />
-                            </p>
+                            </div>
                         </div>
                         <div>
                             <h3 className="text-sm font-medium text-gray-500 dark:text-dark-text-secondary">End Time</h3>
-                            <p className="mt-1 text-lg">
+                            <div className="mt-1 text-lg">
                                 <DateTimeDisplay datetime={event.display_end_datetime || event.end_datetime} />
-                            </p>
+                            </div>
                         </div>
                         <div>
                             <h3 className="text-sm font-medium text-gray-500 dark:text-dark-text-secondary">Calendar</h3>

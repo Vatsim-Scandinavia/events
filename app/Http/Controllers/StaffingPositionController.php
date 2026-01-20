@@ -27,8 +27,8 @@ class StaffingPositionController extends Controller
             'position_id' => 'required|string',
             'position_name' => 'required|string',
             'is_local' => 'boolean',
-            'start_time' => 'nullable|date',
-            'end_time' => 'nullable|date|after:start_time',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
             'order' => 'nullable|integer',
         ]);
 
@@ -43,16 +43,12 @@ class StaffingPositionController extends Controller
             ])->withInput();
         }
 
-        // Fix time to use event date instead of "today" and ensure UTC
-        if (isset($validated['start_time'])) {
-            $startTime = Carbon::parse($validated['start_time'])->utc();
-            $eventDate = Carbon::parse($staffing->event->start_datetime)->format('Y-m-d');
-            $validated['start_time'] = Carbon::parse($eventDate . ' ' . $startTime->format('H:i:s'), 'UTC');
+        // Convert empty strings to null for database storage
+        if (isset($validated['start_time']) && $validated['start_time'] === '') {
+            $validated['start_time'] = null;
         }
-        if (isset($validated['end_time'])) {
-            $endTime = Carbon::parse($validated['end_time'])->utc();
-            $eventDate = Carbon::parse($staffing->event->start_datetime)->format('Y-m-d');
-            $validated['end_time'] = Carbon::parse($eventDate . ' ' . $endTime->format('H:i:s'), 'UTC');
+        if (isset($validated['end_time']) && $validated['end_time'] === '') {
+            $validated['end_time'] = null;
         }
 
         // Calculate order if not provided
@@ -86,8 +82,8 @@ class StaffingPositionController extends Controller
         $validated = $request->validate([
             'position_id' => 'required|string',
             'position_name' => 'required|string',
-            'start_time' => 'nullable|date',
-            'end_time' => 'nullable|date|after:start_time',
+            'start_time' => 'nullable|date_format:H:i',
+            'end_time' => 'nullable|date_format:H:i',
         ]);
 
         // Check if position_id is changing to one that already exists in this staffing section
@@ -104,16 +100,12 @@ class StaffingPositionController extends Controller
             }
         }
 
-        // Fix time to use event date instead of "today" and ensure UTC
-        if (isset($validated['start_time'])) {
-            $startTime = Carbon::parse($validated['start_time'])->utc();
-            $eventDate = Carbon::parse($position->staffing->event->start_datetime)->format('Y-m-d');
-            $validated['start_time'] = Carbon::parse($eventDate . ' ' . $startTime->format('H:i:s'), 'UTC');
+        // Convert empty strings to null for database storage
+        if (isset($validated['start_time']) && $validated['start_time'] === '') {
+            $validated['start_time'] = null;
         }
-        if (isset($validated['end_time'])) {
-            $endTime = Carbon::parse($validated['end_time'])->utc();
-            $eventDate = Carbon::parse($position->staffing->event->start_datetime)->format('Y-m-d');
-            $validated['end_time'] = Carbon::parse($eventDate . ' ' . $endTime->format('H:i:s'), 'UTC');
+        if (isset($validated['end_time']) && $validated['end_time'] === '') {
+            $validated['end_time'] = null;
         }
 
         $position->update($validated);

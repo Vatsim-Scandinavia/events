@@ -57,6 +57,20 @@ export default function DateTimeDisplay({
 export function TimeDisplay({ datetime, showIcon = false, className = '' }) {
     const [showTooltip, setShowTooltip] = useState(false);
     
+    // Check if datetime is already in HH:mm format (time-only string)
+    const isTimeOnly = typeof datetime === 'string' && /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/.test(datetime);
+    
+    if (isTimeOnly) {
+        // Just display the time directly (already in UTC/HH:mm format)
+        return (
+            <span className={className}>
+                {showIcon && <span className="mr-1">🕐</span>}
+                {datetime}Z
+            </span>
+        );
+    }
+    
+    // Otherwise, it's a full datetime - format it
     const date = typeof datetime === 'string' ? new Date(datetime) : datetime;
     
     // Format in UTC (Zulu time)

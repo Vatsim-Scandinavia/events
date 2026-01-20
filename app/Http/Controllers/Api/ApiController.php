@@ -66,6 +66,23 @@ class ApiController extends Controller
     {
         $event = Event::with(['calendar', 'staffings.positions.bookedBy'])->findOrFail($id);
 
+        // Calculate target occurrence date for position times
+        $targetOccurrenceDate = null;
+        if ($event->isRecurring()) {
+            $instances = $this->recurringEventService->generateInstances(
+                $event->recurrence_rule,
+                $event->start_datetime,
+                now()->addMonths(3),
+                10,
+                $event->cancelled_occurrences ?? []
+            );
+            
+            $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
+            $targetOccurrenceDate = $nextOccurrence ? $nextOccurrence['start'] : $event->start_datetime;
+        } else {
+            $targetOccurrenceDate = $event->start_datetime;
+        }
+
         return response()->json([
             'event_id' => $event->id,
             'title' => $event->title,
@@ -73,17 +90,29 @@ class ApiController extends Controller
             'message_id' => $event->discord_staffing_message_id, // Bot expects 'message_id'
             'discord_channel_id' => $event->discord_staffing_channel_id, // Keep for compatibility
             'discord_message_id' => $event->discord_staffing_message_id, // Keep for compatibility
-            'staffing' => $event->staffings->map(function ($staffing) {
+            'staffing' => $event->staffings->map(function ($staffing) use ($targetOccurrenceDate, $event) {
                 return [
                     'id' => $staffing->id,
                     'name' => $staffing->name,
-                    'positions' => $staffing->positions->sortBy('order')->map(function ($position) {
+                    'positions' => $staffing->positions->sortBy('order')->map(function ($position) use ($targetOccurrenceDate, $event) {
+                        // Combine occurrence date + position time for full datetime
+                        $startDatetime = null;
+                        $endDatetime = null;
+                        
+                        if ($position->start_time) {
+                            $startDatetime = \Carbon\Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->start_time);
+                        }
+                        if ($position->end_time) {
+                            $endDatetime = \Carbon\Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->end_time);
+                        }
+                        
                         return [
                             'id' => $position->id,
                             'callsign' => $position->position_id,
                             'name' => $position->position_name,
-                            'start_time' => $position->start_time?->format('H:i'),
-                            'end_time' => $position->end_time?->format('H:i'),
+                            // Send full datetime to bot (calculated from occurrence + position time)
+                            'start_time' => $startDatetime ? $startDatetime->format('H:i') : null,
+                            'end_time' => $endDatetime ? $endDatetime->format('H:i') : null,
                             'booked' => $position->isBooked(),
                             'user' => $position->bookedBy ? [
                                 'id' => $position->bookedBy->id,
@@ -186,6 +215,23 @@ class ApiController extends Controller
         $staffing = \App\Models\Staffing::with(['event.calendar', 'positions.bookedBy'])->findOrFail($id);
         $event = $staffing->event;
 
+        // Calculate target occurrence date for position times
+        $targetOccurrenceDate = null;
+        if ($event->isRecurring()) {
+            $instances = $this->recurringEventService->generateInstances(
+                $event->recurrence_rule,
+                $event->start_datetime,
+                now()->addMonths(3),
+                10,
+                $event->cancelled_occurrences ?? []
+            );
+            
+            $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
+            $targetOccurrenceDate = $nextOccurrence ? $nextOccurrence['start'] : $event->start_datetime;
+        } else {
+            $targetOccurrenceDate = $event->start_datetime;
+        }
+
         // Get all staffings for this event ordered
         $allStaffings = $event->staffings()->with('positions.bookedBy')->orderBy('order')->get();
 
@@ -207,6 +253,17 @@ class ApiController extends Controller
         foreach ($allStaffings as $index => $section) {
             $sectionNumber = $index + 1;
             foreach ($section->positions->sortBy('order') as $position) {
+                // Combine occurrence date + position time (if position has specific times)
+                $startTime = null;
+                $endTime = null;
+                
+                if ($position->start_time) {
+                    $startTime = substr($position->start_time, 0, 5); // "18:00" from "18:00:00"
+                }
+                if ($position->end_time) {
+                    $endTime = substr($position->end_time, 0, 5);
+                }
+                
                 $allPositions[] = [
                     'id' => $position->id,
                     'callsign' => $position->position_id,
@@ -214,8 +271,8 @@ class ApiController extends Controller
                     'discord_user' => $position->discord_user_id,
                     'section' => $sectionNumber,
                     'local_booking' => $position->is_local ? 1 : 0,
-                    'start_time' => $position->start_time?->format('H:i'),
-                    'end_time' => $position->end_time?->format('H:i'),
+                    'start_time' => $startTime,
+                    'end_time' => $endTime,
                     'staffing_id' => $section->id,
                     'name' => $position->position_name,
                     'booked' => $position->isBooked(),
@@ -358,42 +415,42 @@ class ApiController extends Controller
         ]);
 
         // Create booking in Control Center
-        // For recurring events, position times contain the full occurrence datetime
-        // If position times are null, calculate next occurrence date with event times
-        if ($position->start_time && $position->end_time) {
-            $startDatetime = $position->start_time;
-            $endDatetime = $position->end_time;
-            $usedPositionTime = true;
-        } else {
-            // Calculate next occurrence date for recurring events
-            if ($event->isRecurring()) {
-                $instances = $this->recurringEventService->generateInstances(
-                    $event->recurrence_rule,
-                    $event->start_datetime,
-                    now()->addMonths(3),
-                    10,
-                    $event->cancelled_occurrences ?? []
-                );
-                
-                // Find next upcoming occurrence
-                $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
-                
-                if ($nextOccurrence) {
-                    // Use occurrence date with event's original time
-                    $occurrenceDate = $nextOccurrence['start']->format('Y-m-d');
-                    $startDatetime = Carbon::parse($occurrenceDate . ' ' . $event->start_datetime->format('H:i:s'));
-                    $endDatetime = Carbon::parse($occurrenceDate . ' ' . $event->end_datetime->format('H:i:s'));
-                } else {
-                    // No future occurrence found, use event times
-                    $startDatetime = $event->start_datetime;
-                    $endDatetime = $event->end_datetime;
-                }
+        // Calculate the target occurrence date
+        $targetOccurrenceDate = null;
+        
+        if ($event->isRecurring()) {
+            // For recurring events, find next future occurrence
+            $instances = $this->recurringEventService->generateInstances(
+                $event->recurrence_rule,
+                $event->start_datetime,
+                now()->addMonths(3),
+                10,
+                $event->cancelled_occurrences ?? []
+            );
+            
+            $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
+            
+            if ($nextOccurrence) {
+                $targetOccurrenceDate = $nextOccurrence['start'];
             } else {
-                // Non-recurring event, use event times directly
-                $startDatetime = $event->start_datetime;
-                $endDatetime = $event->end_datetime;
+                // No future occurrence found, use event date
+                $targetOccurrenceDate = $event->start_datetime;
             }
-            $usedPositionTime = false;
+        } else {
+            // Non-recurring event, use event date directly
+            $targetOccurrenceDate = $event->start_datetime;
+        }
+        
+        // Combine occurrence date with position time (or event time if position time not set)
+        // Position times are now stored as TIME only (e.g., "18:00:00")
+        if ($position->start_time && $position->end_time) {
+            // Use occurrence date + position time
+            $startDatetime = Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->start_time);
+            $endDatetime = Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->end_time);
+        } else {
+            // Use occurrence date + event time
+            $startDatetime = $targetOccurrenceDate;
+            $endDatetime = $targetOccurrenceDate->copy()->setTimeFrom($event->end_datetime);
         }
         
         $bookingData = [
@@ -408,12 +465,12 @@ class ApiController extends Controller
 
         \Log::info('Booking data prepared for Control Center', [
             'booking_data' => $bookingData,
-            'position_start_time' => $position->start_time?->toDateTimeString() ?? 'null',
-            'position_end_time' => $position->end_time?->toDateTimeString() ?? 'null',
-            'event_start_datetime' => $event->start_datetime->toDateTimeString(),
+            'position_start_time' => $position->start_time ?? 'null',
+            'position_end_time' => $position->end_time ?? 'null',
+            'calculated_start_datetime' => $startDatetime->toDateTimeString(),
+            'calculated_end_datetime' => $endDatetime->toDateTimeString(),
             'event_title' => $event->title,
             'event_is_recurring' => $event->isRecurring(),
-            'used_position_time' => $usedPositionTime,
         ]);
 
         $bookingId = $this->controlCenterService->createBooking($bookingData);
@@ -547,54 +604,19 @@ class ApiController extends Controller
             return response()->json(['error' => 'Staffing reset is only available for recurring events'], 400);
         }
 
-        \Log::info('Starting staffing reset', [
-            'event_id' => $event->id,
-            'event_title' => $event->title,
-            'event_start_datetime_BEFORE' => $event->start_datetime->toDateTimeString(),
-            'event_end_datetime_BEFORE' => $event->end_datetime->toDateTimeString(),
-        ]);
-
-        // Calculate next occurrence date for updating position times
-        $nextOccurrenceStart = null;
-        $nextOccurrenceEnd = null;
-        if ($event->isRecurring()) {
-            $instances = $this->recurringEventService->generateInstances(
-                $event->recurrence_rule,
-                $event->start_datetime,
-                now()->addMonths(3),
-                10,
-                $event->cancelled_occurrences ?? []
-            );
-            
-            $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
-            if ($nextOccurrence) {
-                $nextOccurrenceStart = $nextOccurrence['start'];
-                $nextOccurrenceEnd = $nextOccurrence['end'];
-                \Log::info('Next occurrence calculated', [
-                    'next_occurrence_start' => $nextOccurrenceStart->toDateTimeString(),
-                    'next_occurrence_end' => $nextOccurrenceEnd->toDateTimeString(),
-                ]);
-            }
-        }
-
-        // Get all positions for this event (not just booked ones, we need to update all their times)
-        $allPositions = $event->staffings()
+        // Get all booked positions
+        $bookedPositions = $event->staffings()
             ->with('positions')
             ->get()
             ->flatMap(function ($staffing) {
                 return $staffing->positions;
+            })
+            ->filter(function ($position) {
+                return $position->isBooked();
             });
 
-        \Log::info('Found positions to reset', ['count' => $allPositions->count()]);
-
-        // Delete Control Center bookings, clear bookings, and update times to next occurrence
-        foreach ($allPositions as $position) {
-            \Log::info('Processing position', [
-                'position_id' => $position->position_id,
-                'old_start_time' => $position->start_time?->toDateTimeString() ?? 'null',
-                'old_end_time' => $position->end_time?->toDateTimeString() ?? 'null',
-            ]);
-
+        // Delete Control Center bookings and clear position bookings
+        foreach ($bookedPositions as $position) {
             // Delete from Control Center if there's a booking ID
             if ($position->control_center_booking_id) {
                 try {
@@ -607,41 +629,14 @@ class ApiController extends Controller
                 }
             }
 
-            $updateData = [
+            // Clear all booking fields (position times remain unchanged - they're time-only now)
+            $position->update([
                 'booked_by_user_id' => null,
                 'discord_user_id' => null,
                 'vatsim_cid' => null,
                 'control_center_booking_id' => null,
-            ];
-            
-            // Update position times to next occurrence if available
-            if ($nextOccurrenceStart && $position->start_time) {
-                // Keep the time-of-day from the position, update the date to next occurrence
-                $timeOfDay = $position->start_time->format('H:i:s');
-                $updateData['start_time'] = $nextOccurrenceStart->copy()->setTimeFromTimeString($timeOfDay);
-            }
-            if ($nextOccurrenceEnd && $position->end_time) {
-                $timeOfDay = $position->end_time->format('H:i:s');
-                $updateData['end_time'] = $nextOccurrenceEnd->copy()->setTimeFromTimeString($timeOfDay);
-            }
-
-            $position->update($updateData);
-
-            \Log::info('Updated position', [
-                'position_id' => $position->position_id,
-                'new_start_time' => $updateData['start_time']?->toDateTimeString() ?? 'not updated',
-                'new_end_time' => $updateData['end_time']?->toDateTimeString() ?? 'not updated',
             ]);
         }
-
-        // Reload event to confirm it wasn't modified
-        $event->refresh();
-        \Log::info('Staffing reset complete - Event verification', [
-            'event_id' => $event->id,
-            'event_start_datetime_AFTER' => $event->start_datetime->toDateTimeString(),
-            'event_end_datetime_AFTER' => $event->end_datetime->toDateTimeString(),
-            'event_modified' => false,
-        ]);
 
         // Update Discord message to reflect the reset
         $notificationService = app(\App\Services\DiscordBotNotificationService::class);

@@ -26,8 +26,8 @@ class StaffingPosition extends Model
 
     protected $casts = [
         'is_local' => 'boolean',
-        'start_time' => 'datetime',
-        'end_time' => 'datetime',
+        // start_time and end_time are now TIME columns (HH:MM:SS format)
+        // They will be returned as strings like "18:00:00"
     ];
 
     public function staffing(): BelongsTo

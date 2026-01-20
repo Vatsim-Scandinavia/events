@@ -8,7 +8,7 @@ import Input from '../../Components/Input';
 import Textarea from '../../Components/Textarea';
 import MarkdownEditor from '../../Components/MarkdownEditor';
 import Modal from '../../Components/Modal';
-import TimePicker from '../../Components/TimePicker';
+import TimeInput from '../../Components/TimeInput';
 import { TimeDisplay } from '../../Components/DateTimeDisplay';
 
 const POSITION_TYPE = 'POSITION';
@@ -266,15 +266,15 @@ export default function Manage({ event, staffings: initialStaffings }) {
         position_id: '',
         position_name: '',
         is_local: false,
-        start_time: null,
-        end_time: null,
+        start_time: '',
+        end_time: '',
     });
 
     const { data: editData, setData: setEditData, put: putPosition, reset: resetEdit, processing: editProcessing } = useForm({
         position_id: '',
         position_name: '',
-        start_time: null,
-        end_time: null,
+        start_time: '',
+        end_time: '',
     });
 
     // Fetch API positions when modal opens
@@ -444,8 +444,8 @@ export default function Manage({ event, staffings: initialStaffings }) {
         setEditData({
             position_id: position.position_id,
             position_name: position.position_name,
-            start_time: position.start_time ? new Date(position.start_time) : null,
-            end_time: position.end_time ? new Date(position.end_time) : null,
+            start_time: position.start_time || '',
+            end_time: position.end_time || '',
         });
         setShowEditPosition(true);
     };
@@ -766,26 +766,22 @@ export default function Manage({ event, staffings: initialStaffings }) {
                             <div className="grid grid-cols-2 gap-4 mb-6 pt-4 border-t-2 border-grey-200 dark:border-dark-border">
                                 <div>
                                     <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 dark:text-dark-text mb-2">
-                                        Start Time (Optional) - UTC
+                                        Start Time (Optional)
                                     </label>
-                                    <TimePicker
-                                        selected={positionData.start_time ? new Date(positionData.start_time) : null}
-                                        onChange={(date) => setPositionData('start_time', date)}
-                                        placeholderText="Select start time"
-                                        useUTC={true}
+                                    <TimeInput
+                                        value={positionData.start_time}
+                                        onChange={(time) => setPositionData('start_time', time)}
+                                        placeholder="HH:mm (e.g., 18:00)"
                                     />
                                 </div>
                                 <div>
                                     <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 dark:text-dark-text mb-2">
-                                        End Time (Optional) - UTC
+                                        End Time (Optional)
                                     </label>
-                                    <TimePicker
-                                        selected={positionData.end_time ? new Date(positionData.end_time) : null}
-                                        onChange={(date) => setPositionData('end_time', date)}
-                                        minTime={positionData.start_time ? new Date(positionData.start_time) : null}
-                                        maxTime={new Date(new Date().setHours(23, 59, 59))}
-                                        placeholderText="Select end time"
-                                        useUTC={true}
+                                    <TimeInput
+                                        value={positionData.end_time}
+                                        onChange={(time) => setPositionData('end_time', time)}
+                                        placeholder="HH:mm (e.g., 22:00)"
                                     />
                                 </div>
                             </div>
@@ -848,26 +844,22 @@ export default function Manage({ event, staffings: initialStaffings }) {
                             <div className="grid grid-cols-2 gap-4 mb-6 pt-4 border-t-2 border-grey-200 dark:border-dark-border">
                                 <div>
                                     <label htmlFor="edit_start_time" className="block text-sm font-medium text-gray-700 dark:text-dark-text mb-2">
-                                        Start Time (Optional) - UTC
+                                        Start Time (Optional)
                                     </label>
-                                    <TimePicker
-                                        selected={editData.start_time ? new Date(editData.start_time) : null}
-                                        onChange={(date) => setEditData('start_time', date)}
-                                        placeholderText="Select start time"
-                                        useUTC={true}
+                                    <TimeInput
+                                        value={editData.start_time}
+                                        onChange={(time) => setEditData('start_time', time)}
+                                        placeholder="HH:mm (e.g., 18:00)"
                                     />
                                 </div>
                                 <div>
                                     <label htmlFor="edit_end_time" className="block text-sm font-medium text-gray-700 dark:text-dark-text mb-2">
-                                        End Time (Optional) - UTC
+                                        End Time (Optional)
                                     </label>
-                                    <TimePicker
-                                        selected={editData.end_time ? new Date(editData.end_time) : null}
-                                        onChange={(date) => setEditData('end_time', date)}
-                                        minTime={editData.start_time ? new Date(editData.start_time) : null}
-                                        maxTime={new Date(new Date().setHours(23, 59, 59))}
-                                        placeholderText="Select end time"
-                                        useUTC={true}
+                                    <TimeInput
+                                        value={editData.end_time}
+                                        onChange={(time) => setEditData('end_time', time)}
+                                        placeholder="HH:mm (e.g., 22:00)"
                                     />
                                 </div>
                             </div>

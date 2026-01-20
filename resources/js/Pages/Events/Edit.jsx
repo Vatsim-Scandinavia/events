@@ -296,27 +296,25 @@ export default function Edit({ event, calendars, bannerUrl }) {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Start Date & Time *
+                                <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 dark:text-dark-text mb-1">
+                                    Start Date & Time (UTC) *
                                 </label>
                                 <DateTimePicker
                                     selected={startDate}
                                     onChange={handleStartDateChange}
                                     error={errors.start_datetime}
-                                    placeholderText="Select start date and time"
                                     required
                                 />
                             </div>
                             <div>
-                                <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
-                                    End Date & Time *
+                                <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 dark:text-dark-text mb-1">
+                                    End Date & Time (UTC) *
                                 </label>
                                 <DateTimePicker
                                     selected={endDate}
                                     onChange={handleEndDateChange}
                                     minDate={startDate}
                                     error={errors.end_datetime}
-                                    placeholderText="Select end date and time"
                                     required
                                 />
                             </div>
