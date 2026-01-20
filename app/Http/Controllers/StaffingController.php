@@ -155,32 +155,61 @@ class StaffingController extends Controller
         }
 
         $controlCenterService = app(\App\Services\ControlCenterService::class);
+        $recurringService = app(\App\Services\RecurringEventService::class);
         
-        // Get all booked positions
-        $bookedPositions = $event->staffings()
+        // Calculate next occurrence date for updating position times
+        $nextOccurrenceStart = null;
+        $nextOccurrenceEnd = null;
+        if ($event->isRecurring()) {
+            $instances = $recurringService->generateInstances(
+                $event->recurrence_rule,
+                $event->start_datetime,
+                now()->addMonths(3),
+                10,
+                $event->cancelled_occurrences ?? []
+            );
+            
+            $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
+            if ($nextOccurrence) {
+                $nextOccurrenceStart = $nextOccurrence['start'];
+                $nextOccurrenceEnd = $nextOccurrence['end'];
+            }
+        }
+        
+        // Get all positions (not just booked ones, we need to update all their times)
+        $allPositions = $event->staffings()
             ->with('positions')
             ->get()
             ->flatMap(function ($staffing) {
                 return $staffing->positions;
-            })
-            ->filter(function ($position) {
-                return $position->isBooked();
             });
 
-        // Delete Control Center bookings and clear position bookings
-        foreach ($bookedPositions as $position) {
+        // Delete Control Center bookings, clear bookings, and update times to next occurrence
+        foreach ($allPositions as $position) {
             // Delete from Control Center if there's a booking ID
             if ($position->control_center_booking_id) {
                 $controlCenterService->deleteBooking($position->control_center_booking_id);
             }
 
-            // Clear all booking fields
-            $position->update([
+            $updateData = [
                 'booked_by_user_id' => null,
                 'discord_user_id' => null,
                 'vatsim_cid' => null,
                 'control_center_booking_id' => null,
-            ]);
+            ];
+            
+            // Update position times to next occurrence if available
+            if ($nextOccurrenceStart && $position->start_time) {
+                // Keep the time-of-day from the position, update the date to next occurrence
+                $timeOfDay = $position->start_time->format('H:i:s');
+                $updateData['start_time'] = $nextOccurrenceStart->copy()->setTimeFromTimeString($timeOfDay);
+            }
+            if ($nextOccurrenceEnd && $position->end_time) {
+                $timeOfDay = $position->end_time->format('H:i:s');
+                $updateData['end_time'] = $nextOccurrenceEnd->copy()->setTimeFromTimeString($timeOfDay);
+            }
+
+            $position->update($updateData);
         }
         
         \Log::info('Staffing for event "' . $event->title . '" (' . $event->id . ') reset by user: ' . auth()->user()->vatsim_cid);
