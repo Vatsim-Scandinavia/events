@@ -9,10 +9,10 @@ use App\Services\RecurringEventService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Http\Resources\EventResource;
+use App\Http\Resources\StaffingResource;
 
 /**
- * API Controller matching the old events system endpoints
- * for backward compatibility with the Python Discord bot
+ * API Controller
  */
 class ApiController extends Controller
 {
@@ -24,19 +24,16 @@ class ApiController extends Controller
     }
 
     /**
-     * Get all events (with optional staffing filter)
-     * Matches: GET /api/events
+     * Get all events
      */
     public function events(Request $request)
     {
         $query = Event::with(['calendar', 'staffings.positions.bookedBy']);
 
-        // Filter by upcoming only
         if ($request->boolean('upcoming', true)) {
             $query->where('end_datetime', '>=', now());
         }
 
-        // Filter events with staffing only
         if ($request->boolean('staffing', false)) {
             $query->whereHas('staffings');
         }
@@ -48,7 +45,6 @@ class ApiController extends Controller
 
     /**
      * Get single event by ID
-     * Matches: GET /api/events/{id}
      */
     public function event($id)
     {
@@ -58,127 +54,56 @@ class ApiController extends Controller
     }
 
     /**
+     * Calculate target occurrence date for an event (handles recurring events)
+     */
+    protected function calculateTargetOccurrence(Event $event): Carbon
+    {
+        if (!$event->isRecurring()) {
+            return $event->start_datetime;
+        }
+        
+        $instances = $this->recurringEventService->generateInstances(
+            $event->recurrence_rule,
+            $event->start_datetime,
+            now()->addMonths(3),
+            10,
+            $event->cancelled_occurrences ?? []
+        );
+        
+        $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
+        return $nextOccurrence ? $nextOccurrence['start'] : $event->start_datetime;
+    }
+
+    /**
      * Get event staffing
-     * Matches: GET /api/events/{id}/staffing
      */
     public function staffing($id)
     {
-        $event = Event::with(['calendar', 'staffings.positions.bookedBy'])->findOrFail($id);
+        $event = Event::with(['calendar', 'staffings.positions.bookedBy', 'staffings.event'])->findOrFail($id);
+        $targetOccurrenceDate = $this->calculateTargetOccurrence($event);
 
-        // Calculate target occurrence date for position times
-        $targetOccurrenceDate = null;
-        if ($event->isRecurring()) {
-            $instances = $this->recurringEventService->generateInstances(
-                $event->recurrence_rule,
-                $event->start_datetime,
-                now()->addMonths(3),
-                10,
-                $event->cancelled_occurrences ?? []
-            );
-            
-            $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
-            $targetOccurrenceDate = $nextOccurrence ? $nextOccurrence['start'] : $event->start_datetime;
-        } else {
-            $targetOccurrenceDate = $event->start_datetime;
-        }
-
-        return response()->json([
-            'event_id' => $event->id,
-            'title' => $event->title,
-            'channel_id' => $event->discord_staffing_channel_id, // Bot expects 'channel_id'
-            'message_id' => $event->discord_staffing_message_id, // Bot expects 'message_id'
-            'discord_channel_id' => $event->discord_staffing_channel_id, // Keep for compatibility
-            'discord_message_id' => $event->discord_staffing_message_id, // Keep for compatibility
-            'staffing' => $event->staffings->map(function ($staffing) use ($targetOccurrenceDate, $event) {
-                return [
-                    'id' => $staffing->id,
-                    'name' => $staffing->name,
-                    'positions' => $staffing->positions->sortBy('order')->map(function ($position) use ($targetOccurrenceDate, $event) {
-                        // Combine occurrence date + position time for full datetime
-                        $startDatetime = null;
-                        $endDatetime = null;
-                        
-                        if ($position->start_time) {
-                            $startDatetime = \Carbon\Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->start_time);
-                        }
-                        if ($position->end_time) {
-                            $endDatetime = \Carbon\Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->end_time);
-                        }
-                        
-                        return [
-                            'id' => $position->id,
-                            'callsign' => $position->position_id,
-                            'name' => $position->position_name,
-                            // Send full datetime to bot (calculated from occurrence + position time)
-                            'start_time' => $startDatetime ? $startDatetime->format('H:i') : null,
-                            'end_time' => $endDatetime ? $endDatetime->format('H:i') : null,
-                            'booked' => $position->isBooked(),
-                            'user' => $position->bookedBy ? [
-                                'id' => $position->bookedBy->id,
-                                'name' => $position->bookedBy->name,
-                            ] : ($position->vatsim_cid ? [
-                                'id' => $position->vatsim_cid,
-                                'name' => "CID {$position->vatsim_cid}",
-                            ] : null),
-                        ];
-                    })->values(),
-                ];
-            })->values(),
-        ]);
+        return new StaffingResource($event, $targetOccurrenceDate);
     }
 
     /**
-     * Get all staffings (for bot to match by channel_id)
-     * Matches: GET /api/staffings
+     * Get all staffings
      */
     public function getAllStaffings()
     {
-        // Get all events that have both a discord channel and message configured
         $events = Event::whereNotNull('discord_staffing_channel_id')
             ->whereNotNull('discord_staffing_message_id')
-            ->with(['staffings.positions.bookedBy'])
+            ->with(['staffings.positions.bookedBy', 'staffings.event'])
             ->get();
 
-        $result = [];
-        foreach ($events as $event) {
-            $firstStaffing = $event->staffings()->with('positions.bookedBy')->orderBy('order')->first();
-            if ($firstStaffing) {
-                $allStaffings = $event->staffings()->with('positions.bookedBy')->orderBy('order')->get();
+        $staffingResources = $events->map(fn($event) => 
+            new StaffingResource($event, $this->calculateTargetOccurrence($event))
+        );
 
-                // Build section titles
-                $sectionTitles = [];
-                foreach ($allStaffings as $index => $section) {
-                    $sectionNumber = $index + 1;
-                    if ($sectionNumber <= 4) {
-                        $sectionTitles["section_{$sectionNumber}_title"] = $section->name;
-                    }
-                }
-                for ($i = count($allStaffings) + 1; $i <= 4; $i++) {
-                    $sectionTitles["section_{$i}_title"] = null;
-                }
-
-                $result[] = [
-                    'id' => $firstStaffing->id,
-                    'channel_id' => (int)$event->discord_staffing_channel_id,
-                    'message_id' => $event->discord_staffing_message_id,
-                    'event_id' => $event->id,
-                    ...$sectionTitles,
-                    'event' => [
-                        'id' => $event->id,
-                        'title' => $event->title,
-                        'start_date' => $event->start_datetime->format('Y-m-d H:i:s'),
-                        'end_date' => $event->end_datetime->format('Y-m-d H:i:s'),
-                    ],
-                ];
-            }
-        }
-
-        return response()->json(['data' => $result]);
+        return StaffingResource::collection($staffingResources);
     }
 
     /**
-     * Get staffing by message_id (for bot when handling button clicks)
-     * Matches: GET /api/staffings?message_id={id}
+     * Get staffing by message_id
      */
     public function getStaffingByMessageId(Request $request)
     {
@@ -194,130 +119,30 @@ class ApiController extends Controller
             return response()->json(['error' => 'Staffing not found'], 404);
         }
 
-        // Get the first staffing (we'll return all staffings in the response)
         $staffing = $event->staffings()->with(['positions.bookedBy'])->orderBy('order')->first();
         
         if (!$staffing) {
             return response()->json(['error' => 'No staffing sections found'], 404);
         }
 
-        // Return the same format as getStaffing
         return $this->getStaffing($staffing->id);
     }
 
     /**
-     * Get staffing by ID (for bot)
-     * Matches: GET /api/staffings/{id}
+     * Get staffing by ID
      */
     public function getStaffing($id)
     {
-        $staffing = \App\Models\Staffing::with(['event.calendar', 'positions.bookedBy'])->findOrFail($id);
-        $event = $staffing->event;
-
-        // Calculate target occurrence date for position times
-        $targetOccurrenceDate = null;
-        if ($event->isRecurring()) {
-            $instances = $this->recurringEventService->generateInstances(
-                $event->recurrence_rule,
-                $event->start_datetime,
-                now()->addMonths(3),
-                10,
-                $event->cancelled_occurrences ?? []
-            );
-            
-            $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
-            $targetOccurrenceDate = $nextOccurrence ? $nextOccurrence['start'] : $event->start_datetime;
-        } else {
-            $targetOccurrenceDate = $event->start_datetime;
-        }
-
-        // Get all staffings for this event ordered
-        $allStaffings = $event->staffings()->with('positions.bookedBy')->orderBy('order')->get();
-
-        // Build section titles (max 4 sections)
-        $sectionTitles = [];
-        foreach ($allStaffings as $index => $section) {
-            $sectionNumber = $index + 1;
-            if ($sectionNumber <= 4) {
-                $sectionTitles["section_{$sectionNumber}_title"] = $section->name;
-            }
-        }
-        // Fill remaining sections with null
-        for ($i = count($allStaffings) + 1; $i <= 4; $i++) {
-            $sectionTitles["section_{$i}_title"] = null;
-        }
-
-        // Flatten all positions with section numbers
-        $allPositions = [];
-        foreach ($allStaffings as $index => $section) {
-            $sectionNumber = $index + 1;
-            foreach ($section->positions->sortBy('order') as $position) {
-                // Combine occurrence date + position time (if position has specific times)
-                $startTime = null;
-                $endTime = null;
-                
-                if ($position->start_time) {
-                    $startTime = substr($position->start_time, 0, 5); // "18:00" from "18:00:00"
-                }
-                if ($position->end_time) {
-                    $endTime = substr($position->end_time, 0, 5);
-                }
-                
-                $allPositions[] = [
-                    'id' => $position->id,
-                    'callsign' => $position->position_id,
-                    'booking_id' => $position->booked_by_user_id,
-                    'discord_user' => $position->discord_user_id,
-                    'section' => $sectionNumber,
-                    'local_booking' => $position->is_local ? 1 : 0,
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                    'staffing_id' => $section->id,
-                    'name' => $position->position_name,
-                    'booked' => $position->isBooked(),
-                    'user' => $position->bookedBy ? [
-                        'id' => $position->bookedBy->id,
-                        'name' => $position->bookedBy->name,
-                    ] : ($position->vatsim_cid ? [
-                        'id' => $position->vatsim_cid,
-                        'name' => "CID {$position->vatsim_cid}",
-                    ] : null),
-                ];
-            }
-        }
-
-        return response()->json([
-            'data' => [
-                'id' => $staffing->id,
-                'description' => $event->staffing_description ?? $event->short_description,
-                'channel_id' => $event->discord_staffing_channel_id,
-                'message_id' => $event->discord_staffing_message_id,
-                ...$sectionTitles,
-                'event_id' => $event->id,
-                'created_at' => $staffing->created_at->toIso8601String(),
-                'updated_at' => $staffing->updated_at->toIso8601String(),
-                'positions' => $allPositions,
-                'event' => [
-                    'id' => $event->id,
-                    'calendar_id' => $event->calendar_id,
-                    'title' => $event->title,
-                    'short_description' => $event->short_description,
-                    'long_description' => $event->long_description,
-                    'start_date' => $event->start_datetime->format('Y-m-d H:i:s'),
-                    'end_date' => $event->end_datetime->format('Y-m-d H:i:s'),
-                    'published' => 1,
-                    'image' => $event->banner_path,
-                    'user_id' => $event->created_by,
-                    'created_at' => $event->created_at->toIso8601String(),
-                    'updated_at' => $event->updated_at->toIso8601String(),
-                ],
-            ],
-        ]);
+        $staffing = \App\Models\Staffing::with(['event', 'positions.bookedBy'])->findOrFail($id);
+        $event = $staffing->event->load(['staffings.positions.bookedBy', 'staffings.event']);
+        
+        $targetOccurrenceDate = $this->calculateTargetOccurrence($event);
+        
+        return new StaffingResource($event, $targetOccurrenceDate);
     }
 
     /**
-     * Update staffing (for bot to save message_id after posting)
-     * Matches: PATCH /api/staffings/{id}/update
+     * Update staffing
      */
     public function updateStaffing(Request $request, $id)
     {
@@ -327,7 +152,6 @@ class ApiController extends Controller
 
         $staffing = \App\Models\Staffing::with('event')->findOrFail($id);
         
-        // Update the event's discord_staffing_message_id
         $staffing->event->update([
             'discord_staffing_message_id' => $validated['message_id'],
         ]);
@@ -339,7 +163,6 @@ class ApiController extends Controller
 
     /**
      * Book a position
-     * Matches old format: POST /api/staffing with body
      */
     public function book(Request $request)
     {
@@ -351,55 +174,13 @@ class ApiController extends Controller
             'section' => 'nullable|integer',
         ]);
 
-        // Log the request for debugging
-        \Log::info('Book request received', $validated);
-
-        // Find staffing by Discord message ID
         $event = \App\Models\Event::where('discord_staffing_message_id', $validated['message_id'])->first();
-        
         if (!$event) {
-            \Log::error('Event not found for message_id: ' . $validated['message_id']);
             return response()->json(['error' => 'Staffing not found'], 404);
         }
 
-        \Log::info('Found event', ['event_id' => $event->id, 'title' => $event->title]);
-
-        // Find the position by callsign
-        $query = \App\Models\StaffingPosition::whereHas('staffing', function($q) use ($event) {
-            $q->where('event_id', $event->id);
-        })->where('position_id', $validated['position']);
-
-        // If section specified, match by staffing's position in the ordered list
-        if (isset($validated['section'])) {
-            \Log::info('Section specified', ['section' => $validated['section']]);
-            
-            // Get all staffings ordered
-            $staffings = $event->staffings()->orderBy('order')->get();
-            
-            \Log::info('Found staffings', ['count' => $staffings->count()]);
-            
-            // Find the staffing at the specified section position (1-indexed)
-            if (isset($staffings[$validated['section'] - 1])) {
-                $targetStaffing = $staffings[$validated['section'] - 1];
-                \Log::info('Target staffing', ['id' => $targetStaffing->id, 'name' => $targetStaffing->name]);
-                $query->where('staffing_id', $targetStaffing->id);
-            } else {
-                \Log::error('Section not found', ['section' => $validated['section'], 'available_count' => $staffings->count()]);
-                return response()->json(['error' => 'Section not found'], 404);
-            }
-        }
-        
-        // Debug: Log the SQL query
-        \Log::info('Query SQL', ['sql' => $query->toSql(), 'bindings' => $query->getBindings()]);
-
-        $position = $query->first();
-        
-        if ($position) {
-            \Log::info('Position found!', ['position_id' => $position->id]);
-        }
-
+        $position = $this->findPosition($event, $validated['position'], $validated['section'] ?? null);
         if (!$position) {
-            \Log::error('Position not found', ['callsign' => $validated['position'], 'section' => $validated['section'] ?? 'none']);
             return response()->json(['error' => 'Position not found'], 404);
         }
 
@@ -407,51 +188,14 @@ class ApiController extends Controller
             return response()->json(['error' => 'Position already booked'], 422);
         }
 
-        // Store booking information without creating a User record
         $position->update([
             'vatsim_cid' => $validated['cid'],
             'discord_user_id' => $validated['discord_user_id'],
         ]);
 
-        // Create booking in Control Center
-        // Calculate the target occurrence date
-        $targetOccurrenceDate = null;
-        
-        if ($event->isRecurring()) {
-            // For recurring events, find next future occurrence
-            $instances = $this->recurringEventService->generateInstances(
-                $event->recurrence_rule,
-                $event->start_datetime,
-                now()->addMonths(3),
-                10,
-                $event->cancelled_occurrences ?? []
-            );
-            
-            $nextOccurrence = collect($instances)->first(fn($instance) => $instance['start']->isFuture());
-            
-            if ($nextOccurrence) {
-                $targetOccurrenceDate = $nextOccurrence['start'];
-            } else {
-                // No future occurrence found, use event date
-                $targetOccurrenceDate = $event->start_datetime;
-            }
-        } else {
-            // Non-recurring event, use event date directly
-            $targetOccurrenceDate = $event->start_datetime;
-        }
-        
-        // Combine occurrence date with position time (or event time if position time not set)
-        // Position times are now stored as TIME only (e.g., "18:00:00")
-        if ($position->start_time && $position->end_time) {
-            // Use occurrence date + position time
-            $startDatetime = Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->start_time);
-            $endDatetime = Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->end_time);
-        } else {
-            // Use occurrence date + event time
-            $startDatetime = $targetOccurrenceDate;
-            $endDatetime = $targetOccurrenceDate->copy()->setTimeFrom($event->end_datetime);
-        }
-        
+        $targetOccurrenceDate = $this->calculateTargetOccurrence($event);
+        [$startDatetime, $endDatetime] = $this->calculateBookingTimes($position, $event, $targetOccurrenceDate);
+
         $bookingData = [
             'cid' => $validated['cid'],
             'date' => $startDatetime->format('d/m/Y'),
@@ -462,34 +206,54 @@ class ApiController extends Controller
             'source' => 'Discord',
         ];
 
-        \Log::info('Booking data prepared for Control Center', [
-            'booking_data' => $bookingData,
-            'position_start_time' => $position->start_time ?? 'null',
-            'position_end_time' => $position->end_time ?? 'null',
-            'calculated_start_datetime' => $startDatetime->toDateTimeString(),
-            'calculated_end_datetime' => $endDatetime->toDateTimeString(),
-            'event_title' => $event->title,
-            'event_is_recurring' => $event->isRecurring(),
-        ]);
-
         $bookingId = $this->controlCenterService->createBooking($bookingData);
-        
-        // Store Control Center booking ID if successful
         if ($bookingId) {
             $position->update(['control_center_booking_id' => $bookingId]);
         }
 
-        // Dispatch job to notify bot (runs in background, doesn't block response)
         \App\Jobs\UpdateDiscordStaffingMessage::dispatch($event->id, 'updated');
 
-        return response()->json([
-            'message' => 'Position booked successfully',
-        ], 200);
+        return response()->json(['message' => 'Position booked successfully'], 200);
+    }
+
+    /**
+     * Find a position by callsign and optional section
+     */
+    protected function findPosition($event, string $callsign, ?int $section): ?\App\Models\StaffingPosition
+    {
+        $query = \App\Models\StaffingPosition::whereHas('staffing', function($q) use ($event) {
+            $q->where('event_id', $event->id);
+        })->where('position_id', $callsign);
+
+        if ($section !== null) {
+            $staffings = $event->staffings()->orderBy('order')->get();
+            if (!isset($staffings[$section - 1])) {
+                return null;
+            }
+            $query->where('staffing_id', $staffings[$section - 1]->id);
+        }
+
+        return $query->first();
+    }
+
+    /**
+     * Calculate booking start and end datetimes
+     */
+    protected function calculateBookingTimes($position, $event, $targetOccurrenceDate): array
+    {
+        if ($position->start_time && $position->end_time) {
+            $startDatetime = Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->start_time);
+            $endDatetime = Carbon::parse($targetOccurrenceDate->format('Y-m-d') . ' ' . $position->end_time);
+        } else {
+            $startDatetime = $targetOccurrenceDate;
+            $endDatetime = $targetOccurrenceDate->copy()->setTimeFrom($event->end_datetime);
+        }
+
+        return [$startDatetime, $endDatetime];
     }
 
     /**
      * Unbook a position
-     * Matches old format: DELETE /api/staffing with body
      */
     public function unbook(Request $request)
     {
@@ -500,49 +264,17 @@ class ApiController extends Controller
             'section' => 'nullable|integer',
         ]);
 
-        // Find staffing by Discord message ID
         $event = \App\Models\Event::where('discord_staffing_message_id', $validated['message_id'])->first();
-        
         if (!$event) {
             return response()->json(['error' => 'Staffing not found'], 404);
         }
 
-        // Build query to find booked positions (check both user bookings and Discord bookings)
-        $query = \App\Models\StaffingPosition::whereHas('staffing', function($q) use ($event) {
-            $q->where('event_id', $event->id);
-        })->where(function($q) {
-            $q->whereNotNull('booked_by_user_id')
-              ->orWhereNotNull('vatsim_cid');
-        });
-
-        if (isset($validated['position'])) {
-            $query->where('position_id', $validated['position']);
-        }
-
-        if (isset($validated['section'])) {
-            // Get all staffings ordered
-            $staffings = $event->staffings()->orderBy('order')->get();
-            
-            // Find the staffing at the specified section position (1-indexed)
-            if (isset($staffings[$validated['section'] - 1])) {
-                $targetStaffing = $staffings[$validated['section'] - 1];
-                $query->where('staffing_id', $targetStaffing->id);
-            }
-        }
-
-        // Also filter by discord_user_id if provided
-        if (isset($validated['discord_user_id'])) {
-            $query->where('discord_user_id', $validated['discord_user_id']);
-        }
-
-        $positions = $query->get();
-
+        $positions = $this->findBookedPositions($event, $validated);
         if ($positions->isEmpty()) {
             return response()->json(['error' => 'Position not found'], 404);
         }
 
         foreach ($positions as $position) {
-            // Delete booking from Control Center if booking ID exists
             if ($position->control_center_booking_id) {
                 $this->controlCenterService->deleteBooking($position->control_center_booking_id);
             }
@@ -555,17 +287,42 @@ class ApiController extends Controller
             ]);
         }
 
-        // Dispatch job to notify bot (runs in background, doesn't block response)
         \App\Jobs\UpdateDiscordStaffingMessage::dispatch($event->id, 'updated');
 
-        return response()->json([
-            'message' => 'Position unbooked successfully',
-        ], 200);
+        return response()->json(['message' => 'Position unbooked successfully'], 200);
     }
 
     /**
-     * Setup staffing - tells Discord bot to post staffing message
-     * Matches old format: POST /api/staffing/setup
+     * Find booked positions matching criteria
+     */
+    protected function findBookedPositions($event, array $criteria)
+    {
+        $query = \App\Models\StaffingPosition::whereHas('staffing', function($q) use ($event) {
+            $q->where('event_id', $event->id);
+        })->where(function($q) {
+            $q->whereNotNull('booked_by_user_id')->orWhereNotNull('vatsim_cid');
+        });
+
+        if (isset($criteria['position'])) {
+            $query->where('position_id', $criteria['position']);
+        }
+
+        if (isset($criteria['section'])) {
+            $staffings = $event->staffings()->orderBy('order')->get();
+            if (isset($staffings[$criteria['section'] - 1])) {
+                $query->where('staffing_id', $staffings[$criteria['section'] - 1]->id);
+            }
+        }
+
+        if (isset($criteria['discord_user_id'])) {
+            $query->where('discord_user_id', $criteria['discord_user_id']);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Setup staffing
      */
     public function setup(Request $request)
     {
@@ -580,7 +337,6 @@ class ApiController extends Controller
             return response()->json(['error' => 'No Discord channel configured for this event'], 400);
         }
 
-        // Notify bot to create the staffing message
         $notificationService = app(\App\Services\DiscordBotNotificationService::class);
         $notificationService->notifyStaffingChanged($event, 'setup');
 
@@ -591,19 +347,16 @@ class ApiController extends Controller
 
     /**
      * Reset all bookings for a staffing
-     * Matches bot format: POST /api/staffings/{id}/reset
      */
     public function resetStaffing($id)
     {
         $staffing = \App\Models\Staffing::with(['event', 'positions'])->findOrFail($id);
         $event = $staffing->event;
 
-        // Only allow for recurring events
         if (!$event->isRecurring()) {
             return response()->json(['error' => 'Staffing reset is only available for recurring events'], 400);
         }
 
-        // Get all booked positions
         $bookedPositions = $event->staffings()
             ->with('positions')
             ->get()
@@ -614,9 +367,7 @@ class ApiController extends Controller
                 return $position->isBooked();
             });
 
-        // Delete Control Center bookings and clear position bookings
         foreach ($bookedPositions as $position) {
-            // Delete from Control Center if there's a booking ID
             if ($position->control_center_booking_id) {
                 try {
                     $this->controlCenterService->deleteBooking($position->control_center_booking_id);
@@ -628,7 +379,6 @@ class ApiController extends Controller
                 }
             }
 
-            // Clear all booking fields (position times remain unchanged - they're time-only now)
             $position->update([
                 'booked_by_user_id' => null,
                 'discord_user_id' => null,
@@ -637,7 +387,6 @@ class ApiController extends Controller
             ]);
         }
 
-        // Update Discord message to reflect the reset
         $notificationService = app(\App\Services\DiscordBotNotificationService::class);
         try {
             $notificationService->notifyStaffingChanged($event, 'updated');
@@ -658,27 +407,4 @@ class ApiController extends Controller
         ], 200);
     }
 
-    /**
-     * Format event for API response (backward compatible)
-     */
-    protected function formatEvent(Event $event): array
-    {
-        return [
-            'id' => $event->id,
-            'name' => $event->title,
-            'short_description' => $event->short_description,
-            'description' => $event->long_description,
-            'date' => $event->start_datetime->format('Y-m-d'),
-            'start_time' => $event->start_datetime->format('H:i'),
-            'end_time' => $event->end_datetime->format('H:i'),
-            'start_datetime' => $event->start_datetime->toIso8601String(),
-            'end_datetime' => $event->end_datetime->toIso8601String(),
-            'airports' => $event->featured_airports ?? [],
-            'banner' => $event->banner_path ? asset('storage/' . $event->banner_path) : null,
-            'url' => url('/events/' . $event->id),
-            'discord_channel_id' => $event->discord_staffing_channel_id,
-            'discord_message_id' => $event->discord_staffing_message_id,
-            'has_staffing' => $event->staffings->isNotEmpty(),
-        ];
-    }
 }
