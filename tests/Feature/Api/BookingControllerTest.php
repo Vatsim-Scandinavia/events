@@ -20,14 +20,19 @@ class BookingControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        
+        // Set fake Control Center API configuration before anything else
+        config([
+            'services.control_center.api_url' => 'https://cc.vatsim-scandinavia.org/api',
+            'services.control_center.api_token' => 'fake-token-for-testing',
+        ]);
+        
         Queue::fake();
         // Fake Discord webhooks but allow Control Center API calls
         Http::fake([
             'https://discord.com/api/webhooks/*' => Http::response([], 200),
         ]);
         $this->setUpApiKeys();
-        // Set fake Control Center API token so requests are actually made
-        config(['services.control_center.api_token' => 'fake-token-for-testing']);
     }
 
     #[Test]
