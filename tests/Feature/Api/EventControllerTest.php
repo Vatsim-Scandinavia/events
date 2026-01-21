@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use App\Models\Event;
 use App\Models\Calendar;
@@ -22,7 +23,7 @@ class EventControllerTest extends TestCase
         $this->setUpApiKeys();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_list_all_events()
     {
         $calendar = Calendar::factory()->create();
@@ -38,7 +39,7 @@ class EventControllerTest extends TestCase
             ->assertJsonCount(3, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function it_filters_upcoming_events_by_default()
     {
         $calendar = Calendar::factory()->create();
@@ -63,7 +64,7 @@ class EventControllerTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function it_can_include_past_events()
     {
         $calendar = Calendar::factory()->create();
@@ -86,7 +87,7 @@ class EventControllerTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function it_can_filter_events_with_staffing()
     {
         $calendar = Calendar::factory()->create();
@@ -112,7 +113,7 @@ class EventControllerTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_single_event()
     {
         $calendar = Calendar::factory()->create();
@@ -131,7 +132,7 @@ class EventControllerTest extends TestCase
         $this->assertEquals('Test Event', $data['title']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_404_for_non_existent_event()
     {
         $response = $this->getJson('/api/v1/events/99999');
@@ -139,7 +140,7 @@ class EventControllerTest extends TestCase
         $response->assertStatus(404);
     }
 
-    /** @test */
+    #[Test]
     public function it_includes_url_and_banner_fields()
     {
         $calendar = Calendar::factory()->create();
@@ -156,7 +157,7 @@ class EventControllerTest extends TestCase
         $this->assertArrayHasKey('banner', $data);
     }
 
-    /** @test */
+    #[Test]
     public function it_orders_events_by_start_datetime()
     {
         $calendar = Calendar::factory()->create();

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use App\Models\Event;
 use App\Models\Staffing;
@@ -27,11 +28,12 @@ class BookingControllerTest extends TestCase
         $this->setUpApiKeys();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_book_a_position_successfully()
     {
         Http::fake([
             'https://discord.com/api/webhooks/*' => Http::response([], 200),
+            'https://cc.vatsim-scandinavia.org/api/bookings/create' => Http::response(['booking' => ['id' => 12345]], 200),
             '*/bookings/create' => Http::response(['booking' => ['id' => 12345]], 200),
         ]);
 
@@ -56,7 +58,7 @@ class BookingControllerTest extends TestCase
         Queue::assertPushed(UpdateDiscordStaffingMessage::class);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_404_when_event_not_found()
     {
         $response = $this->withWriteApiKey()->postJson('/api/v1/staffing', [
@@ -71,7 +73,7 @@ class BookingControllerTest extends TestCase
             ->assertJson(['error' => 'Staffing not found']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_404_when_position_not_found()
     {
         $event = $this->createEventWithStaffing();
@@ -88,7 +90,7 @@ class BookingControllerTest extends TestCase
             ->assertJson(['error' => 'Position not found']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_422_when_position_already_booked()
     {
         $event = $this->createEventWithStaffing();
@@ -110,7 +112,7 @@ class BookingControllerTest extends TestCase
             ->assertJson(['error' => 'Position already booked']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_required_fields_for_booking()
     {
         $response = $this->withWriteApiKey()->postJson('/api/v1/staffing', []);
@@ -119,7 +121,7 @@ class BookingControllerTest extends TestCase
             ->assertJsonValidationErrors(['cid', 'discord_user_id', 'position', 'message_id']);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_unbook_a_position_successfully()
     {
         Http::fake([
@@ -152,7 +154,7 @@ class BookingControllerTest extends TestCase
         Queue::assertPushed(UpdateDiscordStaffingMessage::class);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_unbook_all_positions_for_user_when_no_position_specified()
     {
         Http::fake([
@@ -185,11 +187,12 @@ class BookingControllerTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_control_center_api_failure_gracefully()
     {
         Http::fake([
             'https://discord.com/api/webhooks/*' => Http::response([], 200),
+            'https://cc.vatsim-scandinavia.org/api/bookings/create' => Http::response(['error' => 'API Error'], 500),
             '*/bookings/create' => Http::response(['error' => 'API Error'], 500),
         ]);
 
@@ -210,11 +213,12 @@ class BookingControllerTest extends TestCase
         $this->assertNull($position->control_center_booking_id); // But no booking ID
     }
 
-    /** @test */
+    #[Test]
     public function it_calculates_booking_times_from_position_times()
     {
         Http::fake([
             'https://discord.com/api/webhooks/*' => Http::response([], 200),
+            'https://cc.vatsim-scandinavia.org/api/bookings/create' => Http::response(['booking' => ['id' => 12345]], 200),
             '*/bookings/create' => Http::response(['booking' => ['id' => 12345]], 200),
         ]);
 
@@ -234,16 +238,22 @@ class BookingControllerTest extends TestCase
         ]);
 
         Http::assertSent(function ($request) {
+            if (!str_contains($request->url(), '/bookings/create')) {
+                return false;
+            }
             $data = $request->data();
-            return $data['start_at'] === '18:00' && $data['end_at'] === '20:00';
+            return isset($data['start_at']) && isset($data['end_at'])
+                && $data['start_at'] === '18:00' 
+                && $data['end_at'] === '20:00';
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_recurring_events_correctly()
     {
         Http::fake([
             'https://discord.com/api/webhooks/*' => Http::response([], 200),
+            'https://cc.vatsim-scandinavia.org/api/bookings/create' => Http::response(['booking' => ['id' => 12345]], 200),
             '*/bookings/create' => Http::response(['booking' => ['id' => 12345]], 200),
         ]);
 
@@ -258,7 +268,13 @@ class BookingControllerTest extends TestCase
         ]);
 
         Http::assertSent(function ($request) use ($event) {
+            if (!str_contains($request->url(), '/bookings/create')) {
+                return false;
+            }
             $data = $request->data();
+            if (!isset($data['date'])) {
+                return false;
+            }
             // Should use next occurrence date, not the original event date
             $sentDate = \Carbon\Carbon::createFromFormat('d/m/Y', $data['date']);
             return $sentDate->isAfter($event->start_datetime);

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 use App\Models\Event;
 use App\Models\Staffing;
@@ -25,7 +26,7 @@ class StaffingControllerTest extends TestCase
         $this->setUpApiKeys();
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_all_staffings()
     {
         $calendar = Calendar::factory()->create();
@@ -49,7 +50,7 @@ class StaffingControllerTest extends TestCase
             ->assertJsonCount(2, 'data');
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_staffing_by_message_id()
     {
         $event = $this->createEventWithStaffing();
@@ -67,7 +68,7 @@ class StaffingControllerTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_400_when_message_id_missing()
     {
         $response = $this->withReadApiKey()->getJson('/api/v1/staffings/message');
@@ -76,7 +77,7 @@ class StaffingControllerTest extends TestCase
             ->assertJson(['error' => 'message_id parameter required']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_404_when_message_id_not_found()
     {
         $response = $this->withReadApiKey()->getJson('/api/v1/staffings/message?message_id=invalid');
@@ -85,7 +86,7 @@ class StaffingControllerTest extends TestCase
             ->assertJson(['error' => 'Staffing not found']);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_staffing_by_section_id()
     {
         $event = $this->createEventWithStaffing();
@@ -104,7 +105,7 @@ class StaffingControllerTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_get_event_staffing_by_event_id()
     {
         $event = $this->createEventWithStaffing();
@@ -122,7 +123,7 @@ class StaffingControllerTest extends TestCase
             ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_update_staffing_message_id()
     {
         $event = $this->createEventWithStaffing();
@@ -139,7 +140,7 @@ class StaffingControllerTest extends TestCase
         $this->assertEquals('new_message_123', $event->discord_staffing_message_id);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_message_id_on_update()
     {
         $event = $this->createEventWithStaffing();
@@ -151,7 +152,7 @@ class StaffingControllerTest extends TestCase
             ->assertJsonValidationErrors(['message_id']);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_setup_staffing()
     {
         $event = $this->createEventWithStaffing();
@@ -165,7 +166,7 @@ class StaffingControllerTest extends TestCase
             ->assertJson(['message' => 'Staffing setup initiated']);
     }
 
-    /** @test */
+    #[Test]
     public function it_validates_staffing_id_on_setup()
     {
         $response = $this->withWriteApiKey()->postJson('/api/v1/staffing/setup', []);
@@ -174,7 +175,7 @@ class StaffingControllerTest extends TestCase
             ->assertJsonValidationErrors(['id']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_400_when_no_discord_channel_on_setup()
     {
         $calendar = Calendar::factory()->create();
@@ -193,7 +194,7 @@ class StaffingControllerTest extends TestCase
             ->assertJson(['error' => 'No Discord channel configured for this event']);
     }
 
-    /** @test */
+    #[Test]
     public function it_can_reset_all_bookings()
     {
         Http::fake([
@@ -233,7 +234,7 @@ class StaffingControllerTest extends TestCase
         }
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_400_when_resetting_non_recurring_event()
     {
         $event = $this->createEventWithStaffing();
@@ -245,7 +246,7 @@ class StaffingControllerTest extends TestCase
             ->assertJson(['error' => 'Staffing reset is only available for recurring events']);
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_recurring_events_in_staffing_response()
     {
         $calendar = Calendar::factory()->create();
