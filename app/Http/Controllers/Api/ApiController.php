@@ -8,6 +8,7 @@ use App\Services\ControlCenterService;
 use App\Services\RecurringEventService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Http\Resources\EventResource;
 
 /**
  * API Controller matching the old events system endpoints
@@ -42,9 +43,7 @@ class ApiController extends Controller
 
         $events = $query->orderBy('start_datetime')->get();
 
-        return response()->json(
-            $events->map(fn($event) => $this->formatEvent($event))
-        );
+        return EventResource::collection($events);
     }
 
     /**
@@ -55,7 +54,7 @@ class ApiController extends Controller
     {
         $event = Event::with(['calendar', 'staffings.positions.bookedBy'])->findOrFail($id);
 
-        return response()->json($this->formatEvent($event));
+        return new EventResource($event);
     }
 
     /**
