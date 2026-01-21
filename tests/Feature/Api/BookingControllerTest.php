@@ -26,6 +26,8 @@ class BookingControllerTest extends TestCase
             'https://discord.com/api/webhooks/*' => Http::response([], 200),
         ]);
         $this->setUpApiKeys();
+        // Set fake Control Center API token so requests are actually made
+        config(['services.control_center.api_token' => 'fake-token-for-testing']);
     }
 
     #[Test]
