@@ -71,6 +71,11 @@ class StaffingController extends Controller
     public function show($id)
     {
         $staffing = Staffing::with(['event', 'positions.bookedBy'])->findOrFail($id);
+        
+        if (!$staffing->event) {
+            return response()->json(['error' => 'Event not found for this staffing section'], 404);
+        }
+        
         $event = $staffing->event->load(['staffings.positions.bookedBy', 'staffings.event']);
         
         $targetOccurrenceDate = $this->calculateTargetOccurrence($event);
