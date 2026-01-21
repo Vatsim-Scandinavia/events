@@ -17,13 +17,12 @@ class AuthenticateApiKey
     public function handle(Request $request, Closure $next, ?string $requireWrite = null): Response
     {
         $token = $request->header('X-API-KEY')
-            ?? $request->header('Authorization')
-            ?? $request->query('api_key');
+            ?? $request->header('Authorization');
 
         if (!$token) {
             return response()->json([
                 'error' => 'API key required',
-                'message' => 'Please provide an API key via X-API-KEY header or api_key parameter.',
+                'message' => 'Please provide an API key via X-API-KEY or Authorization header.',
             ], 401);
         }
 

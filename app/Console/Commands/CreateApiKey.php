@@ -31,13 +31,10 @@ class CreateApiKey extends Command
         $readOnly = $choiceReadOnly === 'read-only';
 
         $name = $this->ask('What is the name of the API key?');
-        
-        $secret = Str::uuid();
 
         $apiKey = ApiKey::create([
             'name' => $name,
             'read_only' => $readOnly,
-            'created_at' => now(),
         ]);
 
         $this->info('API Key `'. $name .'` was created with the following details:');

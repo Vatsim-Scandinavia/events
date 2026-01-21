@@ -17,8 +17,7 @@ class OptionalApiKey
     public function handle(Request $request, Closure $next): Response
     {
         $token = $request->header('X-API-KEY')
-            ?? $request->header('Authorization')
-            ?? $request->query('api_key');
+            ?? $request->header('Authorization');
 
         if ($token && str_starts_with($token, 'Bearer ')) {
             $token = substr($token, 7);
@@ -28,9 +27,12 @@ class OptionalApiKey
             $apiKey = ApiKey::where('id', $token)->first();
 
             if ($apiKey) {
-                $apiKey->recordUsage();
-                $request->attributes->set('api_key', $apiKey);
+                dispatch(function () use ($apiKey) {
+                    $apiKey->recordUsage();
+                })->afterResponse();
             }
+
+            return $next($request);
         }
 
         return $next($request);
