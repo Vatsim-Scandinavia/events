@@ -1,0 +1,53 @@
+{
+	"name": "Laravel 12 Events System",
+	"image": "mcr.microsoft.com/devcontainers/php:8.3-bookworm",
+	"features": {
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "20"
+		},
+		"ghcr.io/devcontainers/features/git:1": {},
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"installZsh": true,
+			"configureZshAsDefaultShell": true
+		}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"bmewburn.vscode-intelephense-client",
+				"MehediDracula.php-namespace-resolver",
+				"amirrizavi.laravel-extra-intellisense",
+				"dbaeumer.vscode-eslint",
+				"esbenp.prettier-vscode",
+				"bradlc.vscode-tailwindcss",
+				"GitHub.copilot"
+			],
+			"settings": {
+				"php.suggest.basic": false,
+				"php.validate.enable": true,
+				"editor.formatOnSave": true,
+				"[php]": {
+					"editor.defaultFormatter": "bmewburn.vscode-intelephense-client"
+				},
+				"[javascript]": {
+					"editor.defaultFormatter": "esbenp.prettier-vscode"
+				}
+			}
+		}
+	},
+	"postCreateCommand": "bash .devcontainer/setup.sh",
+	"forwardPorts": [8000, 5173],
+	"portsAttributes": {
+		"8000": {
+			"label": "Laravel Application",
+			"onAutoForward": "notify",
+			"visibility": "public"
+		},
+		"5173": {
+			"label": "Vite Dev Server",
+			"onAutoForward": "silent",
+			"visibility": "public"
+		}
+	},
+	"remoteUser": "vscode"
+}
