@@ -21,15 +21,15 @@ class CancelledOccurrenceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         Role::create(['name' => 'admin']);
         Role::create(['name' => 'moderator']);
-        
+
         // Fake HTTP and Queue
         Http::fake([
             '*/webhooks/*' => Http::response(['success' => true], 200),
         ]);
-        
+
         Queue::fake();
     }
 
@@ -37,7 +37,7 @@ class CancelledOccurrenceTest extends TestCase
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
-        
+
         $calendar = Calendar::factory()->create();
         $event = Event::factory()->create([
             'calendar_id' => $calendar->id,
@@ -46,7 +46,7 @@ class CancelledOccurrenceTest extends TestCase
             'recurrence_rule' => 'FREQ=WEEKLY;COUNT=5',
         ]);
 
-        $occurrenceDate = now()->addWeek()->toDateTimeString();
+        $occurrenceDate = now()->addWeek()->toIso8601String();
 
         $response = $this->actingAs($admin)->post("/events/{$event->id}/cancel-occurrence", [
             'occurrence_date' => $occurrenceDate,
@@ -61,7 +61,7 @@ class CancelledOccurrenceTest extends TestCase
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
-        
+
         $calendar = Calendar::factory()->create();
         $event = Event::factory()->create([
             'calendar_id' => $calendar->id,
@@ -70,7 +70,7 @@ class CancelledOccurrenceTest extends TestCase
             'recurrence_rule' => 'FREQ=WEEKLY;COUNT=5',
         ]);
 
-        $occurrenceDate = now()->addWeek()->toDateTimeString();
+        $occurrenceDate = now()->addWeek()->toIso8601String();
         $event->cancelOccurrence($occurrenceDate);
 
         $response = $this->actingAs($admin)->post("/events/{$event->id}/uncancel-occurrence", [
@@ -94,7 +94,7 @@ class CancelledOccurrenceTest extends TestCase
         ]);
 
         // Cancel the second occurrence
-        $secondOccurrence = $startDate->copy()->addWeek()->toDateTimeString();
+        $secondOccurrence = $startDate->copy()->addWeek()->toIso8601String();
         $event->cancelOccurrence($secondOccurrence);
 
         $service = app(RecurringEventService::class);
@@ -108,10 +108,10 @@ class CancelledOccurrenceTest extends TestCase
 
         // Should have 3 instances (4 total - 1 cancelled)
         $this->assertCount(3, $instances);
-        
+
         // Ensure the cancelled occurrence is not in the list
         foreach ($instances as $instance) {
-            $this->assertNotEquals($secondOccurrence, $instance['start']->toDateTimeString());
+            $this->assertNotEquals($secondOccurrence, $instance['start']->toIso8601String());
         }
     }
 
@@ -127,7 +127,7 @@ class CancelledOccurrenceTest extends TestCase
         ]);
 
         // Cancel the second occurrence
-        $secondOccurrence = $startDate->copy()->addWeek()->toDateTimeString();
+        $secondOccurrence = $startDate->copy()->addWeek()->toIso8601String();
         $event->cancelOccurrence($secondOccurrence);
 
         $service = app(RecurringEventService::class);
@@ -141,12 +141,12 @@ class CancelledOccurrenceTest extends TestCase
 
         // Should have 4 instances (including cancelled)
         $this->assertCount(4, $instances);
-        
+
         // Find the cancelled occurrence and verify it's marked
         $cancelledInstance = collect($instances)->firstWhere(function ($instance) use ($secondOccurrence) {
-            return $instance['start']->toDateTimeString() === $secondOccurrence;
+            return $instance['start']->toIso8601String() === $secondOccurrence;
         });
-        
+
         $this->assertNotNull($cancelledInstance);
         $this->assertTrue($cancelledInstance['cancelled']);
     }
@@ -155,14 +155,14 @@ class CancelledOccurrenceTest extends TestCase
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
-        
+
         $calendar = Calendar::factory()->create();
         $event = Event::factory()->create([
             'calendar_id' => $calendar->id,
             'recurrence_rule' => null, // Non-recurring
         ]);
 
-        $occurrenceDate = now()->addWeek()->toDateTimeString();
+        $occurrenceDate = now()->addWeek()->toIso8601String();
 
         $response = $this->actingAs($admin)->post("/events/{$event->id}/cancel-occurrence", [
             'occurrence_date' => $occurrenceDate,
@@ -175,7 +175,7 @@ class CancelledOccurrenceTest extends TestCase
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
-        
+
         $calendar = Calendar::factory()->create();
         $event = Event::factory()->create([
             'calendar_id' => $calendar->id,
@@ -187,10 +187,11 @@ class CancelledOccurrenceTest extends TestCase
         $response = $this->actingAs($admin)->get("/events/{$event->id}/occurrences");
 
         $response->assertStatus(200);
-        $response->assertInertia(fn ($page) => $page
-            ->component('Events/ManageOccurrences')
-            ->has('event')
-            ->has('occurrences')
+        $response->assertInertia(
+            fn($page) => $page
+                ->component('Events/ManageOccurrences')
+                ->has('event')
+                ->has('occurrences')
         );
     }
 
@@ -198,7 +199,7 @@ class CancelledOccurrenceTest extends TestCase
     {
         $admin = User::factory()->create();
         $admin->assignRole('admin');
-        
+
         $calendar = Calendar::factory()->create();
         $event = Event::factory()->create([
             'calendar_id' => $calendar->id,
@@ -223,29 +224,30 @@ class CancelledOccurrenceTest extends TestCase
         ]);
 
         // Cancel the first occurrence (which would be the next one)
-        $firstOccurrence = $startDate->toDateTimeString();
+        $firstOccurrence = $startDate->toIso8601String();
         $event->cancelOccurrence($firstOccurrence);
 
         $response = $this->get('/');
 
         $response->assertStatus(200);
-        
+
         // The calendar events should not include the cancelled occurrence
-        $response->assertInertia(fn ($page) => $page
-            ->component('Home')
-            ->has('calendarEvents')
-            ->where('calendarEvents', function ($calendarEvents) use ($event, $firstOccurrence) {
-                // Ensure no calendar event matches the cancelled occurrence
-                foreach ($calendarEvents as $calEvent) {
-                    if (str_starts_with($calEvent['id'], $event->id . '-')) {
-                        $eventStart = Carbon::parse($calEvent['start']);
-                        if ($eventStart->toDateTimeString() === $firstOccurrence) {
-                            return false; // Cancelled occurrence found - test should fail
+        $response->assertInertia(
+            fn($page) => $page
+                ->component('Home')
+                ->has('calendarEvents')
+                ->where('calendarEvents', function ($calendarEvents) use ($event, $firstOccurrence) {
+                    // Ensure no calendar event matches the cancelled occurrence
+                    foreach ($calendarEvents as $calEvent) {
+                        if (str_starts_with($calEvent['id'], $event->id . '-')) {
+                            $eventStart = Carbon::parse($calEvent['start']);
+                            if ($eventStart->toIso8601String() === $firstOccurrence) {
+                                return false; // Cancelled occurrence found - test should fail
+                            }
                         }
                     }
-                }
-                return true; // Cancelled occurrence not found - good!
-            })
+                    return true; // Cancelled occurrence not found - good!
+                })
         );
     }
 }
