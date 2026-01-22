@@ -77,7 +77,7 @@ export default function ManageOccurrences({ event, occurrences }) {
                         ) : (
                             <div className="space-y-2">
                                 {occurrences.map((occurrence, index) => {
-                                    const occurrenceDate = new Date(occurrence.start).toISOString().replace('T', ' ').substring(0, 19);
+                                    const occurrenceDate = new Date(occurrence.start).toISOString();
                                     const isPast = new Date(occurrence.start) < new Date();
                                     const isProcessing = processing[occurrenceDate];
 

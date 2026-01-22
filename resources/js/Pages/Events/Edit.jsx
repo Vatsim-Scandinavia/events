@@ -49,8 +49,8 @@ export default function Edit({ event, calendars, bannerUrl }) {
         short_description: event.short_description || '',
         long_description: event.long_description || '',
         featured_airports: event.featured_airports || [],
-        start_datetime: event.start_datetime ? event.start_datetime.slice(0, 16) : '',
-        end_datetime: event.end_datetime ? event.end_datetime.slice(0, 16) : '',
+        start_datetime: event.start_datetime || '',
+        end_datetime: event.end_datetime || '',
         banner: null,
         recurrence_rule: event.recurrence_rule || '',
         discord_staffing_channel_id: event.discord_staffing_channel_id || '',
@@ -93,23 +93,14 @@ export default function Edit({ event, calendars, bannerUrl }) {
     const handleStartDateChange = (date) => {
         setStartDate(date);
         if (date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            setData('start_datetime', `${year}-${month}-${day}T${hours}:${minutes}`);
+            // Format as ISO8601 for Laravel
+            setData('start_datetime', date.toISOString());
             
             // If end date is before start date, adjust it
             if (endDate && endDate < date) {
                 const newEndDate = new Date(date.getTime() + 60 * 60 * 1000); // Add 1 hour
                 setEndDate(newEndDate);
-                const endYear = newEndDate.getFullYear();
-                const endMonth = String(newEndDate.getMonth() + 1).padStart(2, '0');
-                const endDay = String(newEndDate.getDate()).padStart(2, '0');
-                const endHours = String(newEndDate.getHours()).padStart(2, '0');
-                const endMinutes = String(newEndDate.getMinutes()).padStart(2, '0');
-                setData('end_datetime', `${endYear}-${endMonth}-${endDay}T${endHours}:${endMinutes}`);
+                setData('end_datetime', newEndDate.toISOString());
             }
         } else {
             setData('start_datetime', '');
@@ -119,12 +110,8 @@ export default function Edit({ event, calendars, bannerUrl }) {
     const handleEndDateChange = (date) => {
         setEndDate(date);
         if (date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const hours = String(date.getHours()).padStart(2, '0');
-            const minutes = String(date.getMinutes()).padStart(2, '0');
-            setData('end_datetime', `${year}-${month}-${day}T${hours}:${minutes}`);
+            // Format as ISO8601 for Laravel
+            setData('end_datetime', date.toISOString());
         } else {
             setData('end_datetime', '');
         }
