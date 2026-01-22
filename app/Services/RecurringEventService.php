@@ -50,7 +50,7 @@ class RecurringEventService
                 $instanceEnd = Carbon::instance($instance->getEnd());
                 
                 // Check if this occurrence is cancelled
-                $occurrenceDate = $instanceStart->toDateTimeString();
+                $occurrenceDate = $instanceStart->toIso8601String();
                 if (in_array($occurrenceDate, $cancelledOccurrences)) {
                     continue; // Skip cancelled occurrences
                 }
@@ -94,7 +94,7 @@ class RecurringEventService
                 $instanceEnd = Carbon::instance($instance->getEnd());
                 
                 // Check if this occurrence is cancelled
-                $occurrenceDate = $instanceStart->toDateTimeString();
+                $occurrenceDate = $instanceStart->toIso8601String();
                 $isCancelled = in_array($occurrenceDate, $cancelledOccurrences);
                 
                 // Only include instances within the requested range

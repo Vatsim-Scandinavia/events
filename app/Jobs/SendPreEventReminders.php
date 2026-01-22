@@ -66,7 +66,7 @@ class SendPreEventReminders implements ShouldQueue
         if ($event->start_datetime->between($bufferStart, $bufferEnd)) {
             // Check if we've already notified (using event date as key)
             $notifiedOccurrences = $event->notified_occurrences ?? [];
-            $occurrenceKey = $event->start_datetime->format('Y-m-d H:i');
+            $occurrenceKey = $event->start_datetime->toIso8601String();
 
             if (!in_array($occurrenceKey, $notifiedOccurrences)) {
                 // Send reminder
@@ -112,7 +112,7 @@ class SendPreEventReminders implements ShouldQueue
             if ($occurrenceStart->between($bufferStart, $bufferEnd)) {
                 // Check if we've already notified for this occurrence
                 $notifiedOccurrences = $event->notified_occurrences ?? [];
-                $occurrenceKey = $occurrenceStart->format('Y-m-d H:i');
+                $occurrenceKey = $occurrenceStart->toIso8601String();
 
                 if (!in_array($occurrenceKey, $notifiedOccurrences)) {
                     // Send reminder
@@ -124,7 +124,7 @@ class SendPreEventReminders implements ShouldQueue
                         Log::info('Sent pre-event reminder for recurring event occurrence', [
                             'event_id' => $event->id,
                             'event_title' => $event->title,
-                            'occurrence_start' => $occurrenceStart->toDateTimeString(),
+                            'occurrence_start' => $occurrenceStart->toIso8601String(),
                         ]);
                     }
                 }
