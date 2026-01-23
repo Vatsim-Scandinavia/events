@@ -34,7 +34,5 @@ class EventResource extends JsonResource
                 ]
             ]),
         ];
-
-        return parent::toArray($request);
     }
 }
