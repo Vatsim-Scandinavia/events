@@ -34,4 +34,14 @@ class ApiKey extends Model
             }
         });
     }
+
+    public function canWrite(): bool
+    {
+        return !$this->read_only;
+    }
+
+    public function recordUsage(): void
+    {
+        $this->update(['last_used_at' => now()]);
+    }
 }
