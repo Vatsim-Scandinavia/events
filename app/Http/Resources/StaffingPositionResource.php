@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Carbon\Carbon;
 
@@ -22,7 +23,7 @@ class StaffingPositionResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray($resource, $targetOccurrenceDate = null, $event = null): array
+    public function toArray(Request $request): array
     {
         $event = $this->event ?? $this->staffing->event;
 
