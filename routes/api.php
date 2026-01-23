@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\EventApiController;
+use App\Http\Controllers\Api\StaffingApiController;
 
 /**
  * v2 API Routes
@@ -12,6 +13,9 @@ Route::prefix('v2')->name('apiv2.')->group(function () {
     Route::get('events', [EventApiController::class, 'index'])->name('events.index');
     Route::get('events/{id}', [EventApiController::class, 'show'])->name('events.show');
     Route::delete('events/{id}', [EventApiController::class, 'destroy'])->name('events.destroy');
+
+    Route::get('staffings', [StaffingApiController::class, 'index'])->name('staffings.index');
+    Route::get('staffings/{id}', [StaffingApiController::class, 'show'])->name('staffings.show');
 });
 
 /**
