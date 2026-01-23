@@ -50,6 +50,7 @@ class AuthenticateApiKey
         dispatch(function () use ($apiKey) {
             $apiKey->recordUsage();
         })->afterResponse();
+        $request->attributes->set('api_key', $apiKey);
 
         return $next($request);
     }
