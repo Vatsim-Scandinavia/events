@@ -24,11 +24,14 @@ class StaffingGroupResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $targetDate = $this->targetOccurrenceDate;
+        $event = $this->event;
+        
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'positions' => $this->positions->map(function ($position) {
-                return new StaffingPositionResource($position, $this->targetOccurrenceDate, $this->event);
+            'name' => $this->name,
+            'positions' => $this->positions->map(function ($position) use ($targetDate, $event) {
+                return new StaffingPositionResource($position, $targetDate, $event);
             }),
         ];
     }

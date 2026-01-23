@@ -25,15 +25,31 @@ class StaffingPositionResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $event = $this->event ?? $this->staffing->event;
+        // Get the actual event model, not the wrapped resource
+        $event = $this->event;
+        if ($event instanceof JsonResource) {
+            $event = $event->resource;
+        }
+        if (!$event) {
+            $event = $this->staffing->event;
+        }
 
         $targetDate = $this->targetOccurrenceDate ?? $event->start_datetime;
+
+        // Handle case where targetOccurrenceDate is 0 or falsy
+        if (!$targetDate || $targetDate === 0) {
+            $targetDate = $event->start_datetime;
+        }
+
 
         $startDatetime = null;
         $endDatetime = null;
 
         if ($targetDate) {
-            $baseDate = is_string($targetDate) ? Carbon::parse($targetDate) : $targetDate;
+            // Ensure we have a Carbon instance
+
+            $baseDate = $targetDate instanceof Carbon ? $targetDate : Carbon::parse($targetDate);
+
 
             $startTime = $this->start_time ?? $event->start_datetime->format('H:i:s');
             $endTime = $this->end_time ?? $event->end_datetime->format('H:i:s');
@@ -44,11 +60,11 @@ class StaffingPositionResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'description' => $this->description,
-            'required_certifications' => $this->required_certifications ?? [],
+            'position_name' => $this->position_name,
+            'position_id' => $this->position_id,
             'start_datetime' => $startDatetime,
             'end_datetime' => $endDatetime,
+            'is_local' => $this->is_local,
             'booked' => $this->isBooked(),
             'booked_by' => $this->formatUser(),
         ];
