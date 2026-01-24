@@ -204,9 +204,11 @@ class EventController extends Controller
                 $event->display_datetime = $nextOccurrenceStart->toISOString();
                 $event->display_end_datetime = $nextOccurrenceEnd->toISOString();
             }
+        } else {
+            // For non-recurring events, set display_datetime from start_datetime
+            $event->display_datetime = $event->start_datetime?->toISOString();
+            $event->display_end_datetime = $event->end_datetime?->toISOString();
         }
-
-        dd($event, $instances);
 
         return Inertia::render('Events/Show', [
             'event' => $event,

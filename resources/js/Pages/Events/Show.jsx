@@ -17,9 +17,6 @@ export default function Show({ event, instances, bannerUrl }) {
         }
     };
 
-    console.log (event.display_datetime, event.start_datetime)
-    console.log (event.display_end_datetime, event.end_datetime)
-
     return (
         <>
             <Head title={event.title} />
