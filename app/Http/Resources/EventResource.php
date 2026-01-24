@@ -26,7 +26,7 @@ class EventResource extends JsonResource
             'end_date' => $this->end_datetime->format('Y-m-d H:i:s'),
             'featured_airports' => $this->featured_airports ?? [],
             'banner' => $this->banner ? asset('storage/' . $this->banner) : null,
-            'uri' => url('/events/' . $this->id),
+            'url' => url('/events/' . $this->id),
         ];
     }
 }
