@@ -206,6 +206,8 @@ class EventController extends Controller
             }
         }
 
+        dd($event, $instances);
+
         return Inertia::render('Events/Show', [
             'event' => $event,
             'instances' => $instances,
