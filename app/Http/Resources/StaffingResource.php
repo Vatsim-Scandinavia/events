@@ -25,13 +25,18 @@ class StaffingResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'discord' => [
-                'channel_id' => $this->discord_staffing_channel_id,
-                'message_id' => $this->discord_staffing_message_id,
-            ],
             'staffing' => $this->staffings->map(function ($staffing) {
-                return new StaffingGroupResource($staffing, $this->targetOccurrenceDate, $this->resource);
-            })
+                return new StaffingGroupResource(
+                    $staffing, 
+                    $this->targetOccurrenceDate,
+                    $this->resource);
+            }),
+            'external' => [
+                'discord' => [
+                    'channel_id' => $this->discord_staffing_channel_id,
+                    'message_id' => $this->discord_staffing_message_id,
+                ],
+            ],
         ];
     }
 }
