@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Illuminate\Http\Request;
 
 class ApiKey extends Model
 {
@@ -33,6 +34,13 @@ class ApiKey extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    public static function fromRequest(Request $request): ?self
+    {
+        $token = $request->header('X-API-KEY') ?? $request->bearerToken();
+
+        return $token ? self::find($token) : null;
     }
 
     public function canWrite(): bool

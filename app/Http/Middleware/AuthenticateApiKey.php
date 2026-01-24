@@ -20,15 +20,7 @@ class AuthenticateApiKey
      */
     public function handle(Request $request, Closure $next, ?string $requireWrite = null): Response
     {
-        $token = $request->header('X-API-KEY')
-            ?? $request->header('Authorization');
-
-        if (!$token) {
-            throw new \App\Exceptions\InvalidApiKeyException();
-        }
-
-        $token = preg_replace('/^Bearer\s+/i', '', $token);
-        $apiKey = ApiKey::where('id', $token)->first();
+        $apiKey = ApiKey::fromRequest($request);
 
         if (!$apiKey) {
             throw new \App\Exceptions\InvalidApiKeyException();
