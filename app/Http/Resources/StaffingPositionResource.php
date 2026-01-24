@@ -62,30 +62,12 @@ class StaffingPositionResource extends JsonResource
             'id' => $this->id,
             'position_name' => $this->position_name,
             'position_id' => $this->position_id,
+            'discord_user' => $this->discord_user,
+            'section' => $this->section,
             'start_datetime' => $startDatetime,
             'end_datetime' => $endDatetime,
             'is_local' => $this->is_local,
             'booked' => $this->isBooked(),
-            'booked_by' => $this->formatUser(),
         ];
-    }
-
-    protected function formatUser(): ?array
-    {
-        if ($this->bookedBy) {
-            return [
-                'id' => $this->bookedBy->id,
-                'name' => $this->bookedBy->name,
-            ];
-        }
-
-        if ($this->vatsim_cid) {
-            return [
-                'id' => $this->vatsim_cid,
-                'name' => "CID {$this->vatsim_cid}",
-            ];
-        }
-
-        return null;
     }
 }

@@ -10,6 +10,11 @@ class StaffingGroupResource extends JsonResource
     protected $targetOccurrenceDate;
     protected $event;
 
+    /**
+     * @param mixed $resource The primary resource (e.g., a Collection or Model).
+     * @param mixed \Carbon\Carbon|null $targetOccurrenceDate The target occurrence date for the staffing positions.
+     * @param mixed \App\Models\Event|null $event The associated event model.
+     */
     public function __construct($resource, $targetOccurrenceDate = null, $event = null)
     {
         parent::__construct($resource);
@@ -26,7 +31,7 @@ class StaffingGroupResource extends JsonResource
     {
         $targetDate = $this->targetOccurrenceDate;
         $event = $this->event;
-        
+
         return [
             'id' => $this->id,
             'name' => $this->name,
