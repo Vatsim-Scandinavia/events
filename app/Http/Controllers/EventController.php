@@ -47,7 +47,7 @@ class EventController extends Controller
                     100,
                     $event->cancelled_occurrences ?? []
                 );
-                
+
                 // Find the next occurrence after now
                 foreach ($instances as $instance) {
                     if ($instance['start']->isFuture()) {
@@ -56,7 +56,7 @@ class EventController extends Controller
                         break;
                     }
                 }
-                
+
                 // If no future occurrence found, use original date
                 if (!isset($event->next_occurrence)) {
                     $event->next_occurrence = $event->start_datetime;
@@ -66,7 +66,7 @@ class EventController extends Controller
                 $event->next_occurrence = $event->start_datetime;
                 $event->display_datetime = $event->start_datetime;
             }
-            
+
             return $event;
         });
 
@@ -84,7 +84,7 @@ class EventController extends Controller
         $this->authorize('create', Event::class);
 
         $calendars = Calendar::visibleTo($request->user())->get();
-        
+
         // Get calendar_id from query parameter if provided
         $preselectedCalendarId = $request->query('calendar_id');
 
@@ -119,7 +119,7 @@ class EventController extends Controller
         if (!empty($validated['discord_staffing_channel_id'])) {
             $existingEvent = Event::where('discord_staffing_channel_id', $validated['discord_staffing_channel_id'])
                 ->first();
-            
+
             if ($existingEvent) {
                 return back()->withErrors([
                     'discord_staffing_channel_id' => 'This Discord channel is already in use by another event: ' . $existingEvent->title
@@ -169,7 +169,7 @@ class EventController extends Controller
         if ($event->isRecurring()) {
             // Calculate event duration
             $duration = $event->start_datetime->diffInMinutes($event->end_datetime);
-            
+
             $rawInstances = $this->recurringEventService->generateInstances(
                 $event->recurrence_rule,
                 $event->start_datetime,
@@ -177,7 +177,7 @@ class EventController extends Controller
                 50,
                 $event->cancelled_occurrences ?? []
             );
-            
+
             // Filter for future instances only and apply the event duration
             $nextOccurrenceStart = null;
             $nextOccurrenceEnd = null;
@@ -190,7 +190,7 @@ class EventController extends Controller
                         'end' => $instanceEnd,
                         'cancelled' => $instance['cancelled'] ?? false,
                     ];
-                    
+
                     // The first future occurrence
                     if (!$nextOccurrenceStart) {
                         $nextOccurrenceStart = $instance['start'];
@@ -198,18 +198,18 @@ class EventController extends Controller
                     }
                 }
             }
-            
-            // Set display_datetime to next occurrence
+
+            // Set display_datetime to next occurrence as ISO 8601 string
             if ($nextOccurrenceStart) {
-                $event->display_datetime = $nextOccurrenceStart;
-                $event->display_end_datetime = $nextOccurrenceEnd;
+                $event->display_datetime = $nextOccurrenceStart->toISOString();
+                $event->display_end_datetime = $nextOccurrenceEnd->toISOString();
             }
         }
 
         return Inertia::render('Events/Show', [
             'event' => $event,
             'instances' => $instances,
-            'bannerUrl' => $event->banner_path 
+            'bannerUrl' => $event->banner_path
                 ? $this->bannerUploadService->getUrl($event->banner_path)
                 : null,
         ]);
@@ -227,7 +227,7 @@ class EventController extends Controller
         return Inertia::render('Events/Edit', [
             'event' => $event,
             'calendars' => $calendars,
-            'bannerUrl' => $event->banner_path 
+            'bannerUrl' => $event->banner_path
                 ? $this->bannerUploadService->getUrl($event->banner_path)
                 : null,
         ]);
@@ -261,7 +261,7 @@ class EventController extends Controller
             $existingEvent = Event::where('discord_staffing_channel_id', $validated['discord_staffing_channel_id'])
                 ->where('id', '!=', $event->id)
                 ->first();
-            
+
             if ($existingEvent) {
                 return back()->withErrors([
                     'discord_staffing_channel_id' => 'This Discord channel is already in use by another event: ' . $existingEvent->title
