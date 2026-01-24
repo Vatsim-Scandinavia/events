@@ -17,7 +17,17 @@ export default function DateTimeDisplay({
 }) {
     const [showTooltip, setShowTooltip] = useState(false);
     
+    // Handle null, undefined, or empty values
+    if (!datetime) {
+        return <span className={className}>N/A</span>;
+    }
+    
     const date = typeof datetime === 'string' ? new Date(datetime) : datetime;
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+        return <span className={className}>Invalid date</span>;
+    }
     
     // Format in UTC (Zulu time) with custom handling
     const zuluDate = formatInTimeZone(date, 'UTC', 'PPP');
@@ -57,21 +67,34 @@ export default function DateTimeDisplay({
 export function TimeDisplay({ datetime, showIcon = false, className = '' }) {
     const [showTooltip, setShowTooltip] = useState(false);
     
+    // Handle null, undefined, or empty values
+    if (!datetime) {
+        return <span className={className}>N/A</span>;
+    }
+    
     // Check if datetime is already in HH:mm format (time-only string)
-    const isTimeOnly = typeof datetime === 'string' && /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/.test(datetime);
+    // Also handle HH:mm:ss format from database
+    const isTimeOnly = typeof datetime === 'string' && /^([0-1][0-9]|2[0-3]):([0-5][0-9])(:([0-5][0-9]))?$/.test(datetime);
     
     if (isTimeOnly) {
+        // Extract just HH:mm from HH:mm:ss if needed
+        const timeOnly = datetime.substring(0, 5);
         // Just display the time directly (already in UTC/HH:mm format)
         return (
             <span className={className}>
                 {showIcon && <span className="mr-1">🕐</span>}
-                {datetime}Z
+                {timeOnly}Z
             </span>
         );
     }
     
     // Otherwise, it's a full datetime - format it
     const date = typeof datetime === 'string' ? new Date(datetime) : datetime;
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+        return <span className={className}>Invalid time</span>;
+    }
     
     // Format in UTC (Zulu time)
     const zuluTime = formatInTimeZone(date, 'UTC', 'HH:mm');
@@ -106,8 +129,18 @@ export function TimeDisplay({ datetime, showIcon = false, className = '' }) {
 export function DateTimeRangeDisplay({ start, end, className = '' }) {
     const [showTooltip, setShowTooltip] = useState(false);
     
+    // Handle null, undefined, or empty values
+    if (!start || !end) {
+        return <span className={className}>N/A</span>;
+    }
+    
     const startDate = typeof start === 'string' ? new Date(start) : start;
     const endDate = typeof end === 'string' ? new Date(end) : end;
+    
+    // Check if dates are valid
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return <span className={className}>Invalid date range</span>;
+    }
     
     // Format in UTC (Zulu time)
     const zuluDate = formatInTimeZone(startDate, 'UTC', 'PPP');
