@@ -51,20 +51,20 @@ class EventController extends Controller
                 // Find the next occurrence after now
                 foreach ($instances as $instance) {
                     if ($instance['start']->isFuture()) {
-                        $event->next_occurrence = $instance['start'];
-                        $event->display_datetime = $instance['start'];
+                        $event->next_occurrence = $instance['start']->toISOString();
+                        $event->display_datetime = $instance['start']->toISOString();
                         break;
                     }
                 }
 
                 // If no future occurrence found, use original date
                 if (!isset($event->next_occurrence)) {
-                    $event->next_occurrence = $event->start_datetime;
-                    $event->display_datetime = $event->start_datetime;
+                    $event->next_occurrence = $event->start_datetime->toISOString();
+                    $event->display_datetime = $event->start_datetime->toISOString();
                 }
             } else {
-                $event->next_occurrence = $event->start_datetime;
-                $event->display_datetime = $event->start_datetime;
+                $event->next_occurrence = $event->start_datetime->toISOString();
+                $event->display_datetime = $event->start_datetime->toISOString();
             }
 
             return $event;
@@ -186,8 +186,8 @@ class EventController extends Controller
                 if ($instance['start']->isFuture()) {
                     $instanceEnd = $instance['start']->copy()->addMinutes($duration);
                     $instances[] = [
-                        'start' => $instance['start'],
-                        'end' => $instanceEnd,
+                        'start' => $instance['start']->toISOString(),
+                        'end' => $instanceEnd->toISOString(),
                         'cancelled' => $instance['cancelled'] ?? false,
                     ];
 
