@@ -127,7 +127,6 @@ class EventService
         }
 
         return [
-            'event'             => $event,
             'id'                => $event->id,
             'title'             => $event->title,
             'short_description' => $event->short_description,
@@ -135,16 +134,14 @@ class EventService
             'start_datetime'    => $start?->toISOString(),
             'end_datetime'      => $event->end_datetime?->toISOString(),
             'featured_airports' => $event->featured_airports ?? [],
-            
             'display_datetime'  => $nextActive ? $nextActive['start'] : $start?->toISOString(),
             'next_active_end'   => $nextActive ? $nextActive['end'] : $event->end_datetime?->toISOString(),
-            
             'recurrence_rule'   => $event->recurrence_rule,
             'banner_url'        => $event->banner_path ? $this->bannerUploadService->getUrl($event->banner_path) : null,
             'calendar'          => $event->calendar,
             'creator'           => $event->creator,
-            
-            'instances'         => $followingInstances->values(), 
+            'staffings'         => $event->staffings()->with('positions')->get(),
+            'instances'         => $followingInstances->values(),
         ];
     }
 

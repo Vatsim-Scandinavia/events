@@ -18,7 +18,6 @@ export default function Show({ event, instances, bannerUrl }) {
             router.delete(`/events/${event.id}`);
         }
     };
-
     return (
         <>
             <Head title={event.title} />
@@ -155,7 +154,7 @@ export default function Show({ event, instances, bannerUrl }) {
                         
                         {event.staffings && event.staffings.length > 0 ? (
                             <div className="p-6 space-y-6">
-                                {event.staffings.map((staffing) => (
+                                {event.staffings?.map((staffing) => (
                                     <div key={staffing.id}>
                                         <h4 className="font-semibold text-grey-900 dark:text-dark-text mb-3">{staffing.name}</h4>
                                         <div className="space-y-2">
