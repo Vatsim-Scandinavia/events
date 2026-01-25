@@ -8,8 +8,10 @@ import ReactMarkdown from 'react-markdown';
 export default function Show({ event, instances, bannerUrl }) {
     const { auth } = usePage().props;
 
-    const canEdit = auth.user?.permissions?.includes('edit-events') || 
-                    event.created_by === auth.user?.id;
+    const canEdit = !!auth.user && (
+        auth.user.permissions?.includes('edit-events') || 
+        auth.user.id === event.created_by
+    );
 
     const handleDelete = () => {
         if (confirm('Are you sure you want to delete this event?')) {
