@@ -134,6 +134,7 @@ class EventService
             'long_description'  => $event->long_description,
             'start_datetime'    => $start?->toISOString(),
             'end_datetime'      => $event->end_datetime?->toISOString(),
+            'featured_airports' => $event->featured_airports ?? [],
             
             'display_datetime'  => $nextActive ? $nextActive['start'] : $start?->toISOString(),
             'next_active_end'   => $nextActive ? $nextActive['end'] : $event->end_datetime?->toISOString(),
