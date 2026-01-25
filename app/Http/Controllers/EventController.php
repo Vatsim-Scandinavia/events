@@ -124,7 +124,7 @@ class EventController extends Controller
         $details = $eventService->getEventDetails($event);
 
         return Inertia::render('Events/Edit', [
-            'event'     => $details['event'],
+            'event'     => $event,
             'calendars' => $calendars,
             'bannerUrl' => $details['banner_url'],
         ]);
