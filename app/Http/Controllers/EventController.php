@@ -8,6 +8,9 @@ use App\Services\BannerUploadService;
 use App\Services\RecurringEventService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Services\EventService;
+use App\Http\Requests\StoreEventRequest;
+use App\Http\Requests\UpdateEventRequest;
 
 class EventController extends Controller
 {
@@ -18,66 +21,37 @@ class EventController extends Controller
 
     /**
      * Display a listing of events
+     * 
+     * @param Request $request
+     * @param EventService $eventService
+     * @return InertiaResponse
      */
-    public function index(Request $request)
+    public function index(Request $request, EventService $eventService)
     {
-        $query = Event::with(['calendar', 'creator', 'staffings'])
-            ->whereHas('calendar', function ($q) use ($request) {
-                $q->visibleTo($request->user());
-            });
+        $events = Event::with(['calendar', 'creator'])
+            ->when($request->search, function ($query, $search) {
+                $query->where('title', 'like', "%{$search}%");
+            })
+            ->when($request->calendar_id, function ($query, $id) {
+                $query->where('calendar_id', $id);
+            })
+            ->orderBy('start_datetime', 'desc')
+            ->paginate(12)
+            ->withQueryString(); // Keeps search params in pagination links
 
-        if ($request->has('calendar_id')) {
-            $query->where('calendar_id', $request->calendar_id);
-        }
-
-        if ($request->has('upcoming')) {
-            $query->upcoming();
-        }
-
-        $events = $query->orderBy('start_datetime')->paginate(5);
-
-        // Calculate next occurrence for recurring events
-        $events->getCollection()->transform(function ($event) {
-            // For recurring events, find the next occurrence
-            if ($event->recurrence_rule) {
-                $instances = $this->recurringEventService->generateInstances(
-                    $event->recurrence_rule,
-                    $event->start_datetime,
-                    now()->addYears(1),
-                    100,
-                    $event->cancelled_occurrences ?? []
-                );
-
-                // Find the next occurrence after now
-                foreach ($instances as $instance) {
-                    if ($instance['start']->isFuture()) {
-                        $event->next_occurrence = $instance['start']->toISOString();
-                        $event->display_datetime = $instance['start']->toISOString();
-                        break;
-                    }
-                }
-
-                // If no future occurrence found, use original date
-                if (!isset($event->next_occurrence)) {
-                    $event->next_occurrence = $event->start_datetime->toISOString();
-                    $event->display_datetime = $event->start_datetime->toISOString();
-                }
-            } else {
-                $event->next_occurrence = $event->start_datetime->toISOString();
-                $event->display_datetime = $event->start_datetime->toISOString();
-            }
-
-            return $event;
-        });
+        $events->getCollection()->transform(fn($event) => $eventService->getEventDetails($event));
 
         return Inertia::render('Events/Index', [
             'events' => $events,
-            'filters' => $request->only(['calendar_id', 'upcoming']),
+            'filters' => $request->only(['search', 'calendar_id']),
         ]);
     }
 
     /**
      * Show the form for creating a new event
+     * 
+     * @param Request $request
+     * @return InertiaResponse
      */
     public function create(Request $request)
     {
@@ -96,60 +70,18 @@ class EventController extends Controller
 
     /**
      * Store a newly created event
+     * 
+     * @param StoreEventRequest $request
+     * @param EventService $eventService
+     * @return RedirectResponse
      */
-    public function store(Request $request)
+    public function store(StoreEventRequest $request, EventService $eventService)
     {
-        $this->authorize('create', Event::class);
-
-        $validated = $request->validate([
-            'calendar_id' => 'required|exists:calendars,id',
-            'title' => 'required|string|max:255',
-            'short_description' => 'required|string|max:1000',
-            'long_description' => 'required|string',
-            'featured_airports' => 'nullable|array',
-            'featured_airports.*' => 'string|max:4',
-            'start_datetime' => 'required|date',
-            'end_datetime' => 'required|date|after:start_datetime',
-            'banner' => 'nullable|image|mimes:jpeg,jpg,png|max:5120',
-            'recurrence_rule' => 'nullable|string',
-            'discord_staffing_channel_id' => 'nullable|string|max:255',
-        ]);
-
-        // Validate that Discord channel is not already in use
-        if (!empty($validated['discord_staffing_channel_id'])) {
-            $existingEvent = Event::where('discord_staffing_channel_id', $validated['discord_staffing_channel_id'])
-                ->first();
-
-            if ($existingEvent) {
-                return back()->withErrors([
-                    'discord_staffing_channel_id' => 'This Discord channel is already in use by another event: ' . $existingEvent->title
-                ])->withInput();
-            }
-        }
-
-        // Validate recurrence rule if provided
-        if (!empty($validated['recurrence_rule'])) {
-            if (!$this->recurringEventService->validateRRule($validated['recurrence_rule'])) {
-                return back()->withErrors(['recurrence_rule' => 'Invalid recurrence rule']);
-            }
-        }
-
-        $bannerPath = null;
-        if ($request->hasFile('banner')) {
-            try {
-                $bannerPath = $this->bannerUploadService->upload($request->file('banner'));
-            } catch (\InvalidArgumentException $e) {
-                return back()->withErrors(['banner' => $e->getMessage()]);
-            }
-        }
-
-        $event = Event::create([
-            ...$validated,
-            'banner_path' => $bannerPath,
-            'created_by' => $request->user()->id,
-        ]);
-
-        \Log::info('Event "' . $event->title . '" (' . $event->id . ') created by user: ' . $request->user()->vatsim_cid);
+        $event = $eventService->createEvent(
+            $request->validated(),
+            $request->user(),
+            $request->hasFile('banner') ? $request->file('banner') : null
+        );
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event created successfully.');
@@ -157,153 +89,64 @@ class EventController extends Controller
 
     /**
      * Display the specified event
+     * 
+     * @param Event $event
+     * @param EventService $eventService
+     * @return InertiaResponse
      */
-    public function show(Event $event)
+    public function show(Event $event, EventService $eventService)
     {
         $this->authorize('view', $event);
 
-        $event->load(['calendar', 'creator', 'staffings.positions.bookedBy']);
-
-        // If recurring, get upcoming instances
-        $instances = [];
-        if ($event->isRecurring()) {
-            // Calculate event duration
-            $duration = $event->start_datetime->diffInMinutes($event->end_datetime);
-
-            $rawInstances = $this->recurringEventService->generateInstances(
-                $event->recurrence_rule,
-                $event->start_datetime,
-                $event->start_datetime->copy()->addMonths(6),
-                50,
-                $event->cancelled_occurrences ?? []
-            );
-
-            // Filter for future instances only and apply the event duration
-            $nextOccurrenceStart = null;
-            $nextOccurrenceEnd = null;
-            foreach ($rawInstances as $instance) {
-                // Only include future occurrences
-                if ($instance['start']->isFuture()) {
-                    $instanceEnd = $instance['start']->copy()->addMinutes($duration);
-                    $instances[] = [
-                        'start' => $instance['start']->toISOString(),
-                        'end' => $instanceEnd->toISOString(),
-                        'cancelled' => $instance['cancelled'] ?? false,
-                    ];
-
-                    // The first future occurrence
-                    if (!$nextOccurrenceStart) {
-                        $nextOccurrenceStart = $instance['start'];
-                        $nextOccurrenceEnd = $instanceEnd;
-                    }
-                }
-            }
-
-            // Set display_datetime to next occurrence as ISO 8601 string
-            if ($nextOccurrenceStart) {
-                $event->display_datetime = $nextOccurrenceStart->toISOString();
-                $event->display_end_datetime = $nextOccurrenceEnd->toISOString();
-            }
-        }
+        $details = $eventService->getEventDetails($event, true);
 
         return Inertia::render('Events/Show', [
-            'event' => $event,
-            'instances' => $instances,
-            'bannerUrl' => $event->banner_path
-                ? $this->bannerUploadService->getUrl($event->banner_path)
-                : null,
+            'event'     => $details,
+            'instances' => $details['instances'],
+            'bannerUrl' => $details['banner_url'],
+            'nextStart' => $details['display_datetime'],
+            'nextEnd'   => $details['next_active_end'],
         ]);
     }
 
     /**
      * Show the form for editing the event
+     * 
+     * @param Request $request
+     * @param Event $event
+     * @param EventService $eventService
+     * @return InertiaResponse
      */
-    public function edit(Request $request, Event $event)
+    public function edit(Request $request, Event $event, EventService $eventService)
     {
         $this->authorize('update', $event);
 
         $calendars = Calendar::visibleTo($request->user())->get();
 
+        $details = $eventService->getEventDetails($event);
+
         return Inertia::render('Events/Edit', [
-            'event' => $event,
+            'event'     => $details['event'],
             'calendars' => $calendars,
-            'bannerUrl' => $event->banner_path
-                ? $this->bannerUploadService->getUrl($event->banner_path)
-                : null,
+            'bannerUrl' => $details['banner_url'],
         ]);
     }
 
     /**
      * Update the specified event
+     * 
+     * @param UpdateEventRequest $request
+     * @param Event $event
+     * @param EventService $eventService
+     * @return RedirectResponse
      */
-    public function update(Request $request, Event $event)
+    public function update(UpdateEventRequest $request, Event $event, EventService $eventService)
     {
-        $this->authorize('update', $event);
-
-        $validated = $request->validate([
-            'calendar_id' => 'required|exists:calendars,id',
-            'title' => 'required|string|max:255',
-            'short_description' => 'required|string|max:1000',
-            'long_description' => 'required|string',
-            'staffing_description' => 'nullable|string',
-            'featured_airports' => 'nullable|array',
-            'featured_airports.*' => 'string|max:4',
-            'start_datetime' => 'required|date',
-            'end_datetime' => 'required|date|after:start_datetime',
-            'banner' => 'nullable|image|mimes:jpeg,jpg,png|max:5120',
-            'recurrence_rule' => 'nullable|string',
-            'discord_staffing_channel_id' => 'nullable|string|max:255',
-            'remove_banner' => 'nullable|boolean',
-        ]);
-
-        // Validate that Discord channel is not already in use by another event
-        if (!empty($validated['discord_staffing_channel_id'])) {
-            $existingEvent = Event::where('discord_staffing_channel_id', $validated['discord_staffing_channel_id'])
-                ->where('id', '!=', $event->id)
-                ->first();
-
-            if ($existingEvent) {
-                return back()->withErrors([
-                    'discord_staffing_channel_id' => 'This Discord channel is already in use by another event: ' . $existingEvent->title
-                ])->withInput();
-            }
-        }
-
-        // Validate recurrence rule if provided
-        if (!empty($validated['recurrence_rule'])) {
-            if (!$this->recurringEventService->validateRRule($validated['recurrence_rule'])) {
-                return back()->withErrors(['recurrence_rule' => 'Invalid recurrence rule']);
-            }
-        }
-
-        // Handle banner removal
-        if ($request->boolean('remove_banner') && $event->banner_path) {
-            $this->bannerUploadService->delete($event->banner_path);
-            $validated['banner_path'] = null;
-        }
-
-        // Handle new banner upload
-        if ($request->hasFile('banner')) {
-            // Delete old banner
-            if ($event->banner_path) {
-                $this->bannerUploadService->delete($event->banner_path);
-            }
-
-            try {
-                $validated['banner_path'] = $this->bannerUploadService->upload($request->file('banner'));
-            } catch (\InvalidArgumentException $e) {
-                return back()->withErrors(['banner' => $e->getMessage()]);
-            }
-        }
-
-        $event->update($validated);
-
-        // If staffing description was changed and event has Discord message, update it
-        if (isset($validated['staffing_description']) && $event->discord_staffing_message_id) {
-            \App\Jobs\UpdateDiscordStaffingMessage::dispatch($event->id, 'updated');
-        }
-
-        \Log::info('Event "' . $event->title . '" (' . $event->id . ') updated by user: ' . auth()->user()->vatsim_cid);
+        $eventService->updateEvent(
+            $event, 
+            $request->validated(), 
+            $request->file('banner')
+        );
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event updated successfully.');
@@ -311,19 +154,16 @@ class EventController extends Controller
 
     /**
      * Remove the specified event
+     * 
+     * @param Event $event
+     * @param EventService $eventService
+     * @return RedirectResponse
      */
-    public function destroy(Event $event)
+    public function destroy(Event $event, EventService $eventService)
     {
         $this->authorize('delete', $event);
 
-        // Delete banner if exists
-        if ($event->banner_path) {
-            $this->bannerUploadService->delete($event->banner_path);
-        }
-
-        \Log::info('Event "' . $event->title . '" (' . $event->id . ') deleted by user: ' . auth()->user()->vatsim_cid);
-
-        $event->delete();
+        $eventService->deleteEvent($event);
 
         return redirect()->route('events.index')
             ->with('success', 'Event deleted successfully.');
@@ -331,12 +171,17 @@ class EventController extends Controller
 
     /**
      * Cancel a specific occurrence of a recurring event
+     * 
+     * @param Request $request
+     * @param Event $event
+     * @param EventService $eventService
+     * @return RedirectResponse
      */
-    public function cancelOccurrence(Request $request, Event $event)
+    public function cancelOccurrence(Request $request, Event $event, EventService $eventService)
     {
         $this->authorize('update', $event);
 
-        if (!$event->isRecurring()) {
+        if (!$event->recurrence_rule) {
             return back()->withErrors(['error' => 'Only recurring events can have occurrences cancelled.']);
         }
 
@@ -344,21 +189,24 @@ class EventController extends Controller
             'occurrence_date' => 'required|date',
         ]);
 
-        $event->cancelOccurrence($validated['occurrence_date']);
-
-        \Log::info('Occurrence cancelled for event "' . $event->title . '" (' . $event->id . ') on ' . $validated['occurrence_date'] . ' by user: ' . auth()->user()->vatsim_cid);
+        $eventService->toggleOccurrence($event, $validated['occurrence_date'], true);
 
         return back()->with('success', 'Occurrence cancelled successfully.');
     }
 
     /**
      * Uncancel a specific occurrence of a recurring event
+     * 
+     * @param Request $request
+     * @param Event $event
+     * @param EventService $eventService
+     * @return RedirectResponse
      */
-    public function uncancelOccurrence(Request $request, Event $event)
+    public function uncancelOccurrence(Request $request, Event $event, EventService $eventService)
     {
         $this->authorize('update', $event);
 
-        if (!$event->isRecurring()) {
+        if (!$event->recurrence_rule) {
             return back()->withErrors(['error' => 'Only recurring events can have occurrences uncancelled.']);
         }
 
@@ -366,80 +214,32 @@ class EventController extends Controller
             'occurrence_date' => 'required|date',
         ]);
 
-        $event->uncancelOccurrence($validated['occurrence_date']);
-
-        \Log::info('Occurrence uncancelled for event "' . $event->title . '" (' . $event->id . ') on ' . $validated['occurrence_date'] . ' by user: ' . auth()->user()->vatsim_cid);
+        $eventService->toggleOccurrence($event, $validated['occurrence_date'], false);
 
         return back()->with('success', 'Occurrence uncancelled successfully.');
     }
 
     /**
      * Show page for managing occurrences of a recurring event
+     * 
+     * @param Event $event
+     * @param EventService $eventService
+     * @return InertiaResponse
      */
-    public function manageOccurrences(Event $event)
+    public function manageOccurrences(Event $event, EventService $eventService)
     {
         $this->authorize('update', $event);
 
-        if (!$event->isRecurring()) {
+        if (!$event->recurrence_rule) {
             return redirect()->route('events.show', $event)
                 ->withErrors(['error' => 'Only recurring events have occurrences to manage.']);
         }
 
-        $event->load(['calendar']);
-
-        // Calculate event duration
-        $duration = $event->start_datetime->diffInMinutes($event->end_datetime);
-
-        // Get all instances (including cancelled) for management
-        $rawInstances = $this->recurringEventService->generateAllInstances(
-            $event->recurrence_rule,
-            $event->start_datetime,
-            $event->start_datetime->copy()->addMonths(12),
-            100,
-            $event->cancelled_occurrences ?? []
-        );
-
-        // Apply event duration and format
-        $occurrences = [];
-        foreach ($rawInstances as $instance) {
-            $instanceEnd = $instance['start']->copy()->addMinutes($duration);
-            $occurrences[] = [
-                'start' => $instance['start']->toISOString(),
-                'end' => $instanceEnd->toISOString(),
-                'cancelled' => $instance['cancelled'],
-            ];
-        }
+        $data = $eventService->getManagementData($event);
 
         return Inertia::render('Events/ManageOccurrences', [
-            'event' => $event,
-            'occurrences' => $occurrences,
+            'event'       => $data['event'],
+            'occurrences' => $data['occurrences'],
         ]);
-    }
-
-    /**
-     * Upload banner for an event
-     */
-    public function uploadBanner(Request $request, Event $event)
-    {
-        $this->authorize('update', $event);
-
-        $request->validate([
-            'banner' => 'required|image|mimes:jpeg,jpg,png|max:5120',
-        ]);
-
-        // Delete old banner
-        if ($event->banner_path) {
-            $this->bannerUploadService->delete($event->banner_path);
-        }
-
-        try {
-            $bannerPath = $this->bannerUploadService->upload($request->file('banner'));
-
-            $event->update(['banner_path' => $bannerPath]);
-
-            return back()->with('success', 'Banner uploaded successfully.');
-        } catch (\InvalidArgumentException $e) {
-            return back()->withErrors(['banner' => $e->getMessage()]);
-        }
     }
 }

@@ -68,13 +68,13 @@ export default function Show({ event, instances, bannerUrl }) {
                         <div>
                             <h3 className="text-sm font-medium text-gray-500 dark:text-dark-text-secondary">Start Time</h3>
                             <div className="mt-1 text-lg">
-                                <DateTimeDisplay datetime={event.display_datetime || event.start_datetime} />
+                                <DateTimeDisplay datetime={event.display_datetime} />
                             </div>
                         </div>
                         <div>
                             <h3 className="text-sm font-medium text-gray-500 dark:text-dark-text-secondary">End Time</h3>
                             <div className="mt-1 text-lg">
-                                <DateTimeDisplay datetime={event.display_end_datetime || event.end_datetime} />
+                                <DateTimeDisplay datetime={event.next_active_end} />
                             </div>
                         </div>
                         <div>
