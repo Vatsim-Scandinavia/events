@@ -131,7 +131,7 @@ class EventService
             'id'                => $event->id,
             'title'             => $event->title,
             'short_description' => $event->short_description,
-            'description'       => $event->description,
+            'long_description'  => $event->long_description,
             'start_datetime'    => $start?->toISOString(),
             'end_datetime'      => $event->end_datetime?->toISOString(),
             
