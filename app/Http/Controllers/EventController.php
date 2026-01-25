@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Calendar;
 use App\Services\BannerUploadService;
-use App\Services\RecurringEventService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Services\EventService;
@@ -15,7 +14,6 @@ use App\Http\Requests\UpdateEventRequest;
 class EventController extends Controller
 {
     public function __construct(
-        protected RecurringEventService $recurringEventService,
         protected BannerUploadService $bannerUploadService
     ) {}
 
