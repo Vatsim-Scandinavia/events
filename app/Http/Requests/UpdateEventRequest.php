@@ -22,7 +22,7 @@ class UpdateEventRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
-    {
+    {        
         return [
             'calendar_id'       => 'required|exists:calendars,id',
             'title'             => 'required|string|max:255',
@@ -38,7 +38,7 @@ class UpdateEventRequest extends FormRequest
                 'nullable', 
                 'string', 
                 'max:255', 
-                Rule::unique('events')->ignore($this->event->id),
+                Rule::unique('events')->ignore($this->route('event')->id),
             ],
         ];
     }

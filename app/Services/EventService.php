@@ -83,6 +83,12 @@ class EventService
         });
     }
 
+    /**
+     * Delete an event
+     * 
+     * @param Event $event
+     * @return bool
+     */
     public function deleteEvent(Event $event): bool
     {
         return DB::transaction(function () use ($event) {
@@ -99,6 +105,31 @@ class EventService
         });
     }
 
+    /**
+     * Get a lightweight summary of an event for list views
+     * 
+     * @param Event $event
+     * @return array
+     */
+    public function getEventSummary(Event $event): array
+    {
+        $start = $event->start_datetime;
+        
+        $allInstances = $this->generateUpcomingInstances($event, 5);
+        
+        $nextActive = $allInstances->first(function ($occurrence) {
+            return !$occurrence['cancelled'] && \Illuminate\Support\Carbon::parse($occurrence['end'])->isAfter(now());
+        });
+
+        return [
+            'id'                => $event->id,
+            'title'             => $event->title,
+            'display_datetime'  => $nextActive ? $nextActive['start'] : $start?->toISOString(),
+            'banner_url'        => $event->banner_path ? $this->bannerUploadService->getUrl($event->banner_path) : null,
+            'recurrence_rule'   => $event->recurrence_rule,
+        ];
+    }
+    
     /**
      * Get the details of an event
      * 
@@ -177,18 +208,22 @@ class EventService
     {
         $duration = $event->start_datetime->diffInMinutes($event->end_datetime);
         $cancelledDates = $event->cancelled_occurrences ?? [];
+        $now = now();
 
-        // Start with the base date
-        $instances = collect([$event->start_datetime]);
+        $instances = collect();
+        if ($event->start_datetime->isAfter($now) || $event->start_datetime->isSameAs('minute', $now)) {
+            $instances->push($event->start_datetime);
+        }
 
-        // Add recurring dates if they exist
         if (!empty($event->recurrence_rule)) {
-            $rule = new \Recurr\Rule($event->recurrence_rule, $event->start_datetime->toDateTime(), null, 'UTC');
-            $transformer = new \Recurr\Transformer\ArrayTransformer();
+            $rule = new Rule($event->recurrence_rule, $event->start_datetime->toDateTime(), null, 'UTC');
+            $transformer = new ArrayTransformer();
             
-            foreach ($transformer->transform($rule) as $occurrence) {
+            $constraint = new AfterConstraint($now->toDateTime(), false);
+            
+            foreach ($transformer->transform($rule, $constraint) as $occurrence) {
                 $occStart = \Illuminate\Support\Carbon::instance($occurrence->getStart());
-                if (!$occStart->equalTo($event->start_datetime)) {
+                if (!$occStart->equalTo($event->start_datetime) && ($occStart->isAfter($now) || $occStart->isSameAs('minute', $now))) {
                     $instances->push($occStart);
                 }
             }
@@ -243,14 +278,16 @@ class EventService
      * 
      * @param string $rrule
      * @return void
+     * @throws ValidationException
      */
-    public function validateRRule(string $rruleString): bool
+    public function validateRRule(string $rruleString): void
     {
         try {
             new Rule($rruleString);
-            return true;
         } catch (\Exception $e) {
-            return false;
+            throw ValidationException::withMessages([
+                'recurrence_rule' => ['The recurrence rule is invalid: ' . $e->getMessage()],
+            ]);
         }
     }
 }

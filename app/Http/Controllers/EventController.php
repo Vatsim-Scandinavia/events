@@ -35,9 +35,9 @@ class EventController extends Controller
             })
             ->orderBy('start_datetime', 'desc')
             ->paginate(12)
-            ->withQueryString(); // Keeps search params in pagination links
+            ->withQueryString();
 
-        $events->getCollection()->transform(fn($event) => $eventService->getEventDetails($event));
+        $events->getCollection()->transform(fn($event) => $eventService->getEventSummary($event));
 
         return Inertia::render('Events/Index', [
             'events' => $events,

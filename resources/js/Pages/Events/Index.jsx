@@ -6,7 +6,6 @@ import { formatInTimeZone } from 'date-fns-tz';
 export default function Index({ events, filters }) {
     const { auth } = usePage().props;
 
-    console.log('Events Data:', events.data.map(e => ({ title: e.title, start: e.start_datetime, display: e.display_datetime })));
     return (
         <>
             <Head title="All Events" />
