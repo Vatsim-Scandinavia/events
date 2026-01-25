@@ -106,8 +106,7 @@ class Event extends Model
      */
     public function isOccurrenceCancelled(string $occurrenceDate): bool
     {
-        $cancelled = $this->cancelled_occurrences ?? [];
-        return in_array($occurrenceDate, $cancelled);
+        return in_array($occurrenceDate, $this->cancelled_occurrences ?? []);
     }
 
     /**
@@ -118,8 +117,7 @@ class Event extends Model
         $cancelled = $this->cancelled_occurrences ?? [];
         if (!in_array($occurrenceDate, $cancelled)) {
             $cancelled[] = $occurrenceDate;
-            $this->cancelled_occurrences = $cancelled;
-            $this->save();
+            $this->update(['cancelled_occurrences' => $cancelled]);
         }
     }
 
@@ -129,11 +127,9 @@ class Event extends Model
     public function uncancelOccurrence(string $occurrenceDate): void
     {
         $cancelled = $this->cancelled_occurrences ?? [];
-        $key = array_search($occurrenceDate, $cancelled);
-        if ($key !== false) {
+        if (($key = array_search($occurrenceDate, $cancelled)) !== false) {
             unset($cancelled[$key]);
-            $this->cancelled_occurrences = array_values($cancelled);
-            $this->save();
+            $this->update(['cancelled_occurrences' => array_values($cancelled)]);
         }
     }
 }
