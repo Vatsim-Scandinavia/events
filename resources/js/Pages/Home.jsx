@@ -22,7 +22,10 @@ export default function Home({ upcomingEvents, calendarEvents }) {
         }));
 
     const eventStyleGetter = () => ({
-        className: 'bg-secondary dark:bg-dark-bg-tertiary border-none text-white text-xs rounded-none px-1',
+        className: 'bg-primary dark:bg-primary border-none text-white text-xs rounded-sm px-1 shadow-sm',
+        style: {
+            backgroundColor: 'var(--color-secondary)',
+        }
     });
 
     const handleSelectEvent = (event) => {
