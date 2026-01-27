@@ -24,10 +24,10 @@ class SendPreEventReminders implements ShouldQueue
     {
         Log::info('Starting pre-event reminder checks');
 
-        // Get the time window: 2 hours from now (with 5 minute buffer)
+        // Get the time window: 2 hours from now (with 3 minute buffer)
         $targetTime = now()->addHours(2);
-        $bufferStart = $targetTime->copy()->subMinutes(5);
-        $bufferEnd = $targetTime->copy()->addMinutes(5);
+        $bufferStart = $targetTime->copy()->subMinutes(3);
+        $bufferEnd = $targetTime->copy()->addMinutes(3);
 
         // Get all upcoming events (both one-time and recurring)
         $events = Event::where('start_datetime', '>=', now())
