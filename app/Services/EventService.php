@@ -204,14 +204,16 @@ class EventService
      * @param int $limit
      * @return Collection
      */
-    public function generateUpcomingInstances(Event $event, int $limit = 10): Collection
+    public function generateUpcomingInstances(Event $event, int $limit = 10, ?\Carbon\Carbon $startDate = null): Collection
     {
+        $startDate = $startDate ?? now(); // Default to now if not provided
         $duration = $event->start_datetime->diffInMinutes($event->end_datetime);
         $cancelledDates = $event->cancelled_occurrences ?? [];
-        $now = now();
 
         $instances = collect();
-        if ($event->start_datetime->isAfter($now) || $event->start_datetime->isSameAs('minute', $now)) {
+        
+        // Check if the base event start date matches our window
+        if ($event->start_datetime->isAfter($startDate) || $event->start_datetime->isSameAs('minute', $startDate)) {
             $instances->push($event->start_datetime);
         }
 
@@ -219,11 +221,12 @@ class EventService
             $rule = new Rule($event->recurrence_rule, $event->start_datetime->toDateTime(), null, 'UTC');
             $transformer = new ArrayTransformer();
             
-            $constraint = new AfterConstraint($now->toDateTime(), false);
+            // Use the passed in startDate (e.g., 24 hours ago) instead of hardcoded 'now'
+            $constraint = new AfterConstraint($startDate->toDateTime(), false);
             
             foreach ($transformer->transform($rule, $constraint) as $occurrence) {
                 $occStart = \Illuminate\Support\Carbon::instance($occurrence->getStart());
-                if (!$occStart->equalTo($event->start_datetime) && ($occStart->isAfter($now) || $occStart->isSameAs('minute', $now))) {
+                if (!$occStart->equalTo($event->start_datetime) && ($occStart->isAfter($startDate) || $occStart->isSameAs('minute', $startDate))) {
                     $instances->push($occStart);
                 }
             }
@@ -289,5 +292,47 @@ class EventService
                 'recurrence_rule' => ['The recurrence rule is invalid: ' . $e->getMessage()],
             ]);
         }
+    }
+
+    /**
+     * Get the last ended occurrence of a recurring event
+     * 
+     * @param Event $event
+     * @return array|null
+     */
+    public function getLastEndedOccurrence(Event $event): ?array
+    {
+        $duration = $event->start_datetime->diffInMinutes($event->end_datetime);
+        $lastStart = null;
+        if ($event->start_datetime->isPast()) {
+            $lastStart = $event->start_datetime;
+        }
+
+        if (!empty($event->recurrence_rule)) {
+            $rule = new Rule($event->recurrence_rule, $event->start_datetime->toDateTime(), null, 'UTC');
+            $transformer = new ArrayTransformer();
+            
+            $constraint = new AfterConstraint($event->start_datetime->toDateTime(), true);
+            $occurrences = $transformer->transform($rule, $constraint);
+
+            foreach ($occurrences as $occurrence) {
+                $occStart = \Illuminate\Support\Carbon::instance($occurrence->getStart());
+                
+                if ($occStart->isPast()) {
+                    if (!$lastStart || $occStart->isAfter($lastStart)) {
+                        $lastStart = $occStart;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        if (!$lastStart) return null;
+
+        return [
+            'start' => $lastStart->toISOString(),
+            'end'   => $lastStart->copy()->addMinutes($duration)->toISOString(),
+        ];
     }
 }

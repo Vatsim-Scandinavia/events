@@ -30,6 +30,7 @@ class Event extends Model
         'notified_occurrences',
         'cancelled_occurrences',
         'created_by',
+        'last_staffing_reset_at',
     ];
 
     protected $casts = [
@@ -38,6 +39,7 @@ class Event extends Model
         'featured_airports' => 'array',
         'notified_occurrences' => 'array',
         'cancelled_occurrences' => 'array',
+        'last_staffing_reset_at' => 'datetime',
     ];
 
     /**
