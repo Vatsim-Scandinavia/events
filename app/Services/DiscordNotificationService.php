@@ -103,7 +103,7 @@ class DiscordNotificationService
         $roleMention = $roleId ? "<@&{$roleId}> " : '';
         
         return match($action) {
-            'created' => $roleMention . 'A new event has been scheduled.',
+            'created' => 'A new event has been scheduled.',
             'updated' => '✏️ An event has been updated.',
             'deleted' => '🗑️ An event has been deleted.',
             default => '📢 Event notification',

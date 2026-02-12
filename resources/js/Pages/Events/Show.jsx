@@ -8,15 +8,16 @@ import ReactMarkdown from 'react-markdown';
 export default function Show({ event, instances, bannerUrl }) {
     const { auth } = usePage().props;
 
-    const canEdit = auth.user?.permissions?.includes('edit-events') || 
-                    event.created_by === auth.user?.id;
+    const canEdit = !!auth.user && (
+        auth.user.permissions?.includes('edit-events') || 
+        auth.user.id === event.created_by
+    );
 
     const handleDelete = () => {
         if (confirm('Are you sure you want to delete this event?')) {
             router.delete(`/events/${event.id}`);
         }
     };
-
     return (
         <>
             <Head title={event.title} />
@@ -68,13 +69,13 @@ export default function Show({ event, instances, bannerUrl }) {
                         <div>
                             <h3 className="text-sm font-medium text-gray-500 dark:text-dark-text-secondary">Start Time</h3>
                             <div className="mt-1 text-lg">
-                                <DateTimeDisplay datetime={event.display_datetime || event.start_datetime} />
+                                <DateTimeDisplay datetime={event.display_datetime} />
                             </div>
                         </div>
                         <div>
                             <h3 className="text-sm font-medium text-gray-500 dark:text-dark-text-secondary">End Time</h3>
                             <div className="mt-1 text-lg">
-                                <DateTimeDisplay datetime={event.display_end_datetime || event.end_datetime} />
+                                <DateTimeDisplay datetime={event.next_active_end} />
                             </div>
                         </div>
                         <div>
@@ -153,7 +154,7 @@ export default function Show({ event, instances, bannerUrl }) {
                         
                         {event.staffings && event.staffings.length > 0 ? (
                             <div className="p-6 space-y-6">
-                                {event.staffings.map((staffing) => (
+                                {event.staffings?.map((staffing) => (
                                     <div key={staffing.id}>
                                         <h4 className="font-semibold text-grey-900 dark:text-dark-text mb-3">{staffing.name}</h4>
                                         <div className="space-y-2">
