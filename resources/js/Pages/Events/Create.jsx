@@ -6,7 +6,9 @@ import Textarea from '../../Components/Textarea';
 import Select from '../../Components/Select';
 import AirportSelector from '../../Components/AirportSelector';
 import MarkdownEditor from '../../Components/MarkdownEditor';
-import DateTimePicker from '../../Components/DateTimePicker';
+// 1. Replaced DateTimePicker import with Flatpickr
+import Flatpickr from "react-flatpickr";
+import "flatpickr/dist/themes/material_blue.css"; 
 import { useState, useEffect } from 'react';
 
 export default function Create({ calendars, preselectedCalendarId }) {
@@ -58,15 +60,14 @@ export default function Create({ calendars, preselectedCalendarId }) {
         });
     };
 
-    const handleStartDateChange = (date) => {
+    // Updated for Flatpickr (receives array of dates)
+    const handleStartDateChange = (selectedDates) => {
+        const date = selectedDates[0];
         setStartDate(date);
         if (date) {
-            // Format as ISO8601 for Laravel
             setData('start_datetime', date.toISOString());
-            
-            // If end date is before start date, adjust it
             if (endDate && endDate < date) {
-                const newEndDate = new Date(date.getTime() + 60 * 60 * 1000); // Add 1 hour
+                const newEndDate = new Date(date.getTime() + 60 * 60 * 1000);
                 setEndDate(newEndDate);
                 setData('end_datetime', newEndDate.toISOString());
             }
@@ -75,10 +76,11 @@ export default function Create({ calendars, preselectedCalendarId }) {
         }
     };
 
-    const handleEndDateChange = (date) => {
+    // Updated for Flatpickr (receives array of dates)
+    const handleEndDateChange = (selectedDates) => {
+        const date = selectedDates[0];
         setEndDate(date);
         if (date) {
-            // Format as ISO8601 for Laravel
             setData('end_datetime', date.toISOString());
         } else {
             setData('end_datetime', '');
@@ -97,7 +99,6 @@ export default function Create({ calendars, preselectedCalendarId }) {
             if (recurrence.count) {
                 parts.push(`COUNT=${recurrence.count}`);
             } else if (recurrence.until) {
-                // Convert date format (YYYY-MM-DD) to UNTIL format (YYYYMMDD)
                 const until = recurrence.until.replace(/-/g, '') + 'T000000Z';
                 parts.push(`UNTIL=${until}`);
             }
@@ -249,29 +250,49 @@ export default function Create({ calendars, preselectedCalendarId }) {
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 dark:text-dark-text mb-1">
+                                <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 mb-1">
                                     Start Date & Time (UTC) *
                                 </label>
-                                <DateTimePicker
-                                    selected={startDate}
+                                {/* Added className="w-full" to the component wrapper */}
+                                <Flatpickr
+                                    value={startDate}
                                     onChange={handleStartDateChange}
-                                    error={errors.start_datetime}
-                                    required
+                                    options={{
+                                        enableTime: true,
+                                        dateFormat: "Y-m-d H:i",
+                                        time_24hr: true,
+                                    }}
+                                    className={`w-full px-3 py-2 border-2 rounded-none transition-colors focus:outline-none focus:ring-0 focus:border-secondary ${
+                                        errors.start_datetime ? 'border-danger' : 'border-grey-300'
+                                    }`}
+                                    containerClassName="w-full" 
+                                    placeholder="Select start date..."
                                 />
+                                {errors.start_datetime && <p className="mt-1 text-sm text-danger">{errors.start_datetime}</p>}
                             </div>
+
                             <div>
-                                <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 dark:text-dark-text mb-1">
+                                <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
                                     End Date & Time (UTC) *
                                 </label>
-                                <DateTimePicker
-                                    selected={endDate}
+                                <Flatpickr
+                                    value={endDate}
                                     onChange={handleEndDateChange}
-                                    minDate={startDate}
-                                    error={errors.end_datetime}
-                                    required
+                                    options={{
+                                        enableTime: true,
+                                        dateFormat: "Y-m-d H:i",
+                                        time_24hr: true,
+                                        minDate: startDate,
+                                    }}
+                                    className={`w-full px-3 py-2 border-2 rounded-none transition-colors focus:outline-none focus:ring-0 focus:border-secondary ${
+                                        errors.end_datetime ? 'border-danger' : 'border-grey-300'
+                                    }`}
+                                    containerClassName="w-full"
+                                    placeholder="Select end date..."
                                 />
+                                {errors.end_datetime && <p className="mt-1 text-sm text-danger">{errors.end_datetime}</p>}
                             </div>
                         </div>
 
