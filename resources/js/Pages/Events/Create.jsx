@@ -6,7 +6,6 @@ import Textarea from '../../Components/Textarea';
 import Select from '../../Components/Select';
 import AirportSelector from '../../Components/AirportSelector';
 import MarkdownEditor from '../../Components/MarkdownEditor';
-// 1. Replaced DateTimePicker import with Flatpickr
 import Flatpickr from "react-flatpickr";
 import "flatpickr/dist/themes/material_blue.css"; 
 import { useState, useEffect } from 'react';
@@ -39,7 +38,6 @@ export default function Create({ calendars, preselectedCalendarId }) {
         discord_staffing_channel_id: '',
     });
 
-    // Load Discord channels
     useEffect(() => {
         setLoadingChannels(true);
         fetch('/api/discord/channels')
@@ -60,7 +58,6 @@ export default function Create({ calendars, preselectedCalendarId }) {
         });
     };
 
-    // Updated for Flatpickr (receives array of dates)
     const handleStartDateChange = (selectedDates) => {
         const date = selectedDates[0];
         setStartDate(date);
@@ -76,7 +73,6 @@ export default function Create({ calendars, preselectedCalendarId }) {
         }
     };
 
-    // Updated for Flatpickr (receives array of dates)
     const handleEndDateChange = (selectedDates) => {
         const date = selectedDates[0];
         setEndDate(date);
@@ -87,7 +83,6 @@ export default function Create({ calendars, preselectedCalendarId }) {
         }
     };
 
-    // Update recurrence rule when recurrence options change
     useEffect(() => {
         if (showRecurrence) {
             const parts = [`FREQ=${recurrence.freq}`];
@@ -255,7 +250,6 @@ export default function Create({ calendars, preselectedCalendarId }) {
                                 <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 mb-1">
                                     Start Date & Time (UTC) *
                                 </label>
-                                {/* Added className="w-full" to the component wrapper */}
                                 <Flatpickr
                                     value={startDate}
                                     onChange={handleStartDateChange}
@@ -267,7 +261,7 @@ export default function Create({ calendars, preselectedCalendarId }) {
                                     className={`w-full px-3 py-2 border-2 rounded-none transition-colors focus:outline-none focus:ring-0 focus:border-secondary ${
                                         errors.start_datetime ? 'border-danger' : 'border-grey-300'
                                     }`}
-                                    containerClassName="w-full" 
+                                    ClassName="w-full" 
                                     placeholder="Select start date..."
                                 />
                                 {errors.start_datetime && <p className="mt-1 text-sm text-danger">{errors.start_datetime}</p>}
@@ -289,7 +283,7 @@ export default function Create({ calendars, preselectedCalendarId }) {
                                     className={`w-full px-3 py-2 border-2 rounded-none transition-colors focus:outline-none focus:ring-0 focus:border-secondary ${
                                         errors.end_datetime ? 'border-danger' : 'border-grey-300'
                                     }`}
-                                    containerClassName="w-full"
+                                    ClassName="w-full"
                                     placeholder="Select end date..."
                                 />
                                 {errors.end_datetime && <p className="mt-1 text-sm text-danger">{errors.end_datetime}</p>}
