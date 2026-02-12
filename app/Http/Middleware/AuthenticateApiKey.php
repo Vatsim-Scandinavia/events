@@ -20,31 +20,14 @@ class AuthenticateApiKey
      */
     public function handle(Request $request, Closure $next, ?string $requireWrite = null): Response
     {
-        $token = $request->header('X-API-KEY')
-            ?? $request->header('Authorization');
-
-        if (!$token) {
-            return response()->json([
-                'error' => 'API_KEY_MISSING',
-                'message' => 'Please provide an API key in the X-API-KEY or Authorization header.',
-            ], 401);
-        }
-
-        $token = preg_replace('/^Bearer\s+/i', '', $token);
-        $apiKey = ApiKey::where('id', $token)->first();
+        $apiKey = ApiKey::fromRequest($request);
 
         if (!$apiKey) {
-            return response()->json([
-                'error' => 'API_KEY_INVALID',
-                'message' => 'The provided API key is invalid.',
-            ], 401);
+            throw new \App\Exceptions\InvalidApiKeyException();
         }
 
         if ($requireWrite && $apiKey->read_only) {
-            return response()->json([
-                'error' => 'API_KEY_READ_ONLY',
-                'message' => 'The provided API key does not have write permissions.',
-            ], 403);
+            throw new \App\Exceptions\ApiKeyAuthorizationException();
         }
 
         dispatch(function () use ($apiKey) {
