@@ -43,7 +43,7 @@ Route::middleware(['auth'])->group(function () {
     // Staffing Positions
     Route::resource('staffings.positions', StaffingPositionController::class)->shallow()->only(['store', 'update', 'destroy']);
     Route::post('positions/reorder', [StaffingPositionController::class, 'reorder'])->name('positions.reorder');
-    
+
     // Unbooking only (booking happens through Discord bot)
     Route::delete('positions/{position}/book', [StaffingPositionController::class, 'unbook'])->name('positions.unbook');
 
@@ -56,34 +56,6 @@ Route::middleware(['auth'])->group(function () {
         $discordService = app(\App\Services\DiscordChannelService::class);
         return response()->json($discordService->getAvailableChannels());
     })->name('api.discord.channels');
-});
-
-// Public API routes (backward compatible with old events system)
-Route::prefix('api')->name('api.')->group(function () {
-    Route::get('events', [\App\Http\Controllers\Api\ApiController::class, 'events'])->name('events');
-    Route::get('events/{id}', [\App\Http\Controllers\Api\ApiController::class, 'event'])->name('event');
-    Route::get('events/{id}/staffing', [\App\Http\Controllers\Api\ApiController::class, 'staffing'])->name('event.staffing');
-    
-    // Staffing routes matching old format
-    // GET /api/staffings - list all staffings
-    // GET /api/staffings?message_id=xxx - get by message_id
-    Route::get('staffings', function(\Illuminate\Http\Request $request) {
-        $apiController = app(\App\Http\Controllers\Api\ApiController::class);
-        if ($request->has('message_id')) {
-            return $apiController->getStaffingByMessageId($request);
-        }
-        return $apiController->getAllStaffings();
-    })->name('staffing.index');
-    
-    Route::get('staffings/{id}', [\App\Http\Controllers\Api\ApiController::class, 'getStaffing'])->name('staffing.show');
-    Route::patch('staffings/{id}/update', [\App\Http\Controllers\Api\ApiController::class, 'updateStaffing'])->name('staffing.update');
-    Route::post('staffings/{id}/reset', [\App\Http\Controllers\Api\ApiController::class, 'resetStaffing'])->name('staffing.reset');
-    Route::post('staffing', [\App\Http\Controllers\Api\ApiController::class, 'book'])->name('staffing.store');
-    Route::post('staffings/book', [\App\Http\Controllers\Api\ApiController::class, 'book'])->name('staffing.book'); // Alternative route
-    Route::delete('staffing', [\App\Http\Controllers\Api\ApiController::class, 'unbook'])->name('staffing.destroy');
-    Route::delete('staffings/unbook', [\App\Http\Controllers\Api\ApiController::class, 'unbook'])->name('staffing.unbook'); // Alternative route
-    Route::post('staffings/unbook', [\App\Http\Controllers\Api\ApiController::class, 'unbook'])->name('staffing.unbook-post'); // Bot uses POST
-    Route::post('staffing/setup', [\App\Http\Controllers\Api\ApiController::class, 'setup'])->name('staffing.setup');
 });
 
 // Public calendar/event viewing (guest-friendly)
