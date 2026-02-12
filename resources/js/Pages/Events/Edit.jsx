@@ -9,7 +9,7 @@ import Flatpickr from "react-flatpickr";
 import "flatpickr/dist/flatpickr.min.css"; 
 
 export default function Edit({ event, calendars, bannerUrl }) {
-    const { auth } = usePage().props;
+    const { auth, discordChannels } = usePage().props;
     const [showRecurrence, setShowRecurrence] = useState(!!event.recurrence_rule);
 
     const stripTimezone = (dateStr) => {
@@ -113,10 +113,11 @@ export default function Edit({ event, calendars, bannerUrl }) {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Calendar *</label>
                             <Select value={data.calendar_id} onChange={(e) => setData('calendar_id', e.target.value)} error={errors.calendar_id} required>
+                                <option value="">Select a calendar</option>
                                 {calendars.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                             </Select>
                         </div>
-
+                        
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Event Title *</label>
                             <Input value={data.title} onChange={(e) => setData('title', e.target.value)} error={errors.title} required />
@@ -130,6 +131,17 @@ export default function Edit({ event, calendars, bannerUrl }) {
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Long Description *</label>
                             <MarkdownEditor value={data.long_description} onChange={(v) => setData('long_description', v)} error={errors.long_description} />
+                        </div>
+
+                        {/* Discord Channel Moved Above Dates */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Staffing Discord Channel</label>
+                            <Select value={data.discord_staffing_channel_id} onChange={(e) => setData('discord_staffing_channel_id', e.target.value)} error={errors.discord_staffing_channel_id}>
+                                <option value="">No Discord Channel</option>
+                                {discordChannels?.map((channel) => (
+                                    <option key={channel.id} value={channel.id}>#{channel.name}</option>
+                                ))}
+                            </Select>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -154,6 +166,21 @@ export default function Edit({ event, calendars, bannerUrl }) {
                                 />
                                 {errors.end_datetime && <p className="mt-1 text-sm text-danger">{errors.end_datetime}</p>}
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Event Banner</label>
+                            {bannerUrl && (
+                                <div className="mb-2">
+                                    <img src={bannerUrl} alt="Current Banner" className="h-32 w-full object-cover border-2 border-grey-200" />
+                                </div>
+                            )}
+                            <input 
+                                type="file" 
+                                onChange={(e) => setData('banner', e.target.files[0])} 
+                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-secondary file:text-white hover:file:bg-secondary-dark cursor-pointer" 
+                            />
+                            {errors.banner && <p className="mt-1 text-sm text-danger">{errors.banner}</p>}
                         </div>
 
                         <div className="pt-4 border-t border-grey-100">
