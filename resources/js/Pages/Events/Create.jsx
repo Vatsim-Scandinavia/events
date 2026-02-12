@@ -2,19 +2,16 @@ import { useForm, usePage, Head } from '@inertiajs/react';
 import Layout from '../../Layouts/Layout';
 import Button from '../../Components/Button';
 import Input from '../../Components/Input';
-import Textarea from '../../Components/Textarea';
 import Select from '../../Components/Select';
 import AirportSelector from '../../Components/AirportSelector';
 import MarkdownEditor from '../../Components/MarkdownEditor';
 import Flatpickr from "react-flatpickr";
-import "flatpickr/dist/themes/material_blue.css"; 
+import "flatpickr/dist/flatpickr.min.css"; 
 import { useState, useEffect } from 'react';
 
 export default function Create({ calendars, preselectedCalendarId }) {
     const { auth } = usePage().props;
     const [showRecurrence, setShowRecurrence] = useState(false);
-    const [startDate, setStartDate] = useState(null);
-    const [endDate, setEndDate] = useState(null);
     const [discordChannels, setDiscordChannels] = useState([]);
     const [loadingChannels, setLoadingChannels] = useState(false);
     const [recurrence, setRecurrence] = useState({
@@ -46,62 +43,57 @@ export default function Create({ calendars, preselectedCalendarId }) {
                 setDiscordChannels(data);
                 setLoadingChannels(false);
             })
-            .catch(() => {
-                setLoadingChannels(false);
-            });
+            .catch(() => setLoadingChannels(false));
     }, []);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        post('/events', {
-            forceFormData: true,
+    const formatToWallTime = (date) => {
+        const pad = (num) => String(num).padStart(2, '0');
+        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    };
+
+    const handleStartDateChange = (selectedDates, dateStr) => {
+        setData(prev => {
+            const newData = { ...prev, start_datetime: dateStr };
+            
+            if (selectedDates[0]) {
+                const start = selectedDates[0];
+                const currentEnd = prev.end_datetime ? new Date(prev.end_datetime.replace(' ', 'T')) : null;
+                
+                if (!prev.end_datetime || (currentEnd && currentEnd <= start)) {
+                    const oneHourLater = new Date(start.getTime() + 60 * 60 * 1000);
+                    newData.end_datetime = formatToWallTime(oneHourLater);
+                }
+            }
+            return newData;
         });
     };
 
-    const handleStartDateChange = (selectedDates) => {
-        const date = selectedDates[0];
-        setStartDate(date);
-        if (date) {
-            setData('start_datetime', date.toISOString());
-            if (endDate && endDate < date) {
-                const newEndDate = new Date(date.getTime() + 60 * 60 * 1000);
-                setEndDate(newEndDate);
-                setData('end_datetime', newEndDate.toISOString());
-            }
-        } else {
-            setData('start_datetime', '');
-        }
-    };
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        
+        const payload = {
+            ...data,
+            start_datetime: data.start_datetime ? `${data.start_datetime.replace(' ', 'T')}:00Z` : '',
+            end_datetime: data.end_datetime ? `${data.end_datetime.replace(' ', 'T')}:00Z` : '',
+        };
 
-    const handleEndDateChange = (selectedDates) => {
-        const date = selectedDates[0];
-        setEndDate(date);
-        if (date) {
-            setData('end_datetime', date.toISOString());
-        } else {
-            setData('end_datetime', '');
-        }
+        post('/events', {
+            forceFormData: true,
+            data: payload
+        });
     };
 
     useEffect(() => {
         if (showRecurrence) {
             const parts = [`FREQ=${recurrence.freq}`];
-            
-            if (recurrence.interval > 1) {
-                parts.push(`INTERVAL=${recurrence.interval}`);
-            }
-            
+            if (recurrence.interval > 1) parts.push(`INTERVAL=${recurrence.interval}`);
             if (recurrence.count) {
                 parts.push(`COUNT=${recurrence.count}`);
             } else if (recurrence.until) {
                 const until = recurrence.until.replace(/-/g, '') + 'T000000Z';
                 parts.push(`UNTIL=${until}`);
             }
-            
-            if (recurrence.byDay.length > 0) {
-                parts.push(`BYDAY=${recurrence.byDay.join(',')}`);
-            }
-            
+            if (recurrence.byDay.length > 0) parts.push(`BYDAY=${recurrence.byDay.join(',')}`);
             setData('recurrence_rule', parts.join(';'));
         } else {
             setData('recurrence_rule', '');
@@ -109,12 +101,9 @@ export default function Create({ calendars, preselectedCalendarId }) {
     }, [recurrence, showRecurrence]);
 
     const weekdays = [
-        { value: 'MO', label: 'Mon' },
-        { value: 'TU', label: 'Tue' },
-        { value: 'WE', label: 'Wed' },
-        { value: 'TH', label: 'Thu' },
-        { value: 'FR', label: 'Fri' },
-        { value: 'SA', label: 'Sat' },
+        { value: 'MO', label: 'Mon' }, { value: 'TU', label: 'Tue' },
+        { value: 'WE', label: 'Wed' }, { value: 'TH', label: 'Thu' },
+        { value: 'FR', label: 'Fri' }, { value: 'SA', label: 'Sat' },
         { value: 'SU', label: 'Sun' },
     ];
 
@@ -127,163 +116,77 @@ export default function Create({ calendars, preselectedCalendarId }) {
         }));
     };
 
+    const fpInputClass = `w-full px-3 py-2 border-2 rounded-none transition-colors focus:outline-none focus:ring-0 focus:border-secondary`;
+
     return (
-        <>
+        <Layout auth={auth}>
             <Head title="Create Event" />
-            <Layout auth={auth}>
-                <div className="max-w-3xl mx-auto">
-                <div>
-                    <div className="bg-white">
-                        <div className="bg-secondary px-6 py-4">
-                            <h1 className="text-2xl font-semibold text-white">Create Event</h1>
-                        </div>
-                    </div>
+            <div className="max-w-3xl mx-auto">
+                <div className="bg-secondary px-6 py-4">
+                    <h1 className="text-2xl font-semibold text-white">Create Event</h1>
                 </div>
 
                 <div className="bg-white p-6" style={{ boxShadow: 'var(--shadow-card)' }}>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div>
-                            <label htmlFor="calendar_id" className="block text-sm font-medium text-gray-700 mb-1">
-                                Calendar *
-                            </label>
-                            <Select
-                                id="calendar_id"
-                                value={data.calendar_id}
-                                onChange={(e) => setData('calendar_id', e.target.value)}
-                                error={errors.calendar_id}
-                                required
-                            >
-                                {calendars.map((calendar) => (
-                                    <option key={calendar.id} value={calendar.id}>
-                                        {calendar.name}
-                                    </option>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Calendar *</label>
+                            <Select value={data.calendar_id} onChange={(e) => setData('calendar_id', e.target.value)} error={errors.calendar_id} required>
+                                {calendars.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            </Select>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Event Title *</label>
+                            <Input value={data.title} onChange={(e) => setData('title', e.target.value)} error={errors.title} required />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Short Description *</label>
+                            <MarkdownEditor value={data.short_description} onChange={(v) => setData('short_description', v)} error={errors.short_description} />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Long Description *</label>
+                            <MarkdownEditor value={data.long_description} onChange={(v) => setData('long_description', v)} error={errors.long_description} />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Featured Airports/Facilities</label>
+                            <AirportSelector value={data.featured_airports} onChange={(a) => setData('featured_airports', a)} error={errors.featured_airports} />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Discord Staffing Channel</label>
+                            <Select value={data.discord_staffing_channel_id} onChange={(e) => setData('discord_staffing_channel_id', e.target.value)} error={errors.discord_staffing_channel_id}>
+                                <option value="">No Discord channel</option>
+                                {!loadingChannels && discordChannels.map((guild) => (
+                                    <optgroup key={guild.guild_id} label={guild.guild_name}>
+                                        {guild.channels.map((c) => <option key={c.id} value={c.id}>#{c.name}</option>)}
+                                    </optgroup>
                                 ))}
                             </Select>
                         </div>
 
-                        <div>
-                            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                                Event Title *
-                            </label>
-                            <Input
-                                id="title"
-                                value={data.title}
-                                onChange={(e) => setData('title', e.target.value)}
-                                error={errors.title}
-                                required
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="short_description" className="block text-sm font-medium text-gray-700 mb-1">
-                                Short Description * (for Discord)
-                            </label>
-                            <MarkdownEditor
-                                value={data.short_description}
-                                onChange={(value) => setData('short_description', value)}
-                                error={errors.short_description}
-                                placeholder="Enter short description for Discord notifications (markdown supported)..."
-                            />
-                            <p className="mt-1 text-xs text-gray-500">
-                                This description will appear in Discord notifications. Markdown formatting is supported.
-                            </p>
-                        </div>
-
-                        <div>
-                            <label htmlFor="long_description" className="block text-sm font-medium text-gray-700 mb-1">
-                                Long Description *
-                            </label>
-                            <MarkdownEditor
-                                value={data.long_description}
-                                onChange={(value) => setData('long_description', value)}
-                                error={errors.long_description}
-                                placeholder="Enter detailed event description (markdown supported)..."
-                            />
-                        </div>
-
-                        <div>
-                            <label htmlFor="featured_airports" className="block text-sm font-medium text-gray-700 mb-1">
-                                Featured Airports/Facilities
-                            </label>
-                            <AirportSelector
-                                value={data.featured_airports}
-                                onChange={(airports) => setData('featured_airports', airports)}
-                                error={errors.featured_airports}
-                            />
-                            <p className="mt-1 text-xs text-gray-500">
-                                Add ICAO codes for airports or facilities featured in this event
-                            </p>
-                        </div>
-
-                        <div>
-                            <label htmlFor="discord_staffing_channel_id" className="block text-sm font-medium text-gray-700 mb-1">
-                                Discord Staffing Channel
-                            </label>
-                            <Select
-                                id="discord_staffing_channel_id"
-                                value={data.discord_staffing_channel_id}
-                                onChange={(e) => setData('discord_staffing_channel_id', e.target.value)}
-                                error={errors.discord_staffing_channel_id}
-                            >
-                                <option value="">No Discord channel</option>
-                                {loadingChannels ? (
-                                    <option disabled>Loading channels...</option>
-                                ) : (
-                                    discordChannels.map((guild) => (
-                                        <optgroup key={guild.guild_id} label={guild.guild_name}>
-                                            {guild.channels.map((channel) => (
-                                                <option key={channel.id} value={channel.id}>
-                                                    #{channel.name}
-                                                </option>
-                                            ))}
-                                        </optgroup>
-                                    ))
-                                )}
-                            </Select>
-                            <p className="mt-1 text-xs text-gray-500">
-                                Select a Discord channel for staffing messages (optional)
-                            </p>
-                        </div>
-
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="start_datetime" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Start Date & Time (UTC) *
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date & Time (UTC) *</label>
                                 <Flatpickr
-                                    value={startDate}
+                                    value={data.start_datetime}
                                     onChange={handleStartDateChange}
-                                    options={{
-                                        enableTime: true,
-                                        dateFormat: "Y-m-d H:i",
-                                        time_24hr: true,
-                                    }}
-                                    className={`w-full px-3 py-2 border-2 rounded-none transition-colors focus:outline-none focus:ring-0 focus:border-secondary ${
-                                        errors.start_datetime ? 'border-danger' : 'border-grey-300'
-                                    }`}
-                                    ClassName="w-full" 
+                                    options={{ enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true }}
+                                    className={`${fpInputClass} ${errors.start_datetime ? 'border-danger' : 'border-grey-300'}`}
                                     placeholder="Select start date..."
                                 />
                                 {errors.start_datetime && <p className="mt-1 text-sm text-danger">{errors.start_datetime}</p>}
                             </div>
 
                             <div>
-                                <label htmlFor="end_datetime" className="block text-sm font-medium text-gray-700 mb-1">
-                                    End Date & Time (UTC) *
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">End Date & Time (UTC) *</label>
                                 <Flatpickr
-                                    value={endDate}
-                                    onChange={handleEndDateChange}
-                                    options={{
-                                        enableTime: true,
-                                        dateFormat: "Y-m-d H:i",
-                                        time_24hr: true,
-                                        minDate: startDate,
-                                    }}
-                                    className={`w-full px-3 py-2 border-2 rounded-none transition-colors focus:outline-none focus:ring-0 focus:border-secondary ${
-                                        errors.end_datetime ? 'border-danger' : 'border-grey-300'
-                                    }`}
-                                    ClassName="w-full"
+                                    value={data.end_datetime}
+                                    onChange={(dates, dateStr) => setData('end_datetime', dateStr)}
+                                    options={{ enableTime: true, dateFormat: "Y-m-d H:i", time_24hr: true, minDate: data.start_datetime }}
+                                    className={`${fpInputClass} ${errors.end_datetime ? 'border-danger' : 'border-grey-300'}`}
                                     placeholder="Select end date..."
                                 />
                                 {errors.end_datetime && <p className="mt-1 text-sm text-danger">{errors.end_datetime}</p>}
@@ -291,154 +194,50 @@ export default function Create({ calendars, preselectedCalendarId }) {
                         </div>
 
                         <div>
-                            <label htmlFor="banner" className="block text-sm font-medium text-gray-700 mb-1">
-                                Banner Image (16:9 ratio)
-                            </label>
-                            <input
-                                id="banner"
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => setData('banner', e.target.files[0])}
-                                className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:border-2 file:border-secondary file:text-sm file:font-semibold file:bg-secondary file:text-white hover:file:bg-secondary-600"
-                            />
-                            {errors.banner && (
-                                <p className="mt-1 text-sm text-danger">{errors.banner}</p>
-                            )}
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Banner Image</label>
+                            <input type="file" accept="image/*" onChange={(e) => setData('banner', e.target.files[0])} className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:border-2 file:border-secondary file:bg-secondary file:text-white" />
                         </div>
 
-                        <div>
-                            <label className="flex items-center mb-2">
-                                <input
-                                    type="checkbox"
-                                    checked={showRecurrence}
-                                    onChange={(e) => {
-                                        setShowRecurrence(e.target.checked);
-                                        if (!e.target.checked) {
-                                            setData('recurrence_rule', '');
-                                        }
-                                    }}
-                                    className="border-2 border-grey-300 text-secondary focus:border-secondary"
-                                />
-                                <span className="ml-2 text-sm font-medium text-gray-700">
-                                    Recurring Event
-                                </span>
+                        <div className="pt-4 border-t border-grey-100">
+                            <label className="flex items-center mb-4 cursor-pointer">
+                                <input type="checkbox" checked={showRecurrence} onChange={(e) => setShowRecurrence(e.target.checked)} className="mr-2" />
+                                <span className="text-sm font-medium text-gray-700">Recurring Event</span>
                             </label>
+
                             {showRecurrence && (
                                 <div className="space-y-4 p-4 bg-grey-50 border-2 border-grey-200">
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Frequency
-                                            </label>
-                                            <Select
-                                                value={recurrence.freq}
-                                                onChange={(e) => setRecurrence({ ...recurrence, freq: e.target.value })}
-                                            >
-                                                <option value="DAILY">Daily</option>
-                                                <option value="WEEKLY">Weekly</option>
-                                                <option value="MONTHLY">Monthly</option>
-                                                <option value="YEARLY">Yearly</option>
-                                            </Select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Repeat Every
-                                            </label>
-                                            <Input
-                                                type="number"
-                                                min="1"
-                                                value={recurrence.interval}
-                                                onChange={(e) => setRecurrence({ ...recurrence, interval: parseInt(e.target.value) || 1 })}
-                                            />
-                                        </div>
+                                        <Select value={recurrence.freq} onChange={(e) => setRecurrence({ ...recurrence, freq: e.target.value })}>
+                                            <option value="DAILY">Daily</option>
+                                            <option value="WEEKLY">Weekly</option>
+                                            <option value="MONTHLY">Monthly</option>
+                                        </Select>
+                                        <Input type="number" min="1" value={recurrence.interval} onChange={(e) => setRecurrence({ ...recurrence, interval: parseInt(e.target.value) || 1 })} />
                                     </div>
-
-                                    {recurrence.freq === 'WEEKLY' && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                                Repeat On
-                                            </label>
-                                            <div className="flex gap-2">
-                                                {weekdays.map(day => (
-                                                    <button
-                                                        key={day.value}
-                                                        type="button"
-                                                        onClick={() => toggleWeekday(day.value)}
-                                                        className={`px-3 py-2 text-sm font-medium border-2 transition-colors ${
-                                                            recurrence.byDay.includes(day.value)
-                                                                ? 'bg-secondary text-white border-secondary'
-                                                                : 'bg-white text-gray-700 border-grey-300 hover:border-secondary'
-                                                        }`}
-                                                    >
-                                                        {day.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                                            End Condition
+                                    <div className="flex gap-2">
+                                        {weekdays.map(day => (
+                                            <button key={day.value} type="button" onClick={() => toggleWeekday(day.value)} className={`px-3 py-2 text-sm font-medium border-2 ${recurrence.byDay.includes(day.value) ? 'bg-secondary text-white border-secondary' : 'bg-white text-gray-700 border-grey-300'}`}>{day.label}</button>
+                                        ))}
+                                    </div>
+                                    <div className="space-y-3">
+                                        <label className="flex items-center gap-2">
+                                            <input type="radio" checked={!!recurrence.count} onChange={() => setRecurrence({ ...recurrence, count: '10', until: '' })} /> After <Input type="number" className="w-20" value={recurrence.count} disabled={!recurrence.count} onChange={(e) => setRecurrence({ ...recurrence, count: e.target.value })} /> occurrences
                                         </label>
-                                        <div className="space-y-3">
-                                            <label className="flex items-center gap-2">
-                                                <input
-                                                    type="radio"
-                                                    name="endCondition"
-                                                    checked={!!recurrence.count}
-                                                    onChange={() => setRecurrence({ ...recurrence, count: '10', until: '' })}
-                                                    className="border-2 border-grey-300 text-secondary focus:border-secondary"
-                                                />
-                                                <span className="text-sm text-gray-700">After</span>
-                                                <Input
-                                                    type="number"
-                                                    min="1"
-                                                    value={recurrence.count}
-                                                    onChange={(e) => setRecurrence({ ...recurrence, count: e.target.value, until: '' })}
-                                                    className="w-20"
-                                                    disabled={!recurrence.count}
-                                                />
-                                                <span className="text-sm text-gray-700">occurrences</span>
-                                            </label>
-                                            <label className="flex items-center gap-2">
-                                                <input
-                                                    type="radio"
-                                                    name="endCondition"
-                                                    checked={!!recurrence.until}
-                                                    onChange={() => setRecurrence({ ...recurrence, count: '', until: new Date().toISOString().split('T')[0] })}
-                                                    className="border-2 border-grey-300 text-secondary focus:border-secondary"
-                                                />
-                                                <span className="text-sm text-gray-700">On date</span>
-                                                <Input
-                                                    type="date"
-                                                    value={recurrence.until}
-                                                    onChange={(e) => setRecurrence({ ...recurrence, count: '', until: e.target.value })}
-                                                    disabled={!recurrence.until}
-                                                />
-                                            </label>
-                                        </div>
+                                        <label className="flex items-center gap-2">
+                                            <input type="radio" checked={!!recurrence.until} onChange={() => setRecurrence({ ...recurrence, count: '', until: new Date().toISOString().split('T')[0] })} /> On date <Input type="date" value={recurrence.until} disabled={!recurrence.until} onChange={(e) => setRecurrence({ ...recurrence, count: '', until: e.target.value })} />
+                                        </label>
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex justify-end space-x-3">
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={() => window.history.back()}
-                            >
-                                Cancel
-                            </Button>
-                            <Button type="submit" variant="success" disabled={processing}>
-                                Create Event
-                            </Button>
+                        <div className="flex justify-end space-x-3 pt-4 border-t-2 border-grey-100">
+                            <Button type="button" variant="secondary" onClick={() => window.history.back()}>Cancel</Button>
+                            <Button type="submit" variant="success" disabled={processing}>Create Event</Button>
                         </div>
                     </form>
                 </div>
             </div>
         </Layout>
-        </>
     );
 }
