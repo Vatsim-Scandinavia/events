@@ -789,3 +789,91 @@ html:not(.dark) .text-gray-500 {
     color: var(--color-dark-text-secondary);
 }
 
+.flatpickr-calendar {
+    @apply rounded-none border-2 border-grey-200 shadow-xl;
+}
+
+.flatpickr-months, .flatpickr-weekdays {
+    background: var(--color-secondary) !important;
+}
+
+.flatpickr-months .flatpickr-month,
+.flatpickr-current-month .flatpickr-monthDropdown-months,
+.flatpickr-months .flatpickr-prev-month, 
+.flatpickr-months .flatpickr-next-month {
+    color: white !important;
+    fill: white !important;
+}
+
+span.flatpickr-weekday {
+    color: white !important;
+}
+
+.flatpickr-day.selected, 
+.flatpickr-day.startRange, 
+.flatpickr-day.endRange,
+.flatpickr-day.selected:hover,
+.flatpickr-day.nextMonthDay.selected {
+    background: var(--color-secondary) !important;
+    border-color: var(--color-secondary) !important;
+    color: white !important;
+    @apply rounded-none;
+}
+
+.flatpickr-day.today {
+    border-color: var(--color-secondary) !important;
+    @apply rounded-none;
+}
+
+.flatpickr-day.today:hover {
+    background: var(--color-secondary) !important;
+    color: white !important;
+}
+
+.flatpickr-time {
+    @apply border-t-2 border-grey-100;
+}
+
+.flatpickr-time input:hover,
+.flatpickr-time .flatpickr-am-pm:hover {
+    @apply bg-grey-100;
+}
+
+.dark .flatpickr-calendar {
+    @apply bg-gray-900 border-gray-700 text-white shadow-2xl;
+}
+
+.dark .flatpickr-day {
+    @apply text-gray-300;
+}
+
+.dark .flatpickr-day:hover,
+.dark .flatpickr-day.prevMonthDay:hover,
+.dark .flatpickr-day.nextMonthDay:hover {
+    @apply bg-gray-800 text-white border-transparent;
+}
+
+.dark .flatpickr-day.flatpickr-disabled,
+.dark .flatpickr-day.flatpickr-disabled:hover,
+.dark .flatpickr-day.prevMonthDay,
+.dark .flatpickr-day.nextMonthDay {
+    @apply text-gray-600;
+}
+
+.dark .flatpickr-time {
+    @apply border-gray-700 border-t-2 text-white;
+}
+
+.dark .flatpickr-time input,
+.dark .flatpickr-time .flatpickr-time-separator,
+.dark .flatpickr-time .flatpickr-am-pm {
+    @apply text-white;
+}
+
+.dark .flatpickr-time input:hover,
+.dark .flatpickr-time .flatpickr-am-pm:hover {
+    @apply bg-gray-800;
+}
+
+.dark .numInputWrapper span.arrowUp:after { border-bottom-color: white; }
+.dark .numInputWrapper span.arrowDown:after { border-top-color: white; }

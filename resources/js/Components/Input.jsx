@@ -8,7 +8,7 @@ export default function Input({
         <div>
             <input
                 type={type}
-                className={`block w-full border-2 px-3 py-2 focus:border-primary focus:outline-none sm:text-sm ${
+                className={`block w-full border-2 px-3 py-2 focus:border-secondary focus:outline-none sm:text-sm ${
                     error ? 'border-danger' : 'border-grey-300'
                 } ${className}`}
                 {...props}
