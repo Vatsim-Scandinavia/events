@@ -37,6 +37,18 @@ export default function MarkdownEditor({ value, onChange, error, placeholder = '
             )}
 
             <style>{`
+                /* Light mode link styling */
+                .markdown-editor-wrap .editor-preview a,
+                .markdown-editor-wrap .editor-preview-side a {
+                    color: #0891b2;
+                    text-decoration: underline;
+                }
+                .markdown-editor-wrap .editor-preview a:hover,
+                .markdown-editor-wrap .editor-preview-side a:hover {
+                    color: #0e7490;
+                }
+                
+                /* Dark mode styles */
                 .dark .markdown-editor-wrap .EasyMDEContainer .CodeMirror {
                     background: #171717;
                     color: #f5f5f5;
@@ -77,6 +89,17 @@ export default function MarkdownEditor({ value, onChange, error, placeholder = '
                 }
                 .dark .markdown-editor-wrap .EasyMDEContainer {
                     border-color: #404040;
+                }
+                
+                /* Dark mode link styling */
+                .dark .markdown-editor-wrap .editor-preview a,
+                .dark .markdown-editor-wrap .editor-preview-side a {
+                    color: #22d3ee;
+                    text-decoration: underline;
+                }
+                .dark .markdown-editor-wrap .editor-preview a:hover,
+                .dark .markdown-editor-wrap .editor-preview-side a:hover {
+                    color: #06b6d4;
                 }
             `}</style>
         </div>

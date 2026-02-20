@@ -12,4 +12,20 @@
     --color-warning: #ff9800;
 }
 
+/* Markdown link styling for ReactMarkdown rendered content */
+.prose a {
+    color: #0891b2;
+    text-decoration: underline;
+}
 
+.prose a:hover {
+    color: #0e7490;
+}
+
+.dark .prose a {
+    color: #22d3ee;
+}
+
+.dark .prose a:hover {
+    color: #06b6d4;
+}
