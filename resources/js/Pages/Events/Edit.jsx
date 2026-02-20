@@ -248,7 +248,7 @@ export default function Edit({ event, calendars, bannerUrl }) {
                                             defaultValue={defaultStartDate}
                                             options={startOptions}
                                             className={`${inputClass} ${errors.start_datetime ? 'border-danger' : ''}`}
-                                            placeholder="YYYY-MM-DD HH:MM"
+                                            placeholder="DD-MM-YYYY HH:MM"
                                         />
                                         {errors.start_datetime && (
                                             <p className="mt-1 text-sm text-danger">{errors.start_datetime}</p>
@@ -260,7 +260,7 @@ export default function Edit({ event, calendars, bannerUrl }) {
                                             defaultValue={defaultEndDate}
                                             options={endOptions}
                                             className={`${inputClass} ${errors.end_datetime ? 'border-danger' : ''}`}
-                                            placeholder="YYYY-MM-DD HH:MM"
+                                            placeholder="DD-MM-YYYY HH:MM"
                                         />
                                         {errors.end_datetime && (
                                             <p className="mt-1 text-sm text-danger">{errors.end_datetime}</p>

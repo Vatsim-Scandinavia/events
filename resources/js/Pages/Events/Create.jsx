@@ -9,8 +9,6 @@ import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import { useState, useEffect, useMemo } from 'react';
 
-// Convert flatpickr's 'YYYY-MM-DD HH:MM' string directly to a UTC ISO string
-// without creating a Date object, so no local timezone offset is applied.
 const toUtcIso = (dateStr) => dateStr ? dateStr.replace(' ', 'T') + ':00Z' : '';
 
 export default function Create({ calendars, preselectedCalendarId }) {
@@ -232,7 +230,7 @@ export default function Create({ calendars, preselectedCalendarId }) {
                                         <Flatpickr
                                             options={startOptions}
                                             className={`${inputClass} ${errors.start_datetime ? 'border-danger' : ''}`}
-                                            placeholder="YYYY-MM-DD HH:MM"
+                                            placeholder="DD-MM-YYY HH:MM"
                                         />
                                         {errors.start_datetime && (
                                             <p className="mt-1 text-sm text-danger">{errors.start_datetime}</p>
@@ -243,7 +241,7 @@ export default function Create({ calendars, preselectedCalendarId }) {
                                         <Flatpickr
                                             options={endOptions}
                                             className={`${inputClass} ${errors.end_datetime ? 'border-danger' : ''}`}
-                                            placeholder="YYYY-MM-DD HH:MM"
+                                            placeholder="DD-MM-YYY HH:MM"
                                         />
                                         {errors.end_datetime && (
                                             <p className="mt-1 text-sm text-danger">{errors.end_datetime}</p>
