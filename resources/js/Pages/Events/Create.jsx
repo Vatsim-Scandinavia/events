@@ -230,7 +230,7 @@ export default function Create({ calendars, preselectedCalendarId }) {
                                         <Flatpickr
                                             options={startOptions}
                                             className={`${inputClass} ${errors.start_datetime ? 'border-danger' : ''}`}
-                                            placeholder="DD-MM-YYY HH:MM"
+                                            placeholder="DD-MM-YYYY HH:MM"
                                         />
                                         {errors.start_datetime && (
                                             <p className="mt-1 text-sm text-danger">{errors.start_datetime}</p>
@@ -241,7 +241,7 @@ export default function Create({ calendars, preselectedCalendarId }) {
                                         <Flatpickr
                                             options={endOptions}
                                             className={`${inputClass} ${errors.end_datetime ? 'border-danger' : ''}`}
-                                            placeholder="DD-MM-YYY HH:MM"
+                                            placeholder="DD-MM-YYYY HH:MM"
                                         />
                                         {errors.end_datetime && (
                                             <p className="mt-1 text-sm text-danger">{errors.end_datetime}</p>
