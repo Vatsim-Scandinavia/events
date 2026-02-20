@@ -98,9 +98,9 @@ export default function Create({ calendars, preselectedCalendarId }) {
 
     const baseOptions = {
         enableTime: true,
-        dateFormat: 'Y-m-d H:i',
+        dateFormat: 'd-m-Y H:i',
         time_24hr: true,
-        minuteIncrement: 1,
+        minuteIncrement: 5,
     };
 
     const startOptions = useMemo(() => ({

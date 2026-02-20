@@ -9,8 +9,22 @@ import Flatpickr from 'react-flatpickr';
 import 'flatpickr/dist/flatpickr.min.css';
 import { useState, useEffect, useMemo } from 'react';
 
-const toUtcIso = (dateStr) => dateStr ? dateStr.replace(' ', 'T') + ':00Z' : '';
-const toDisplayStr = (iso) => iso ? iso.slice(0, 16).replace('T', ' ') : undefined;
+const toUtcIso = (dateStr) => {
+    if (!dateStr) return '';
+
+    const [datePart, timePart] = dateStr.split(' ');
+    const [day, month, year] = datePart.split('-');
+
+    return `${year}-${month}-${day}T${timePart}:00Z`;
+};
+const toDisplayStr = (iso) => {
+    if (!iso) return undefined;
+
+    const [datePart, timePart] = iso.slice(0, 16).split('T');
+    const [year, month, day] = datePart.split('-');
+
+    return `${day}-${month}-${year} ${timePart}`;
+};
 
 export default function Edit({ event, calendars, bannerUrl }) {
     const { auth } = usePage().props;
@@ -115,7 +129,7 @@ export default function Edit({ event, calendars, bannerUrl }) {
 
     const baseOptions = {
         enableTime: true,
-        dateFormat: 'Y-m-d H:i',
+        dateFormat: 'd-m-Y H:i',
         time_24hr: true,
         minuteIncrement: 1,
     };
