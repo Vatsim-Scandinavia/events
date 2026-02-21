@@ -88,8 +88,8 @@ export default function Index({ events, filters }) {
                                     href={link.url || '#'}
                                     className={`px-3 py-2 text-sm border transition-colors ${
                                         link.active
-                                            ? 'bg-secondary text-white border-secondary dark:bg-primary dark:text-neutral-900 dark:border-primary'
-                                            : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-200 dark:border-neutral-700 hover:border-secondary dark:hover:border-primary'
+                                            ? 'bg-secondary text-white border-secondary'
+                                            : 'bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-100 border-neutral-200 hover:border-secondary'
                                     } ${!link.url ? 'opacity-40 pointer-events-none' : ''}`}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
