@@ -115,7 +115,7 @@ export default function Navbar() {
                     ) : (
                         <>
                             <Link
-                                href="/login"
+                                href="/auth/vatsim"
                                 className="px-4 py-2 text-sm font-medium rounded border border-neutral-100/40 hover:border-neutral-100 transition-colors"
                             >
                                 Login with VATSIM
