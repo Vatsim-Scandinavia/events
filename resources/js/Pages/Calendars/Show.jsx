@@ -135,7 +135,7 @@ export default function Show({ calendar }) {
                                     <p className="text-neutral-500 dark:text-neutral-400">No events in this calendar yet.</p>
                                     {auth.user?.permissions?.includes('create-events') && (
                                         <Link href={`/events/create?calendar_id=${calendar.id}`}>
-                                            <Button variant="primary">Create First Event</Button>
+                                            <Button variant="secondary">Create First Event</Button>
                                         </Link>
                                     )}
                                 </div>
