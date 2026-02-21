@@ -16,6 +16,8 @@ class ResetStaffingForCompletedEvents implements ShouldQueue
 {
     use Queueable;
 
+    private const MAX_HOURS_AFTER_END = 48;
+
     public function handle(
         EventService $eventService,
         ControlCenterService $controlCenterService,
@@ -23,33 +25,70 @@ class ResetStaffingForCompletedEvents implements ShouldQueue
     ): void {
         Log::info('Staffing Reset: Checking for completed occurrences...');
 
-        $recurringEvents = Event::whereNotNull('recurrence_rule')->get();
+        $recurringEvents = Event::whereNotNull('recurrence_rule')
+            ->whereNotNull('discord_staffing_channel_id')
+            ->get();
 
         foreach ($recurringEvents as $event) {
             try {
-                $lastOcc = $eventService->getLastEndedOccurrence($event);
-                if (!$lastOcc) continue;
-
-                $endedAt = Carbon::parse($lastOcc['end']);
-
-                // Reset criteria: Ended within 48h and not reset since that end time
-                $alreadyReset = $event->last_staffing_reset_at &&
-                    $event->last_staffing_reset_at->greaterThanOrEqualTo($endedAt);
-
-                if ($endedAt->isPast() && $endedAt->diffInHours(now()) <= 48 && !$alreadyReset) {
-                    $this->performReset($event, $controlCenterService, $discordBotService);
-
-                    $event->update(['last_staffing_reset_at' => now()]);
-                    Log::info("Staffing Reset: Completed for '{$event->title}'");
-                }
+                $this->processEvent($event, $eventService, $controlCenterService, $discordBotService);
             } catch (\Exception $e) {
-                Log::error("Staffing Reset: Failed for Event #{$event->id}: " . $e->getMessage());
+                Log::error("Staffing Reset: Failed for Event #{$event->id} '{$event->title}': " . $e->getMessage());
             }
         }
+
+        Log::info('Staffing Reset: Check complete.');
     }
 
-    private function performReset(Event $event, $controlCenter, $discordBot): void
-    {
+    private function processEvent(
+        Event $event,
+        EventService $eventService,
+        ControlCenterService $controlCenterService,
+        DiscordBotNotificationService $discordBotService
+    ): void {
+        $lastOcc = $eventService->getLastEndedOccurrence($event);
+
+        if (!$lastOcc) {
+            Log::debug("Staffing Reset: No ended occurrence found for '{$event->title}', skipping.");
+            return;
+        }
+
+        $endedAt = Carbon::parse($lastOcc['end']);
+
+        if ($endedAt->isFuture()) {
+            Log::debug("Staffing Reset: Last occurrence for '{$event->title}' hasn't ended yet, skipping.");
+            return;
+        }
+
+        $hoursSinceEnd = $endedAt->diffInHours(now());
+
+        if ($hoursSinceEnd > self::MAX_HOURS_AFTER_END) {
+            Log::debug("Staffing Reset: '{$event->title}' ended {$hoursSinceEnd}h ago, outside reset window.");
+            return;
+        }
+
+        $alreadyReset = $event->last_staffing_reset_at &&
+                        $event->last_staffing_reset_at->greaterThanOrEqualTo($endedAt);
+
+        if ($alreadyReset) {
+            Log::debug("Staffing Reset: '{$event->title}' already reset for occurrence ending at {$endedAt}.");
+            return;
+        }
+
+        Log::info("Staffing Reset: Resetting '{$event->title}' (occurrence ended at {$endedAt}, {$hoursSinceEnd}h ago).");
+
+        $this->performReset($event, $controlCenterService, $discordBotService);
+
+        $event->update(['last_staffing_reset_at' => $endedAt]);
+
+        Log::info("Staffing Reset: Successfully completed for '{$event->title}'.");
+    }
+
+    private function performReset(
+        Event $event,
+        ControlCenterService $controlCenter,
+        DiscordBotNotificationService $discordBot
+    ): void {
         DB::transaction(function () use ($event, $controlCenter, $discordBot) {
             $staffings = $event->staffings()->with('positions')->get();
 
@@ -59,20 +98,20 @@ class ResetStaffingForCompletedEvents implements ShouldQueue
                         try {
                             $controlCenter->deleteBooking($position->control_center_booking_id);
                         } catch (\Exception $e) {
-                            Log::warning("CC Delete error: " . $e->getMessage());
+                            Log::warning("Staffing Reset: Failed to delete CC booking #{$position->control_center_booking_id}: " . $e->getMessage());
                         }
                     }
 
                     $position->update([
-                        'booked_by_user_id' => null,
-                        'discord_user_id' => null,
-                        'vatsim_cid' => null,
+                        'booked_by_user_id'        => null,
+                        'discord_user_id'           => null,
+                        'vatsim_cid'                => null,
                         'control_center_booking_id' => null,
                     ]);
                 }
             }
 
-            $discordBot->notifyStaffingChanged($event, 'updated');
+            $discordBot->notifyStaffingChanged($event, 'reset');
         });
     }
 }
