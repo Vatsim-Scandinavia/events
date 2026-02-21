@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useForm, usePage } from "@inertiajs/react";
+import { Link, usePage, router } from "@inertiajs/react";
 
 const navLinks = [
     { label: "Home", href: "/" },
@@ -58,9 +58,8 @@ function DarkModeToggle() {
 export default function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);
     const { auth } = usePage().props;
-    const { post } = useForm();
 
-    const logout = () => post("/logout");
+    const logout = () => router.post("/logout");
 
     // Filter nav links based on permissions
     const visibleNavLinks = navLinks.filter(link => {
@@ -80,7 +79,7 @@ export default function Navbar() {
                         <img
                             src="/images/logos/negative.svg"
                             alt="VATSIM Scandinavia Logo"
-                            className="h-12 w-autok"
+                            className="h-12 w-auto"
                         />
                     </a>
 
@@ -114,19 +113,20 @@ export default function Navbar() {
                         </>
                     ) : (
                         <>
-                            <Link
+                            {/* Plain <a> tag required for OAuth redirect — Inertia's Link uses XHR which breaks CORS on cross-origin redirects */}
+                            <a
                                 href="/auth/vatsim"
                                 className="px-4 py-2 text-sm font-medium rounded border border-neutral-100/40 hover:border-neutral-100 transition-colors"
                             >
                                 Login with VATSIM
-                            </Link>
+                            </a>
                             {import.meta.env.DEV && (
-                                <Link
+                                <a
                                     href="/dev/login"
                                     className="px-4 py-2.5 text-sm font-medium rounded border border-warning/40 hover:border-warning text-center transition-colors"
                                 >
                                     DEV Login (Magic Link)
-                                </Link>
+                                </a>
                             )}
                         </>
                     )}
@@ -184,21 +184,22 @@ export default function Navbar() {
                             </>
                         ) : (
                             <>
-                                <Link
+                                {/* Plain <a> tag required for OAuth redirect — Inertia's Link uses XHR which breaks CORS on cross-origin redirects */}
+                                <a
                                     href="/auth/vatsim"
                                     onClick={() => setMenuOpen(false)}
                                     className="px-4 py-2.5 text-sm font-medium rounded border border-neutral-100/40 hover:border-neutral-100 text-center transition-colors"
                                 >
                                     Login with VATSIM
-                                </Link>
+                                </a>
                                 {import.meta.env.DEV && (
-                                    <Link
+                                    <a
                                         href="/dev/login"
                                         onClick={() => setMenuOpen(false)}
                                         className="px-4 py-2.5 text-sm font-medium rounded border border-warning/40 hover:border-warning text-center transition-colors"
                                     >
                                         DEV Login (Magic Link)
-                                    </Link>
+                                    </a>
                                 )}
                             </>
                         )}
