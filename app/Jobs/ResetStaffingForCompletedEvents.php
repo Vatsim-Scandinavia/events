@@ -33,12 +33,12 @@ class ResetStaffingForCompletedEvents implements ShouldQueue
                 $endedAt = Carbon::parse($lastOcc['end']);
 
                 // Reset criteria: Ended within 48h and not reset since that end time
-                $alreadyReset = $event->last_staffing_reset_at && 
-                                $event->last_staffing_reset_at->greaterThanOrEqualTo($endedAt);
+                $alreadyReset = $event->last_staffing_reset_at &&
+                    $event->last_staffing_reset_at->greaterThanOrEqualTo($endedAt);
 
-                if ($endedAt->diffInHours(now()) <= 48 && !$alreadyReset) {
+                if ($endedAt->isPast() && $endedAt->diffInHours(now()) <= 48 && !$alreadyReset) {
                     $this->performReset($event, $controlCenterService, $discordBotService);
-                    
+
                     $event->update(['last_staffing_reset_at' => now()]);
                     Log::info("Staffing Reset: Completed for '{$event->title}'");
                 }
