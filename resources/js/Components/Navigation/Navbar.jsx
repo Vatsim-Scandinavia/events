@@ -185,7 +185,7 @@ export default function Navbar() {
                         ) : (
                             <>
                                 <Link
-                                    href="/login"
+                                    href="/auth/vatsim"
                                     onClick={() => setMenuOpen(false)}
                                     className="px-4 py-2.5 text-sm font-medium rounded border border-neutral-100/40 hover:border-neutral-100 text-center transition-colors"
                                 >
@@ -193,7 +193,7 @@ export default function Navbar() {
                                 </Link>
                                 {import.meta.env.DEV && (
                                     <Link
-                                        href="/login"
+                                        href="/dev/login"
                                         onClick={() => setMenuOpen(false)}
                                         className="px-4 py-2.5 text-sm font-medium rounded border border-warning/40 hover:border-warning text-center transition-colors"
                                     >
