@@ -61,24 +61,25 @@ function DraggablePosition({ position, index, movePosition, auth, handleUnbookPo
                 ${isDragging ? 'opacity-50' : ''}
                 bg-neutral-50 dark:bg-neutral-700/30 hover:bg-neutral-100 dark:hover:bg-neutral-700/50`}
         >
-            <div className="flex items-center gap-3 flex-1">
-                <span className="text-neutral-400 select-none">⋮⋮</span>
-                <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-semibold text-secondary dark:text-primary">
+            {/* Left: drag handle + position info — min-w-0 allows this side to shrink */}
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+                <span className="text-neutral-400 select-none shrink-0 leading-none">⋮⋮</span>
+                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-mono text-sm font-semibold text-secondary dark:text-primary truncate leading-tight">
                             {position.position_id}
                         </span>
                         {position.is_local && (
-                            <span className="px-2 py-0.5 text-[10px] font-bold tracking-wider bg-warning text-white uppercase">
+                            <span className="shrink-0 px-2 py-0.5 text-[10px] font-bold tracking-wider bg-warning text-white uppercase leading-tight">
                                 Local
                             </span>
                         )}
                     </div>
-                    <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                    <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate leading-tight">
                         {position.position_name}
                     </span>
                     {(position.start_time || position.end_time) && (
-                        <div className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                        <div className="text-xs text-neutral-500 dark:text-neutral-400">
                             {position.start_time && <TimeDisplay datetime={position.start_time} />}
                             {position.start_time && position.end_time && <span> – </span>}
                             {position.end_time && <TimeDisplay datetime={position.end_time} />}
@@ -86,10 +87,12 @@ function DraggablePosition({ position, index, movePosition, auth, handleUnbookPo
                     )}
                 </div>
             </div>
-            <div className="flex items-center gap-3">
+
+            {/* Right: booking status + action buttons — shrink-0 keeps buttons always visible */}
+            <div className="flex items-center gap-3 shrink-0 ml-3">
                 {(position.booked_by_user_id || position.vatsim_cid) ? (
                     <>
-                        <span className="text-sm text-success font-medium">
+                        <span className="text-sm text-success font-medium hidden sm:inline">
                             {position.booked_by_user_id
                                 ? `Booked by ${position.booked_by?.name || 'Unknown User'}`
                                 : `Booked by ${position.vatsim_cid} (Discord)`
@@ -103,12 +106,16 @@ function DraggablePosition({ position, index, movePosition, auth, handleUnbookPo
                         )}
                     </>
                 ) : (
-                    <span className="text-sm text-neutral-500 dark:text-neutral-400 font-medium">Available</span>
+                    <span className="text-sm text-neutral-500 dark:text-neutral-400 font-medium hidden sm:inline">Available</span>
                 )}
                 {auth.user?.permissions?.includes('manage-staffings') && (
                     <>
-                        <Button variant="secondary" onClick={() => handleEditPosition(position)}><PencilIcon className="w-4 h-4" /></Button>
-                        <Button variant="danger" onClick={() => handleDeletePosition(position.id)}><TrashIcon className="w-4 h-4 " /></Button>
+                        <Button variant="secondary" onClick={() => handleEditPosition(position)}>
+                            <PencilIcon className="w-4 h-4" />
+                        </Button>
+                        <Button variant="danger" onClick={() => handleDeletePosition(position.id)}>
+                            <TrashIcon className="w-4 h-4" />
+                        </Button>
                     </>
                 )}
             </div>
@@ -163,7 +170,7 @@ function StaffingSection({ staffing, auth, handleUnbookPosition, handleDeletePos
                             </p>
                         )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 shrink-0">
                         <Button
                             variant="success"
                             onClick={() => {
