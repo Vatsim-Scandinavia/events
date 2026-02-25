@@ -89,29 +89,45 @@ class ResetStaffingForCompletedEvents implements ShouldQueue
         ControlCenterService $controlCenter,
         DiscordBotNotificationService $discordBot
     ): void {
-        DB::transaction(function () use ($event, $controlCenter, $discordBot) {
-            $staffings = $event->staffings()->with('positions')->get();
+        // Collect Control Center booking IDs before touching the DB so we know
+        // exactly what to clean up externally, regardless of what happens later.
+        $controlCenterBookingIds = $event->staffings()
+            ->with('positions')
+            ->get()
+            ->flatMap(fn($staffing) => $staffing->positions)
+            ->filter(fn($position) => $position->isBooked() && $position->control_center_booking_id)
+            ->pluck('control_center_booking_id')
+            ->all();
 
-            foreach ($staffings as $staffing) {
-                foreach ($staffing->positions as $position) {
-                    if ($position->control_center_booking_id) {
-                        try {
-                            $controlCenter->deleteBooking($position->control_center_booking_id);
-                        } catch (\Exception $e) {
-                            Log::warning("Staffing Reset: Failed to delete CC booking #{$position->control_center_booking_id}: " . $e->getMessage());
-                        }
-                    }
-
-                    $position->update([
+        // Clear all booking fields in a single, focused DB transaction with no
+        // external side-effects so the transaction stays short and fully rollbackable.
+        DB::transaction(function () use ($event) {
+            $event->staffings()->with('positions')->get()
+                ->each(function ($staffing) {
+                    $staffing->positions->each(fn($position) => $position->update([
                         'booked_by_user_id'        => null,
                         'discord_user_id'           => null,
                         'vatsim_cid'                => null,
                         'control_center_booking_id' => null,
-                    ]);
-                }
-            }
-
-            $discordBot->notifyStaffingChanged($event, 'reset');
+                    ]));
+                });
         });
+
+        // External calls happen after the DB transaction has committed so that:
+        // 1. A failed network call cannot cause a DB rollback that leaves data inconsistent.
+        // 2. The transaction is not held open while waiting on slow HTTP responses.
+        foreach ($controlCenterBookingIds as $bookingId) {
+            try {
+                $controlCenter->deleteBooking($bookingId);
+            } catch (\Exception $e) {
+                Log::warning("Staffing Reset: Failed to delete CC booking #{$bookingId}: " . $e->getMessage());
+            }
+        }
+
+        try {
+            $discordBot->notifyStaffingChanged($event, 'reset');
+        } catch (\Exception $e) {
+            Log::warning("Staffing Reset: Failed to notify Discord for Event #{$event->id}: " . $e->getMessage());
+        }
     }
 }
