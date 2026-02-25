@@ -3,7 +3,7 @@ import Button from './Button';
 
 /**
  * Component for managing a list of airport ICAO codes
- * 
+ *
  * @param {Array} value - Array of airport ICAO codes
  * @param {Function} onChange - Callback when airports change
  * @param {string} error - Error message to display
@@ -14,29 +14,24 @@ export default function AirportSelector({ value = [], onChange, error }) {
 
     const handleAdd = () => {
         const icao = inputValue.trim().toUpperCase();
-        
-        // Validate ICAO code (3-4 characters, alphanumeric)
+
         if (!icao) {
             setInputError('Please enter an airport code');
             return;
         }
-        
         if (icao.length < 3 || icao.length > 4) {
             setInputError('Airport codes must be 3-4 characters');
             return;
         }
-        
         if (!/^[A-Z0-9]+$/.test(icao)) {
             setInputError('Airport codes can only contain letters and numbers');
             return;
         }
-        
         if (value.includes(icao)) {
             setInputError('This airport is already added');
             return;
         }
-        
-        // Add to list
+
         onChange([...value, icao]);
         setInputValue('');
         setInputError('');
@@ -54,8 +49,10 @@ export default function AirportSelector({ value = [], onChange, error }) {
     };
 
     return (
-        <div>
-            <div className="flex gap-2 mb-3">
+        <div className="flex flex-col gap-2">
+
+            {/* Input row */}
+            <div className="flex gap-2">
                 <input
                     type="text"
                     value={inputValue}
@@ -64,35 +61,37 @@ export default function AirportSelector({ value = [], onChange, error }) {
                         setInputError('');
                     }}
                     onKeyPress={handleKeyPress}
-                    placeholder="e.g., EKCH, ESSA, ENGM"
+                    placeholder="e.g. EKCH, ESSA, ENGM"
                     maxLength={4}
-                    className="flex-1 border-2 border-grey-300 px-3 py-2 focus:border-secondary focus:outline-none sm:text-sm"
+                    className="flex-1 px-3 py-2 text-sm
+                        bg-white dark:bg-neutral-900
+                        text-neutral-900 dark:text-neutral-100
+                        border border-neutral-300 dark:border-neutral-700
+                        focus:outline-none focus:border-primary dark:focus:border-primary
+                        transition-colors"
                 />
                 <Button type="button" variant="secondary" onClick={handleAdd}>
                     Add
                 </Button>
             </div>
-            
-            {inputError && (
-                <p className="text-sm text-danger mb-2">{inputError}</p>
-            )}
-            
-            {error && (
-                <p className="text-sm text-danger mb-2">{error}</p>
-            )}
-            
-            {value.length > 0 && (
+
+            {/* Validation errors */}
+            {inputError && <p className="text-sm text-danger">{inputError}</p>}
+            {error && <p className="text-sm text-danger">{error}</p>}
+
+            {/* Airport tags */}
+            {value.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                     {value.map((airport) => (
                         <span
                             key={airport}
-                            className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium bg-secondary text-white border-2 border-secondary"
+                            className="inline-flex items-center gap-1 px-3 py-1 text-sm font-medium bg-secondary dark:bg-secondary/80 text-white"
                         >
                             <span className="font-mono">{airport}</span>
                             <button
                                 type="button"
                                 onClick={() => handleRemove(airport)}
-                                className="text-white hover:text-snow focus:outline-none ml-1"
+                                className="ml-1 text-white/70 hover:text-white focus:outline-none transition-colors"
                                 aria-label={`Remove ${airport}`}
                             >
                                 ×
@@ -100,11 +99,10 @@ export default function AirportSelector({ value = [], onChange, error }) {
                         </span>
                     ))}
                 </div>
+            ) : (
+                <p className="text-sm text-neutral-400 dark:text-neutral-500 italic">No airports added yet.</p>
             )}
-            
-            {value.length === 0 && (
-                <p className="text-sm text-grey-500 italic">No airports added yet</p>
-            )}
+
         </div>
     );
 }
