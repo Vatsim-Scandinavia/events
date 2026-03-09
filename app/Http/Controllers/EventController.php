@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\CreateEvent;
 use App\Actions\DeleteEvent;
+use App\Actions\UpdateEvent;
 use App\Models\Event;
 use App\Models\Calendar;
 use App\Services\BannerUploadService;
@@ -133,16 +134,14 @@ class EventController extends Controller
      * 
      * @param UpdateEventRequest $request
      * @param Event $event
-     * @param EventService $eventService
+     * @param UpdateEvent $updateEvent
      * @return RedirectResponse
      */
-    public function update(UpdateEventRequest $request, Event $event, EventService $eventService)
+    public function update(UpdateEventRequest $request, Event $event, UpdateEvent $updateEvent)
     {
-        $eventService->updateEvent(
-            $event, 
-            $request->validated(), 
-            $request->file('banner')
-        );
+        $this->authorize('update', $event);
+
+        $event = $updateEvent($event, $request->validated(), auth()->user(), $request->file('banner'));
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event updated successfully.');
