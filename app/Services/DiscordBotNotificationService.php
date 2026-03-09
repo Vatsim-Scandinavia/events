@@ -10,6 +10,7 @@ class DiscordBotNotificationService
 {
     protected ?string $botWebhookUrl;
     protected ?string $botApiToken;
+    protected ?bool $shouldReset = false;
 
     public function __construct()
     {
@@ -32,6 +33,10 @@ class DiscordBotNotificationService
             return false;
         }
 
+        if ($action === 'reset') {
+            $this->shouldReset = true;
+        }
+
         try {
             $event->load(['calendar', 'staffings.positions.bookedBy']);
 
@@ -40,6 +45,7 @@ class DiscordBotNotificationService
                 ->asForm()
                 ->post($this->botWebhookUrl . '/staffings/' . ($action === 'setup' ? 'setup' : 'update'), [
                     'id' => $event->staffings->first()->id ?? null,
+                    'reset' => $this->shouldReset,
                 ]);
 
             if ($response->successful()) {
