@@ -77,7 +77,7 @@ class EventController extends Controller
      */
     public function store(StoreEventRequest $request, CreateEvent $createEvent)
     {
-        $event = $createEvent($request->validated(), $request->user());
+        $event = $createEvent($request->validated(), auth()->user());
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event created successfully.');
