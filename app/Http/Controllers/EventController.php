@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateEvent;
 use App\Models\Event;
 use App\Models\Calendar;
 use App\Services\BannerUploadService;
@@ -70,16 +71,12 @@ class EventController extends Controller
      * Store a newly created event
      * 
      * @param StoreEventRequest $request
-     * @param EventService $eventService
+     * @param CreateEvent $createEvent
      * @return RedirectResponse
      */
-    public function store(StoreEventRequest $request, EventService $eventService)
+    public function store(StoreEventRequest $request, CreateEvent $createEvent)
     {
-        $event = $eventService->createEvent(
-            $request->validated(),
-            $request->user(),
-            $request->hasFile('banner') ? $request->file('banner') : null
-        );
+        $event = $createEvent($request->validated(), $request->user());
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event created successfully.');
