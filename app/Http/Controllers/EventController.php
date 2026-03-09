@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\CreateEvent;
+use App\Actions\DeleteEvent;
 use App\Models\Event;
 use App\Models\Calendar;
 use App\Services\BannerUploadService;
@@ -151,14 +152,14 @@ class EventController extends Controller
      * Remove the specified event
      * 
      * @param Event $event
-     * @param EventService $eventService
+     * @param DeleteEvent $deleteEvent
      * @return RedirectResponse
      */
-    public function destroy(Event $event, EventService $eventService)
+    public function destroy(Event $event, DeleteEvent $deleteEvent)
     {
         $this->authorize('delete', $event);
 
-        $eventService->deleteEvent($event);
+        $deleteEvent($event, auth()->user());
 
         return redirect()->route('events.index')
             ->with('success', 'Event deleted successfully.');
