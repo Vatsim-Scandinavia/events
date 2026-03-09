@@ -13,97 +13,7 @@ use Recurr\Transformer\Constraint\AfterConstraint;
 
 class EventService
 {
-    public function __construct(
-        protected BannerUploadService $bannerUploadService
-    )
-    {}
-
-    /**
-     * Create a new event
-     * 
-     * @param array $data
-     * @param User $user
-     * @param UploadedFile|null $bannerFile
-     * @return Event
-     */
-    public function createEvent(array $data, $user, $bannerFile = null): Event
-    {
-        if (!empty($data['recurrence_rule'])) {
-            $this->validateRRule($data['recurrence_rule']);
-        }
-
-        return DB::transaction(function () use ($data, $user, $bannerFile) {
-            $bannerPath = null;
-            if ($bannerFile) {
-                $bannerPath = $this->bannerUploadService->upload($bannerFile);
-            }
-
-            $event = Event::create([
-                ...collect($data)->except('banner')->toArray(),
-                'banner_path' => $bannerPath,
-                'created_by' => $user->id,
-            ]);
-
-            $actor = auth()->user()?->vatsim_cid ?? 'System';
-            Log::info('Event "' . $event->title . '" (' . $event->id . ') created by user: ' . $actor);
-
-            return $event;
-        });
-    }
-
-    /**
-     * Update an event
-     * 
-     * @param Event $event
-     * @param array $data
-     * @param UploadedFile|null $bannerFile
-     * @return Event
-     */
-    public function updateEvent(Event $event, array $data, $bannerFile = null): Event
-    {
-        if (!empty($data['recurrence_rule'])) {
-            $this->validateRRule($data['recurrence_rule']);
-        }
-
-        return DB::transaction(function () use ($event, $data, $bannerFile) {
-            if ($bannerFile) {
-                if ($event->banner_path) {
-                    $this->bannerUploadService->delete($event->banner_path);
-                }
-
-                $event->banner_path = $this->bannerUploadService->upload($bannerFile);
-            }
-
-            $event->update(collect($data)->except('banner')->toArray());
-
-            $actor = auth()->user()?->vatsim_cid ?? 'System';
-            Log::info('Event "' . $event->title . '" (' . $event->id . ') updated by user: ' . $actor);
-
-            return $event;
-        });
-    }
-
-    /**
-     * Delete an event
-     * 
-     * @param Event $event
-     * @return bool
-     */
-    public function deleteEvent(Event $event): bool
-    {
-        return DB::transaction(function () use ($event) {
-            if ($event->banner_path) {
-                $this->bannerUploadService->delete($event->banner_path);
-            }
-
-            $actor = auth()->user()?->vatsim_cid ?? 'System';
-            Log::info('Event "' . $event->title . '" (' . $event->id . ') deleted by user: ' . $actor);
-
-            $event->delete();
-
-            return true;
-        });
-    }
+    public function __construct(protected BannerUploadService $bannerUploadService) {}
 
     /**
      * Get a lightweight summary of an event for list views
@@ -114,9 +24,9 @@ class EventService
     public function getEventSummary(Event $event): array
     {
         $start = $event->start_datetime;
-        
+
         $allInstances = $this->generateUpcomingInstances($event, 5);
-        
+
         $nextActive = $allInstances->first(function ($occurrence) {
             return !$occurrence['cancelled'] && \Illuminate\Support\Carbon::parse($occurrence['end'])->isAfter(now());
         });
@@ -129,7 +39,7 @@ class EventService
             'recurrence_rule'   => $event->recurrence_rule,
         ];
     }
-    
+
     /**
      * Get the details of an event
      * 
@@ -187,7 +97,7 @@ class EventService
         $event->load('calendar');
 
         $occurrences = $this->generateUpcomingInstances(
-            $event, 
+            $event,
             10
         );
 
@@ -211,7 +121,7 @@ class EventService
         $cancelledDates = $event->cancelled_occurrences ?? [];
 
         $instances = collect();
-        
+
         // Check if the base event start date matches our window
         if ($event->start_datetime->isAfter($startDate) || $event->start_datetime->isSameAs('minute', $startDate)) {
             $instances->push($event->start_datetime);
@@ -220,10 +130,10 @@ class EventService
         if (!empty($event->recurrence_rule)) {
             $rule = new Rule($event->recurrence_rule, $event->start_datetime->toDateTime(), null, 'UTC');
             $transformer = new ArrayTransformer();
-            
+
             // Use the passed in startDate (e.g., 24 hours ago) instead of hardcoded 'now'
             $constraint = new AfterConstraint($startDate->toDateTime(), false);
-            
+
             foreach ($transformer->transform($rule, $constraint) as $occurrence) {
                 $occStart = \Illuminate\Support\Carbon::instance($occurrence->getStart());
                 if (!$occStart->equalTo($event->start_datetime) && ($occStart->isAfter($startDate) || $occStart->isSameAs('minute', $startDate))) {
@@ -257,7 +167,7 @@ class EventService
     public function toggleOccurrence(Event $event, string $date, bool $cancel = true): void
     {
         $formattedDate = \Illuminate\Support\Carbon::parse($date)->toISOString();
-        
+
         $cancelled = $event->cancelled_occurrences ?? [];
 
         if ($cancel) {
@@ -270,7 +180,7 @@ class EventService
 
         DB::transaction(function () use ($event, $cancelled) {
             $event->update(['cancelled_occurrences' => array_values($cancelled)]);
-            
+
             $actor = auth()->user()?->vatsim_cid ?? 'System';
             Log::info("Occurrence toggled for event {$event->id} by {$actor}");
         });
@@ -311,13 +221,13 @@ class EventService
         if (!empty($event->recurrence_rule)) {
             $rule = new Rule($event->recurrence_rule, $event->start_datetime->toDateTime(), null, 'UTC');
             $transformer = new ArrayTransformer();
-            
+
             $constraint = new AfterConstraint($event->start_datetime->toDateTime(), true);
             $occurrences = $transformer->transform($rule, $constraint);
 
             foreach ($occurrences as $occurrence) {
                 $occStart = \Illuminate\Support\Carbon::instance($occurrence->getStart());
-                
+
                 if ($occStart->isPast()) {
                     if (!$lastStart || $occStart->isAfter($lastStart)) {
                         $lastStart = $occStart;
