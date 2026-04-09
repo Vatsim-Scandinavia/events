@@ -74,8 +74,10 @@ class DiscordClientTest extends TestCase
 
         $client = new DiscordClient();
         $payload = ['content' => 'Bot message'];
+        $path = '/test-endpoint';
 
-        $result = $client->sendBot($payload);
+
+        $result = $client->sendBot($payload, $path);
 
         $this->assertTrue($result);
     }
@@ -86,8 +88,9 @@ class DiscordClientTest extends TestCase
 
         $client = new DiscordClient();
         $payload = ['content' => 'Test'];
+        $path = '/test-endpoint';
 
-        $result = $client->sendBot($payload);
+        $result = $client->sendBot($payload, $path);
 
         $this->assertFalse($result);
         Http::assertNothingSent();
