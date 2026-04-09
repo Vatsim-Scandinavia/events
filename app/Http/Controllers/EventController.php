@@ -141,7 +141,7 @@ class EventController extends Controller
     {
         $this->authorize('update', $event);
 
-        $event = $updateEvent($event, $request->validated(), auth()->user(), $request->file('banner'));
+        $event = $updateEvent($event, $request->validated(), auth()->user());
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event updated successfully.');
