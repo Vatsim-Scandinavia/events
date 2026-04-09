@@ -68,17 +68,18 @@ class DiscordClient
     /**
      * Send a message to a Discord channel via bot API.
      * @param array $payload The payload to send to the bot API.
+     * @param string $path The API path to send the payload to (e.g., 'update' or 'setup').
      * @return bool True if the message was sent successfully, false otherwise.
      * @throws \Throwable If an error occurs while sending the message.
      */
-    public function sendBot(array $payload): bool
+    public function sendBot(array $payload, string $path): bool
     {
         if (!$this->botApiUrl || !$this->botApiToken) return false;
 
         try {
             $response = Http::withToken($this->botApiToken)
                 ->asForm()
-                ->post($this->botApiUrl, $payload);
+                ->post($this->botApiUrl . $path, $payload);
 
             return $response->successful();
         } catch (\Throwable $th) {

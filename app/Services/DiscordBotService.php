@@ -30,9 +30,10 @@ class DiscordBotService
             'reset' => $reset,
         ];
 
-        $endpoint = $action === 'setup' ? 'setup' : 'update';
+        $action === 'setup' ? 'setup' : 'update';
+        $path = '/staffings/' . ($action === 'setup' ? 'setup' : 'update');
 
-        return $this->client->sendBot($payload, $endpoint);
+        return $this->client->sendBot($payload, $path);
     }
 
     /**
