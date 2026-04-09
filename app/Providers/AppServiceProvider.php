@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Clients\DiscordClient;
 use App\Models\Event;
 use App\Observers\EventObserver;
 use Illuminate\Support\Facades\URL;
@@ -14,7 +15,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(DiscordClient::class, function () {
+            return new DiscordClient();
+        });
     }
 
     /**
