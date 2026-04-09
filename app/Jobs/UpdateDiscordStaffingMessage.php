@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Event;
-use App\Services\DiscordBotNotificationService;
+use App\Services\DiscordBotService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -26,12 +26,12 @@ class UpdateDiscordStaffingMessage implements ShouldQueue
     /**
      * Execute the job.
      */
-    public function handle(DiscordBotNotificationService $service): void
+    public function handle(DiscordBotService $service): void
     {
         $event = Event::find($this->eventId);
         
         if ($event) {
-            $service->notifyStaffingChanged($event, $this->action);
+            $service->dispatchStaffingUpdate($event, $this->action);
         }
     }
 }
