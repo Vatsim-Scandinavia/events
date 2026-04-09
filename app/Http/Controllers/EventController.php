@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateEvent;
+use App\Actions\DeleteEvent;
+use App\Actions\UpdateEvent;
 use App\Models\Event;
 use App\Models\Calendar;
 use App\Services\BannerUploadService;
@@ -70,16 +73,12 @@ class EventController extends Controller
      * Store a newly created event
      * 
      * @param StoreEventRequest $request
-     * @param EventService $eventService
+     * @param CreateEvent $createEvent
      * @return RedirectResponse
      */
-    public function store(StoreEventRequest $request, EventService $eventService)
+    public function store(StoreEventRequest $request, CreateEvent $createEvent)
     {
-        $event = $eventService->createEvent(
-            $request->validated(),
-            $request->user(),
-            $request->hasFile('banner') ? $request->file('banner') : null
-        );
+        $event = $createEvent($request->validated(), auth()->user());
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event created successfully.');
@@ -135,16 +134,14 @@ class EventController extends Controller
      * 
      * @param UpdateEventRequest $request
      * @param Event $event
-     * @param EventService $eventService
+     * @param UpdateEvent $updateEvent
      * @return RedirectResponse
      */
-    public function update(UpdateEventRequest $request, Event $event, EventService $eventService)
+    public function update(UpdateEventRequest $request, Event $event, UpdateEvent $updateEvent)
     {
-        $eventService->updateEvent(
-            $event, 
-            $request->validated(), 
-            $request->file('banner')
-        );
+        $this->authorize('update', $event);
+
+        $event = $updateEvent($event, $request->validated(), auth()->user());
 
         return redirect()->route('events.show', $event)
             ->with('success', 'Event updated successfully.');
@@ -154,14 +151,14 @@ class EventController extends Controller
      * Remove the specified event
      * 
      * @param Event $event
-     * @param EventService $eventService
+     * @param DeleteEvent $deleteEvent
      * @return RedirectResponse
      */
-    public function destroy(Event $event, EventService $eventService)
+    public function destroy(Event $event, DeleteEvent $deleteEvent)
     {
         $this->authorize('delete', $event);
 
-        $eventService->deleteEvent($event);
+        $deleteEvent($event, auth()->user());
 
         return redirect()->route('events.index')
             ->with('success', 'Event deleted successfully.');
