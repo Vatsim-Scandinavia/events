@@ -2,17 +2,18 @@
 
 namespace App\Actions;
 
+use App\Actions\Concerns\ValidatesRecurrenceRule;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\BannerUploadService;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
-use Recurr\Rule;
+use Illuminate\Support\Facades\Storage;
 
 final class UpdateEvent
 {
+    use ValidatesRecurrenceRule;
     public function __construct(protected BannerUploadService $bannerUploadService) {}
 
     /**
@@ -34,9 +35,12 @@ final class UpdateEvent
 
         return DB::transaction(function () use ($event, $data, $user, $banner) {
 
-            $event->banner_path = $banner instanceof UploadedFile
-                ? $this->bannerUploadService->upload($banner)
-                : $event->banner_path;
+            if ($banner instanceof UploadedFile) {
+                if ($event->banner_path) {
+                    Storage::disk('public')->delete($event->banner_path);
+                }
+                $event->banner_path = $this->bannerUploadService->upload($banner);
+            }
 
             $event->update($data);
 
@@ -46,16 +50,5 @@ final class UpdateEvent
 
             return $event;
         });
-    }
-
-    protected function validateRecurrenceRule(string $rule): void
-    {
-        try {
-            new Rule($rule);
-        } catch (\Exception $e) {
-            throw ValidationException::withMessages([
-                'recurrence_rule' => ['The recurrence rule is invalid: ' . $e->getMessage()],
-            ]);
-        }
     }
 }
