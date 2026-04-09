@@ -10,7 +10,7 @@ class DiscordClient
      * The Discord webhook URL for sending messages to a channel.
      */
     protected ?string $webhookUrl;
-    
+
     /**
      * The base URL for the Discord API.
      */
@@ -27,21 +27,16 @@ class DiscordClient
     protected ?string $botToken;
 
     /**
-     * The ID of the guild (server) to which the bot belongs.
-     */
-    protected ?string $guildId;
-
-    /**
      * The base URL for the Discord API.
      */
     protected string $baseUrl;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->webhookUrl = config('services.discord.webhook_url');
         $this->botApiUrl = config('services.discord.bot_api_url');
         $this->botApiToken = config('services.discord.bot_api_token');
         $this->botToken = config('services.discord.bot_token');
-        $this->guildId = config('services.discord.guild_id');
         $this->baseUrl = 'https://discord.com/api/v10';
     }
 
@@ -103,7 +98,7 @@ class DiscordClient
             $response = Http::withHeaders(array_merge([
                 'Authorization' => "Bot {$this->botToken}"
             ], $headers))->get($this->baseUrl . $endpoint);
-            
+
             if ($response->successful()) {
                 return $response->json();
             }

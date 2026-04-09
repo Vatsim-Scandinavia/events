@@ -7,7 +7,7 @@ use App\Models\Event;
 
 class DiscordBotService
 {
-    protected int $guildId;
+    protected string $guildId;
 
     public function __construct(private DiscordClient $client)
     {
@@ -30,7 +30,6 @@ class DiscordBotService
             'reset' => $reset,
         ];
 
-        $action === 'setup' ? 'setup' : 'update';
         $path = '/staffings/' . ($action === 'setup' ? 'setup' : 'update');
 
         return $this->client->sendBot($payload, $path);

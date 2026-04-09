@@ -20,16 +20,14 @@ final class CreateEvent
      * 
      * @param array $data The event data
      * @param User $user The user creating the event
+     * @param UploadedFile|null $banner The banner image file
      * @return Event
      */
-    public function __invoke(array $data, User $user): Event
+    public function __invoke(array $data, User $user, ?UploadedFile $banner = null): Event
     {
         if (!empty($data['recurrence_rule'])) {
             $this->validateRecurrenceRule($data['recurrence_rule']);
         }
-
-        $banner = $data['banner'] ?? null;
-        unset($data['banner']);
 
         return DB::transaction(function () use ($data, $user, $banner) {
 

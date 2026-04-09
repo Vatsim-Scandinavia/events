@@ -12,7 +12,7 @@ class DiscordService
      * Send a message to the configured Discord webhook
      * 
      * @param string $message
-     * @param array|null $embed
+     * @param array $embed
      * @return bool
      */
     public function send(string $message, array $embed = []): bool
@@ -24,7 +24,7 @@ class DiscordService
      * Send a notification to the configured Discord webhook
      * 
      * @param string $message
-     * @param array|null $embed
+     * @param array $embed
      * @return bool
      */
     public function dispatchWebhookNotification(string $message, array $embed = []): bool
