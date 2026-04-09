@@ -49,7 +49,7 @@ class CancelledOccurrenceTest extends TestCase
 
         $response->assertRedirect();
         $event->refresh();
-        
+
         $this->assertContains($occurrenceDate, $event->cancelled_occurrences ?? []);
     }
 
@@ -66,7 +66,7 @@ class CancelledOccurrenceTest extends TestCase
         ]);
 
         $service = app(EventService::class);
-        $instances = $service->generateUpcomingInstances($event, limit: 10);
+        $instances = $service->generateUpcomingInstances($event, limit: 10, startDate: $startDate->copy()->subDay());
 
         $this->assertCount(4, $instances);
 
@@ -78,7 +78,7 @@ class CancelledOccurrenceTest extends TestCase
     {
         $calendar = Calendar::factory()->create(['is_public' => true]);
         $startDate = Carbon::parse('2026-02-01 10:00:00');
-        
+
         $event = Event::factory()->create([
             'calendar_id' => $calendar->id,
             'start_datetime' => $startDate,
@@ -93,7 +93,7 @@ class CancelledOccurrenceTest extends TestCase
 
         $response->assertInertia(function ($page) use ($startDate) {
             $calendarEvents = $page->toArray()['props']['calendarEvents'];
-            
+
             foreach ($calendarEvents as $calEvent) {
                 if ($calEvent['start'] === $startDate->toISOString()) {
                     $this->fail('Cancelled occurrence appeared on the Home page calendar.');
