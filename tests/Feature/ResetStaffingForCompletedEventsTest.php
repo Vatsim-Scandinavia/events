@@ -7,10 +7,11 @@ use App\Models\Event;
 use App\Models\Staffing;
 use App\Models\StaffingPosition;
 use App\Services\ControlCenterService;
-use App\Services\DiscordBotNotificationService;
+use App\Services\DiscordBotService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class ResetStaffingForCompletedEventsTest extends TestCase
@@ -18,20 +19,20 @@ class ResetStaffingForCompletedEventsTest extends TestCase
     use RefreshDatabase;
 
     private ControlCenterService $controlCenter;
-    private DiscordBotNotificationService $discordBot;
+    private DiscordBotService $discordBot;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->controlCenter = Mockery::mock(ControlCenterService::class);
-        $this->discordBot = Mockery::mock(DiscordBotNotificationService::class);
+        $this->discordBot = Mockery::mock(DiscordBotService::class);
 
         $this->app->instance(ControlCenterService::class, $this->controlCenter);
-        $this->app->instance(DiscordBotNotificationService::class, $this->discordBot);
+        $this->app->instance(DiscordBotService::class, $this->discordBot);
     }
 
-    /** @test */
+    #[Test]
     public function it_resets_staffing_when_occurrence_has_just_ended(): void
     {
         $event = $this->createRecurringEvent(
@@ -41,9 +42,9 @@ class ResetStaffingForCompletedEventsTest extends TestCase
 
         $position = $this->createBookedPosition($event);
 
-        $this->discordBot->shouldReceive('notifyStaffingChanged')
+        $this->discordBot->shouldReceive('dispatchStaffingUpdate')
             ->once()
-            ->with(Mockery::on(fn($e) => $e->id === $event->id), 'reset');
+            ->with(Mockery::on(fn($e) => $e->id === $event->id), 'update', true);
 
         $this->controlCenter->shouldReceive('deleteBooking')
             ->once()
@@ -60,7 +61,7 @@ class ResetStaffingForCompletedEventsTest extends TestCase
         $this->assertNotNull($event->fresh()->last_staffing_reset_at);
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_reset_if_occurrence_has_not_ended_yet(): void
     {
         $event = $this->createRecurringEvent(
@@ -70,7 +71,7 @@ class ResetStaffingForCompletedEventsTest extends TestCase
 
         $this->createBookedPosition($event);
 
-        $this->discordBot->shouldNotReceive('notifyStaffingChanged');
+        $this->discordBot->shouldNotReceive('dispatchStaffingUpdate');
         $this->controlCenter->shouldNotReceive('deleteBooking');
 
         $this->dispatchJob();
@@ -78,7 +79,7 @@ class ResetStaffingForCompletedEventsTest extends TestCase
         $this->assertNull($event->fresh()->last_staffing_reset_at);
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_reset_if_already_reset_for_this_occurrence(): void
     {
         $occurrenceEnd = now()->subHours(2);
@@ -91,13 +92,13 @@ class ResetStaffingForCompletedEventsTest extends TestCase
 
         $this->createBookedPosition($event);
 
-        $this->discordBot->shouldNotReceive('notifyStaffingChanged');
+        $this->discordBot->shouldNotReceive('dispatchStaffingUpdate');
         $this->controlCenter->shouldNotReceive('deleteBooking');
 
         $this->dispatchJob();
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_reset_if_outside_48h_window(): void
     {
         $event = $this->createRecurringEvent(
@@ -107,13 +108,13 @@ class ResetStaffingForCompletedEventsTest extends TestCase
 
         $this->createBookedPosition($event);
 
-        $this->discordBot->shouldNotReceive('notifyStaffingChanged');
+        $this->discordBot->shouldNotReceive('dispatchStaffingUpdate');
         $this->controlCenter->shouldNotReceive('deleteBooking');
 
         $this->dispatchJob();
     }
 
-    /** @test */
+    #[Test]
     public function it_stores_occurrence_end_time_not_current_time_after_reset(): void
     {
         $occurrenceEnd = now()->subHours(2)->startOfMinute();
@@ -125,7 +126,7 @@ class ResetStaffingForCompletedEventsTest extends TestCase
 
         $this->createBookedPosition($event);
 
-        $this->discordBot->shouldReceive('notifyStaffingChanged')->once();
+        $this->discordBot->shouldReceive('dispatchStaffingUpdate')->once();
         $this->controlCenter->shouldReceive('deleteBooking')->once()->with(1);
 
         $this->dispatchJob();
@@ -135,7 +136,7 @@ class ResetStaffingForCompletedEventsTest extends TestCase
         $this->assertTrue($resetAt->equalTo($occurrenceEnd));
     }
 
-    /** @test */
+    #[Test]
     public function it_skips_events_without_discord_channel(): void
     {
         $event = $this->createRecurringEvent(
@@ -149,13 +150,13 @@ class ResetStaffingForCompletedEventsTest extends TestCase
 
         $this->createBookedPosition($event);
 
-        $this->discordBot->shouldNotReceive('notifyStaffingChanged');
+        $this->discordBot->shouldNotReceive('dispatchStaffingUpdate');
         $this->controlCenter->shouldNotReceive('deleteBooking');
 
         $this->dispatchJob();
     }
 
-    /** @test */
+    #[Test]
     public function it_continues_processing_other_events_if_one_fails(): void
     {
         $failingEvent = $this->createRecurringEvent(
@@ -171,7 +172,7 @@ class ResetStaffingForCompletedEventsTest extends TestCase
         $this->createBookedPosition($failingEvent);
         $this->createBookedPosition($successEvent);
 
-        $this->discordBot->shouldReceive('notifyStaffingChanged')
+        $this->discordBot->shouldReceive('dispatchStaffingUpdate')
             ->twice()
             ->andThrow(new \Exception('Discord unavailable'));
 
@@ -180,7 +181,7 @@ class ResetStaffingForCompletedEventsTest extends TestCase
         $this->dispatchJob();
     }
 
-    /** @test */
+    #[Test]
     public function it_handles_failed_control_center_deletion_gracefully(): void
     {
         $event = $this->createRecurringEvent(
@@ -195,9 +196,9 @@ class ResetStaffingForCompletedEventsTest extends TestCase
             ->with(1)
             ->andThrow(new \Exception('CC unavailable'));
 
-        $this->discordBot->shouldReceive('notifyStaffingChanged')
+        $this->discordBot->shouldReceive('dispatchStaffingUpdate')
             ->once()
-            ->with(Mockery::any(), 'reset');
+            ->with(Mockery::any(), 'update', true);
 
         $this->dispatchJob();
 
