@@ -9,6 +9,7 @@ on:
 env:
   IMAGE_NAME: vatsim-scandinavia/events
   TARGET_PLATFORMS: linux/amd64
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-container:
@@ -53,26 +54,26 @@ jobs:
     name: Event Manager Test Suite
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Event Manager
-      uses: actions/checkout@v4
-      with:
-        path: events
+      - name: Checkout Event Manager
+        uses: actions/checkout@v4
+        with:
+          path: events
 
-    - name: Setup dependencies for Event Manager
-      uses: ./events/.github/actions/setup-dependencies
-      with:
-        path: events
-        setup-node: true
+      - name: Setup dependencies for Event Manager
+        uses: ./events/.github/actions/setup-dependencies
+        with:
+          path: events
+          setup-node: true
 
-    - name: Setup Event Manager
-      uses: ./events/.github/actions/setup-project
-      with:
-        path: events
-        setup-node: true
-        seed-database: true
-      env:
-        DB_CONNECTION: sqlite-testing
+      - name: Setup Event Manager
+        uses: ./events/.github/actions/setup-project
+        with:
+          path: events
+          setup-node: true
+          seed-database: true
+        env:
+          DB_CONNECTION: sqlite-testing
 
-    - name: Execute unit and feature tests via PHPUnit
-      run: ./vendor/bin/phpunit --color=always --testdox
-      working-directory: ./events
+      - name: Execute unit and feature tests via PHPUnit
+        run: ./vendor/bin/phpunit --color=always --testdox
+        working-directory: ./events
