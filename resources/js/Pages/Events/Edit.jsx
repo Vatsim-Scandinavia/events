@@ -68,7 +68,7 @@ export default function Edit({ event, calendars, bannerUrl }) {
 
     useEffect(() => {
         setLoadingChannels(true);
-        fetch('/api/discord/channels')
+        fetch('/api/v2/discord/channels')
             .then(response => response.json())
             .then(data => {
                 setDiscordChannels(data);
@@ -238,12 +238,8 @@ export default function Edit({ event, calendars, bannerUrl }) {
                                     {loadingChannels ? (
                                         <option disabled>Loading channels...</option>
                                     ) : (
-                                        discordChannels.map((guild) => (
-                                            <optgroup key={guild.guild_id} label={guild.guild_name}>
-                                                {guild.channels.map((channel) => (
-                                                    <option key={channel.id} value={channel.id}>#{channel.name}</option>
-                                                ))}
-                                            </optgroup>
+                                        discordChannels.map((channel) => (
+                                            <option key={channel.id} value={channel.id}>#{channel.name}</option>
                                         ))
                                     )}
                                 </Select>
