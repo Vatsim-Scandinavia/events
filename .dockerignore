@@ -1,0 +1,40 @@
+.git
+.gitignore
+.gitattributes
+.editorconfig
+
+# Node
+node_modules/
+
+# PHP/Composer vendor (installed in Docker)
+vendor/
+
+# Laravel local dev files
+.env
+.env.*
+!.env.example
+
+# Storage logs and temp files
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+
+# Test files
+tests/
+phpunit.xml
+
+# Build artifacts / local public build (built in Docker)
+public/build/
+public/hot/
+
+# Docker
+Dockerfile
+.dockerignore
+container/
+
+# IDE / editor
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace

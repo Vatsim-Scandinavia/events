@@ -20,10 +20,9 @@ EXPOSE 80 443
 
 # Install various dependencies
 # - git and unzip for composer
-# - vim and nano for our egos
 # - ca-certificates for OAuth2
 RUN apt-get update && \
-    apt-get install -y git unzip vim nano ca-certificates && \
+    apt-get install -y git unzip ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     a2enmod rewrite ssl
@@ -44,20 +43,23 @@ COPY --from=mlocati/php-extension-installer:2.2.19 /usr/bin/install-php-extensio
 RUN install-php-extensions pdo_mysql opcache
 
 # Install composer
-COPY --from=docker.io/library/composer:latest /usr/bin/composer /usr/bin/composer
-# Copy over the application, static files, plus the ones built/transpiled by Mix in the frontend stage further up
-COPY --chown=www-data:www-data ./ /app/
-COPY --from=frontend --chown=www-data:www-data /app/public/build /app/public/build
+COPY --from=docker.io/library/composer:2.9.5 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
+# Install PHP dependencies first (separate layer for better cache reuse)
+COPY --chown=www-data:www-data composer.json composer.lock /app/
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+
+# Copy over the application, static files, plus the ones built/transpiled by Vite in the frontend stage further up
+COPY --chown=www-data:www-data ./ /app/
+COPY --from=frontend --chown=www-data:www-data /app/public/build /app/public/build
+
 # Ensure the storage and cache directories have the correct permissions
 RUN chmod -R 755 storage bootstrap/cache && \
-    composer install --no-dev --no-interaction --prefer-dist && \
     mkdir -p /app/storage/app/public/banners && \
-    chmod -R 775 /app/storage
-
-RUN chown -R www-data:www-data /app/storage/app/public/banners
+    chmod -R 775 /app/storage && \
+    chown -R www-data:www-data /app/storage/app/public/banners
 
 # Wrap around the default PHP entrypoint with a custom entrypoint
 COPY ./container/entrypoint.sh /usr/local/bin/service-entrypoint
