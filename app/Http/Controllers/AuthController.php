@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -14,11 +15,15 @@ class AuthController extends Controller
      */
     public function redirectToProvider()
     {
+        $state = Str::random(40);
+        session(['oauth_state' => $state]);
+
         $params = [
             'client_id' => config('services.vatsim.client_id'),
             'redirect_uri' => route('auth.callback'),
             'response_type' => 'code',
             'scope' => 'full_name vatsim_details email',
+            'state' => $state,
         ];
 
         $authUrl = config('services.vatsim.base_url') . '/oauth/authorize?' . http_build_query($params);
@@ -35,6 +40,14 @@ class AuthController extends Controller
 
         if (!$code) {
             return redirect('/')->with('error', 'Authentication failed');
+        }
+
+        $returnedState = $request->get('state');
+        $expectedState = session('oauth_state');
+        $request->session()->forget('oauth_state');
+
+        if (!$returnedState || !$expectedState || !hash_equals($expectedState, $returnedState)) {
+            return redirect('/')->with('error', 'Invalid OAuth state');
         }
 
         // Exchange code for access token
@@ -67,7 +80,7 @@ class AuthController extends Controller
 
         $userData = $userResponse->json();
         \Log::info('Handover user data received for user: ' . $userData['data']['cid']);
-        
+
         // Handle both Handover and VATSIM Connect response formats
         $vatsimUser = $userData['data'] ?? $userData;
 
@@ -120,4 +133,3 @@ class AuthController extends Controller
         return redirect('/');
     }
 }
-
