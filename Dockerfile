@@ -47,16 +47,18 @@ COPY --from=docker.io/library/composer:2.9.5 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /app
 
-# Install PHP dependencies first (separate layer for better cache reuse)
+# Install PHP dependencies first (separate layer for better cache reuse).
+# --no-scripts prevents post-autoload-dump from running artisan, which doesn't exist yet.
 COPY --chown=www-data:www-data composer.json composer.lock /app/
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts
 
 # Copy over the application, static files, plus the ones built/transpiled by Vite in the frontend stage further up
 COPY --chown=www-data:www-data ./ /app/
 COPY --from=frontend --chown=www-data:www-data /app/public/build /app/public/build
 
 # Ensure the storage and cache directories have the correct permissions
-RUN chmod -R 755 storage bootstrap/cache && \
+RUN composer dump-autoload --optimize && \
+    chmod -R 755 storage bootstrap/cache && \
     mkdir -p /app/storage/app/public/banners && \
     chmod -R 775 /app/storage && \
     chown -R www-data:www-data /app/storage/app/public/banners
