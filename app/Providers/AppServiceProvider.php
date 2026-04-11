@@ -3,10 +3,10 @@
 namespace App\Providers;
 
 use App\Clients\DiscordClient;
-use App\Models\Event;
-use App\Observers\EventObserver;
+use App\Socialite\VatsimProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Socialite\Facades\Socialite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,7 +25,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Event::observe(EventObserver::class);
+        Socialite::extend('vatsim', function () {
+            $config = config('services.vatsim');
+            return Socialite::buildProvider(VatsimProvider::class, $config);
+        });
 
         // Force HTTPS URLs in production and Codespaces
         if (config('app.env') !== 'local' || env('CODESPACE_NAME')) {

@@ -13,18 +13,21 @@ return new class extends Migration
     {
         Schema::create('events', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('calendar_id')->constrained()->onDelete('cascade');
+            $table->foreignId('calendar_id')->constrained('calendars')->onDelete('cascade');
             $table->string('title');
-            $table->string('short_description', 255);
-            $table->text('long_description');
+            $table->string('slug')->unique();
+            $table->text('short_description')->nullable();
+            $table->text('long_description')->nullable();
+            $table->json('featured_airports')->nullable();
             $table->string('banner_path')->nullable();
-            $table->dateTime('start_datetime');
-            $table->dateTime('end_datetime');
-            $table->text('recurrence_rule')->nullable();
-            $table->foreignId('recurrence_parent_id')->nullable()->constrained('events')->onDelete('cascade');
+            $table->enum('status', ['draft', 'published', 'cancelled'])->default('draft');
+            $table->string('recurrence_rule')->nullable();
+            $table->string('timezone')->default('UTC');
+            $table->string('discord_channel_id')->nullable();
+            $table->string('discord_message_id')->nullable();
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
-            $table->timestamps();
             $table->softDeletes();
+            $table->timestamps();
         });
     }
 

@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreCalendarRequest;
-use App\Http\Requests\UpdateCalendarRequest;
-use App\Models\Calendar;
+use App\Http\Requests\StoreEventOccurrenceRequest;
+use App\Http\Requests\UpdateEventOccurrenceRequest;
+use App\Models\EventOccurrence;
 
-class CalendarController extends Controller
+class EventOccurrenceController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -27,7 +27,7 @@ class CalendarController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreCalendarRequest $request)
+    public function store(StoreEventOccurrenceRequest $request)
     {
         //
     }
@@ -35,7 +35,7 @@ class CalendarController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Calendar $calendar)
+    public function show(EventOccurrence $eventOccurrence)
     {
         //
     }
@@ -43,7 +43,7 @@ class CalendarController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Calendar $calendar)
+    public function edit(EventOccurrence $eventOccurrence)
     {
         //
     }
@@ -51,7 +51,7 @@ class CalendarController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCalendarRequest $request, Calendar $calendar)
+    public function update(UpdateEventOccurrenceRequest $request, EventOccurrence $eventOccurrence)
     {
         //
     }
@@ -59,7 +59,7 @@ class CalendarController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Calendar $calendar)
+    public function destroy(EventOccurrence $eventOccurrence)
     {
         //
     }

@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
@@ -14,54 +12,41 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    public $timestamps = false;
+    protected $table = 'users';
+
     protected $fillable = [
-        'name',
+        'id',
         'email',
-        'password',
-        'vatsim_cid',
-        'vatsim_rating',
+        'first_name',
+        'last_name',
+        'last_login',
+        'access_token',
+        'refresh_token',
+        'token_expires',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
-        'password',
         'remember_token',
+        'access_token',
+        'refresh_token',
+        'token_expires',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'last_login' => 'datetime',
         ];
     }
 
-    public function calendars(): HasMany
-    {
-        return $this->hasMany(Calendar::class, 'created_by');
-    }
-
-    public function events(): HasMany
+    public function events()
     {
         return $this->hasMany(Event::class, 'created_by');
     }
 
-    public function bookedPositions(): HasMany
+    public function calendars()
     {
-        return $this->hasMany(StaffingPosition::class, 'booked_by_user_id');
+        return $this->hasMany(Calendar::class, 'created_by');
     }
 }

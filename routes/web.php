@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\ControlCenterController;
@@ -13,15 +14,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 
 // Authentication routes
-Route::get('/auth/vatsim', [AuthController::class, 'redirectToProvider'])->name('auth.vatsim');
-Route::get('/auth/callback', [AuthController::class, 'handleProviderCallback'])->name('auth.callback');
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
-
-// Development login routes (only in local environment)
-Route::get('/dev/login', [AuthController::class, 'showDevLogin'])->name('dev.login');
-
-// Spatie Login Link routes are automatically registered by the package
-// They handle the actual login when clicking a login link
+Route::prefix('auth')->name('auth.')->group(function () {
+    Route::get('/vatsim', [LoginController::class, 'redirectToProvider'])->name('vatsim');
+    Route::get('/callback', [LoginController::class, 'handleProviderCallback'])->name('callback');
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+});
 
 // Authenticated routes
 Route::middleware(['auth'])->group(function () {

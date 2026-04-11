@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            $table->json('featured_airports')->nullable()->after('long_description');
+        Schema::create('calendars', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->enum('visibility', ['private', 'public'])->default('public');
+            $table->timestamps();
         });
     }
 
@@ -21,8 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            $table->dropColumn('featured_airports');
-        });
+        Schema::dropIfExists('calendars');
     }
 };

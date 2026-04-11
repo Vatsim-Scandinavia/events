@@ -4,65 +4,63 @@ namespace App\Policies;
 
 use App\Models\Calendar;
 use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
 class CalendarPolicy
 {
     /**
-     * Determine whether the user can view any calendars
+     * Determine whether the user can view any models.
      */
-    public function viewAny(?User $user): bool
+    public function viewAny(User $user): bool
     {
-        return true; // Anyone can view public calendars
+        return false;
     }
 
     /**
-     * Determine whether the user can view the calendar
+     * Determine whether the user can view the model.
      */
-    public function view(?User $user, Calendar $calendar): bool
+    public function view(User $user, Calendar $calendar): bool
     {
-        // Public calendars are visible to everyone
-        if ($calendar->is_public) {
-            return true;
-        }
-
-        // Private calendars require authentication
-        if (!$user) {
-            return false;
-        }
-
-        // Admin can see all calendars
-        if ($user->hasRole('admin')) {
-            return true;
-        }
-
-        // Creator can see their own calendar
-        return $calendar->created_by === $user->id;
+        return false;
     }
 
     /**
-     * Determine whether the user can create calendars
+     * Determine whether the user can create models.
      */
     public function create(User $user): bool
     {
-        // Only admins can create calendars
-        return $user->hasRole('admin');
+        return false;
     }
 
     /**
-     * Determine whether the user can update the calendar
+     * Determine whether the user can update the model.
      */
     public function update(User $user, Calendar $calendar): bool
     {
-        // Only admins can edit calendars
-        return $user->hasRole('admin');
+        return false;
     }
 
     /**
-     * Determine whether the user can delete the calendar
+     * Determine whether the user can delete the model.
      */
     public function delete(User $user, Calendar $calendar): bool
     {
-        // Only admins can delete calendars
-        return $user->hasRole('admin');
+        return false;
+    }
+
+    /**
+     * Determine whether the user can restore the model.
+     */
+    public function restore(User $user, Calendar $calendar): bool
+    {
+        return false;
+    }
+
+    /**
+     * Determine whether the user can permanently delete the model.
+     */
+    public function forceDelete(User $user, Calendar $calendar): bool
+    {
+        return false;
     }
 }
