@@ -27,6 +27,7 @@ export default function Show({ calendar }) {
                         title={cal.title}
                         subtitle={`Created by ${cal.creator?.full_name || 'N/A'}`}
                         label={cal.visibility}
+                        labelColor={cal.visibility === 'private' ? 'bg-danger' : 'bg-success'}
                         actions={
                             canManage && (
                                 <div className="flex gap-3">
