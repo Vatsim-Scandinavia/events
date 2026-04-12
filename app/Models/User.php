@@ -33,6 +33,10 @@ class User extends Authenticatable
         'token_expires',
     ];
 
+    protected $appends = [
+        'full_name',
+    ];
+
     protected function casts(): array
     {
         return [
@@ -48,5 +52,10 @@ class User extends Authenticatable
     public function calendars()
     {
         return $this->hasMany(Calendar::class, 'created_by');
+    }
+
+    public function getFullNameAttribute()
+    {
+        return $this->first_name . ' ' . $this->last_name;
     }
 }

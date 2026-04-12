@@ -102,7 +102,7 @@ export default function Navbar() {
                     {auth?.user ? (
                         <>
                             <span className="text-sm font-medium text-neutral-100/80">
-                                {auth.user.name}
+                                {auth.user.full_name}
                             </span>
                             <button
                                 onClick={logout}
@@ -173,7 +173,7 @@ export default function Navbar() {
                         {auth?.user ? (
                             <>
                                 <span className="px-4 py-2 text-sm font-medium text-neutral-100/60">
-                                    Signed in as {auth.user.name}
+                                    Signed in as {auth.user.full_name}
                                 </span>
                                 <button
                                     onClick={() => { setMenuOpen(false); logout(); }}

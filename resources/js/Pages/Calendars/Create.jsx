@@ -3,13 +3,14 @@ import Layout from '../../Layouts/Layout';
 import Button from '../../Components/Button';
 import Input from '../../Components/Input';
 import Textarea from '../../Components/Textarea';
+import Card from '../../Components/Card';
 
 export default function Create() {
     const { auth } = usePage().props;
     const { data, setData, post, processing, errors } = useForm({
-        name: '',
+        title: '',
         description: '',
-        is_public: true,
+        visibility: 'public',
     });
 
     const handleSubmit = (e) => {
@@ -25,29 +26,20 @@ export default function Create() {
             <Head title="Create Calendar" />
             <Layout auth={auth}>
                 <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-10">
-                    <div className="border border-neutral-200 dark:border-neutral-700">
-
-                        {/* Card Header */}
-                        <div className="bg-secondary dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-6 py-4">
-                            <h1 className="text-lg font-semibold text-white">Create Calendar</h1>
-                        </div>
-
-                        {/* Form Body */}
+                    <Card title="Create Calendar" subtitle="Use the form below to create a new calendar. You can set the title, description, and visibility of the calendar.">
                         <div className="bg-white dark:bg-neutral-800 p-6">
                             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-
                                 <div className={sectionClass}>
-                                    <label htmlFor="name" className={labelClass}>Calendar Name *</label>
+                                    <label htmlFor="title" className={labelClass}>Calendar Title *</label>
                                     <Input
-                                        id="name"
+                                        id="title"
                                         type="text"
-                                        value={data.name}
-                                        onChange={(e) => setData('name', e.target.value)}
-                                        error={errors.name}
+                                        value={data.title}
+                                        onChange={(e) => setData('title', e.target.value)}
+                                        error={errors.title}
                                         required
-                                    />
+                                    ></Input>
                                 </div>
-
                                 <div className={sectionClass}>
                                     <label htmlFor="description" className={labelClass}>Description</label>
                                     <Textarea
@@ -56,15 +48,14 @@ export default function Create() {
                                         onChange={(e) => setData('description', e.target.value)}
                                         error={errors.description}
                                         rows={4}
-                                    />
+                                    ></Textarea>
                                 </div>
-
                                 <div>
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            checked={data.is_public}
-                                            onChange={(e) => setData('is_public', e.target.checked)}
+                                            checked={data.visibility === 'public'}
+                                            onChange={(e) => setData('visibility', e.target.checked ? 'public' : 'private')}
                                             className="accent-secondary w-4 h-4"
                                         />
                                         <span className="text-sm text-neutral-700 dark:text-neutral-300">
@@ -72,7 +63,6 @@ export default function Create() {
                                         </span>
                                     </label>
                                 </div>
-
                                 <div className="flex justify-end gap-3 pt-2 border-t border-neutral-200 dark:border-neutral-700">
                                     <Button
                                         type="button"
@@ -85,10 +75,9 @@ export default function Create() {
                                         {processing ? 'Creating...' : 'Create Calendar'}
                                     </Button>
                                 </div>
-
                             </form>
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </Layout>
         </>

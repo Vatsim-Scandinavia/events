@@ -4,63 +4,24 @@ namespace App\Policies;
 
 use App\Models\EventOccurrence;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class EventOccurrencePolicy
 {
     /**
-     * Determine whether the user can view any models.
+     * Determine whether the user can cancel the event occurrence.
      */
-    public function viewAny(User $user): bool
+    public function cancel(User $user, EventOccurrence $eventOccurrence): bool
     {
-        return false;
+        return $user->hasPermissionTo('cancel event occurrences') && $eventOccurrence->event->created_by === $user->id
+            || $user->hasPermissionTo('manage events created by others') && $eventOccurrence->event->created_by !== $user->id;
     }
 
     /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, EventOccurrence $eventOccurrence): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, EventOccurrence $eventOccurrence): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, EventOccurrence $eventOccurrence): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
+     * Determine whether the user can restore the event occurrence.
      */
     public function restore(User $user, EventOccurrence $eventOccurrence): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, EventOccurrence $eventOccurrence): bool
-    {
-        return false;
+        return $user->hasPermissionTo('restore event occurrences') && $eventOccurrence->event->created_by === $user->id
+            || $user->hasPermissionTo('manage events created by others') && $eventOccurrence->event->created_by !== $user->id;
     }
 }

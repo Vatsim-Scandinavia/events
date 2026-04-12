@@ -3,18 +3,19 @@ import Layout from '../../Layouts/Layout';
 import Button from '../../Components/Button';
 import Input from '../../Components/Input';
 import Textarea from '../../Components/Textarea';
+import Card from '../../Components/Card';
 
 export default function Edit({ calendar }) {
     const { auth } = usePage().props;
     const { data, setData, put, processing, errors } = useForm({
-        name: calendar.name || '',
-        description: calendar.description || '',
-        is_public: calendar.is_public,
+        title: calendar.data.title || '',
+        description: calendar.data.description || '',
+        visibility: calendar.data.visibility,
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        put(`/calendars/${calendar.id}`);
+        put(`/calendars/${calendar.data.id}`);
     };
 
     const labelClass = "block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1";
@@ -22,28 +23,22 @@ export default function Edit({ calendar }) {
 
     return (
         <>
-            <Head title={`Edit ${calendar.name}`} />
+            <Head title={`Edit ${calendar.data.title}`} />
             <Layout auth={auth}>
                 <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-10">
-                    <div className="border border-neutral-200 dark:border-neutral-700">
 
-                        {/* Card Header */}
-                        <div className="bg-secondary dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-6 py-4">
-                            <h1 className="text-lg font-semibold text-white">Edit Calendar</h1>
-                        </div>
-
-                        {/* Form Body */}
+                    <Card title={`Edit Calendar`} subtitle={`Use the form below to edit your calendar. You can update the title, description, and visibility of the calendar.`}>
                         <div className="bg-white dark:bg-neutral-800 p-6">
                             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
                                 <div className={sectionClass}>
-                                    <label htmlFor="name" className={labelClass}>Calendar Name *</label>
+                                    <label htmlFor="title" className={labelClass}>Calendar Title *</label>
                                     <Input
-                                        id="name"
+                                        id="title"
                                         type="text"
-                                        value={data.name}
-                                        onChange={(e) => setData('name', e.target.value)}
-                                        error={errors.name}
+                                        value={data.title}
+                                        onChange={(e) => setData('title', e.target.value)}
+                                        error={errors.title}
                                         required
                                     />
                                 </div>
@@ -63,8 +58,8 @@ export default function Edit({ calendar }) {
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            checked={data.is_public}
-                                            onChange={(e) => setData('is_public', e.target.checked)}
+                                            checked={data.visibility === 'public'}
+                                            onChange={(e) => setData('visibility', e.target.checked ? 'public' : 'private')}
                                             className="accent-secondary w-4 h-4"
                                         />
                                         <span className="text-sm text-neutral-700 dark:text-neutral-300">
@@ -88,7 +83,7 @@ export default function Edit({ calendar }) {
 
                             </form>
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </Layout>
         </>

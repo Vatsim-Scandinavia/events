@@ -11,7 +11,7 @@ class StoreCalendarRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return $this->user()->can('manage calendars');
     }
 
     /**
@@ -22,7 +22,9 @@ class StoreCalendarRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'visibility' => 'required|in:public,private',
         ];
     }
 }

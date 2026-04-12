@@ -4,32 +4,23 @@ namespace App\Policies;
 
 use App\Models\Calendar;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class CalendarPolicy
 {
     /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
-    {
-        return false;
-    }
-
-    /**
      * Determine whether the user can view the model.
-     */
-    public function view(User $user, Calendar $calendar): bool
+    */
+    public function view(User $user): bool
     {
-        return false;
+        return $user->hasPermissionTo('view calendars');
     }
-
+        
     /**
      * Determine whether the user can create models.
      */
     public function create(User $user): bool
     {
-        return false;
+        return $user->hasPermissionTo('manage calendars');
     }
 
     /**
@@ -37,7 +28,7 @@ class CalendarPolicy
      */
     public function update(User $user, Calendar $calendar): bool
     {
-        return false;
+        return $user->hasPermissionTo('manage calendars');
     }
 
     /**
@@ -45,22 +36,6 @@ class CalendarPolicy
      */
     public function delete(User $user, Calendar $calendar): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Calendar $calendar): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Calendar $calendar): bool
-    {
-        return false;
+        return $user->hasPermissionTo('manage calendars');
     }
 }

@@ -15,7 +15,7 @@ class CalendarFactory extends Factory
             'title' => fake()->sentence(2),
             'description' => fake()->paragraph(),
             'visibility' => fake()->randomElement(['public', 'private']),
-            'created_by' => fake()->numberBetween(10000000, 10000010),
+            'created_by' => \App\Models\User::factory(),
         ];
     }
 }

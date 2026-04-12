@@ -1,10 +1,13 @@
 import { Link, usePage, Head } from '@inertiajs/react';
 import Layout from '../../Layouts/Layout';
 import Button from '../../Components/Button';
+import Card from '../../Components/Card';
 import { PlusIcon } from '@heroicons/react/24/solid';
 
 export default function Index({ calendars }) {
     const { auth } = usePage().props;
+
+    const canManage = auth.user?.permissions?.includes('manage calendars');
 
     return (
         <>
@@ -12,32 +15,23 @@ export default function Index({ calendars }) {
             <Layout auth={auth}>
                 <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-6">
 
-                    {/* Calendars List */}
-                    <div className="border border-neutral-200 dark:border-neutral-700">
-                        <div className="bg-secondary dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-6 py-4">
-                            <div className="flex justify-between items-center">
-                                <h1 className="text-lg font-semibold text-white dark:text-neutral-100">Calendars</h1>
-                                {auth.user?.permissions?.includes('create-calendars') && (
-                                    <Link href="/calendars/create">
-                                        <Button variant="success"><PlusIcon className="w-4 h-4 mr-1" />Create Calendar</Button>
-                                    </Link>
-                                )}
-                            </div>
-                        </div>
-
+                    <Card title="Test Card" actions={
+                        canManage && (
+                            <Link href="/calendars/create">
+                                <Button variant="success"><PlusIcon className="w-4 h-4 mr-1" />Create Calendar</Button>
+                            </Link>
+                        )
+                    }>
                         {calendars.data.length > 0 ? (
                             <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
                                 {calendars.data.map((calendar) => (
-                                    <div
-                                        key={calendar.id}
-                                        className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-6 py-4 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
-                                    >
+                                    <div key={calendar.id} className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-6 py-4 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
-                                                    {calendar.name}
+                                                    {calendar.title}
                                                 </h3>
-                                                {!calendar.is_public && (
+                                                {calendar.visibility !== 'public' && (
                                                     <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-warning text-white uppercase">
                                                         Private
                                                     </span>
@@ -49,7 +43,7 @@ export default function Index({ calendars }) {
                                                 </p>
                                             )}
                                             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                                Created by {calendar.creator?.name || 'Unknown'}
+                                                Created by {calendar.creator?.full_name || 'Unknown'}
                                             </p>
                                         </div>
                                         <div className="shrink-0">
@@ -64,11 +58,9 @@ export default function Index({ calendars }) {
                                 ))}
                             </div>
                         ) : (
-                            <div className="bg-white dark:bg-neutral-800 px-6 py-12 text-center">
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400">No calendars found.</p>
-                            </div>
+                            <p>No calendars found.</p>
                         )}
-                    </div>
+                    </Card>
 
                     {/* Pagination */}
                     {calendars.links?.length > 3 && (
@@ -87,7 +79,6 @@ export default function Index({ calendars }) {
                             ))}
                         </div>
                     )}
-
                 </div>
             </Layout>
         </>

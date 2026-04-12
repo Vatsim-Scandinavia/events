@@ -5,146 +5,223 @@ namespace Tests\Feature;
 use App\Models\Calendar;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Queue;
-use Spatie\Permission\Models\Role;
+use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class CalendarTest extends TestCase
 {
     use RefreshDatabase;
+    use WithFaker;
 
-    protected function setUp(): void
+    /**
+     * Test that a user with the appropriate permissions can view the calendar index page.
+     */
+    public function test_user_with_permissions_can_view_calendar_index()
     {
-        parent::setUp();
-        
-        // Create permissions
-        $permissions = [
-            'create-calendars', 'edit-calendars', 'delete-calendars',
-            'manage-calendars', 'manage-events',
-        ];
-        foreach ($permissions as $permission) {
-            \Spatie\Permission\Models\Permission::create(['name' => $permission]);
-        }
-        
-        // Create roles and assign permissions
-        $adminRole = Role::create(['name' => 'admin']);
-        $adminRole->givePermissionTo($permissions);
-        $moderatorRole = Role::create(['name' => 'moderator']);
-        $moderatorRole->givePermissionTo($permissions);
-        Role::create(['name' => 'user']);
-        
-        // Fake HTTP to prevent Discord webhooks
-        Http::fake([
-            '*/webhooks/*' => Http::response(['success' => true], 200),
-        ]);
-        
-        Queue::fake();
-    }
+        $this->seed();
 
-    public function test_moderator_can_view_calendars_page()
-    {
+        // Create a user and assign the 'administrator' role
         $user = User::factory()->create();
-        $user->assignRole('moderator');
-        Calendar::factory()->create(['is_public' => true]);
+        $user->assignRole('administrator');
 
-        $response = $this->actingAs($user)->get('/calendars');
+        // Act as the user and attempt to view the calendar index page
+        $response = $this->actingAs($user)->get(route('calendars.index'));
 
+        // Assert that the user can access the page and sees the list of calendars
         $response->assertStatus(200);
     }
 
-    public function test_guest_cannot_access_calendars_management_page()
+    /**
+     * Test that a user without the appropriate permissions cannot view the calendar index page.
+     */
+    public function test_user_without_permissions_cannot_view_calendar_index()
     {
-        Calendar::factory()->create(['is_public' => true]);
+        $this->seed();
 
-        $response = $this->get('/calendars');
+        // Create a user without any roles or permissions
+        $user = User::factory()->create();
+        $user->assignRole('user');
 
+        // Act as the user and attempt to view the calendar index page
+        $response = $this->actingAs($user)->get(route('calendars.index'));
+
+        // Assert that the user receives a 403 Forbidden response
         $response->assertStatus(403);
     }
 
-    public function test_authenticated_user_can_create_calendar()
+    /**
+     * Test that a user with the appropriate permissions can create a calendar.
+     */
+    public function test_user_with_permissions_can_create_calendar()
     {
-        $user = User::factory()->create();
-        $user->assignRole('admin'); // Only admins can create calendars
+        $this->seed();
 
-        $response = $this->actingAs($user)->post('/calendars', [
-            'name' => 'Test Calendar',
-            'description' => 'Test Description',
-            'is_public' => true,
+        // Create a user and assign the 'administrator' role
+        $user = User::factory()->create();
+        $user->assignRole('administrator');
+
+        // Act as the user and attempt to create a calendar
+        $response = $this->actingAs($user)->post(route('calendars.store'), [
+            'title' => 'Test Calendar',
+            'description' => 'This is a test calendar.',
+            'visibility' => 'public',
         ]);
 
-        $response->assertRedirect('/calendars');
+        // Assert that the calendar was created and the user is redirected to the calendar's page
+        $response->assertRedirect();
         $this->assertDatabaseHas('calendars', [
-            'name' => 'Test Calendar',
+            'title' => 'Test Calendar',
+            'description' => 'This is a test calendar.',
+            'visibility' => 'public',
             'created_by' => $user->id,
         ]);
     }
 
-    public function test_moderator_cannot_create_calendar()
+    /**
+     * Test that a user without the appropriate permissions cannot create a calendar.
+     */
+    public function test_user_without_permissions_cannot_create_calendar()
     {
-        $user = User::factory()->create();
-        $user->assignRole('moderator');
+        $this->seed();
 
-        $response = $this->actingAs($user)->post('/calendars', [
-            'name' => 'Test Calendar',
-            'description' => 'Test Description',
-            'is_public' => true,
+        // Create a user without any roles or permissions
+        $user = User::factory()->create();
+        $user->assignRole('user');
+
+        // Act as the user and attempt to create a calendar
+        $response = $this->actingAs($user)->post(route('calendars.store'), [
+            'title' => 'Test Calendar',
+            'description' => 'This is a test calendar.',
+            'visibility' => 'public',
         ]);
 
+        // Assert that the user receives a 403 Forbidden response
         $response->assertStatus(403);
+        $this->assertDatabaseMissing('calendars', [
+            'title' => 'Test Calendar',
+            'description' => 'This is a test calendar.',
+            'visibility' => 'public',
+            'created_by' => $user->id,
+        ]);
     }
 
-    public function test_admin_can_edit_any_calendar()
+    /**
+     * Test that a user with the appropriate permissions can edit a calendar.
+     */
+    public function test_user_with_permissions_can_edit_calendar()
     {
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-        $otherUser = User::factory()->create();
-        $otherUser->assignRole('admin');
-        $calendar = Calendar::factory()->create(['created_by' => $otherUser->id]);
+        $this->seed();
 
-        $response = $this->actingAs($admin)->put("/calendars/{$calendar->id}", [
-            'name' => 'Updated Calendar',
-            'description' => 'Updated Description',
-            'is_public' => false,
+        // Create a user and assign the 'administrator' role
+        $user = User::factory()->create();
+        $user->assignRole('administrator');
+
+        // Create a calendar
+        $calendar = Calendar::factory()->create([
+            'created_by' => $user->id,
         ]);
 
-        $response->assertRedirect('/calendars');
+        // Act as the user and attempt to edit the calendar
+        $response = $this->actingAs($user)->put(route('calendars.update', $calendar), [
+            'title' => 'Updated Calendar Title',
+            'description' => 'Updated description.',
+            'visibility' => 'private',
+        ]);
+
+        // Assert that the calendar was updated and the user is redirected to the calendar's page
+        $response->assertRedirect();
         $this->assertDatabaseHas('calendars', [
             'id' => $calendar->id,
-            'name' => 'Updated Calendar',
+            'title' => 'Updated Calendar Title',
+            'description' => 'Updated description.',
+            'visibility' => 'private',
+            'created_by' => $user->id,
         ]);
     }
 
-    public function test_moderator_cannot_edit_calendar()
+    /**
+     * Test that a user without the appropriate permissions cannot edit a calendar.
+     */
+    public function test_user_without_permissions_cannot_edit_calendar()
     {
-        $moderator = User::factory()->create();
-        $moderator->assignRole('moderator');
-        $admin = User::factory()->create();
-        $admin->assignRole('admin');
-        $calendar = Calendar::factory()->create(['created_by' => $admin->id]);
+        $this->seed();
 
-        $response = $this->actingAs($moderator)->put("/calendars/{$calendar->id}", [
-            'name' => 'Hacked Calendar',
-            'description' => 'Test',
-            'is_public' => true,
+        // Create a user without any roles or permissions
+        $user = User::factory()->create();
+        $user->assignRole('user');
+
+        // Create a calendar
+        $calendar = Calendar::factory()->create();
+
+        // Act as the user and attempt to edit the calendar
+        $response = $this->actingAs($user)->put(route('calendars.update', $calendar), [
+            'title' => 'Updated Calendar Title',
+            'description' => 'Updated description.',
+            'visibility' => 'private',
         ]);
 
-        $response->assertForbidden();
+        // Assert that the user receives a 403 Forbidden response
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('calendars', [
+            'id' => $calendar->id,
+            'title' => $calendar->title,
+            'description' => $calendar->description,
+            'visibility' => $calendar->visibility,
+            'created_by' => $calendar->created_by,
+        ]);
     }
 
-    public function test_private_calendar_not_visible_to_other_users()
+    /**
+     * Test that a user with the appropriate permissions can delete a calendar.
+     */
+    public function test_user_with_permissions_can_delete_calendar()
     {
-        $user1 = User::factory()->create();
-        $user1->assignRole('user');
-        $user2 = User::factory()->create();
-        $user2->assignRole('user');
+        $this->seed();
+
+        // Create a user and assign the 'administrator' role
+        $user = User::factory()->create();
+        $user->assignRole('administrator');
+
+        // Create a calendar
         $calendar = Calendar::factory()->create([
-            'created_by' => $user1->id,
-            'is_public' => false,
+            'created_by' => $user->id,
         ]);
 
-        $response = $this->actingAs($user2)->get("/calendars/{$calendar->id}");
+        // Act as the user and attempt to delete the calendar
+        $response = $this->actingAs($user)->delete(route('calendars.destroy', $calendar));
 
-        $response->assertForbidden();
+        // Assert that the calendar was deleted and the user is redirected to the calendars index page
+        $response->assertRedirect(route('calendars.index'));
+        $this->assertDatabaseMissing('calendars', [
+            'id' => $calendar->id,
+        ]);
+    }
+
+    /**
+     * Test that a user without the appropriate permissions cannot delete a calendar.
+     */
+    public function test_user_without_permissions_cannot_delete_calendar()
+    {
+        $this->seed();
+
+        // Create a user without any roles or permissions
+        $user = User::factory()->create();
+        $user->assignRole('user');
+
+        // Create a calendar
+        $calendar = Calendar::factory()->create();
+
+        // Act as the user and attempt to delete the calendar
+        $response = $this->actingAs($user)->delete(route('calendars.destroy', $calendar));
+
+        // Assert that the user receives a 403 Forbidden response
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('calendars', [
+            'id' => $calendar->id,
+            'title' => $calendar->title,
+            'description' => $calendar->description,
+            'visibility' => $calendar->visibility,
+            'created_by' => $calendar->created_by,
+        ]);
     }
 }

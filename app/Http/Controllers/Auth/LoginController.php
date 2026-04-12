@@ -33,6 +33,8 @@ class LoginController extends Controller
             ]
         );
 
+        $user->assignRole('user');
+
         Auth::login($user, true);
 
         return redirect()->intended('/');
