@@ -64,7 +64,7 @@ export default function Navbar() {
     // Filter nav links based on permissions
     const visibleNavLinks = navLinks.filter(link => {
         if (link.href === '/calendars') {
-            return auth?.user?.permissions?.includes('view-calendars') || auth?.user?.roles?.includes('admin');
+            return auth?.user?.permissions?.includes('manage calendars');
         }
         return true;
     });
