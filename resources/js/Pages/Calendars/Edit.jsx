@@ -24,67 +24,64 @@ export default function Edit({ calendar }) {
     return (
         <>
             <Head title={`Edit ${calendar.data.title}`} />
-            <Layout auth={auth}>
-                <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-10">
+            <Layout auth={auth} className="">
+                <Card title={`Edit Calendar`} subtitle={`Use the form below to edit your calendar. You can update the title, description, and visibility of the calendar.`}>
+                    <div className="bg-white dark:bg-neutral-800 p-6">
+                        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
-                    <Card title={`Edit Calendar`} subtitle={`Use the form below to edit your calendar. You can update the title, description, and visibility of the calendar.`}>
-                        <div className="bg-white dark:bg-neutral-800 p-6">
-                            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+                            <div className={sectionClass}>
+                                <label htmlFor="title" className={labelClass}>Calendar Title *</label>
+                                <Input
+                                    id="title"
+                                    type="text"
+                                    value={data.title}
+                                    onChange={(e) => setData('title', e.target.value)}
+                                    error={errors.title}
+                                    required
+                                />
+                            </div>
 
-                                <div className={sectionClass}>
-                                    <label htmlFor="title" className={labelClass}>Calendar Title *</label>
-                                    <Input
-                                        id="title"
-                                        type="text"
-                                        value={data.title}
-                                        onChange={(e) => setData('title', e.target.value)}
-                                        error={errors.title}
-                                        required
+                            <div className={sectionClass}>
+                                <label htmlFor="description" className={labelClass}>Description</label>
+                                <Textarea
+                                    id="description"
+                                    value={data.description}
+                                    onChange={(e) => setData('description', e.target.value)}
+                                    error={errors.description}
+                                    rows={4}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.visibility === 'public'}
+                                        onChange={(e) => setData('visibility', e.target.checked ? 'public' : 'private')}
+                                        className="accent-secondary w-4 h-4"
                                     />
-                                </div>
+                                    <span className="text-sm text-neutral-700 dark:text-neutral-300">
+                                        Public calendar (visible to everyone)
+                                    </span>
+                                </label>
+                            </div>
 
-                                <div className={sectionClass}>
-                                    <label htmlFor="description" className={labelClass}>Description</label>
-                                    <Textarea
-                                        id="description"
-                                        value={data.description}
-                                        onChange={(e) => setData('description', e.target.value)}
-                                        error={errors.description}
-                                        rows={4}
-                                    />
-                                </div>
+                            <div className="flex justify-end gap-3 pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={() => window.history.back()}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button variant="success" type="submit" disabled={processing}>
+                                    {processing ? 'Saving...' : 'Update Calendar'}
+                                </Button>
+                            </div>
 
-                                <div>
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={data.visibility === 'public'}
-                                            onChange={(e) => setData('visibility', e.target.checked ? 'public' : 'private')}
-                                            className="accent-secondary w-4 h-4"
-                                        />
-                                        <span className="text-sm text-neutral-700 dark:text-neutral-300">
-                                            Public calendar (visible to everyone)
-                                        </span>
-                                    </label>
-                                </div>
-
-                                <div className="flex justify-end gap-3 pt-2 border-t border-neutral-200 dark:border-neutral-700">
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        onClick={() => window.history.back()}
-                                    >
-                                        Cancel
-                                    </Button>
-                                    <Button variant="success" type="submit" disabled={processing}>
-                                        {processing ? 'Saving...' : 'Update Calendar'}
-                                    </Button>
-                                </div>
-
-                            </form>
-                        </div>
-                    </Card>
-                </div>
+                        </form>
+                    </div>
+                </Card>
             </Layout>
         </>
     );

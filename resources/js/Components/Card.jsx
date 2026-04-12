@@ -6,7 +6,7 @@ export default function Card({ title, subtitle, label, labelColor = 'bg-secondar
                     <div>
                         <div className="flex items-center gap-2">
                             <h2 className="text-lg font-semibold text-neutral-100">{title}</h2>
-                            {label && <span className={`px-2 py-0.5 text-[10px] font-bold tracking-wider text-white uppercase ${labelColor}`}>{label}</span>}
+                            {label && <span className={`px-2 py-0.5 text-[10px] font-bold tracking-wider text-white text-xs uppercase ${labelColor}`}>{label}</span>}
                         </div>
                         {subtitle && <p className="text-sm text-neutral-400">{subtitle}</p>}
                     </div>

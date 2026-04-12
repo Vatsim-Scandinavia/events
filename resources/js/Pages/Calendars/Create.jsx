@@ -24,8 +24,7 @@ export default function Create() {
     return (
         <>
             <Head title="Create Calendar" />
-            <Layout auth={auth}>
-                <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-10">
+            <Layout auth={auth} className="">
                     <Card title="Create Calendar" subtitle="Use the form below to create a new calendar. You can set the title, description, and visibility of the calendar.">
                         <div className="bg-white dark:bg-neutral-800 p-6">
                             <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -78,7 +77,6 @@ export default function Create() {
                             </form>
                         </div>
                     </Card>
-                </div>
             </Layout>
         </>
     );

@@ -438,7 +438,6 @@ export default function Manage({ event, staffings: initialStaffings }) {
             <Head title={`Manage Staffing - ${event.title}`} />
             <DndProvider backend={HTML5Backend}>
                 <Layout auth={auth}>
-                    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-10 flex flex-col gap-6">
 
                         {/* Header card */}
                         <div className="border border-neutral-200 dark:border-neutral-700">
@@ -760,7 +759,6 @@ export default function Manage({ event, staffings: initialStaffings }) {
                             </form>
                         </Modal>
 
-                    </div>
                 </Layout>
             </DndProvider>
         </>
