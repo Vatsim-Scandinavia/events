@@ -10,8 +10,7 @@ use Tests\TestCase;
 
 class CalendarTest extends TestCase
 {
-    use RefreshDatabase;
-    use WithFaker;
+    use RefreshDatabase, WithFaker;
 
     /**
      * Test that a user with the appropriate permissions can view the calendar index page.

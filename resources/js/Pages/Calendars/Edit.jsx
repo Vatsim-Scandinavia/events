@@ -26,7 +26,7 @@ export default function Edit({ calendar }) {
             <Head title={`Edit ${calendar.data.title}`} />
             <Layout auth={auth} className="">
                 <Card title={`Edit Calendar`} subtitle={`Use the form below to edit your calendar. You can update the title, description, and visibility of the calendar.`}>
-                    <div className="bg-white dark:bg-neutral-800 p-6">
+                    <div className="p-6">
                         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
                             <div className={sectionClass}>

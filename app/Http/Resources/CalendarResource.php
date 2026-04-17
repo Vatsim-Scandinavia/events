@@ -19,10 +19,11 @@ class CalendarResource extends JsonResource
             'title'         => $this->title,
             'description'   => $this->description,
             'visibility'    => $this->visibility,
-            'creator'       => [
-                'id' => $this->creator->id,
+            'creator'       => $this->whenLoaded('creator', fn() => [
+                'id'        => $this->creator->id,
                 'full_name' => $this->creator->full_name,
-            ],
+            ]),
+            'events'        => EventResource::collection($this->whenLoaded('events')),
         ];
     }
 }

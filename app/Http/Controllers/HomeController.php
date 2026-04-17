@@ -2,67 +2,54 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\EventResource;
 use App\Models\Event;
-use App\Services\EventService;
+use App\Models\EventOccurrence;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class HomeController extends Controller
 {
-    public function __construct(
-        protected EventService $eventService
-    ) {}
-
     public function index(Request $request)
     {
-        $events = Event::with(['calendar'])
-            ->whereHas('calendar', fn($q) => $q->where('is_public', true))
+        $canManage = $request->user()?->can('manage events');
+
+        $upcomingEvents = Event::with(['calendar', 'occurrences', 'futureOccurrences'])
+            ->withMin(
+                [
+                    'occurrences as next_occurrence_at' => fn($q) => $q
+                        ->where('start_time', '>=', now())
+                        ->where('status', '!=', 'cancelled'),
+                ],
+                'start_time'
+            )
+            ->whereHas(
+                'occurrences',
+                fn($q) => $q
+                    ->where('start_time', '>=', now())
+                    ->where('status', '!=', 'cancelled')
+            )
+            ->when(!$canManage, fn($q) => $q->where('status', 'published'))
+            ->orderBy('next_occurrence_at')
+            ->take(3)
             ->get();
 
-        $calendarEvents = collect();
-        $upcomingEvents = collect();
-
-        $startDate = now()->startOfMonth();
-        $endDate = now()->addMonths(3)->endOfMonth();
-
-        foreach ($events as $event) {
-            $instances = $this->eventService->generateUpcomingInstances($event, limit: 50);
-
-            foreach ($instances as $instance) {
-                $instanceStart = \Illuminate\Support\Carbon::parse($instance['start']);
-                $instanceEnd = \Illuminate\Support\Carbon::parse($instance['end']);
-
-                if ($instance['cancelled']) {
-                    continue;
-                }
-
-                if ($instanceStart->gte($startDate) && $instanceStart->lte($endDate)) {
-                    $calendarEvents->push([
-                        'id' => $event->id . '-' . $instanceStart->timestamp,
-                        'title' => $event->title,
-                        'start' => $instance['start'],
-                        'end' => $instance['end'],
-                        'calendar' => $event->calendar->name,
-                        'url' => route('events.show', $event),
-                    ]);
-                }
-
-                if ($instanceStart->isFuture()) {
-                    $eventWithDate = clone $event;
-                    $eventWithDate->display_datetime = $instance['start'];
-                    $upcomingEvents->push($eventWithDate);
-                }
-            }
-        }
-
-        $sortedUpcoming = $upcomingEvents
-            ->sortBy('display_datetime')
-            ->unique('id')
-            ->take(3)
-            ->values();
+        $calendarEvents = EventOccurrence::with('event.calendar')
+            ->where('start_time', '>=', now()->startOfMonth())
+            ->where('start_time', '<=', now()->addMonths(6))
+            ->whereHas('event', fn($q) => $q->when(!$canManage, fn($q) => $q->where('status', 'published')))
+            ->get()
+            ->map(fn($occ) => [
+                'id'        => $occ->event->slug,
+                'title'     => $occ->event->title,
+                'start'     => \Carbon\Carbon::parse($occ->start_time)->utc()->toIso8601String(),
+                'end'       => \Carbon\Carbon::parse($occ->end_time)->utc()->toIso8601String(),
+                'cancelled' => $occ->status === 'cancelled',
+                'url'       => '/events/' . $occ->event->slug,
+            ]);
 
         return Inertia::render('Home', [
-            'upcomingEvents' => $sortedUpcoming,
+            'upcomingEvents' => EventResource::collection($upcomingEvents),
             'calendarEvents' => $calendarEvents,
         ]);
     }

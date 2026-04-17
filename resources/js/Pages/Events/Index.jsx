@@ -2,9 +2,9 @@ import { Link, usePage, Head } from '@inertiajs/react';
 import Layout from '../../Layouts/Layout';
 import Button from '../../Components/Button';
 import DateTimeDisplay from '../../Components/DateTimeDisplay';
-import { ArrowPathIcon, PlusIcon } from '@heroicons/react/24/solid';
+import { ArrowPathIcon, PlusIcon, PencilIcon } from '@heroicons/react/24/solid';
 
-export default function Index({ events, filters }) {
+export default function Index({ events }) {
     const { auth } = usePage().props;
 
     return (
@@ -16,14 +16,16 @@ export default function Index({ events, filters }) {
                     <div className="bg-secondary dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700 px-6 py-4">
                         <div className="flex justify-between items-center">
                             <h1 className="text-lg font-semibold text-white dark:text-neutral-100">All Events</h1>
-                            {auth.user?.permissions?.includes('create-events') && (
-                                <Link href="/events/create">
-                                    <Button variant="success">
-                                        <PlusIcon className="w-4 h-4 mr-1" />
-                                        Create Event
-                                    </Button>
-                                </Link>
-                            )}
+                            <div className="flex items-center gap-2">
+                                {auth.user?.permissions?.includes('create events') && (
+                                    <Link href="/events/create">
+                                        <Button variant="success">
+                                            <PlusIcon className="w-4 h-4 mr-1" />
+                                            Create Event
+                                        </Button>
+                                    </Link>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -54,17 +56,22 @@ export default function Index({ events, filters }) {
                                                     Recurring
                                                 </span>
                                             )}
+                                            {event.status === 'draft' && (
+                                                <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium bg-warning text-white uppercase w-fit">
+                                                    Draft
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                                            <DateTimeDisplay datetime={event.display_datetime || event.start_datetime} formatString="MMMM d, yyyy, HH:mm" />
+                                            <DateTimeDisplay datetime={event.start_datetime?.display} formatString="MMMM d, yyyy, HH:mm" />
                                         </div>
                                     </div>
-                                    <div className="shrink-0">
+                                    <div className="shrink-0 flex items-center gap-2">
                                         <Link
-                                            href={`/events/${event.id}`}
+                                            href={`/events/${event.slug}`}
                                             className="inline-block px-4 py-2 text-sm font-medium bg-secondary text-white hover:bg-secondary/90 transition-colors"
                                         >
-                                            View Event
+                                            View
                                         </Link>
                                     </div>
                                 </div>

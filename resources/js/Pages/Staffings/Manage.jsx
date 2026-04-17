@@ -421,8 +421,8 @@ export default function Manage({ event, staffings: initialStaffings }) {
             long_description: event.long_description,
             staffing_description: staffingDescData.staffing_description,
             featured_airports: event.featured_airports || [],
-            start_datetime: event.start_datetime,
-            end_datetime: event.end_datetime,
+            start_datetime: event.start_datetime?.local,
+            end_datetime: event.end_datetime?.local,
             discord_staffing_channel_id: event.discord_staffing_channel_id,
         }, {
             preserveScroll: true,

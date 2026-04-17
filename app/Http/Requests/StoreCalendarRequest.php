@@ -22,9 +22,9 @@ class StoreCalendarRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'visibility' => 'required|in:public,private',
+            'title'       => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'visibility'  => ['required', 'in:public,private'],
         ];
     }
 }

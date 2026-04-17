@@ -55,8 +55,9 @@ return [
     */
 
     'control_center' => [
-        'api_url' => env('CONTROL_CENTER_API_URL'),
-        'api_token' => env('CONTROL_CENTER_API_TOKEN'),
+        'api_url'     => env('CONTROL_CENTER_API_URL'),
+        'api_token'   => env('CONTROL_CENTER_API_TOKEN'),
+        'booking_tag' => env('CONTROL_CENTER_BOOKING_TAG', 3),
     ],
 
     /*

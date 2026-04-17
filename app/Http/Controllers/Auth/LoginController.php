@@ -20,18 +20,20 @@ class LoginController extends Controller
     {
         $providerUser = Socialite::driver('vatsim')->user();
 
-        $user = User::updateOrCreate(
-            ['id' => $providerUser->getId()],
-            [
-                'email' => $providerUser->getEmail(),
-                'first_name' => Arr::get($providerUser->user, 'data.personal.name_first'),
-                'last_name' => Arr::get($providerUser->user, 'data.personal.name_last'),
-                'last_login' => now(),
-                'access_token' => $providerUser->token,
-                'refresh_token' => $providerUser->refreshToken,
-                'token_expires'  => $providerUser->expiresIn ? now()->addSeconds($providerUser->expiresIn)->timestamp : null,
-            ]
-        );
+        $user = User::firstOrNew(['id' => (int) $providerUser->getId()]);
+
+        // Set the primary key explicitly — never via mass assignment.
+        $user->id = (int) $providerUser->getId();
+
+        $user->fill([
+            'email'           => $providerUser->getEmail(),
+            'first_name'      => Arr::get($providerUser->user, 'data.personal.name_first'),
+            'last_name'       => Arr::get($providerUser->user, 'data.personal.name_last'),
+            'last_login'      => now(),
+            'access_token'    => $providerUser->token,
+            'refresh_token'   => $providerUser->refreshToken,
+            'token_expires'   => $providerUser->expiresIn ? now()->addSeconds($providerUser->expiresIn)->timestamp : null,
+        ])->save();
 
         $user->assignRole('user');
 

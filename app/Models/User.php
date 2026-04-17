@@ -14,9 +14,9 @@ class User extends Authenticatable
 
     public $timestamps = false;
     protected $table = 'users';
+    protected $rememberTokenName = false;
 
     protected $fillable = [
-        'id',
         'email',
         'first_name',
         'last_name',
@@ -27,7 +27,6 @@ class User extends Authenticatable
     ];
 
     protected $hidden = [
-        'remember_token',
         'access_token',
         'refresh_token',
         'token_expires',
@@ -41,6 +40,8 @@ class User extends Authenticatable
     {
         return [
             'last_login' => 'datetime',
+            'access_token' => 'encrypted',
+            'refresh_token' => 'encrypted',
         ];
     }
 
@@ -56,6 +57,6 @@ class User extends Authenticatable
 
     public function getFullNameAttribute()
     {
-        return $this->first_name . ' ' . $this->last_name;
+        return trim(($this->first_name ?? '') . ' ' . ($this->last_name ?? ''));
     }
 }

@@ -21,14 +21,22 @@ class EventOccurrence extends Model
         'notified_at',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'start_time'   => 'datetime',
+            'end_time'     => 'datetime',
+            'notified_at'  => 'datetime',
+        ];
+    }
+
+    public function scopeFuture($query)
+    {
+        return $query->where('start_time', '>=', now());
+    }
+
     public function event()
     {
         return $this->belongsTo(Event::class, 'event_id');
     }
-
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'created_by');
-    }
-
 }

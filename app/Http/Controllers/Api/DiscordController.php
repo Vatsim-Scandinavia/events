@@ -9,7 +9,7 @@ class DiscordController extends Controller
 {
     public function getChannels()
     {
-        $channels = app(DiscordClient::class)->get('/guilds/' . env('DISCORD_GUILD_ID') . '/channels');
+        $channels = app(DiscordClient::class)->get('/guilds/' . config('services.discord.guild_id') . '/channels');
 
         $filtered = array_values(array_map(
             fn($channel) => ['id' => $channel['id'], 'name' => $channel['name']],

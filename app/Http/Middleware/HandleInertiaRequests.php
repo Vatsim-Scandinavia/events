@@ -42,14 +42,14 @@ class HandleInertiaRequests extends Middleware
                     'id' => $request->user()->id,
                     'full_name' => $request->user()->full_name,
                     'email' => $request->user()->email,
-                    'vatsim_cid' => $request->user()->vatsim_cid,
+                    'vatsim_cid' => $request->user()->id,
                     'roles' => $request->user()->getRoleNames(),
                     'permissions' => $request->user()->getAllPermissions()->pluck('name'),
                 ] : null,
             ],
             'flash' => [
-                'success' => fn () => $request->session()->get('success'),
-                'error' => fn () => $request->session()->get('error'),
+                'success' => fn() => $request->session()->get('success'),
+                'error' => fn() => $request->session()->get('error'),
             ],
         ];
     }

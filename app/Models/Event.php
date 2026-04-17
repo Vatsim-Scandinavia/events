@@ -4,14 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Event extends Model
 {
     /** @use HasFactory<\Database\Factories\EventFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'events';
     public $timestamps = true;
+
+    public function getRouteKeyName(): string
+    {
+        return 'slug';
+    }
 
     protected $fillable = [
         'calendar_id',
@@ -24,8 +30,6 @@ class Event extends Model
         'status',
         'recurrence_rule',
         'timezone',
-        'discord_channel_id',
-        'discord_message_id',
         'created_by',
     ];
 
@@ -44,5 +48,20 @@ class Event extends Model
     public function occurrences()
     {
         return $this->hasMany(EventOccurrence::class);
+    }
+
+    public function futureOccurrences()
+    {
+        return $this->hasMany(EventOccurrence::class)->future();
+    }
+
+    public function staffing()
+    {
+        return $this->hasOne(Staffing::class);
+    }
+
+    public function isRecurring(): bool
+    {
+        return !empty($this->recurrence_rule);
     }
 }

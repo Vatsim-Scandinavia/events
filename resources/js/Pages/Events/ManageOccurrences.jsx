@@ -7,6 +7,7 @@ import { TimeDisplay } from '../../Components/DateTimeDisplay';
 
 export default function ManageOccurrences({ event, occurrences }) {
     const { auth } = usePage().props;
+    const evt = event.data ?? event;
     const [processing, setProcessing] = useState({});
 
     const handleToggleOccurrence = (occurrenceDate, isCancelling) => {
@@ -19,7 +20,7 @@ export default function ManageOccurrences({ event, occurrences }) {
         setProcessing(prev => ({ ...prev, [occurrenceDate]: true }));
 
         router.post(
-            `/events/${event.id}/${endpoint}`,
+            `/events/${evt.slug}/${endpoint}`,
             { occurrence_date: occurrenceDate },
             {
                 onFinish: () => setProcessing(prev => ({ ...prev, [occurrenceDate]: false })),
@@ -30,17 +31,17 @@ export default function ManageOccurrences({ event, occurrences }) {
 
     return (
         <>
-            <Head title={`Manage Occurrences - ${event.title}`} />
+            <Head title={`Manage Occurrences - ${evt.title}`} />
             <Layout auth={auth} className="">
                 {/* Back link + page title */}
                 <div className="mb-6">
                     <Link
-                        href={`/events/${event.id}`}
+                        href={`/events/${evt.slug}`}
                         className="text-sm text-secondary dark:text-primary hover:underline inline-flex items-center gap-1 mb-2"
                     >
                         <span>←</span> Back to Event
                     </Link>
-                    <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{event.title}</h1>
+                    <h1 className="text-2xl font-semibold text-neutral-900 dark:text-neutral-100">{evt.title}</h1>
                 </div>
 
                 {/* Card */}

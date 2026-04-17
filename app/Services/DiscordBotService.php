@@ -23,10 +23,10 @@ class DiscordBotService
      */
     public function dispatchStaffingUpdate(Event $event, string $action = 'update', bool $reset = false): bool
     {
-        if (!$event->discord_staffing_channel_id) return false;
+        if (!$event->staffing?->discord_channel_id) return false;
 
         $payload = [
-            'id' => $event->staffings->first()->id ?? null,
+            'id' => $event->staffing?->id ?? null,
             'reset' => $reset,
         ];
 

@@ -1,11 +1,12 @@
 import { Link, usePage, Head, router } from '@inertiajs/react';
 import Layout from '../Layouts/Layout';
 import { Calendar, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { formatInTimeZone } from 'date-fns-tz';
 import DateTimeDisplay from '../Components/DateTimeDisplay';
 
+moment.tz.setDefault('UTC');
 moment.updateLocale('en', {
     week: { dow: 1, doy: 4 }
 });
@@ -13,8 +14,10 @@ const localizer = momentLocalizer(moment);
 
 export default function Home({ upcomingEvents, calendarEvents }) {
     const { auth } = usePage().props;
+    const upcomingList = upcomingEvents?.data ?? upcomingEvents ?? [];
+    const calendarList = calendarEvents ?? [];
 
-    const events = calendarEvents
+    const events = calendarList
         .filter(event => !event.cancelled)
         .map(event => ({
             ...event,
@@ -53,25 +56,23 @@ export default function Home({ upcomingEvents, calendarEvents }) {
                             <h2 className="text-lg font-semibold text-white dark:text-neutral-100">Upcoming Events</h2>
                         </div>
                         <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
-                            {upcomingEvents.length === 0 && (
+                            {upcomingList.length === 0 && (
                                 <p className="px-6 py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">
                                     No upcoming events.
                                 </p>
                             )}
-                            {upcomingEvents.map((event) => {
-                                const displayDate = event.display_datetime || event.start_datetime;
-                                const zuluDate = formatInTimeZone(new Date(displayDate), 'UTC', 'MMMM d, yyyy');
-                                const zuluTime = formatInTimeZone(new Date(displayDate), 'UTC', 'HH:mm');
+                            {upcomingList.map((event) => {
+                                const displayDate = event.start_datetime?.display;
 
                                 return (
                                     <div
                                         key={`${event.id}-${displayDate}`}
                                         className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-6 py-4 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
                                     >
-                                        {event.banner_path && (
+                                        {event.banner_url && (
                                             <div className="w-full sm:w-28 aspect-video shrink-0 overflow-hidden">
                                                 <img
-                                                    src={`/storage/${event.banner_path}`}
+                                                    src={event.banner_url}
                                                     alt={event.title}
                                                     className="w-full h-full object-cover"
                                                 />
@@ -81,13 +82,13 @@ export default function Home({ upcomingEvents, calendarEvents }) {
                                             <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
                                                 {event.title}
                                             </h3>
-                                            <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                                <DateTimeDisplay datetime={displayDate} formatString={`MMMM d, yyyy, HH:mm`} />
-                                            </p>
+                                            <div className="text-sm text-neutral-500 dark:text-neutral-400 mt-0.5">
+                                                <DateTimeDisplay datetime={event.start_datetime?.display} formatString={`MMMM d, yyyy, HH:mm`} />
+                                            </div>
                                         </div>
                                         <div className="shrink-0">
                                             <Link
-                                                href={`/events/${event.id}`}
+                                                href={`/events/${event.slug}`}
                                                 className="inline-block px-4 py-2 text-sm font-medium bg-secondary text-white hover:bg-secondary/90 transition-colors"
                                             >
                                                 View Event

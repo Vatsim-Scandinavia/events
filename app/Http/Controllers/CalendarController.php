@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCalendarRequest;
 use App\Http\Requests\UpdateCalendarRequest;
 use App\Http\Resources\CalendarResource;
 use App\Models\Calendar;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class CalendarController extends Controller
@@ -15,10 +16,10 @@ class CalendarController extends Controller
      */
     public function index()
     {
-        $this->authorize('view', Calendar::class);
+        $this->authorize('viewAny', Calendar::class);
 
         return Inertia::render('Calendars/Index', [
-            'calendars' => CalendarResource::collection(Calendar::all()),
+            'calendars' => CalendarResource::collection(Calendar::with(['creator', 'events'])->get()),
         ]);
     }
 
@@ -46,7 +47,7 @@ class CalendarController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
-        \Log::info('Calendar created', ['calendar_id' => $calendar->id, 'created_by' => $request->user()->id]);
+        Log::info('Calendar created', ['calendar_id' => $calendar->id, 'created_by' => $request->user()->id]);
 
         return redirect()->route('calendars.show', $calendar);
     }
@@ -58,7 +59,7 @@ class CalendarController extends Controller
     {
         $this->authorize('view', $calendar);
 
-        $calendar->load('creator');
+        $calendar->load(['creator', 'events']);
 
         return Inertia::render('Calendars/Show', [
             'calendar' => new CalendarResource($calendar),
@@ -90,7 +91,7 @@ class CalendarController extends Controller
             'visibility' => $validated['visibility'],
         ]);
 
-        \Log::info('Calendar updated', ['calendar_id' => $calendar->id, 'updated_by' => $request->user()->id]);
+        Log::info('Calendar updated', ['calendar_id' => $calendar->id, 'updated_by' => $request->user()->id]);
 
         return redirect()->route('calendars.show', $calendar);
     }
@@ -104,7 +105,7 @@ class CalendarController extends Controller
 
         $calendar->delete();
 
-        \Log::info('Calendar deleted', ['calendar_id' => $calendar->id]);
+        Log::info('Calendar deleted', ['calendar_id' => $calendar->id]);
 
         return redirect()->route('calendars.index');
     }

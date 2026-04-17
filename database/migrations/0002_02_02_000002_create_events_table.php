@@ -23,8 +23,6 @@ return new class extends Migration
             $table->enum('status', ['draft', 'published', 'cancelled'])->default('draft');
             $table->string('recurrence_rule')->nullable();
             $table->string('timezone')->default('UTC');
-            $table->string('discord_channel_id')->nullable();
-            $table->string('discord_message_id')->nullable();
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->softDeletes();
             $table->timestamps();

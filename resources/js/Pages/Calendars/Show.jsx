@@ -68,10 +68,10 @@ export default function Show({ calendar }) {
                                     key={event.id}
                                     className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 px-6 py-4 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition-colors"
                                 >
-                                    {event.banner_path && (
+                                    {event.banner_url && (
                                         <div className="w-full sm:w-28 aspect-video shrink-0 overflow-hidden">
                                             <img
-                                                src={`/storage/${event.banner_path}`}
+                                                src={event.banner_url}
                                                 alt={event.title}
                                                 className="w-full h-full object-cover"
                                             />
@@ -89,12 +89,12 @@ export default function Show({ calendar }) {
                                             )}
                                         </div>
                                         <div className="text-sm text-neutral-500 dark:text-neutral-400">
-                                            <DateTimeDisplay datetime={event.display_datetime || event.start_datetime} formatString="MMMM d, yyyy, HH:mm" />
+                                            <DateTimeDisplay datetime={event.occurrences[0]?.start_time} formatString="MMMM d, yyyy, HH:mm" />
                                         </div>
                                     </div>
                                     <div className="shrink-0">
                                         <Link
-                                            href={`/events/${event.id}`}
+                                            href={`/events/${event.slug}`}
                                             className="inline-block px-4 py-2 text-sm font-medium bg-secondary text-white hover:bg-secondary/90 transition-colors"
                                         >
                                             View Event

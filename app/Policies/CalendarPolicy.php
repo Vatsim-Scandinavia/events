@@ -8,13 +8,21 @@ use App\Models\User;
 class CalendarPolicy
 {
     /**
-     * Determine whether the user can view the model.
-    */
-    public function view(User $user): bool
+     * Determine whether the user can view any calendars (index).
+     */
+    public function viewAny(User $user): bool
     {
         return $user->hasPermissionTo('view calendars');
     }
-        
+
+    /**
+     * Determine whether the user can view the model.
+     */
+    public function view(User $user, Calendar $calendar): bool
+    {
+        return $user->hasPermissionTo('view calendars');
+    }
+
     /**
      * Determine whether the user can create models.
      */

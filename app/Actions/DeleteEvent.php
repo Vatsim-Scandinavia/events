@@ -4,13 +4,13 @@ namespace App\Actions;
 
 use App\Models\Event;
 use App\Models\User;
-use App\Services\BannerUploadService;
+use App\Services\BannerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 final class DeleteEvent
 {
-    public function __construct(protected BannerUploadService $bannerUploadService) {}
+    public function __construct(protected BannerService $bannerService) {}
 
     /**
      * Execute the action.
@@ -23,16 +23,12 @@ final class DeleteEvent
     {
         DB::transaction(function () use ($event, $user) {
             if ($event->banner_path) {
-                $this->bannerUploadService->delete($event->banner_path);
+                $this->bannerService->delete($event->banner_path);
             }
 
             $event->delete();
 
-            Log::info(
-                "Event deleted by " . ($user->vatsim_cid ?? 'System') . ": Event ID {$event->id}, Title: {$event->title}"
-            );
-
-            return true;
+            Log::info("Event deleted by {$user->id}: Event ID {$event->id}, Title: {$event->title}");
         });
     }
 }

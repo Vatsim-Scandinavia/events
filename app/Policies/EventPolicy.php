@@ -8,19 +8,16 @@ use App\Models\User;
 class EventPolicy
 {
     /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
-    {
-        return $user->hasPermissionTo('view any event');
-    }
-
-    /**
      * Determine whether the user can view the model.
      */
-    public function view(User $user, Event $event): bool
+    public function view(?User $user, Event $event): bool
     {
-        return $user->hasPermissionTo('view events');
+        if ($event->status === 'published') {
+            // Published events can be viewed by anyone, even guests
+            return true;
+        }
+        // Only authenticated users with the right permission can view drafts
+        return $user?->hasPermissionTo('manage events') ?? false;
     }
 
     /**
@@ -28,7 +25,7 @@ class EventPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('create events');
+        return $user->hasPermissionTo('manage events');
     }
 
     /**
@@ -36,8 +33,12 @@ class EventPolicy
      */
     public function update(User $user, Event $event): bool
     {
-        return $user->hasPermissionTo('edit events') && ($event->created_by === $user->id)
-            || ($user->hasPermissionTo('manage events created by others') && $event->created_by !== $user->id);
+        if (!$user->hasPermissionTo('manage events')) {
+            return false;
+        }
+
+        return $event->created_by === $user->id
+            || $user->hasPermissionTo('manage events created by others');
     }
 
     /**
@@ -45,24 +46,11 @@ class EventPolicy
      */
     public function delete(User $user, Event $event): bool
     {
-        return $user->hasPermissionTo('delete events') && ($event->created_by === $user->id)
-            || ($user->hasPermissionTo('manage events created by others') && $event->created_by !== $user->id);
-    }
+        if (!$user->hasPermissionTo('manage events')) {
+            return false;
+        }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Event $event): bool
-    {
-        return $user->hasPermissionTo('restore events') && ($event->created_by === $user->id)
-            || ($user->hasPermissionTo('manage events created by others') && $event->created_by !== $user->id);
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Event $event): bool
-    {
-        return $user->hasPermissionTo('force delete events');
+        return $event->created_by === $user->id
+            || $user->hasPermissionTo('manage events created by others');
     }
 }
