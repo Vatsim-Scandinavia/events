@@ -20,8 +20,7 @@ class SendPreEventReminders implements ShouldQueue
     public function handle(
         RecurringEventService $recurringService,
         DiscordNotificationService $discordService
-    ): void
-    {
+    ): void {
         Log::info('Starting pre-event reminder checks');
 
         // Get the time window: 2 hours from now (with 3 minute buffer)
@@ -29,9 +28,15 @@ class SendPreEventReminders implements ShouldQueue
         $bufferStart = $targetTime->copy()->subMinutes(3);
         $bufferEnd = $targetTime->copy()->addMinutes(3);
 
-        // Get all upcoming events (both one-time and recurring)
-        $events = Event::where('start_datetime', '>=', now())
-            ->where('start_datetime', '<=', now()->addDays(7)) // Look ahead 7 days
+        // Get events that may have an occurrence in the reminder window.
+        $events = Event::where(function ($query) use ($bufferStart, $bufferEnd) {
+            $query->whereNull('recurrence_rule')
+                ->whereBetween('start_datetime', [$bufferStart, $bufferEnd]);
+        })
+            ->orWhere(function ($query) use ($bufferEnd) {
+                $query->whereNotNull('recurrence_rule')
+                    ->where('start_datetime', '<=', $bufferEnd);
+            })
             ->get();
 
         foreach ($events as $event) {
@@ -60,15 +65,14 @@ class SendPreEventReminders implements ShouldQueue
         Carbon $bufferStart,
         Carbon $bufferEnd,
         DiscordNotificationService $discordService
-    ): void
-    {
+    ): void {
         // Check if event starts in the 2-hour window
         if ($event->start_datetime->between($bufferStart, $bufferEnd)) {
             // Check if we've already notified (using event date as key)
             $notifiedOccurrences = $event->notified_occurrences ?? [];
-            $occurrenceKey = $event->start_datetime->toIso8601String();
+            $occurrenceKey = $this->occurrenceKey($event->start_datetime);
 
-            if (!in_array($occurrenceKey, $notifiedOccurrences)) {
+            if (! $this->hasNotifiedOccurrence($notifiedOccurrences, $event->start_datetime)) {
                 // Send reminder
                 if ($discordService->sendPreEventReminder($event, $event->start_datetime)) {
                     // Mark as notified
@@ -94,15 +98,15 @@ class SendPreEventReminders implements ShouldQueue
         Carbon $bufferEnd,
         RecurringEventService $recurringService,
         DiscordNotificationService $discordService
-    ): void
-    {
+    ): void {
         // Generate upcoming instances
         $instances = $recurringService->generateInstances(
             $event->recurrence_rule,
             $event->start_datetime,
-            now()->addDays(7),
+            $bufferEnd,
             50,
-            $event->cancelled_occurrences ?? []
+            $event->cancelled_occurrences ?? [],
+            $bufferStart
         );
 
         foreach ($instances as $instance) {
@@ -112,9 +116,9 @@ class SendPreEventReminders implements ShouldQueue
             if ($occurrenceStart->between($bufferStart, $bufferEnd)) {
                 // Check if we've already notified for this occurrence
                 $notifiedOccurrences = $event->notified_occurrences ?? [];
-                $occurrenceKey = $occurrenceStart->toIso8601String();
+                $occurrenceKey = $this->occurrenceKey($occurrenceStart);
 
-                if (!in_array($occurrenceKey, $notifiedOccurrences)) {
+                if (! $this->hasNotifiedOccurrence($notifiedOccurrences, $occurrenceStart)) {
                     // Send reminder
                     if ($discordService->sendPreEventReminder($event, $occurrenceStart)) {
                         // Mark this occurrence as notified
@@ -130,5 +134,25 @@ class SendPreEventReminders implements ShouldQueue
                 }
             }
         }
+    }
+
+    private function occurrenceKey(Carbon $occurrenceStart): string
+    {
+        return $occurrenceStart->copy()->utc()->toISOString();
+    }
+
+    private function hasNotifiedOccurrence(array $notifiedOccurrences, Carbon $occurrenceStart): bool
+    {
+        foreach ($notifiedOccurrences as $notifiedOccurrence) {
+            try {
+                if (Carbon::parse($notifiedOccurrence)->equalTo($occurrenceStart)) {
+                    return true;
+                }
+            } catch (\Exception) {
+                continue;
+            }
+        }
+
+        return false;
     }
 }

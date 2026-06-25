@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use Recurr\Rule;
 use Recurr\Transformer\ArrayTransformer;
+use Recurr\Transformer\ArrayTransformerConfig;
+use Recurr\Transformer\Constraint\BetweenConstraint;
 use Recurr\Transformer\TextTransformer;
-use Carbon\Carbon;
 
 class RecurringEventService
 {
@@ -20,6 +22,7 @@ class RecurringEventService
 
         try {
             new Rule($rrule);
+
             return true;
         } catch (\Exception $e) {
             return false;
@@ -35,36 +38,53 @@ class RecurringEventService
         Carbon $startDate,
         Carbon $endDate,
         int $limit = 100,
-        array $cancelledOccurrences = []
-    ): array
-    {
+        array $cancelledOccurrences = [],
+        ?Carbon $rangeStart = null
+    ): array {
         try {
+            $rangeStart = $rangeStart ?? $startDate;
             $rule = new Rule($rrule, $startDate);
-            $transformer = new ArrayTransformer();
-            
-            $instances = $transformer->transform($rule, null, $limit);
-            
+            $transformer = new ArrayTransformer(
+                (new ArrayTransformerConfig)->setVirtualLimit(
+                    max(732, $startDate->diffInHours($endDate) + $limit + 24)
+                )
+            );
+            $constraint = new BetweenConstraint(
+                $rangeStart->toDateTime(),
+                $endDate->toDateTime(),
+                true
+            );
+
+            $instances = $transformer->transform(
+                $rule,
+                $constraint,
+                $rule->getCount() !== null
+            );
+
             $results = [];
             foreach ($instances as $instance) {
                 $instanceStart = Carbon::instance($instance->getStart());
                 $instanceEnd = Carbon::instance($instance->getEnd());
-                
+
                 // Check if this occurrence is cancelled
-                $occurrenceDate = $instanceStart->toIso8601String();
-                if (in_array($occurrenceDate, $cancelledOccurrences)) {
+                if ($this->containsOccurrence($cancelledOccurrences, $instanceStart)) {
                     continue; // Skip cancelled occurrences
                 }
-                
+
                 // Only include instances within the requested range
-                if ($instanceStart->lte($endDate)) {
+                if ($instanceStart->between($rangeStart, $endDate)) {
                     $results[] = [
                         'start' => $instanceStart,
                         'end' => $instanceEnd,
                         'cancelled' => false,
                     ];
                 }
+
+                if (count($results) >= $limit) {
+                    break;
+                }
             }
-            
+
             return $results;
         } catch (\Exception $e) {
             return [];
@@ -80,23 +100,21 @@ class RecurringEventService
         Carbon $endDate,
         int $limit = 100,
         array $cancelledOccurrences = []
-    ): array
-    {
+    ): array {
         try {
             $rule = new Rule($rrule, $startDate);
-            $transformer = new ArrayTransformer();
-            
+            $transformer = new ArrayTransformer;
+
             $instances = $transformer->transform($rule, null, $limit);
-            
+
             $results = [];
             foreach ($instances as $instance) {
                 $instanceStart = Carbon::instance($instance->getStart());
                 $instanceEnd = Carbon::instance($instance->getEnd());
-                
+
                 // Check if this occurrence is cancelled
-                $occurrenceDate = $instanceStart->toIso8601String();
-                $isCancelled = in_array($occurrenceDate, $cancelledOccurrences);
-                
+                $isCancelled = $this->containsOccurrence($cancelledOccurrences, $instanceStart);
+
                 // Only include instances within the requested range
                 if ($instanceStart->lte($endDate)) {
                     $results[] = [
@@ -106,7 +124,7 @@ class RecurringEventService
                     ];
                 }
             }
-            
+
             return $results;
         } catch (\Exception $e) {
             return [];
@@ -120,7 +138,8 @@ class RecurringEventService
     {
         try {
             $rule = new Rule($rrule);
-            $textTransformer = new TextTransformer();
+            $textTransformer = new TextTransformer;
+
             return $textTransformer->transform($rule);
         } catch (\Exception $e) {
             return 'Invalid recurrence rule';
@@ -134,33 +153,48 @@ class RecurringEventService
     {
         // This will be called from the frontend with structured data
         // and convert it to a proper RRULE string
-        $parts = ['FREQ=' . strtoupper($data['freq'])];
+        $parts = ['FREQ='.strtoupper($data['freq'])];
 
         if (isset($data['interval']) && $data['interval'] > 1) {
-            $parts[] = 'INTERVAL=' . $data['interval'];
+            $parts[] = 'INTERVAL='.$data['interval'];
         }
 
         if (isset($data['count'])) {
-            $parts[] = 'COUNT=' . $data['count'];
+            $parts[] = 'COUNT='.$data['count'];
         }
 
         if (isset($data['until'])) {
             $until = Carbon::parse($data['until'])->format('Ymd\THis\Z');
-            $parts[] = 'UNTIL=' . $until;
+            $parts[] = 'UNTIL='.$until;
         }
 
-        if (isset($data['byDay']) && !empty($data['byDay'])) {
-            $parts[] = 'BYDAY=' . implode(',', $data['byDay']);
+        if (isset($data['byDay']) && ! empty($data['byDay'])) {
+            $parts[] = 'BYDAY='.implode(',', $data['byDay']);
         }
 
-        if (isset($data['byMonthDay']) && !empty($data['byMonthDay'])) {
-            $parts[] = 'BYMONTHDAY=' . implode(',', $data['byMonthDay']);
+        if (isset($data['byMonthDay']) && ! empty($data['byMonthDay'])) {
+            $parts[] = 'BYMONTHDAY='.implode(',', $data['byMonthDay']);
         }
 
-        if (isset($data['byMonth']) && !empty($data['byMonth'])) {
-            $parts[] = 'BYMONTH=' . implode(',', $data['byMonth']);
+        if (isset($data['byMonth']) && ! empty($data['byMonth'])) {
+            $parts[] = 'BYMONTH='.implode(',', $data['byMonth']);
         }
 
         return implode(';', $parts);
+    }
+
+    private function containsOccurrence(array $occurrences, Carbon $target): bool
+    {
+        foreach ($occurrences as $occurrence) {
+            try {
+                if (Carbon::parse($occurrence)->equalTo($target)) {
+                    return true;
+                }
+            } catch (\Exception) {
+                continue;
+            }
+        }
+
+        return false;
     }
 }
