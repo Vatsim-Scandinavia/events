@@ -1,53 +1,83 @@
-## Event Manager
-Event Calendar Manager with API endpoints for VATSIM events. Created by [Markus N.](https://github.com/Marko259) (1401513) using `Laravel 10`.
+# Events
 
-## Prerequisites
+Laravel 13 application using the official React starter kit, with React 19,
+Inertia 3, TypeScript, Tailwind CSS 4, and shadcn/ui. Frontend dependencies are
+managed with pnpm.
 
-### Docker (Recommended)
-- A Docker environment to deploy containers. We recommend [Portainer](https://www.portainer.io/).
-- MySQL database to store data.
-- Preferably a reverse proxy setup if you plan to host more than one website on the same server.
+## Requirements
 
-In the instructions where we use `docker exec`, we assume your container is named `events`. If you have named it differently, please replace this.
+- PHP 8.4 or later, with Laravel's required extensions and PDO SQLite
+- Composer 2
+- Node.js 24 or later
+- pnpm 11.25.0 (pinned in `package.json`)
 
-### Manual (Unsupported)
-If you don't want to use Docker, you need:
-- An environment that can host PHP websites, such as Apache, Ngnix or similar.
-- MySQL database to store data.
-- Comply with [Laravel 10 Requirements](https://laravel.com/docs/10.x/deployment)
-- Manually build the composer, npm and setting up cron jobs and clearing all caches on updates.
+## Local setup
 
-## Setup and install
+From the project directory, run:
 
-To setup your Docker instance simply follow these steps:
-1. Pull the `ghcr.io/vatsim-scandinavia/events:v1` Docker image
-2. Setup your MySQL database (not included in Docker image)
-3. Configure the `.env` based on the provided example in `.env.example`
-4. To ensure that event banners don't get deleted upon redeployment of the image, you need to create and store an application key in your environment and setup a shared volume. 
-   ```sh
-   docker exec -it events php artisan key:get
-   docker volume create events_storage
-   ```
-   Copy the key and set it as the `APP_KEY` environment variable in your Docker configuration and bind the volume when creating the container with `events_storage:/app/storage`.
-5. Start the container in the background.
-6. Setup the database.
-   ```sh
-   docker exec -it --user www-data events php artisan migrate
-   ```
-7. Setup a crontab _outside_ the container to run `* * * * * docker exec --user www-data -i events php artisan schedule:run >/dev/null` every minute. This patches into the container and runs the required cronjobs.
-8. Bind the 8080 (HTTP) and/or 8443 (HTTPS) port to your reverse proxy or similar.
-
-## Updating
-
-After recreating the docker container, remember to run the migration to make sure your database is up to date.
 ```sh
-docker exec -it --user www-data events php artisan migrate
+composer setup
+composer run dev
 ```
 
-## Caching
-This application uses the OPCache to cache the compiled PHP code. Default setting is for production which means that the cache is not cleared automatically. To clear the cache, you need to restart the container if you change a file.
+`composer setup` installs the locked PHP and frontend dependencies, creates
+`.env` when missing, generates the application key, creates the SQLite database,
+runs migrations, and builds the frontend. Use this command for initial setup;
+it generates a new application key each time it runs.
 
-For development, change `validate_timestamps` to `1` in the `/usr/local/etc/php/php.ini` file to make sure that the cache is cleared automatically when a file is changed.
+Open [http://localhost:8000](http://localhost:8000). The development command runs
+the Laravel server, queue listener, and Vite together using the project's locked
+`concurrently` dependency. Press Ctrl+C to stop development processes.
 
-## Contribution and conventions
-Contributions are much appreciated to help everyone move this service forward with fixes and functionalities. We recommend you to fork this repository here on GitHub so you can easily create pull requests back to the main project.
+SQLite is configured by default at `database/database.sqlite`. Email is written
+to `storage/logs/laravel.log` with the local `log` mail driver. The starter kit
+includes registration, login, password resets, email verification, two-factor
+authentication, passkeys, account settings, and light/dark appearance settings.
+
+## Frontend development
+
+```sh
+pnpm run dev
+pnpm run build
+pnpm run build:ssr
+```
+
+React pages live in `resources/js/pages`, layouts in `resources/js/layouts`, and
+shadcn/ui components in `resources/js/components/ui`. Tailwind and theme tokens
+are configured in `resources/css/app.css`. Import aliases use `@/` for
+`resources/js`.
+
+To add a shadcn/ui component:
+
+```sh
+pnpm dlx shadcn@latest add @shadcn/textarea
+```
+
+If pnpm's temporary CLI cache reports missing modules on Windows, use its
+hoisted linker for that command:
+
+```sh
+pnpm --config.node-linker=hoisted --config.enable-global-virtual-store=false dlx shadcn@latest add @shadcn/textarea
+```
+
+The registry and paths are configured in `components.json`. Wayfinder generates
+typed Laravel routes during Vite development and builds. To generate them
+separately, run:
+
+```sh
+php artisan wayfinder:generate --with-form
+```
+
+## Checks
+
+```sh
+composer ci:check
+```
+
+This runs frontend formatting/lint checks, TypeScript checking, PHP formatting,
+PHPStan, and the Laravel test suite. Run `pnpm run check:fix` or `composer lint`
+to apply formatting fixes. Tests use an in-memory SQLite database.
+
+GitHub Actions runs setup and these checks on pushes to `main` and `dev`, and
+on pull requests. Commit both `composer.lock` and `pnpm-lock.yaml` for
+reproducible dependency installation.
