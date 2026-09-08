@@ -83,6 +83,7 @@ class OAuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        Inertia::clearHistory();
 
         return to_route('home');
     }

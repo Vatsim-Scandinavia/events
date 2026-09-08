@@ -47,9 +47,9 @@
         "setup": [
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
-            "@php artisan key:generate",
+            "@php artisan app:ensure-key --no-interaction",
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
-            "@php artisan migrate --force",
+            "@php artisan migrate --force --seed --no-interaction",
             "pnpm install --frozen-lockfile",
             "pnpm run build"
         ],
@@ -89,9 +89,9 @@
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
         ],
         "post-create-project-cmd": [
-            "@php artisan key:generate --ansi",
+            "@php artisan app:ensure-key --ansi --no-interaction",
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
-            "@php artisan migrate --graceful --ansi"
+            "@php artisan migrate --seed --ansi --no-interaction"
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"

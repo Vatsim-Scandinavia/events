@@ -29,6 +29,13 @@ class AuthenticationTest extends TestCase
         $this->actingAs(User::factory()->create())->get(route('login'))->assertRedirect(route('dashboard'));
     }
 
+    public function test_authenticated_pages_require_history_encryption(): void
+    {
+        $this->actingAs(User::factory()->create())
+            ->get(route('profile.edit'))
+            ->assertViewHas('page.encryptHistory', true);
+    }
+
     public function test_users_can_logout_and_the_session_is_invalidated(): void
     {
         $user = User::factory()->create();
@@ -37,5 +44,9 @@ class AuthenticationTest extends TestCase
             ->assertRedirect(route('home'))->assertSessionMissing('private_data');
 
         $this->assertGuest();
+
+        $this->get(route('home'))->assertViewHas('page.clearHistory', true);
+
+        $this->get(route('dashboard'))->assertRedirect(route('login'));
     }
 }
