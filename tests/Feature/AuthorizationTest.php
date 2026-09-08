@@ -166,7 +166,7 @@ class AuthorizationTest extends TestCase
         $this->seed(RolesAndPermissionsSeeder::class);
 
         $this->assertDatabaseCount('roles', 5);
-        $this->assertDatabaseCount('permissions', 3);
+        $this->assertDatabaseCount('permissions', 4);
         $this->assertTrue($user->can(PermissionName::ManageEvents, $team));
     }
 

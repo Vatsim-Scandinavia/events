@@ -13,3 +13,6 @@ Use Spatie Permission with five roles: Administrator and Pilot are global; Event
 
 ## Role grants and explicit FIR permission checks
 Change roles through UpdateRoleAssignments, never Spatie's assignRole/syncRoles/removeRole or permission:assign-role: role_grants owns source provenance and model_has_roles is its transactional projection. Spatie pivot team_id=0 represents global grants; role definitions are shared with null team_id. Use Laravel can() gates with an explicit Team for FIR permissions; implicit Spatie Gate integration is disabled to prevent ambient team context bypass. Use effectiveRoleNames() for the computed Pilot fallback. External adapters must fetch a complete successful snapshot and use an allowlisted source/role mapping; an upstream failure must never be converted to an empty snapshot.
+
+## FIR management reuses Team records
+The FIR directory manages existing Team rows, with Administrator-only access through firs.manage. Renaming a FIR preserves its identity and role grants. Delete only unused FIRs; never cascade or rewrite manual/external role grants as part of FIR deletion.

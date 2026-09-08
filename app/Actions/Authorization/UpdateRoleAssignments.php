@@ -113,6 +113,6 @@ class UpdateRoleAssignments
             }
         });
 
-        $user->unsetRelation('roles')->unsetRelation('permissions')->unsetRelation('roleGrants')->unsetRelation('teams');
+        $user->unsetRelation('roles')->unsetRelation('assignedRoles')->unsetRelation('permissions')->unsetRelation('roleGrants')->unsetRelation('teams');
     }
 }

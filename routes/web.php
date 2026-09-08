@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Auth\OAuthController;
+use App\Http\Controllers\FirController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRoleController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +21,9 @@ Route::post('logout', [OAuthController::class, 'destroy'])->middleware('auth')->
 Route::middleware('auth')->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 
+    Route::resource('firs', FirController::class)->only(['index', 'store', 'update', 'destroy']);
+
+    Route::get('users', [UserController::class, 'index'])->name('users.index');
     Route::post('users/{user}/roles', [UserRoleController::class, 'store'])->name('users.roles.store');
     Route::delete('users/{user}/roles', [UserRoleController::class, 'destroy'])->name('users.roles.destroy');
 });

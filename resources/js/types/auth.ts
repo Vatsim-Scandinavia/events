@@ -14,4 +14,6 @@ export type User = {
 
 export type Auth = {
     user: User;
+    can_manage_users: boolean;
+    can_manage_firs: boolean;
 };

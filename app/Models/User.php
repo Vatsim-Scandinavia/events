@@ -71,8 +71,10 @@ class User extends Authenticatable
     /** @return Collection<int, string> */
     public function effectiveRoleNames(): Collection
     {
-        $names = $this->assignedRoles()->where('guard_name', 'web')
-            ->pluck('name')->unique()->sort()->values();
+        $roles = $this->relationLoaded('assignedRoles')
+            ? $this->assignedRoles
+            : $this->assignedRoles()->get();
+        $names = $roles->where('guard_name', 'web')->pluck('name')->unique()->sort()->values();
 
         return $names->isEmpty() ? collect([RoleName::Pilot->value]) : $names;
     }
