@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Actions\RecordAudit;
 use App\Http\Requests\FirIndexRequest;
 use App\Http\Requests\FirRequest;
+use App\Models\Event;
+use App\Models\EventCollaboration;
 use App\Models\RoleGrant;
 use App\Models\Team;
 use App\PermissionName;
@@ -77,6 +79,10 @@ class FirController extends Controller
                 throw ValidationException::withMessages([
                     'fir' => 'Remove all role assignments from this FIR before deleting it, including assignments from external sources.',
                 ]);
+            }
+
+            if (Event::where('owner_team_id', $fir->id)->exists() || EventCollaboration::where('team_id', $fir->id)->exists()) {
+                throw ValidationException::withMessages(['fir' => 'This FIR owns events or has event collaborations and cannot be deleted.']);
             }
 
             $fir->delete();

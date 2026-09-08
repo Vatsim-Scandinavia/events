@@ -141,3 +141,54 @@
         @apply bg-background text-foreground;
     }
 }
+
+@layer components {
+    .event-markdown {
+        @apply text-sm leading-7 wrap-anywhere;
+        & > * + * {
+            margin-top: 1rem;
+        }
+        & h1,
+        & h2,
+        & h3 {
+            @apply font-semibold tracking-tight;
+        }
+        & h1 {
+            @apply text-2xl;
+        }
+        & h2 {
+            @apply text-xl;
+        }
+        & h3 {
+            @apply text-lg;
+        }
+        & ul {
+            @apply list-disc pl-6;
+        }
+        & ol {
+            @apply list-decimal pl-6;
+        }
+        & a {
+            @apply underline underline-offset-4;
+        }
+        & blockquote {
+            @apply text-muted-foreground border-l-4 pl-4;
+        }
+        & pre {
+            @apply bg-muted overflow-x-auto rounded-md p-4;
+        }
+        & code {
+            @apply bg-muted rounded px-1 py-0.5 text-xs;
+        }
+        & img {
+            @apply max-w-full rounded-md;
+        }
+        & table {
+            @apply block border-collapse overflow-x-auto;
+        }
+        & th,
+        & td {
+            @apply border px-3 py-2;
+        }
+    }
+}

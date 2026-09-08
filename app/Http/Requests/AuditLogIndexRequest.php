@@ -26,7 +26,7 @@ class AuditLogIndexRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:255'],
-            'subject_type' => ['nullable', Rule::in(['fir', 'user'])],
+            'subject_type' => ['nullable', Rule::in(['fir', 'user', 'event', 'airport'])],
             'event' => ['nullable', Rule::in(['created', 'updated', 'deleted', 'roles_updated'])],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', Rule::when($this->filled('from'), 'after_or_equal:from')],

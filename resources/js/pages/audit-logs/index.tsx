@@ -20,6 +20,7 @@ import type {
     AuditLog,
     AuditValue,
     PaginatedAuditLogs,
+    RoleSnapshot,
 } from '@/types/audit-logs';
 
 const events: Record<AuditLog['event'], string> = {
@@ -31,7 +32,7 @@ const events: Record<AuditLog['event'], string> = {
 
 const fieldNames: Record<string, string> = {
     code: 'FIR code',
-    name: 'FIR name',
+    name: 'Name',
     name_full: 'Name',
     email: 'Email',
     controller_rating: 'Controller rating',
@@ -41,15 +42,21 @@ const fieldNames: Record<string, string> = {
     roles: 'Role assignments',
 };
 
-function ChangeValue({ value }: { value: AuditValue | undefined }) {
-    if (Array.isArray(value)) {
+function ChangeValue({
+    value,
+    field,
+}: {
+    value: AuditValue | undefined;
+    field: string;
+}) {
+    if (Array.isArray(value) && field === 'roles') {
         return value.length === 0 ? (
             <span className="text-muted-foreground">
                 No assigned roles (Pilot)
             </span>
         ) : (
             <ul className="flex flex-col gap-2">
-                {value.map((role) => (
+                {(value as RoleSnapshot[]).map((role) => (
                     <li
                         key={`${role.role}-${role.fir_id}-${role.source}`}
                         className="flex flex-col gap-0.5"
@@ -66,6 +73,14 @@ function ChangeValue({ value }: { value: AuditValue | undefined }) {
                     </li>
                 ))}
             </ul>
+        );
+    }
+
+    if (typeof value === 'object' && value !== null) {
+        return (
+            <pre className="text-xs wrap-anywhere whitespace-pre-wrap">
+                {JSON.stringify(value, null, 2)}
+            </pre>
         );
     }
 
@@ -103,8 +118,15 @@ function LogEntry({ log }: { log: AuditLog }) {
                             {events[log.event]}
                         </Badge>
                         <span className="text-muted-foreground text-xs">
-                            {log.subject_type === 'fir' ? 'FIR' : 'User'} #
-                            {log.subject_id}
+                            {
+                                {
+                                    fir: 'FIR',
+                                    user: 'User',
+                                    event: 'Event',
+                                    airport: 'Airport',
+                                }[log.subject_type]
+                            }{' '}
+                            #{log.subject_id}
                         </span>
                     </div>
                     <span className="font-medium wrap-anywhere">
@@ -154,13 +176,19 @@ function LogEntry({ log }: { log: AuditLog }) {
                                 <span className="text-muted-foreground text-xs font-medium">
                                     Before
                                 </span>
-                                <ChangeValue value={log.old_values[field]} />
+                                <ChangeValue
+                                    value={log.old_values[field]}
+                                    field={field}
+                                />
                             </div>
                             <div className="bg-background flex min-w-0 flex-col gap-2 rounded-lg border p-3 text-sm">
                                 <span className="text-muted-foreground text-xs font-medium">
                                     After
                                 </span>
-                                <ChangeValue value={log.new_values[field]} />
+                                <ChangeValue
+                                    value={log.new_values[field]}
+                                    field={field}
+                                />
                             </div>
                         </div>
                     </section>
@@ -267,6 +295,12 @@ export default function AuditLogs({
                                             </SelectItem>
                                             <SelectItem value="user">
                                                 Users
+                                            </SelectItem>
+                                            <SelectItem value="event">
+                                                Events
+                                            </SelectItem>
+                                            <SelectItem value="airport">
+                                                Airports
                                             </SelectItem>
                                         </SelectGroup>
                                     </SelectContent>

@@ -5,13 +5,19 @@ export type RoleSnapshot = {
     source: string;
 };
 
-export type AuditValue = string | number | null | RoleSnapshot[];
+export type AuditValue =
+    | string
+    | number
+    | boolean
+    | null
+    | AuditValue[]
+    | { [key: string]: AuditValue };
 
 export type AuditLog = {
     id: number;
     actor_cid: number | null;
     actor_name: string | null;
-    subject_type: 'fir' | 'user';
+    subject_type: 'fir' | 'user' | 'event' | 'airport';
     subject_id: number;
     subject_label: string;
     event: 'created' | 'updated' | 'deleted' | 'roles_updated';

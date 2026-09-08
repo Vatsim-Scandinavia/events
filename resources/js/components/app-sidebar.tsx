@@ -1,6 +1,8 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
+    CalendarDays,
+    Plane,
     FolderGit2,
     Globe2,
     History,
@@ -23,6 +25,8 @@ import {
 import { dashboard } from '@/routes';
 import { index as auditLogsIndex } from '@/routes/audit-logs';
 import { index as firsIndex } from '@/routes/firs';
+import { index as eventsIndex } from '@/routes/events';
+import { index as airportsIndex } from '@/routes/airports';
 import { index } from '@/routes/users';
 import type { NavItem } from '@/types';
 
@@ -50,6 +54,12 @@ const footerNavItems: NavItem[] = [
 export function AppSidebar() {
     const { auth } = usePage().props;
     const managementNavItems: NavItem[] = [
+        ...(auth.can_view_events
+            ? [
+                  { title: 'Events', href: eventsIndex(), icon: CalendarDays },
+                  { title: 'Airports', href: airportsIndex(), icon: Plane },
+              ]
+            : []),
         ...(auth.can_manage_users
             ? [{ title: 'Users', href: index(), icon: Users }]
             : []),

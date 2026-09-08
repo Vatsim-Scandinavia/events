@@ -7,6 +7,7 @@ use App\RoleName;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
@@ -97,6 +98,20 @@ class User extends Authenticatable
         } finally {
             $registrar->setPermissionsTeamId($previousTeam);
         }
+    }
+
+    /** @return Builder<Team> */
+    public function teamsWithPermission(PermissionName $permission): Builder
+    {
+        $query = Team::query();
+
+        if (! $this->isAdministrator()) {
+            $query->whereIn('id', $this->assignedRoles()->select('model_has_roles.team_id')
+                ->where('guard_name', 'web')->whereHas('permissions', fn (Builder $query) => $query
+                ->where('name', $permission->value)->where('guard_name', 'web')));
+        }
+
+        return $query;
     }
 
     /** @return array<string, string> */

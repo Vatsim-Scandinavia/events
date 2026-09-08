@@ -19,3 +19,6 @@ The FIR directory manages existing Team rows, with Administrator-only access thr
 
 ## Audit application writes in their transaction
 Record FIR CRUD, OAuth profile changes and role-assignment snapshots through RecordAudit inside the same database transaction as the write. Bulk role sync bypasses model events; compare deterministic snapshots including source provenance. Allowlist audited fields, never tokens or request payloads; ignore unchanged values. Audit history is Administrator-only and retains actor/subject snapshots without cascading foreign keys. Add audit calls when introducing new write paths; direct model/query-builder writes are not automatically audited.
+
+## Event drafts, local schedules and airport entry
+Events start as private drafts: only the owner FIR and accepted collaborator FIRs have access through events.view/events.manage; vACC Staff remain read-only. Save recurrence as local wall times plus an IANA timezone, use weekday-based intervals, and display UTC/Zulu by default. Preserve individual cancellation dates without shifting the series; prevent schedule changes once cancellations exist. Airport entry uses normalized ICAO codes with explicit details for unknown airports. Render Markdown with raw HTML stripped and unsafe links disabled; uploaded banners are private and authorized through the event.

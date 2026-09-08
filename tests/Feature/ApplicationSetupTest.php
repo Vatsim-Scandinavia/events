@@ -58,7 +58,7 @@ class ApplicationSetupTest extends TestCase
         $this->assertTrue($user->fresh()->isAdministrator());
         $this->assertDatabaseCount('role_grants', 1);
         $this->assertDatabaseCount('roles', 5);
-        $this->assertDatabaseCount('permissions', 4);
+        $this->assertDatabaseCount('permissions', 5);
     }
 
     public function test_a_key_supplied_outside_the_environment_file_is_preserved(): void
