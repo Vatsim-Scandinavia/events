@@ -16,3 +16,6 @@ Change roles through UpdateRoleAssignments, never Spatie's assignRole/syncRoles/
 
 ## FIR management reuses Team records
 The FIR directory manages existing Team rows, with Administrator-only access through firs.manage. Renaming a FIR preserves its identity and role grants. Delete only unused FIRs; never cascade or rewrite manual/external role grants as part of FIR deletion.
+
+## Audit application writes in their transaction
+Record FIR CRUD, OAuth profile changes and role-assignment snapshots through RecordAudit inside the same database transaction as the write. Bulk role sync bypasses model events; compare deterministic snapshots including source provenance. Allowlist audited fields, never tokens or request payloads; ignore unchanged values. Audit history is Administrator-only and retains actor/subject snapshots without cascading foreign keys. Add audit calls when introducing new write paths; direct model/query-builder writes are not automatically audited.

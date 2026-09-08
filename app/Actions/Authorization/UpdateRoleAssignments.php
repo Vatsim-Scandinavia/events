@@ -2,6 +2,7 @@
 
 namespace App\Actions\Authorization;
 
+use App\Actions\RecordAudit;
 use App\Models\RoleGrant;
 use App\Models\Team;
 use App\Models\User;
@@ -13,6 +14,8 @@ use Spatie\Permission\Models\Role;
 
 class UpdateRoleAssignments
 {
+    public function __construct(private RecordAudit $audit) {}
+
     public function grant(User $user, RoleName $role, ?Team $team = null): void
     {
         $this->validateScope($role, $team);
@@ -59,7 +62,7 @@ class UpdateRoleAssignments
             foreach ($assignments as $assignment) {
                 $this->persistGrant($user, $assignment['role'], $assignment['team'], $source);
             }
-        });
+        }, $source);
     }
 
     private function validateScope(RoleName $role, ?Team $team): void
@@ -91,10 +94,11 @@ class UpdateRoleAssignments
         return Role::where('name', $role->value)->where('guard_name', 'web')->whereNull('team_id')->firstOrFail();
     }
 
-    private function update(User $user, Closure $change): void
+    private function update(User $user, Closure $change, string $source = 'manual'): void
     {
-        DB::transaction(function () use ($user, $change): void {
-            User::whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+        DB::transaction(function () use ($user, $change, $source): void {
+            $user = User::whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+            $before = $this->snapshot($user);
             $change();
 
             $assignments = $user->roleGrants()->select('role_id', 'scope_id')->distinct()->get()
@@ -111,8 +115,25 @@ class UpdateRoleAssignments
             if ($assignments !== []) {
                 DB::table('model_has_roles')->insert($assignments);
             }
+
+            $this->audit->handle($user, 'roles_updated', ['roles' => $before], ['roles' => $this->snapshot($user)], $source);
         });
 
         $user->unsetRelation('roles')->unsetRelation('assignedRoles')->unsetRelation('permissions')->unsetRelation('roleGrants')->unsetRelation('teams');
+    }
+
+    /** @return list<array{role: string, fir_id: int|null, fir: string|null, source: string}> */
+    private function snapshot(User $user): array
+    {
+        return array_values($user->roleGrants()->join('roles', 'role_grants.role_id', '=', 'roles.id')
+            ->leftJoin('teams', 'role_grants.team_id', '=', 'teams.id')
+            ->orderBy('roles.name')->orderBy('role_grants.scope_id')->orderBy('role_grants.source')
+            ->get(['roles.name as role_name', 'role_grants.team_id', 'teams.code as fir_code', 'role_grants.source'])
+            ->map(fn (RoleGrant $grant): array => [
+                'role' => (string) $grant->getAttribute('role_name'),
+                'fir_id' => $grant->team_id,
+                'fir' => $grant->team_id === null ? null : (string) $grant->getAttribute('fir_code'),
+                'source' => $grant->source,
+            ])->all());
     }
 }

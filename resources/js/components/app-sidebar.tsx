@@ -1,5 +1,12 @@
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, FolderGit2, Globe2, LayoutGrid, Users } from 'lucide-react';
+import {
+    BookOpen,
+    FolderGit2,
+    Globe2,
+    History,
+    LayoutGrid,
+    Users,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -14,6 +21,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as auditLogsIndex } from '@/routes/audit-logs';
 import { index as firsIndex } from '@/routes/firs';
 import { index } from '@/routes/users';
 import type { NavItem } from '@/types';
@@ -47,6 +55,9 @@ export function AppSidebar() {
             : []),
         ...(auth.can_manage_firs
             ? [{ title: 'FIRs', href: firsIndex(), icon: Globe2 }]
+            : []),
+        ...(auth.can_view_audit_logs
+            ? [{ title: 'Audit log', href: auditLogsIndex(), icon: History }]
             : []),
     ];
 

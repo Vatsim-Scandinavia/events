@@ -33,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define(PermissionName::ManageRoles->value, fn (User $user): bool => false);
         Gate::define(PermissionName::ManageFirs->value, fn (User $user): bool => false);
+        Gate::define(PermissionName::ViewAuditLogs->value, fn (User $user): bool => false);
 
         foreach ([PermissionName::ViewEvents, PermissionName::ManageEvents] as $permission) {
             Gate::define($permission->value, fn (User $user, ?Team $team = null): bool => $team !== null && $user->hasPermissionInTeam($permission, $team));

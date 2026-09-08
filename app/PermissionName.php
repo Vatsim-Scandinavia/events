@@ -8,4 +8,5 @@ enum PermissionName: string
     case ManageEvents = 'events.manage';
     case ManageRoles = 'roles.manage';
     case ManageFirs = 'firs.manage';
+    case ViewAuditLogs = 'audit-logs.view';
 }

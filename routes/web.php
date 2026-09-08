@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\OAuthController;
 use App\Http\Controllers\FirController;
 use App\Http\Controllers\UserController;
@@ -20,6 +21,7 @@ Route::post('logout', [OAuthController::class, 'destroy'])->middleware('auth')->
 
 Route::middleware('auth')->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 
     Route::resource('firs', FirController::class)->only(['index', 'store', 'update', 'destroy']);
 

@@ -16,4 +16,5 @@ export type Auth = {
     user: User;
     can_manage_users: boolean;
     can_manage_firs: boolean;
+    can_view_audit_logs: boolean;
 };

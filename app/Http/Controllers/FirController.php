@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\RecordAudit;
 use App\Http\Requests\FirIndexRequest;
 use App\Http\Requests\FirRequest;
 use App\Models\RoleGrant;
@@ -17,6 +18,8 @@ use Inertia\Response;
 
 class FirController extends Controller
 {
+    public function __construct(private RecordAudit $audit) {}
+
     public function index(FirIndexRequest $request): Response
     {
         $search = trim($request->validated('search') ?? '');
@@ -43,14 +46,22 @@ class FirController extends Controller
 
     public function store(FirRequest $request): RedirectResponse
     {
-        Team::create($request->validated());
+        DB::transaction(function () use ($request): void {
+            $fir = Team::create($request->validated());
+            $this->audit->handle($fir, 'created', [], $fir->only(['code', 'name']));
+        });
 
         return to_route('firs.index');
     }
 
     public function update(FirRequest $request, Team $fir): RedirectResponse
     {
-        $fir->update($request->validated());
+        DB::transaction(function () use ($request, $fir): void {
+            $fir = Team::whereKey($fir->id)->lockForUpdate()->firstOrFail();
+            $before = $fir->only(['code', 'name']);
+            $fir->update($request->validated());
+            $this->audit->handle($fir, 'updated', $before, $fir->only(['code', 'name']));
+        });
 
         return back();
     }
@@ -69,6 +80,7 @@ class FirController extends Controller
             }
 
             $fir->delete();
+            $this->audit->handle($fir, 'deleted', $fir->only(['code', 'name']), []);
         });
 
         return to_route('firs.index');

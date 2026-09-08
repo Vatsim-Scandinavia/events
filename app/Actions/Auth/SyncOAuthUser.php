@@ -2,13 +2,17 @@
 
 namespace App\Actions\Auth;
 
+use App\Actions\RecordAudit;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use UnexpectedValueException;
 
 class SyncOAuthUser
 {
+    public function __construct(private RecordAudit $audit) {}
+
     public function handle(string $provider, SocialiteUser $identity): User
     {
         $attributes = [
@@ -31,17 +35,33 @@ class SyncOAuthUser
             throw new UnexpectedValueException('The provider did not supply the required VATSIM profile.');
         }
 
-        return User::query()->updateOrCreate(['cid' => (int) $attributes['cid']], [
-            'name_full' => $attributes['name_full'],
-            'email' => $attributes['email'],
-            'controller_rating' => $attributes['controller_rating'],
-            'division' => $attributes['division'],
-            'subdivision' => $attributes['subdivision'],
-            'oauth_provider' => $provider,
-            'oauth_id' => (string) $identity->getId(),
-            'oauth_access_token' => $identity->token,
-            'oauth_refresh_token' => $identity->refreshToken,
-            'oauth_expires_at' => $identity->expiresIn === null ? null : now()->addSeconds((int) $identity->expiresIn),
-        ]);
+        return DB::transaction(function () use ($attributes, $provider, $identity): User {
+            $profile = [
+                'name_full' => $attributes['name_full'],
+                'email' => $attributes['email'],
+                'controller_rating' => $attributes['controller_rating'],
+                'division' => $attributes['division'],
+                'subdivision' => $attributes['subdivision'],
+                'oauth_provider' => $provider,
+                'oauth_id' => (string) $identity->getId(),
+                'oauth_access_token' => $identity->token,
+                'oauth_refresh_token' => $identity->refreshToken,
+                'oauth_expires_at' => $identity->expiresIn === null ? null : now()->addSeconds((int) $identity->expiresIn),
+            ];
+            $user = User::query()->firstOrCreate(['cid' => (int) $attributes['cid']], $profile);
+            $fields = ['name_full', 'email', 'controller_rating', 'division', 'subdivision', 'oauth_provider'];
+            $event = $user->wasRecentlyCreated ? 'created' : 'updated';
+            $before = [];
+
+            if (! $user->wasRecentlyCreated) {
+                $user = User::whereKey($user->cid)->lockForUpdate()->firstOrFail();
+                $before = $user->only($fields);
+                $user->update($profile);
+            }
+
+            $this->audit->handle($user, $event, $before, $user->only($fields), 'oauth:'.$provider, $user);
+
+            return $user;
+        });
     }
 }
