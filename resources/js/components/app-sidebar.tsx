@@ -41,8 +41,7 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth } = usePage().props;
-    const navigation: NavItem[] = [
-        ...mainNavItems,
+    const managementNavItems: NavItem[] = [
         ...(auth.can_manage_users
             ? [{ title: 'Users', href: index(), icon: Users }]
             : []),
@@ -66,7 +65,10 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={navigation} />
+                <NavMain items={mainNavItems} />
+                {managementNavItems.length > 0 && (
+                    <NavMain items={managementNavItems} label="Management" />
+                )}
             </SidebarContent>
 
             <SidebarFooter>
