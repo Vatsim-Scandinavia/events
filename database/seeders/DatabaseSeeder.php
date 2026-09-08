@@ -11,6 +11,6 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
-        // Accounts are provisioned from a verified OAuth identity on first sign-in.
+        $this->call(RolesAndPermissionsSeeder::class);
     }
 }
