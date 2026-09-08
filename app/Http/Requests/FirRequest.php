@@ -26,7 +26,7 @@ class FirRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['bail', 'required', 'string', 'max:16', 'regex:/^[A-Z0-9]+(?:-[A-Z0-9]+)*$/', Rule::unique(Team::class)->ignore($this->route('fir'))],
+            'code' => ['bail', 'required', 'string', 'regex:/\A[A-Z]{4}\z/', Rule::unique(Team::class)->ignore($this->route('fir'))],
             'name' => ['required', 'string', 'max:255'],
         ];
     }
@@ -35,7 +35,7 @@ class FirRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'code.regex' => 'Use letters, numbers, and single hyphens between them for the FIR code.',
+            'code.regex' => 'The FIR code must be exactly 4 letters (A-Z).',
             'code.unique' => 'A FIR with this code already exists.',
         ];
     }

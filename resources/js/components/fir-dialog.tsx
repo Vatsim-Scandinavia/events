@@ -84,7 +84,10 @@ export function FirDialog({
                                 )
                             }
                             placeholder="EKDK"
-                            maxLength={16}
+                            minLength={4}
+                            maxLength={4}
+                            pattern="[A-Za-z]{4}"
+                            title="Enter exactly 4 letters (A-Z)."
                             autoComplete="off"
                             required
                             disabled={form.processing}
@@ -95,7 +98,7 @@ export function FirDialog({
                             id="fir-code-hint"
                             className="text-muted-foreground text-xs"
                         >
-                            Up to 16 letters, numbers, or hyphens. Codes must be
+                            Exactly 4 letters (A-Z), e.g. EKDK. Codes must be
                             unique.
                         </p>
                         <InputError

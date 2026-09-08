@@ -103,12 +103,12 @@ class FirManagementTest extends TestCase
     {
         $administrator = $this->administrator();
         Team::factory()->count(16)->sequence(fn ($sequence): array => [
-            'code' => sprintf('F%03d', $sequence->index), 'name' => 'Region FIR',
+            'code' => 'EKA'.chr(ord('A') + $sequence->index), 'name' => 'Region FIR',
         ])->create();
 
         $this->actingAs($administrator)->get(route('firs.index', ['search' => 'Region', 'page' => 2]))
             ->assertInertia(fn (Assert $page) => $page->has('firs.data', 1)
-                ->where('firs.data.0.code', 'F015')->where('firs.total', 16)->where('firs.current_page', 2)
+                ->where('firs.data.0.code', 'EKAP')->where('firs.total', 16)->where('firs.current_page', 2)
                 ->where('filters.search', 'Region')
                 ->where('firs.prev_page_url', route('firs.index', ['search' => 'Region', 'page' => 1])));
     }
@@ -160,14 +160,14 @@ class FirManagementTest extends TestCase
     public function test_administrators_can_change_a_fir_code(): void
     {
         $administrator = $this->administrator();
-        $fir = Team::factory()->create(['code' => 'OLD']);
+        $fir = Team::factory()->create(['code' => 'ESAA']);
 
         $this->actingAs($administrator)->from(route('firs.index'))->put(route('firs.update', $fir), [
             'code' => 'ekdk', 'name' => 'Copenhagen FIR',
         ])->assertSessionHasNoErrors()->assertRedirectToRoute('firs.index');
 
         $this->assertDatabaseHas('teams', ['id' => $fir->id, 'code' => 'EKDK']);
-        $this->assertDatabaseMissing('teams', ['code' => 'OLD']);
+        $this->assertDatabaseMissing('teams', ['code' => 'ESAA']);
     }
 
     #[TestWith(['post', 'firs.store'])]
@@ -184,8 +184,12 @@ class FirManagementTest extends TestCase
         $this->assertDatabaseHas('teams', ['id' => $fir->id, 'code' => 'EKDK', 'name' => 'Copenhagen FIR']);
     }
 
-    #[TestWith(['code', 'EK DK', 'Use letters, numbers, and single hyphens between them for the FIR code.'])]
-    #[TestWith(['code', 'ABCDEFGHIJKLMNOPQ', 'The FIR code field must not be greater than 16 characters.'])]
+    #[TestWith(['code', 'EKD', 'The FIR code must be exactly 4 letters (A-Z).'])]
+    #[TestWith(['code', 'EKDKK', 'The FIR code must be exactly 4 letters (A-Z).'])]
+    #[TestWith(['code', 'EK D', 'The FIR code must be exactly 4 letters (A-Z).'])]
+    #[TestWith(['code', 'EKD1', 'The FIR code must be exactly 4 letters (A-Z).'])]
+    #[TestWith(['code', 'EK-D', 'The FIR code must be exactly 4 letters (A-Z).'])]
+    #[TestWith(['code', 'ÉKDK', 'The FIR code must be exactly 4 letters (A-Z).'])]
     #[TestWith(['code', ['EKDK'], 'The FIR code field must be a string.'])]
     #[TestWith(['name', ['Copenhagen'], 'The FIR name field must be a string.'])]
     public function test_invalid_fir_details_are_rejected(string $field, mixed $value, string $message): void
@@ -195,6 +199,19 @@ class FirManagementTest extends TestCase
         ])->assertSessionHasErrors([$field => $message]);
 
         $this->assertDatabaseCount('teams', 0);
+    }
+
+    public function test_invalid_code_updates_leave_the_fir_unchanged(): void
+    {
+        $administrator = $this->administrator();
+        $fir = Team::factory()->create(['code' => 'EKDK', 'name' => 'Copenhagen FIR']);
+
+        $this->actingAs($administrator)->put(route('firs.update', $fir), [
+            'code' => 'EK-D', 'name' => 'Changed FIR',
+        ])->assertSessionHasErrors(['code' => 'The FIR code must be exactly 4 letters (A-Z).']);
+
+        $this->assertDatabaseCount('teams', 1);
+        $this->assertDatabaseHas('teams', ['id' => $fir->id, 'code' => 'EKDK', 'name' => 'Copenhagen FIR']);
     }
 
     public function test_overlong_names_are_rejected(): void
