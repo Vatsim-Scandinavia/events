@@ -15,6 +15,7 @@ export type EventSummary = {
     id: number;
     title: string;
     short_description: string;
+    short_description_html: string;
     status: 'draft' | 'cancelled';
     timezone: string;
     recurrence: 'none' | 'weekly' | 'monthly';

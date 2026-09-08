@@ -29,6 +29,7 @@ class EventManagementTest extends TestCase
     #[TestWith(['get', 'events.edit'])]
     #[TestWith(['get', 'events.banner'])]
     #[TestWith(['post', 'events.store'])]
+    #[TestWith(['post', 'events.markdown-preview'])]
     #[TestWith(['put', 'events.update'])]
     #[TestWith(['post', 'events.cancellations.store'])]
     public function test_guests_cannot_access_events(string $method, string $route): void
@@ -112,13 +113,86 @@ class EventManagementTest extends TestCase
 
     public function test_description_is_rendered_as_safe_markdown_and_banner_defaults_to_fallback(): void
     {
-        $event = Event::factory()->create(['description' => "# Heading\n\n**Bold** [bad](javascript:alert(1)) <script>alert(2)</script>"]);
+        $event = Event::factory()->create([
+            'short_description' => '**Summary** [bad](javascript:alert(1)) <img src=x onerror=alert(2)>',
+            'description' => "# Heading\n\n**Bold** [bad](javascript:alert(1)) <script>alert(2)</script>",
+        ]);
         $user = $this->member($event->owner);
 
         $this->actingAs($user)->get(route('events.show', $event))->assertInertia(fn (Assert $page) => $page
             ->where('event.banner_url', null)
+            ->where('event.short_description_html', fn (string $html): bool => str_contains($html, '<strong>Summary</strong>')
+                && ! str_contains($html, '<img') && ! str_contains($html, 'href="javascript:'))
             ->where('description_html', fn (string $html): bool => str_contains($html, '<h1>Heading</h1>')
                 && str_contains($html, '<strong>Bold</strong>') && ! str_contains($html, '<script>') && ! str_contains($html, 'href="javascript:')));
+
+        $this->get(route('events.index'))->assertInertia(fn (Assert $page) => $page
+            ->where('events.data.0.short_description_html', fn (string $html): bool => str_contains($html, '<strong>Summary</strong>')
+                && ! str_contains($html, '<img') && ! str_contains($html, 'href="javascript:')));
+    }
+
+    public function test_markdown_preview_matches_saved_rendering_without_saving_changes(): void
+    {
+        $event = Event::factory()->create([
+            'description' => "## Welcome\n\n**Bold** and *italic* [charts](https://example.com)\n\n- First\n- Second\n\n| Airport | Time |\n| --- | --- |\n| EKCH | 1800Z |\n\n<script>alert(1)</script>\n\n[bad](javascript:alert(2))",
+        ]);
+        $this->actingAs($this->member($event->owner));
+        $auditCount = AuditLog::count();
+
+        $response = $this->postJson(route('events.markdown-preview'), ['markdown' => $event->description])->assertOk();
+        $html = $response->json('html');
+
+        $this->assertStringContainsString('<h2>Welcome</h2>', $html);
+        $this->assertStringContainsString('<strong>Bold</strong>', $html);
+        $this->assertStringContainsString('<em>italic</em>', $html);
+        $this->assertStringContainsString('<a href="https://example.com">charts</a>', $html);
+        $this->assertStringContainsString('<li>First</li>', $html);
+        $this->assertStringContainsString('<table>', $html);
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringNotContainsString('href="javascript:', $html);
+        $this->get(route('events.show', $event))->assertInertia(fn (Assert $page) => $page->where('description_html', $html));
+        $this->assertDatabaseCount('events', 1);
+        $this->assertDatabaseCount('audit_logs', $auditCount);
+    }
+
+    #[TestWith([RoleName::VaccStaff])]
+    #[TestWith([RoleName::Controller])]
+    #[TestWith([RoleName::Pilot])]
+    public function test_read_only_users_cannot_preview_event_markdown(RoleName $role): void
+    {
+        $user = $this->member(Team::factory()->create(), $role);
+
+        $this->actingAs($user)->postJson(route('events.markdown-preview'), ['markdown' => '**Test**'])->assertForbidden();
+    }
+
+    public function test_preview_accepts_empty_text_and_rejects_invalid_or_oversized_text(): void
+    {
+        $this->actingAs($this->member(Team::factory()->create()));
+
+        $this->postJson(route('events.markdown-preview'), ['markdown' => ''])->assertExactJson(['html' => '']);
+        $this->postJson(route('events.markdown-preview'), [])->assertJsonValidationErrors('markdown');
+        $this->postJson(route('events.markdown-preview'), ['markdown' => ['invalid']])->assertJsonValidationErrors('markdown');
+        $this->postJson(route('events.markdown-preview'), ['markdown' => str_repeat('a', 50001)])->assertJsonValidationErrors('markdown');
+    }
+
+    public function test_descriptions_preserve_markdown_when_creating_and_editing_events(): void
+    {
+        $fir = Team::factory()->create();
+        $payload = [...$this->payload($fir), 'short_description' => '**Staffed** evening', 'description' => "## Welcome\n\n- Bring charts\n- Enjoy the flight"];
+        $this->actingAs($this->member($fir));
+
+        $this->post(route('events.store'), $payload)->assertSessionHasNoErrors();
+        $event = Event::firstOrFail();
+
+        $this->assertSame($payload['short_description'], $event->short_description);
+        $this->assertSame($payload['description'], $event->description);
+        $this->get(route('events.edit', $event))->assertInertia(fn (Assert $page) => $page
+            ->where('event.short_description', $payload['short_description'])->where('event.description', $payload['description']));
+
+        $this->put(route('events.update', $event), [...$payload, 'short_description' => '*Updated* summary', 'description' => '> Updated briefing'])->assertSessionHasNoErrors();
+
+        $this->assertSame('*Updated* summary', $event->fresh()->short_description);
+        $this->assertSame('> Updated briefing', $event->fresh()->description);
     }
 
     public function test_banners_are_private_replaced_cleanly_and_removable(): void

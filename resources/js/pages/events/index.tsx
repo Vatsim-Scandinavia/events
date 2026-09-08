@@ -226,9 +226,12 @@ export default function Events({
                                             {event.title}
                                         </Link>
                                     </CardTitle>
-                                    <CardDescription className="line-clamp-2">
-                                        {event.short_description}
-                                    </CardDescription>
+                                    <CardDescription
+                                        className="event-markdown line-clamp-2"
+                                        dangerouslySetInnerHTML={{
+                                            __html: event.short_description_html,
+                                        }}
+                                    />
                                 </CardHeader>
                                 <CardContent className="flex flex-col gap-3">
                                     <div className="flex gap-2 text-sm">

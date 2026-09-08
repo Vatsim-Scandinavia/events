@@ -7,6 +7,7 @@ use App\Http\Controllers\EventBannerController;
 use App\Http\Controllers\EventCancellationController;
 use App\Http\Controllers\EventCollaborationController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventMarkdownPreviewController;
 use App\Http\Controllers\FirController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\UserRoleController;
@@ -30,6 +31,7 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('firs', FirController::class)->only(['index', 'store', 'update', 'destroy']);
     Route::resource('events', EventController::class)->except(['destroy']);
+    Route::post('events/markdown-preview', EventMarkdownPreviewController::class)->name('events.markdown-preview');
     Route::get('events/{event}/banner', EventBannerController::class)->name('events.banner');
     Route::post('events/{event}/cancellations', [EventCancellationController::class, 'store'])->name('events.cancellations.store');
     Route::post('events/{event}/collaborations', [EventCollaborationController::class, 'store'])->name('events.collaborations.store');

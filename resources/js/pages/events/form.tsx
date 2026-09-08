@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { AirportPicker } from '@/components/airport-picker';
 import { EventBanner } from '@/components/event-banner';
 import { EventField } from '@/components/event-field';
+import { MarkdownEditor } from '@/components/markdown-editor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,7 +27,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { Textarea } from '@/components/ui/textarea';
 import { recurrenceLabel } from '@/lib/event-time';
 import { index, show, store, update } from '@/routes/events';
 import type { Airport, Fir, ManagedEvent } from '@/types/events';
@@ -207,13 +207,13 @@ export default function EventForm({
                                         error={form.errors.short_description}
                                         hint="A brief summary for the event listing. Up to 500 characters."
                                     >
-                                        <Textarea
+                                        <MarkdownEditor
                                             id="short_description"
                                             value={form.data.short_description}
-                                            onChange={(e) =>
+                                            onChange={(value) =>
                                                 form.setData(
                                                     'short_description',
-                                                    e.target.value,
+                                                    value,
                                                 )
                                             }
                                             maxLength={500}
@@ -228,13 +228,13 @@ export default function EventForm({
                                         error={form.errors.description}
                                         hint="Markdown supported: headings, **bold**, lists, links, and tables."
                                     >
-                                        <Textarea
+                                        <MarkdownEditor
                                             id="description"
                                             value={form.data.description}
-                                            onChange={(e) =>
+                                            onChange={(value) =>
                                                 form.setData(
                                                     'description',
-                                                    e.target.value,
+                                                    value,
                                                 )
                                             }
                                             maxLength={50000}

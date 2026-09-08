@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Actions\EventSchedule;
+use App\Actions\RenderEventMarkdown;
 use App\Actions\SaveEvent;
 use App\Http\Requests\EventIndexRequest;
 use App\Http\Requests\EventRequest;
@@ -15,12 +16,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class EventController extends Controller
 {
+    public function __construct(private RenderEventMarkdown $markdown) {}
+
     public function index(EventIndexRequest $request): Response
     {
         $filters = ['search' => $request->validated('search') ?? '', 'status' => $request->validated('status') ?? ''];
@@ -30,6 +32,7 @@ class EventController extends Controller
             ->orderByDesc('created_at')->orderByDesc('id')->paginate(12)->withQueryString()
             ->through(fn (Event $event): array => [
                 ...$event->only(['id', 'title', 'short_description', 'status', 'timezone', 'recurrence']),
+                'short_description_html' => $this->markdown->handle($event->short_description),
                 'starts_at' => $event->starts_at->toIso8601String(),
                 'ends_at' => $event->ends_at->toIso8601String(),
                 'banner_url' => $event->banner_path === null ? null : route('events.banner', $event),
@@ -79,7 +82,7 @@ class EventController extends Controller
 
         return Inertia::render('events/show', [
             'event' => $this->details($event),
-            'description_html' => Str::markdown($event->description, ['html_input' => 'strip', 'allow_unsafe_links' => false, 'max_nesting_level' => 50]),
+            'description_html' => $this->markdown->handle($event->description),
             'occurrences' => array_slice($occurrences, 0, 12),
             'from' => $from, 'next_from' => $nextFrom,
             'collaborations' => $event->collaborations->map(fn (EventCollaboration $collaboration): array => [
@@ -121,6 +124,7 @@ class EventController extends Controller
     {
         return [
             ...$event->only(['id', 'owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'status', 'cancellation_reason']),
+            'short_description_html' => $this->markdown->handle($event->short_description),
             'recurrence_until' => $event->recurrence_until?->toDateString(),
             'starts_at' => $event->starts_at->toIso8601String(),
             'ends_at' => $event->ends_at->toIso8601String(),

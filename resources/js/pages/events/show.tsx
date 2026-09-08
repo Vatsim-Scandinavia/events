@@ -222,9 +222,12 @@ export default function EventDetails({
                         >
                             {event.title}
                         </h1>
-                        <p className="text-muted-foreground max-w-3xl text-sm">
-                            {event.short_description}
-                        </p>
+                        <div
+                            className="event-markdown text-muted-foreground max-w-3xl"
+                            dangerouslySetInnerHTML={{
+                                __html: event.short_description_html,
+                            }}
+                        />
                     </div>
                     <div className="flex flex-wrap gap-2">
                         {can.edit ? (
