@@ -38,4 +38,30 @@ class EventCancellationController extends Controller
 
         return back();
     }
+
+    public function destroy(EventCancellationRequest $request, Event $event, EventSchedule $schedule, RecordAudit $audit): RedirectResponse
+    {
+        DB::transaction(function () use ($request, $event, $schedule, $audit): void {
+            $event = Event::whereKey($event->id)->lockForUpdate()->firstOrFail();
+            $date = $request->validated('occurrence_date');
+            Gate::authorize($date === null ? 'manageOwner' : 'update', $event);
+
+            $before = $event->auditValues();
+            if ($date !== null) {
+                if ($event->status === 'cancelled') {
+                    throw ValidationException::withMessages(['occurrence_date' => 'Restore the event before restoring individual occurrences.']);
+                }
+                $occurrence = $schedule->occurrence($event, $date);
+                if ($occurrence === null || $occurrence['status'] === 'skipped') {
+                    throw ValidationException::withMessages(['occurrence_date' => 'Choose an occurrence in this event schedule.']);
+                }
+                $event->cancellations()->where('occurrence_date', $date)->delete();
+            } elseif ($event->status === 'cancelled') {
+                $event->update(['status' => 'draft', 'cancelled_at' => null, 'cancellation_reason' => null]);
+            }
+            $audit->handle($event, 'updated', $before, $event->auditValues());
+        });
+
+        return back();
+    }
 }

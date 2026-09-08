@@ -34,6 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::post('events/markdown-preview', EventMarkdownPreviewController::class)->name('events.markdown-preview');
     Route::get('events/{event}/banner', EventBannerController::class)->name('events.banner');
     Route::post('events/{event}/cancellations', [EventCancellationController::class, 'store'])->name('events.cancellations.store');
+    Route::delete('events/{event}/cancellations', [EventCancellationController::class, 'destroy'])->name('events.cancellations.destroy');
     Route::post('events/{event}/collaborations', [EventCollaborationController::class, 'store'])->name('events.collaborations.store');
     Route::patch('events/{event}/collaborations/{collaboration}', [EventCollaborationController::class, 'update'])->name('events.collaborations.update');
     Route::delete('events/{event}/collaborations/{collaboration}', [EventCollaborationController::class, 'destroy'])->name('events.collaborations.destroy');

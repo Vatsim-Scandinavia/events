@@ -32,6 +32,7 @@ class EventManagementTest extends TestCase
     #[TestWith(['post', 'events.markdown-preview'])]
     #[TestWith(['put', 'events.update'])]
     #[TestWith(['post', 'events.cancellations.store'])]
+    #[TestWith(['delete', 'events.cancellations.destroy'])]
     public function test_guests_cannot_access_events(string $method, string $route): void
     {
         $event = Event::factory()->create();

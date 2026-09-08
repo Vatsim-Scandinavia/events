@@ -22,3 +22,6 @@ Record FIR CRUD, OAuth profile changes and role-assignment snapshots through Rec
 
 ## Event drafts, local schedules and airport entry
 Events start as private drafts: only the owner FIR and accepted collaborator FIRs have access through events.view/events.manage; vACC Staff remain read-only. Save recurrence as local wall times plus an IANA timezone, use weekday-based intervals, and display UTC/Zulu by default. Preserve individual cancellation dates without shifting the series; prevent schedule changes once cancellations exist. Airport entry uses normalized ICAO codes with explicit details for unknown airports. Render Markdown with raw HTML stripped and unsafe links disabled; uploaded banners are private and authorized through the event.
+
+## Event restoration preserves separate cancellations
+Restoring an event or series returns it to a private draft and clears only event-level cancellation details; individually cancelled dates remain cancelled until restored separately. Restore the event before its individual occurrences. Restoration uses the same owner-versus-collaborator permissions as cancellation and is audited in the event write transaction.

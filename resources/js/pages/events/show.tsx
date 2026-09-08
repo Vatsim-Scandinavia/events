@@ -6,6 +6,7 @@ import {
     ChevronRight,
     Pencil,
     Plus,
+    RotateCcw,
     X,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -46,7 +47,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { eventTime, recurrenceLabel } from '@/lib/event-time';
 import { edit, index, show } from '@/routes/events';
-import { store as cancel } from '@/routes/events/cancellations';
+import {
+    store as cancel,
+    destroy as restore,
+} from '@/routes/events/cancellations';
 import {
     store as invite,
     destroy as revoke,
@@ -169,6 +173,56 @@ function CancellationDialog({
     );
 }
 
+function RestorationButton({
+    event,
+    date = null,
+    onRestored,
+}: {
+    event: ManagedEvent;
+    date?: string | null;
+    onRestored: () => void;
+}) {
+    const form = useForm({ occurrence_date: date });
+    const label = date
+        ? 'Restore occurrence'
+        : event.recurrence === 'none'
+          ? 'Restore event'
+          : 'Restore series';
+
+    return (
+        <div className="flex flex-col gap-2">
+            <Button
+                type="button"
+                variant={date ? 'ghost' : 'default'}
+                size={date ? 'sm' : 'default'}
+                aria-label={date ? label + ' ' + date : label}
+                disabled={form.processing}
+                onClick={() =>
+                    form.submit(restore(event.id), {
+                        preserveScroll: true,
+                        onSuccess: () => {
+                            toast.success(
+                                date
+                                    ? 'Occurrence restored.'
+                                    : 'Event restored to draft.',
+                            );
+                            onRestored();
+                        },
+                    })
+                }
+            >
+                {form.processing ? (
+                    <Spinner data-icon="inline-start" />
+                ) : (
+                    <RotateCcw data-icon="inline-start" />
+                )}
+                {date ? 'Restore' : label}
+            </Button>
+            <InputError message={form.errors.occurrence_date} />
+        </div>
+    );
+}
+
 export default function EventDetails({
     event,
     description_html,
@@ -252,6 +306,16 @@ export default function EventDetails({
                                     : 'Cancel series'}
                             </Button>
                         ) : null}
+                        {can.manage_owner && event.status === 'cancelled' ? (
+                            <RestorationButton
+                                event={event}
+                                onRestored={() =>
+                                    heading.current?.focus({
+                                        preventScroll: true,
+                                    })
+                                }
+                            />
+                        ) : null}
                     </div>
                 </header>
                 {event.status === 'cancelled' ? (
@@ -260,6 +324,13 @@ export default function EventDetails({
                         <AlertDescription>
                             {event.cancellation_reason ||
                                 'All occurrences have been cancelled.'}
+                            {can.manage_owner ? (
+                                <p>
+                                    Restoring returns this event to draft. Any
+                                    individually cancelled occurrences will stay
+                                    cancelled until restored separately.
+                                </p>
+                            ) : null}
                         </AlertDescription>
                     </Alert>
                 ) : null}
@@ -433,6 +504,21 @@ export default function EventDetails({
                                                     >
                                                         Cancel
                                                     </Button>
+                                                ) : null}
+                                                {can.edit &&
+                                                occurrence.status ===
+                                                    'cancelled' ? (
+                                                    <RestorationButton
+                                                        event={event}
+                                                        date={occurrence.date}
+                                                        onRestored={() =>
+                                                            heading.current?.focus(
+                                                                {
+                                                                    preventScroll: true,
+                                                                },
+                                                            )
+                                                        }
+                                                    />
                                                 ) : null}
                                             </div>
                                         </li>
