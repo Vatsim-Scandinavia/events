@@ -61,7 +61,8 @@ export function FirDialog({
                     onSubmit={(event) => {
                         event.preventDefault();
                         form.submit(fir ? update(fir.id) : store(), {
-                            preserveScroll: true,
+                            preserveState: fir ? true : 'errors',
+                            preserveScroll: fir ? true : 'errors',
                             onSuccess: () => {
                                 toast.success(
                                     fir ? 'FIR updated.' : 'FIR created.',

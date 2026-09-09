@@ -20,6 +20,8 @@ use Inertia\Response;
 
 class FirController extends Controller
 {
+    private const int PER_PAGE = 15;
+
     public function __construct(private RecordAudit $audit) {}
 
     public function index(FirIndexRequest $request): Response
@@ -34,7 +36,7 @@ class FirController extends Controller
                 ->where(fn (Builder $query): Builder => $query
                     ->whereLike('code', '%'.$search.'%')->orWhereLike('name', '%'.$search.'%')))
             ->orderBy('code')->orderBy('id')
-            ->paginate(15)->withQueryString()
+            ->paginate(self::PER_PAGE)->withQueryString()
             ->through(fn (Team $fir): array => [
                 ...$fir->only(['id', 'code', 'name']),
                 'members_count' => (int) $fir->getAttribute('members_count'),
@@ -48,12 +50,17 @@ class FirController extends Controller
 
     public function store(FirRequest $request): RedirectResponse
     {
-        DB::transaction(function () use ($request): void {
+        $fir = DB::transaction(function () use ($request): Team {
             $fir = Team::create($request->validated());
             $this->audit->handle($fir, 'created', [], $fir->only(['code', 'name']));
+
+            return $fir;
         });
 
-        return to_route('firs.index');
+        $precedingFirs = Team::where('code', '<', $fir->code)->count();
+        $page = intdiv($precedingFirs, self::PER_PAGE) + 1;
+
+        return to_route('firs.index', $page > 1 ? ['page' => $page] : []);
     }
 
     public function update(FirRequest $request, Team $fir): RedirectResponse

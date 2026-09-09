@@ -141,6 +141,32 @@ class FirManagementTest extends TestCase
         $this->assertDatabaseCount('teams', 1);
     }
 
+    #[TestWith([14, 1, 14])]
+    #[TestWith([15, 2, 0])]
+    #[TestWith([16, 2, 1])]
+    public function test_created_firs_are_shown_on_their_directory_page_without_previous_filters(int $precedingFirs, int $expectedPage, int $expectedRow): void
+    {
+        $administrator = $this->administrator();
+        Team::factory()->count($precedingFirs)->sequence(fn ($sequence): array => [
+            'code' => 'EKA'.chr(ord('A') + $sequence->index), 'name' => 'Region FIR',
+        ])->create();
+        Team::factory()->create(['code' => 'ZZZZ', 'name' => 'Region FIR']);
+
+        $response = $this->actingAs($administrator)
+            ->from(route('firs.index', ['search' => 'Region', 'page' => 1]))
+            ->post(route('firs.store'), ['code' => ' esaa ', 'name' => 'Sweden FIR']);
+
+        $response->assertRedirectToRoute('firs.index', $expectedPage > 1 ? ['page' => $expectedPage] : [])
+            ->assertSessionHasNoErrors();
+        $this->get($response->headers->get('Location'))
+            ->assertInertia(fn (Assert $page) => $page->component('firs/index')
+                ->where('filters.search', '')->where('firs.current_page', $expectedPage)
+                ->where("firs.data.{$expectedRow}.code", 'ESAA')
+                ->where("firs.data.{$expectedRow}.name", 'Sweden FIR'));
+
+        $this->assertDatabaseHas('teams', ['code' => 'ESAA', 'name' => 'Sweden FIR']);
+    }
+
     public function test_administrators_can_rename_firs_without_changing_member_access(): void
     {
         $administrator = $this->administrator();
