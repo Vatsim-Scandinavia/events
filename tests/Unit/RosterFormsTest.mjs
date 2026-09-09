@@ -17,6 +17,10 @@ const ui = {
         X: 'remove-icon',
         ArrowLeft: 'back-icon',
         Pencil: 'edit-icon',
+        ChevronRight: 'next-icon',
+        ChevronLeft: 'previous-icon',
+        CalendarDays: 'calendar-icon',
+        ClipboardList: 'clipboard-icon',
     },
     sonner: { toast: { success() {} } },
     '@/components/alert-error': { __esModule: true, default: 'alert-error' },
@@ -39,6 +43,15 @@ const ui = {
         CardDescription: 'card-description',
         CardHeader: 'card-header',
         CardTitle: 'card-title',
+        CardFooter: 'card-footer',
+    },
+    '@/components/ui/select': {
+        Select: 'select',
+        SelectContent: 'select-content',
+        SelectGroup: 'select-group',
+        SelectItem: 'option',
+        SelectTrigger: 'select-trigger',
+        SelectValue: 'select-value',
     },
     '@/components/ui/toggle-group': {
         ToggleGroup: 'toggle-group',
@@ -47,9 +60,10 @@ const ui = {
 };
 const routes = {
     '@/routes/events/roster': {
-        update: ({ event, date }) => ({
-            method: 'put',
-            url: `/events/${event}/roster/${date}`,
+        update: (event) => ({ method: 'put', url: `/events/${event}/roster` }),
+        show: ({ event, date }) => ({
+            method: 'get',
+            url: `/events/${event}/roster${date ? '/' + date : ''}`,
         }),
     },
     '@/routes/roster/interest': {
@@ -57,6 +71,10 @@ const routes = {
         destroy: (id) => ({ method: 'delete', url: `/rosters/${id}/interest` }),
     },
     '@/routes/roster/bookings': {
+        withdraw: ({ roster, booking }) => ({
+            method: 'delete',
+            url: `/rosters/${roster}/bookings/${booking}`,
+        }),
         store: ({ roster, slot }) => ({
             method: 'post',
             url: `/rosters/${roster}/slots/${slot}/booking`,
@@ -104,7 +122,7 @@ const { default: RosterPage } = loadComponent(
         ...routes,
         '@/components/roster-editor': { RosterEditor: 'roster-editor' },
         '@/components/roster-interest-form': {
-            RosterInterestForm: 'interest-form',
+            RosterInterestForm,
         },
         '@/lib/event-time': { eventTime },
     },
@@ -127,6 +145,11 @@ function emptyRoster(overrides = {}) {
         id: 9,
         mode: 'pre_slotted',
         is_open: false,
+        mode_locked:
+            overrides.shifts?.some((shift) =>
+                shift.slots.some((slot) => slot.is_locked),
+            ) || !!overrides.interests?.length,
+        bookings: [],
         shifts: [],
         positions: [],
         interests: [],
@@ -141,6 +164,8 @@ function slot(overrides = {}) {
         ends_at: '2026-12-10T20:00',
         booking: null,
         can_book: true,
+        is_locked: !!overrides.booking,
+        is_unavailable: false,
         ...overrides,
     };
 }
@@ -151,7 +176,14 @@ function button(view, label) {
     return view.find((node) => node.type === 'button' && text(node) === label);
 }
 async function mount(t, component, props) {
-    const view = await renderComponent(createElement(component, props));
+    const view = await renderComponent(
+        createElement(component, {
+            occurrenceOptions: props.occurrence ? [props.occurrence] : [],
+            nextOccurrenceDate: null,
+            autoSelectOccurrence: false,
+            ...props,
+        }),
+    );
     t.after(() => view.unmount());
     return view;
 }
@@ -190,10 +222,11 @@ await test('the roster editor submits shift identities and UTC times and preserv
     );
 
     assert.deepEqual(submitted, {
-        url: '/events/7/roster/2026-12-10',
+        url: '/events/7/roster',
         data: {
             mode: 'pre_slotted',
             is_open: false,
+            occurrence_date: '2026-12-10',
             shifts: [
                 {
                     id: 3,
@@ -354,6 +387,7 @@ await test('interest submits selected positions and multiple availability window
         url: '/rosters/9/interest',
         data: {
             position_ids: [4],
+            occurrence_date: '2026-12-10',
             availability: [
                 { starts_at: '2026-12-10T18:00', ends_at: '2026-12-10T19:00' },
                 { starts_at: '2026-12-10T21:00', ends_at: '2026-12-10T22:00' },
@@ -364,8 +398,8 @@ await test('interest submits selected positions and multiple availability window
 
 await test('controllers can withdraw interest after signups close without editing it', async (t) => {
     let deleted;
-    t.mock.method(inertia.router, 'delete', (url) => {
-        deleted = url;
+    t.mock.method(inertia.router, 'delete', (url, options) => {
+        deleted = { url, data: options.data };
     });
     const view = await mount(t, RosterInterestForm, {
         occurrence,
@@ -400,13 +434,16 @@ await test('controllers can withdraw interest after signups close without editin
 
     await act(async () => button(view, 'Withdraw interest').props.onClick());
 
-    assert.equal(deleted, '/rosters/9/interest');
+    assert.deepEqual(deleted, {
+        url: '/rosters/9/interest',
+        data: { occurrence_date: '2026-12-10' },
+    });
 });
 
 await test('a controller viewing a closed roster can withdraw their booking and return to the roster directory', async (t) => {
     let deleted;
-    t.mock.method(inertia.router, 'delete', (url) => {
-        deleted = url;
+    t.mock.method(inertia.router, 'delete', (url, options) => {
+        deleted = { url, data: options.data };
     });
     const view = await mount(t, RosterPage, {
         event,
@@ -428,10 +465,16 @@ await test('a controller viewing a closed roster can withdraw their booking and 
         canViewEvent: false,
         currentUserCid: controller.cid,
     });
-    assert.deepEqual(view.find((node) => node.type === 'link').props.href, {
-        url: '/rosters',
-        method: 'get',
-    });
+    assert.deepEqual(
+        view.find(
+            (node) =>
+                node.type === 'link' && node.props.href.url === '/rosters',
+        ).props.href,
+        {
+            url: '/rosters',
+            method: 'get',
+        },
+    );
     assert.equal(
         view.findAll(
             (node) => node.type === 'button' && text(node) === 'Book position',
@@ -449,7 +492,10 @@ await test('a controller viewing a closed roster can withdraw their booking and 
 
     await act(async () => button(view, 'Withdraw booking').props.onClick());
 
-    assert.equal(deleted, '/rosters/9/slots/11/booking');
+    assert.deepEqual(deleted, {
+        url: '/rosters/9/slots/11/booking',
+        data: { occurrence_date: '2026-12-10' },
+    });
 });
 
 await test('only future available slots offer bookings in an open roster', async (t) => {
@@ -483,7 +529,7 @@ await test('only future available slots offer bookings in an open roster', async
 
     assert.deepEqual(submitted, {
         url: '/rosters/9/slots/12/booking',
-        data: {},
+        data: { occurrence_date: '2026-12-10' },
     });
 });
 
@@ -504,10 +550,11 @@ await test('an ended roster displays its ended status and offers no new signups'
     assert.equal(
         text(
             view.find(
-                (node) => node.type === 'badge' && text(node) === 'Event ended',
+                (node) =>
+                    node.type === 'badge' && text(node) === 'Occurrence ended',
             ),
         ),
-        'Event ended',
+        'Occurrence ended',
     );
     assert.equal(
         view.findAll(
@@ -515,4 +562,545 @@ await test('an ended roster displays its ended status and offers no new signups'
         ).length,
         0,
     );
+});
+
+await test('bookings on another occurrence protect the shared roster template', async (t) => {
+    const view = await mount(t, RosterEditor, {
+        event,
+        occurrence,
+        onClose() {},
+        roster: emptyRoster({
+            mode_locked: true,
+            shifts: [
+                {
+                    id: 3,
+                    name: 'Early',
+                    slots: [slot({ booking: null, is_locked: true })],
+                },
+            ],
+        }),
+    });
+
+    assert.equal(
+        view.find(
+            (node) =>
+                node.type === 'input' && node.props.id === 'slot-11-callsign',
+        ).props.disabled,
+        true,
+    );
+    assert.equal(
+        view.find(
+            (node) =>
+                node.type === 'input' && node.props.id === 'slot-11-starts_at',
+        ).props.disabled,
+        true,
+    );
+    assert.equal(button(view, 'Remove shift').props.disabled, true);
+    assert.equal(
+        view.findAll((node) => node.type === 'fieldset')[0].props.disabled,
+        true,
+    );
+});
+
+for (const autoSelectOccurrence of [true, false]) {
+    await test(`${autoSelectOccurrence ? 'the automatic view advances' : 'an explicitly selected occurrence stays fixed'} after the occurrence ends`, async (t) => {
+        t.mock.timers.enable({
+            apis: ['Date', 'setTimeout'],
+            now: new Date('2026-12-10T21:59:59Z'),
+        });
+        const visits = [];
+        t.mock.method(inertia.router, 'visit', (destination) =>
+            visits.push(destination),
+        );
+        await mount(t, RosterPage, {
+            event,
+            occurrence,
+            roster: emptyRoster(),
+            canManage: false,
+            canParticipate: false,
+            canViewEvent: false,
+            currentUserCid: controller.cid,
+            autoSelectOccurrence,
+        });
+
+        await act(async () => t.mock.timers.tick(2001));
+
+        assert.deepEqual(
+            visits,
+            autoSelectOccurrence
+                ? [{ method: 'get', url: '/events/7/roster' }]
+                : [],
+        );
+    });
+}
+
+await test('selecting another occurrence uses its explicit roster URL', async (t) => {
+    let destination;
+    t.mock.method(inertia.router, 'visit', (route) => {
+        destination = route;
+    });
+    const view = await mount(t, RosterPage, {
+        event,
+        occurrence,
+        roster: emptyRoster(),
+        canManage: false,
+        canParticipate: false,
+        canViewEvent: false,
+        currentUserCid: controller.cid,
+        occurrenceOptions: [occurrence, { ...occurrence, date: '2026-12-17' }],
+    });
+
+    await act(async () =>
+        view
+            .find((node) => node.type === 'select')
+            .props.onValueChange('2026-12-17'),
+    );
+
+    assert.deepEqual(destination, {
+        method: 'get',
+        url: '/events/7/roster/2026-12-17',
+    });
+});
+
+await test('changing occurrence resets interest availability and submits the displayed date', async (t) => {
+    let submitted;
+    t.mock.method(inertia.router, 'put', (url, data) => {
+        submitted = { url, data };
+    });
+    const props = {
+        event,
+        occurrence,
+        roster: emptyRoster({
+            mode: 'open_interest',
+            is_open: true,
+            positions: [{ id: 2, callsign: 'EKCH_A_TWR' }],
+        }),
+        canManage: false,
+        canParticipate: true,
+        canViewEvent: false,
+        currentUserCid: controller.cid,
+        occurrenceOptions: [occurrence],
+        nextOccurrenceDate: null,
+        autoSelectOccurrence: false,
+    };
+    const view = await mount(t, RosterPage, props);
+    await change(view, 'availability-0-starts_at', '2026-12-10T19:00');
+    const next = {
+        ...occurrence,
+        date: '2026-12-17',
+        starts_at: '2026-12-17T18:00:00Z',
+        ends_at: '2026-12-17T22:00:00Z',
+    };
+
+    await view.render(
+        createElement(RosterPage, {
+            ...props,
+            occurrence: next,
+            occurrenceOptions: [occurrence, next],
+        }),
+    );
+    await act(async () =>
+        view
+            .find((node) => node.type === 'checkbox')
+            .props.onCheckedChange(true),
+    );
+    await act(async () =>
+        view
+            .find((node) => node.type === 'form')
+            .props.onSubmit({ preventDefault() {} }),
+    );
+
+    assert.deepEqual(submitted, {
+        url: '/rosters/9/interest',
+        data: {
+            occurrence_date: '2026-12-17',
+            position_ids: [2],
+            availability: [
+                { starts_at: '2026-12-17T18:00', ends_at: '2026-12-17T22:00' },
+            ],
+        },
+    });
+});
+
+await test('changing occurrence keeps a reused slot booking tied to the displayed date', async (t) => {
+    const submissions = [];
+    t.mock.method(inertia.router, 'post', (url, data) =>
+        submissions.push({ url, data }),
+    );
+    const props = {
+        event,
+        occurrence,
+        roster: emptyRoster({
+            is_open: true,
+            shifts: [{ id: 3, name: 'Early', slots: [slot()] }],
+        }),
+        canManage: false,
+        canParticipate: true,
+        canViewEvent: false,
+        currentUserCid: controller.cid,
+        occurrenceOptions: [occurrence],
+        nextOccurrenceDate: null,
+        autoSelectOccurrence: false,
+    };
+    const view = await mount(t, RosterPage, props);
+    await act(async () => button(view, 'Book position').props.onClick());
+    const next = {
+        ...occurrence,
+        date: '2026-12-17',
+        starts_at: '2026-12-17T18:00:00Z',
+        ends_at: '2026-12-17T22:00:00Z',
+    };
+
+    await view.render(
+        createElement(RosterPage, {
+            ...props,
+            occurrence: next,
+            occurrenceOptions: [occurrence, next],
+        }),
+    );
+    await act(async () => button(view, 'Book position').props.onClick());
+
+    assert.deepEqual(submissions, [
+        {
+            url: '/rosters/9/slots/11/booking',
+            data: { occurrence_date: '2026-12-10' },
+        },
+        {
+            url: '/rosters/9/slots/11/booking',
+            data: { occurrence_date: '2026-12-17' },
+        },
+    ]);
+});
+
+await test('unavailable daylight saving slots show an explanation and cannot be edited on that occurrence', async (t) => {
+    const roster = emptyRoster({
+        shifts: [
+            {
+                id: 3,
+                name: 'Early',
+                slots: [
+                    slot({
+                        starts_at: null,
+                        ends_at: null,
+                        is_unavailable: true,
+                        can_book: false,
+                    }),
+                ],
+            },
+        ],
+    });
+    const view = await mount(t, RosterPage, {
+        event,
+        occurrence,
+        roster,
+        canManage: false,
+        canParticipate: false,
+        canViewEvent: false,
+        currentUserCid: controller.cid,
+    });
+    const editor = await mount(t, RosterEditor, {
+        event,
+        occurrence,
+        roster,
+        onClose() {},
+    });
+
+    assert.equal(
+        view.findAll(
+            (node) =>
+                node.type === 'span' &&
+                text(node) === 'Unavailable on this occurrence',
+        ).length,
+        1,
+    );
+    assert.equal(editor.findAll((node) => node.type === 'form').length, 0);
+    assert.equal(
+        text(editor.find((node) => node.type === 'alert-title')),
+        'Choose another occurrence to edit the roster',
+    );
+});
+
+await test('separate booking snapshots retain their original times and withdraw against their own occurrence', async (t) => {
+    let submitted;
+    t.mock.method(inertia.router, 'delete', (url, options) => {
+        submitted = { url, data: options.data };
+    });
+    const snapshot = {
+        id: 51,
+        slot_id: null,
+        callsign: 'EKCH_B_TWR',
+        shift_name: 'Late',
+        starts_at: '2026-12-10T20:00',
+        ends_at: '2026-12-10T22:00',
+        user: controller,
+        can_withdraw: true,
+    };
+    const view = await mount(t, RosterPage, {
+        event,
+        occurrence,
+        roster: emptyRoster({ bookings: [snapshot] }),
+        canManage: false,
+        canParticipate: false,
+        canViewEvent: false,
+        currentUserCid: controller.cid,
+    });
+    assert.equal(
+        view.findAll(
+            (node) =>
+                node.type === 'span' &&
+                text(node) ===
+                    'Late · 10 Dec 2026, 20:00 – 10 Dec 2026, 22:00 Z',
+        ).length,
+        1,
+    );
+
+    await act(async () => button(view, 'Withdraw booking').props.onClick());
+
+    assert.deepEqual(submitted, {
+        url: '/rosters/9/bookings/51',
+        data: { occurrence_date: '2026-12-10' },
+    });
+});
+
+await test('directory cards use the event roster URL and retain events without upcoming occurrences', async (t) => {
+    const { default: Directory } = loadComponent(
+        new URL('../../resources/js/pages/events/rosters.tsx', import.meta.url),
+        { ...ui, ...routes, '@/lib/event-time': { eventTime } },
+    );
+    const view = await mount(t, Directory, {
+        rosters: {
+            current_page: 1,
+            last_page: 1,
+            total: 1,
+            data: [
+                {
+                    id: 9,
+                    event_id: 7,
+                    title: event.title,
+                    owner_code: 'EKDK',
+                    mode: 'pre_slotted',
+                    is_open: false,
+                    has_ended: true,
+                    occurrence: null,
+                },
+            ],
+        },
+    });
+
+    assert.deepEqual(
+        view
+            .findAll((node) => node.type === 'link')
+            .map((node) => node.props.href),
+        [
+            { method: 'get', url: '/events/7/roster' },
+            { method: 'get', url: '/events/7/roster' },
+        ],
+    );
+    assert.equal(
+        view.findAll(
+            (node) =>
+                node.type === 'p' && text(node) === 'No upcoming occurrences',
+        ).length,
+        1,
+    );
+});
+
+await test('past booking snapshots do not lock the shared template when the server permits edits', async (t) => {
+    const view = await mount(t, RosterEditor, {
+        event,
+        occurrence: { ...occurrence, has_ended: true },
+        onClose() {},
+        roster: emptyRoster({
+            mode_locked: false,
+            shifts: [
+                {
+                    id: 3,
+                    name: 'Early',
+                    slots: [
+                        slot({
+                            booking: { ...controller, id: 41 },
+                            is_locked: false,
+                        }),
+                    ],
+                },
+            ],
+        }),
+    });
+
+    assert.equal(
+        view.find(
+            (node) =>
+                node.type === 'input' && node.props.id === 'slot-11-callsign',
+        ).props.disabled,
+        false,
+    );
+    assert.equal(button(view, 'Remove shift').props.disabled, false);
+    assert.equal(
+        view.findAll((node) => node.type === 'fieldset')[0].props.disabled,
+        false,
+    );
+});
+
+await test('recorded interest remains readable and withdrawable after the event switches roster type', async (t) => {
+    let submitted;
+    t.mock.method(inertia.router, 'delete', (url, options) => {
+        submitted = { url, data: options.data };
+    });
+    const view = await mount(t, RosterPage, {
+        event,
+        occurrence,
+        roster: emptyRoster({
+            mode: 'pre_slotted',
+            interests: [
+                {
+                    id: 5,
+                    user: controller,
+                    position_ids: [],
+                    position_callsigns: ['EKCH_OLD_TWR'],
+                    availability: [
+                        {
+                            starts_at: '2026-12-10T18:00',
+                            ends_at: '2026-12-10T20:00',
+                        },
+                    ],
+                },
+            ],
+        }),
+        canManage: false,
+        canParticipate: false,
+        canViewEvent: false,
+        currentUserCid: controller.cid,
+    });
+    assert.equal(
+        view.findAll(
+            (node) => node.type === 'badge' && text(node) === 'EKCH_OLD_TWR',
+        ).length,
+        1,
+    );
+
+    await act(async () => button(view, 'Withdraw interest').props.onClick());
+
+    assert.deepEqual(submitted, {
+        url: '/rosters/9/interest',
+        data: { occurrence_date: '2026-12-10' },
+    });
+});
+
+await test('closed interest displays the originally selected callsigns after positions are renamed', async (t) => {
+    const view = await mount(t, RosterInterestForm, {
+        occurrence,
+        roster: emptyRoster({
+            mode: 'open_interest',
+            positions: [{ id: 2, callsign: 'EKCH_NEW_TWR' }],
+        }),
+        interest: {
+            id: 5,
+            user: controller,
+            position_ids: [2],
+            position_callsigns: ['EKCH_OLD_TWR'],
+            availability: [
+                { starts_at: '2026-12-10T18:00', ends_at: '2026-12-10T20:00' },
+            ],
+        },
+        canSubmit: false,
+    });
+
+    assert.equal(
+        view.findAll(
+            (node) => node.type === 'badge' && text(node) === 'EKCH_OLD_TWR',
+        ).length,
+        1,
+    );
+    assert.equal(
+        view.findAll(
+            (node) => node.type === 'label' && text(node) === 'EKCH_NEW_TWR',
+        ).length,
+        0,
+    );
+});
+
+await test('booking from the automatic view keeps its occurrence date and requests return to the current view', async (t) => {
+    let submitted;
+    t.mock.method(inertia.router, 'post', (url, data) => {
+        submitted = { url, data };
+    });
+    const view = await mount(t, RosterPage, {
+        event,
+        occurrence,
+        roster: emptyRoster({
+            is_open: true,
+            shifts: [{ id: 3, name: 'Early', slots: [slot()] }],
+        }),
+        canManage: false,
+        canParticipate: true,
+        canViewEvent: false,
+        currentUserCid: controller.cid,
+        autoSelectOccurrence: true,
+    });
+
+    await act(async () => button(view, 'Book position').props.onClick());
+
+    assert.deepEqual(submitted, {
+        url: '/rosters/9/slots/11/booking',
+        data: { occurrence_date: '2026-12-10', return_to_current: true },
+    });
+});
+
+await test('interest submissions and withdrawals preserve the automatic-view preference', async (t) => {
+    const submissions = [];
+    t.mock.method(inertia.router, 'put', (url, data) => {
+        submissions.push({ method: 'put', url, data });
+    });
+    t.mock.method(inertia.router, 'delete', (url, options) => {
+        submissions.push({ method: 'delete', url, data: options.data });
+    });
+    const view = await mount(t, RosterInterestForm, {
+        occurrence,
+        roster: emptyRoster({
+            mode: 'open_interest',
+            is_open: true,
+            positions: [{ id: 2, callsign: 'EKCH_A_TWR' }],
+        }),
+        interest: {
+            id: 5,
+            user: controller,
+            position_ids: [2],
+            position_callsigns: ['EKCH_A_TWR'],
+            availability: [
+                { starts_at: '2026-12-10T18:00', ends_at: '2026-12-10T20:00' },
+            ],
+        },
+        canSubmit: true,
+        autoSelectOccurrence: true,
+    });
+
+    await act(async () =>
+        view
+            .find((node) => node.type === 'form')
+            .props.onSubmit({ preventDefault() {} }),
+    );
+    await act(async () => button(view, 'Withdraw interest').props.onClick());
+
+    assert.deepEqual(submissions, [
+        {
+            method: 'put',
+            url: '/rosters/9/interest',
+            data: {
+                occurrence_date: '2026-12-10',
+                return_to_current: true,
+                position_ids: [2],
+                availability: [
+                    {
+                        starts_at: '2026-12-10T18:00',
+                        ends_at: '2026-12-10T20:00',
+                    },
+                ],
+            },
+        },
+        {
+            method: 'delete',
+            url: '/rosters/9/interest',
+            data: { occurrence_date: '2026-12-10', return_to_current: true },
+        },
+    ]);
 });

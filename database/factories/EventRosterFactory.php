@@ -14,7 +14,6 @@ class EventRosterFactory extends Factory
     {
         return [
             'event_id' => Event::factory(),
-            'occurrence_date' => fn (array $attributes): string => substr(Event::whereKey($attributes['event_id'])->firstOrFail()->local_start, 0, 10),
             'mode' => 'pre_slotted',
             'is_open' => false,
             'opened_at' => null,

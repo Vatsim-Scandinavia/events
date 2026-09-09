@@ -16,6 +16,7 @@ class EventRosterRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'return_to_current' => ['sometimes', 'boolean'],
             'occurrence_date' => ['required', 'date_format:Y-m-d'],
             'mode' => ['required', Rule::in(['pre_slotted', 'open_interest'])],
             'is_open' => ['required', 'boolean'],
@@ -38,7 +39,6 @@ class EventRosterRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['occurrence_date' => $this->route('date')]);
         $shifts = $this->input('shifts');
         if (is_array($shifts)) {
             foreach ($shifts as &$shift) {

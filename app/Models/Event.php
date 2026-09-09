@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -38,7 +39,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property Collection<int, Airport> $airports
  * @property Collection<int, EventCancellation> $cancellations
  * @property Collection<int, EventCollaboration> $collaborations
- * @property Collection<int, EventRoster> $rosters
+ * @property EventRoster|null $roster
  */
 #[Fillable(['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'starts_at', 'ends_at', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until', 'status', 'banner_path', 'cancellation_reason', 'cancelled_at'])]
 class Event extends Model
@@ -70,10 +71,10 @@ class Event extends Model
         return $this->hasMany(EventCollaboration::class);
     }
 
-    /** @return HasMany<EventRoster, $this> */
-    public function rosters(): HasMany
+    /** @return HasOne<EventRoster, $this> */
+    public function roster(): HasOne
     {
-        return $this->hasMany(EventRoster::class);
+        return $this->hasOne(EventRoster::class);
     }
 
     /** @param Builder<Event> $query */

@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Actions\Authorization\UpdateRoleAssignments;
+use App\Models\Event;
+use App\Models\EventCancellation;
 use App\Models\EventCollaboration;
 use App\Models\EventRoster;
 use App\Models\Team;
@@ -31,7 +33,7 @@ class RosterDirectoryTest extends TestCase
             ->component('events/rosters')->where('auth.can_view_rosters', true)
             ->has('rosters.data', 2)->where('rosters.data.0.id', $other->id)->where('rosters.data.1.id', $visible->id)
             ->where('rosters.data.1.is_open', false)->where('rosters.data.1.has_ended', true)
-            ->where('rosters.data.1.occurrence.date', '2026-10-04'));
+            ->where('rosters.data.1.occurrence', null));
 
         $this->get(route('events.show', $visible->event))->assertForbidden();
     }
@@ -74,6 +76,27 @@ class RosterDirectoryTest extends TestCase
             ->has('rosters.data', 12)->where('rosters.total', 13)->where('rosters.last_page', 2));
         $this->get(route('rosters.index', ['page' => 2]))->assertInertia(fn (Assert $page) => $page
             ->has('rosters.data', 1)->where('rosters.current_page', 2));
+    }
+
+    public function test_directory_keeps_one_entry_and_advances_to_the_next_uncancelled_occurrence(): void
+    {
+        $event = Event::factory()->weekly()->create();
+        $roster = EventRoster::factory()->for($event)->open()->create();
+        EventCancellation::factory()->for($event)->create(['occurrence_date' => '2026-10-11']);
+        $this->actingAs($this->member($event->owner, RoleName::Controller));
+        $this->travelTo('2026-10-04 20:59:59');
+
+        $this->get(route('rosters.index'))->assertInertia(fn (Assert $page) => $page
+            ->has('rosters.data', 1)->where('rosters.data.0.id', $roster->id)
+            ->where('rosters.data.0.occurrence.date', '2026-10-04'));
+
+        $this->travelTo('2026-10-04 21:00:00');
+        $this->get(route('rosters.index'))->assertInertia(fn (Assert $page) => $page
+            ->has('rosters.data', 1)->where('rosters.data.0.id', $roster->id)
+            ->where('rosters.data.0.occurrence.date', '2026-10-18')->where('rosters.data.0.has_ended', false));
+
+        $this->assertDatabaseCount('event_rosters', 1);
+        $this->assertDatabaseCount('roster_bookings', 0);
     }
 
     public function test_sample_rosters_are_private_and_audited(): void

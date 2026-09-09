@@ -28,7 +28,7 @@ type RosterSummary = {
     mode: 'pre_slotted' | 'open_interest';
     is_open: boolean;
     has_ended: boolean;
-    occurrence: Occurrence;
+    occurrence: Occurrence | null;
 };
 
 export default function Rosters({
@@ -46,7 +46,8 @@ export default function Rosters({
                     </h1>
                     <p className="text-muted-foreground text-sm">
                         Book a position or share your interest and availability
-                        for an event. All times are UTC / Zulu.
+                        for an event. Each event opens its current or next
+                        occurrence. All times are UTC / Zulu.
                     </p>
                 </header>
                 {rosters.data.length ? (
@@ -65,13 +66,13 @@ export default function Rosters({
                                         </Badge>
                                         <Badge
                                             variant={
-                                                roster.occurrence.status ===
+                                                roster.occurrence?.status ===
                                                 'cancelled'
                                                     ? 'destructive'
                                                     : 'outline'
                                             }
                                         >
-                                            {roster.occurrence.status ===
+                                            {roster.occurrence?.status ===
                                             'cancelled'
                                                 ? 'Cancelled'
                                                 : roster.has_ended
@@ -85,7 +86,6 @@ export default function Rosters({
                                         <Link
                                             href={show({
                                                 event: roster.event_id,
-                                                date: roster.occurrence.date,
                                             })}
                                         >
                                             {roster.title}
@@ -102,14 +102,16 @@ export default function Rosters({
                                         <CalendarDays className="mt-0.5 size-4 shrink-0" />
                                         <div>
                                             <p>
-                                                {roster.occurrence.starts_at
+                                                {roster.occurrence?.starts_at
                                                     ? eventTime(
                                                           roster.occurrence
                                                               .starts_at,
                                                       ) + ' Z'
-                                                    : roster.occurrence.date}
+                                                    : (roster.occurrence
+                                                          ?.date ??
+                                                      'No upcoming occurrences')}
                                             </p>
-                                            {roster.occurrence.ends_at ? (
+                                            {roster.occurrence?.ends_at ? (
                                                 <p className="text-muted-foreground">
                                                     Ends{' '}
                                                     {eventTime(
@@ -131,7 +133,6 @@ export default function Rosters({
                                         <Link
                                             href={show({
                                                 event: roster.event_id,
-                                                date: roster.occurrence.date,
                                             })}
                                         >
                                             View roster

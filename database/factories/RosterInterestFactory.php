@@ -19,10 +19,12 @@ class RosterInterestFactory extends Factory
         return [
             'roster_id' => EventRoster::factory()->openInterest(),
             'user_cid' => User::factory(),
+            'occurrence_date' => fn (array $attributes): string => substr(EventRoster::whereKey($attributes['roster_id'])->firstOrFail()->event->local_start, 0, 10),
             'position_ids' => fn (array $attributes): array => [RosterPosition::factory()->create(['roster_id' => $attributes['roster_id']])->id],
+            'position_callsigns' => fn (array $attributes): array => RosterPosition::whereIn('id', $attributes['position_ids'])->orderBy('id')->pluck('callsign')->all(),
+            'occurrence_ends_at' => fn (array $attributes): string => $this->occurrence($attributes)['ends_at'],
             'availability' => function (array $attributes): array {
-                $roster = EventRoster::whereKey($attributes['roster_id'])->firstOrFail();
-                $occurrence = app(EventSchedule::class)->occurrence($roster->event, $roster->occurrence_date);
+                $occurrence = $this->occurrence($attributes);
 
                 return [[
                     'starts_at' => CarbonImmutable::parse($occurrence['starts_at'])->utc()->format('Y-m-d\TH:i'),
@@ -30,5 +32,15 @@ class RosterInterestFactory extends Factory
                 ]];
             },
         ];
+    }
+
+    /** @param array<string, mixed> $attributes
+     * @return array{date: string, starts_at: string|null, ends_at: string|null, status: string, reason: string|null}
+     */
+    private function occurrence(array $attributes): array
+    {
+        $roster = EventRoster::whereKey($attributes['roster_id'])->firstOrFail();
+
+        return app(EventSchedule::class)->occurrence($roster->event, $attributes['occurrence_date']);
     }
 }

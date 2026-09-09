@@ -404,10 +404,10 @@ class EventManagementTest extends TestCase
             'owner_team_id' => $fir->id, 'local_start' => $payload['local_start'],
             'local_end' => $payload['local_end'], 'timezone' => $payload['timezone'],
         ]);
-        $roster = EventRoster::factory()->for($event)->create(['occurrence_date' => '2026-10-18']);
+        $roster = EventRoster::factory()->for($event)->create();
         $this->actingAs($this->member($fir));
 
-        $this->get(route('events.edit', $event))->assertInertia(fn (Assert $page) => $page->where('event.schedule_locked', true));
+        $this->get(route('events.edit', $event))->assertInertia(fn (Assert $page) => $page->where('event.schedule_locked', true)->where('event.roster_exists', true));
         $this->put(route('events.update', $event), [...$payload, 'local_start' => '2026-10-18T19:00'])
             ->assertSessionHasErrors('recurrence');
 

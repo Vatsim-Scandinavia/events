@@ -6,6 +6,7 @@ import AlertError from '@/components/alert-error';
 import InputError from '@/components/input-error';
 import { RosterTimeFields } from '@/components/roster-time-fields';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
     Card,
     CardContent,
@@ -25,16 +26,20 @@ export function RosterInterestForm({
     occurrence,
     interest,
     canSubmit,
+    autoSelectOccurrence,
 }: {
     roster: EventRoster;
     occurrence: Occurrence;
     interest: RosterInterest | undefined;
     canSubmit: boolean;
+    autoSelectOccurrence: boolean;
 }) {
     const nextKey = useRef(0);
     const minimum = occurrence.starts_at?.slice(0, 16) ?? '';
     const maximum = occurrence.ends_at?.slice(0, 16) ?? '';
     const form = useForm({
+        occurrence_date: occurrence.date,
+        ...(autoSelectOccurrence ? { return_to_current: true } : {}),
         position_ids: interest?.position_ids ?? ([] as number[]),
         availability: (
             interest?.availability ?? [{ starts_at: minimum, ends_at: maximum }]
@@ -44,7 +49,10 @@ export function RosterInterestForm({
             ends_at: window.ends_at.slice(0, 16),
         })),
     });
-    const withdrawal = useForm({});
+    const withdrawal = useForm({
+        occurrence_date: occurrence.date,
+        ...(autoSelectOccurrence ? { return_to_current: true } : {}),
+    });
     const errors: Record<string, string | undefined> = form.errors;
     const disabled = form.processing || withdrawal.processing || !canSubmit;
 
@@ -54,8 +62,8 @@ export function RosterInterestForm({
                 <CardTitle>Your interest and availability</CardTitle>
                 <CardDescription>
                     Choose the positions you can staff and when you are
-                    available. The coordinator will use your submission to plan
-                    the roster.
+                    available for this occurrence. Your interest applies only to
+                    the displayed date.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -64,6 +72,10 @@ export function RosterInterestForm({
                     onSubmit={(e) => {
                         e.preventDefault();
                         form.transform((data) => ({
+                            occurrence_date: data.occurrence_date,
+                            ...(data.return_to_current
+                                ? { return_to_current: true }
+                                : {}),
                             position_ids: data.position_ids,
                             availability: data.availability.map(
                                 ({ starts_at, ends_at }) => ({
@@ -95,47 +107,62 @@ export function RosterInterestForm({
                             Positions you are interested in
                         </legend>
                         <div className="flex flex-wrap gap-x-6 gap-y-3">
-                            {roster.positions.map((position) => (
-                                <div
-                                    key={position.id}
-                                    className="flex items-center gap-2"
-                                >
-                                    <Checkbox
-                                        id={'interest-position-' + position.id}
-                                        checked={form.data.position_ids.includes(
-                                            position.id,
-                                        )}
-                                        onCheckedChange={(checked) =>
-                                            form.setData(
-                                                'position_ids',
-                                                checked === true
-                                                    ? [
-                                                          ...form.data
-                                                              .position_ids,
-                                                          position.id,
-                                                      ]
-                                                    : form.data.position_ids.filter(
-                                                          (id) =>
-                                                              id !==
-                                                              position.id,
-                                                      ),
-                                            )
-                                        }
-                                        aria-invalid={
-                                            !!form.errors.position_ids
-                                        }
-                                        aria-describedby="interest-positions-error"
-                                    />
-                                    <Label
-                                        htmlFor={
-                                            'interest-position-' + position.id
-                                        }
-                                        className="font-mono"
-                                    >
-                                        {position.callsign}
-                                    </Label>
-                                </div>
-                            ))}
+                            {!canSubmit && interest?.position_callsigns?.length
+                                ? interest.position_callsigns.map(
+                                      (callsign) => (
+                                          <Badge
+                                              key={callsign}
+                                              variant="outline"
+                                          >
+                                              {callsign}
+                                          </Badge>
+                                      ),
+                                  )
+                                : roster.positions.map((position) => (
+                                      <div
+                                          key={position.id}
+                                          className="flex items-center gap-2"
+                                      >
+                                          <Checkbox
+                                              id={
+                                                  'interest-position-' +
+                                                  position.id
+                                              }
+                                              checked={form.data.position_ids.includes(
+                                                  position.id,
+                                              )}
+                                              onCheckedChange={(checked) =>
+                                                  form.setData(
+                                                      'position_ids',
+                                                      checked === true
+                                                          ? [
+                                                                ...form.data
+                                                                    .position_ids,
+                                                                position.id,
+                                                            ]
+                                                          : form.data.position_ids.filter(
+                                                                (id) =>
+                                                                    id !==
+                                                                    position.id,
+                                                            ),
+                                                  )
+                                              }
+                                              aria-invalid={
+                                                  !!form.errors.position_ids
+                                              }
+                                              aria-describedby="interest-positions-error"
+                                          />
+                                          <Label
+                                              htmlFor={
+                                                  'interest-position-' +
+                                                  position.id
+                                              }
+                                              className="font-mono"
+                                          >
+                                              {position.callsign}
+                                          </Label>
+                                      </div>
+                                  ))}
                         </div>
                         <InputError
                             id="interest-positions-error"

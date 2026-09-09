@@ -1,6 +1,6 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Pencil } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { ArrowLeft, ChevronRight, Pencil } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import AlertError from '@/components/alert-error';
 import { RosterEditor } from '@/components/roster-editor';
@@ -16,11 +16,27 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectGroup,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { eventTime } from '@/lib/event-time';
 import { show } from '@/routes/events';
+import { show as showRoster } from '@/routes/events/roster';
 import { index as rosters } from '@/routes/rosters';
-import { destroy, store } from '@/routes/roster/bookings';
-import type { EventRoster, RosterPageProps, RosterSlot } from '@/types/rosters';
+import { destroy, store, withdraw } from '@/routes/roster/bookings';
+import { destroy as withdrawInterest } from '@/routes/roster/interest';
+import type {
+    EventRoster,
+    RosterBooking,
+    RosterPageProps,
+    RosterSlot,
+} from '@/types/rosters';
 
 function staffingTime(value: string) {
     return eventTime(value.length === 16 ? value + ':00Z' : value);
@@ -31,13 +47,20 @@ function BookingButton({
     slot,
     ownBooking,
     canBook,
+    occurrenceDate,
+    autoSelectOccurrence,
 }: {
     rosterId: number;
     slot: RosterSlot;
     ownBooking: boolean;
     canBook: boolean;
+    occurrenceDate: string;
+    autoSelectOccurrence: boolean;
 }) {
-    const form = useForm({});
+    const form = useForm({
+        occurrence_date: occurrenceDate,
+        ...(autoSelectOccurrence ? { return_to_current: true } : {}),
+    });
     if (!ownBooking && (!canBook || slot.booking)) return null;
 
     return (
@@ -75,7 +98,95 @@ function BookingButton({
     );
 }
 
-function InterestSubmissions({ roster }: { roster: EventRoster }) {
+function HistoricalWithdrawal({
+    rosterId,
+    booking,
+    occurrenceDate,
+    autoSelectOccurrence,
+}: {
+    rosterId: number;
+    booking: RosterBooking;
+    occurrenceDate: string;
+    autoSelectOccurrence: boolean;
+}) {
+    const form = useForm({
+        occurrence_date: occurrenceDate,
+        ...(autoSelectOccurrence ? { return_to_current: true } : {}),
+    });
+    return (
+        <div className="flex flex-col gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                disabled={form.processing}
+                onClick={() =>
+                    form.submit(
+                        withdraw({ roster: rosterId, booking: booking.id }),
+                        {
+                            preserveScroll: true,
+                            onSuccess: () =>
+                                toast.success('Booking withdrawn.'),
+                        },
+                    )
+                }
+            >
+                {form.processing ? <Spinner data-icon="inline-start" /> : null}
+                Withdraw booking
+            </Button>
+            {form.hasErrors ? (
+                <AlertError errors={Object.values(form.errors)} />
+            ) : null}
+        </div>
+    );
+}
+
+function RecordedInterestWithdrawal({
+    rosterId,
+    occurrenceDate,
+    autoSelectOccurrence,
+}: {
+    rosterId: number;
+    occurrenceDate: string;
+    autoSelectOccurrence: boolean;
+}) {
+    const form = useForm({
+        occurrence_date: occurrenceDate,
+        ...(autoSelectOccurrence ? { return_to_current: true } : {}),
+    });
+    return (
+        <div className="flex flex-col gap-2">
+            <Button
+                variant="outline"
+                size="sm"
+                disabled={form.processing}
+                onClick={() =>
+                    form.submit(withdrawInterest(rosterId), {
+                        preserveScroll: true,
+                        onSuccess: () => toast.success('Interest withdrawn.'),
+                    })
+                }
+            >
+                {form.processing ? <Spinner data-icon="inline-start" /> : null}
+                Withdraw interest
+            </Button>
+            {form.hasErrors ? (
+                <AlertError errors={Object.values(form.errors)} />
+            ) : null}
+        </div>
+    );
+}
+
+function InterestSubmissions({
+    roster,
+    currentUserCid,
+    occurrenceDate,
+    autoSelectOccurrence,
+}: {
+    roster: EventRoster;
+    currentUserCid: number;
+    occurrenceDate: string;
+    autoSelectOccurrence: boolean;
+}) {
     const callsigns = new Map(
         roster.positions.map((position) => [position.id, position.callsign]),
     );
@@ -107,9 +218,17 @@ function InterestSubmissions({ roster }: { roster: EventRoster }) {
                                         </span>
                                     </p>
                                     <div className="flex flex-wrap gap-2">
-                                        {interest.position_ids.map((id) => (
-                                            <Badge key={id} variant="outline">
-                                                {callsigns.get(id)}
+                                        {(
+                                            interest.position_callsigns ??
+                                            interest.position_ids.map((id) =>
+                                                callsigns.get(id),
+                                            )
+                                        ).map((callsign, index) => (
+                                            <Badge
+                                                key={index}
+                                                variant="outline"
+                                            >
+                                                {callsign}
                                             </Badge>
                                         ))}
                                     </div>
@@ -125,6 +244,17 @@ function InterestSubmissions({ roster }: { roster: EventRoster }) {
                                         ),
                                     )}
                                 </ul>
+                                {roster.mode !== 'open_interest' &&
+                                interest.user.cid === currentUserCid ? (
+                                    <RecordedInterestWithdrawal
+                                        key={interest.id + '-' + occurrenceDate}
+                                        rosterId={roster.id}
+                                        occurrenceDate={occurrenceDate}
+                                        autoSelectOccurrence={
+                                            autoSelectOccurrence
+                                        }
+                                    />
+                                ) : null}
                             </li>
                         ))}
                     </ul>
@@ -146,6 +276,9 @@ export default function EventRosterPage({
     canParticipate,
     canViewEvent,
     currentUserCid,
+    occurrenceOptions,
+    nextOccurrenceDate,
+    autoSelectOccurrence,
 }: RosterPageProps) {
     const [editing, setEditing] = useState(!roster);
     const canSignUp =
@@ -156,6 +289,60 @@ export default function EventRosterPage({
     const ownInterest = roster?.interests.find(
         (interest) => interest.user.cid === currentUserCid,
     );
+    const options = occurrenceOptions.some(
+        (option) => option.date === occurrence.date,
+    )
+        ? occurrenceOptions
+        : [...occurrenceOptions, occurrence].sort((first, second) =>
+              first.date.localeCompare(second.date),
+          );
+    const representedBookingIds = new Set(
+        roster?.shifts.flatMap((shift) =>
+            shift.slots.flatMap((slot) =>
+                slot.booking ? [slot.booking.id] : [],
+            ),
+        ) ?? [],
+    );
+    const extraBookings =
+        roster?.bookings?.filter(
+            (booking) => !representedBookingIds.has(booking.id),
+        ) ?? [];
+
+    useEffect(() => {
+        if (
+            !autoSelectOccurrence ||
+            occurrence.has_ended ||
+            !occurrence.ends_at ||
+            editing
+        )
+            return;
+        const endsAt = new Date(occurrence.ends_at).getTime();
+        let timer: ReturnType<typeof setTimeout>;
+        const advance = () => {
+            const remaining = endsAt - Date.now();
+            if (remaining > 0) {
+                timer = setTimeout(
+                    advance,
+                    Math.min(remaining + 1000, 2147483647),
+                );
+                return;
+            }
+            router.visit(showRoster({ event: event.id }), {
+                preserveScroll: true,
+            });
+        };
+        timer = setTimeout(
+            advance,
+            Math.min(Math.max(endsAt - Date.now() + 1000, 1000), 2147483647),
+        );
+        return () => clearTimeout(timer);
+    }, [
+        autoSelectOccurrence,
+        editing,
+        event.id,
+        occurrence.ends_at,
+        occurrence.has_ended,
+    ]);
 
     return (
         <>
@@ -192,7 +379,7 @@ export default function EventRosterPage({
                                     {occurrence.status !== 'scheduled'
                                         ? 'Signups unavailable'
                                         : occurrence.has_ended
-                                          ? 'Event ended'
+                                          ? 'Occurrence ended'
                                           : roster.is_open
                                             ? 'Signups open'
                                             : 'Signups closed'}
@@ -220,10 +407,73 @@ export default function EventRosterPage({
                             onClick={() => setEditing(true)}
                         >
                             <Pencil data-icon="inline-start" />
-                            Edit roster
+                            Edit event roster
                         </Button>
                     ) : null}
                 </header>
+                <div className="flex flex-wrap items-end gap-4">
+                    <div className="flex min-w-0 flex-col gap-2">
+                        <Label htmlFor="roster-occurrence">
+                            Occurrence ({event.timezone})
+                        </Label>
+                        <Select
+                            value={occurrence.date}
+                            onValueChange={(date) =>
+                                router.visit(
+                                    showRoster({ event: event.id, date }),
+                                )
+                            }
+                        >
+                            <SelectTrigger
+                                id="roster-occurrence"
+                                className="w-full sm:min-w-64"
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectGroup>
+                                    {options.map((option) => (
+                                        <SelectItem
+                                            key={option.date}
+                                            value={option.date}
+                                        >
+                                            {option.date}
+                                            {option.status !== 'scheduled'
+                                                ? ' · ' + option.status
+                                                : ''}
+                                        </SelectItem>
+                                    ))}
+                                </SelectGroup>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {!autoSelectOccurrence ? (
+                        <Button asChild variant="outline">
+                            <Link href={showRoster({ event: event.id })}>
+                                Current or next occurrence
+                            </Link>
+                        </Button>
+                    ) : null}
+                    {nextOccurrenceDate ? (
+                        <Button asChild variant="outline">
+                            <Link
+                                href={showRoster({
+                                    event: event.id,
+                                    date: nextOccurrenceDate,
+                                })}
+                            >
+                                Next occurrence
+                                <ChevronRight data-icon="inline-end" />
+                            </Link>
+                        </Button>
+                    ) : null}
+                    <p className="text-muted-foreground basis-full text-sm">
+                        {autoSelectOccurrence
+                            ? 'Showing the current or next occurrence. This view advances after it ends. '
+                            : ''}
+                        Bookings and interest apply only to {occurrence.date}.
+                    </p>
+                </div>
                 {occurrence.status !== 'scheduled' ? (
                     <Alert>
                         <AlertTitle>Occurrence {occurrence.status}</AlertTitle>
@@ -237,7 +487,7 @@ export default function EventRosterPage({
                     <Alert>
                         <AlertTitle>
                             {occurrence.has_ended
-                                ? 'This event has ended'
+                                ? 'This occurrence has ended'
                                 : 'Signups are closed'}
                         </AlertTitle>
                         <AlertDescription>
@@ -248,9 +498,11 @@ export default function EventRosterPage({
                 ) : null}
                 {canManage && editing && occurrence.status === 'scheduled' ? (
                     <RosterEditor
+                        key={event.id + '-' + occurrence.date}
                         event={event}
                         occurrence={occurrence}
                         roster={roster}
+                        autoSelectOccurrence={autoSelectOccurrence}
                         onClose={() => setEditing(false)}
                     />
                 ) : null}
@@ -295,14 +547,17 @@ export default function EventRosterPage({
                                                             {slot.callsign}
                                                         </span>
                                                         <span className="text-muted-foreground text-sm">
-                                                            {staffingTime(
-                                                                slot.starts_at,
-                                                            )}{' '}
-                                                            –{' '}
-                                                            {staffingTime(
-                                                                slot.ends_at,
-                                                            )}{' '}
-                                                            Z
+                                                            {slot.starts_at &&
+                                                            slot.ends_at
+                                                                ? staffingTime(
+                                                                      slot.starts_at,
+                                                                  ) +
+                                                                  ' – ' +
+                                                                  staffingTime(
+                                                                      slot.ends_at,
+                                                                  ) +
+                                                                  ' Z'
+                                                                : 'Unavailable on this occurrence'}
                                                         </span>
                                                         <span className="text-sm">
                                                             {slot.booking
@@ -315,7 +570,18 @@ export default function EventRosterPage({
                                                         </span>
                                                     </div>
                                                     <BookingButton
+                                                        key={
+                                                            slot.id +
+                                                            '-' +
+                                                            occurrence.date
+                                                        }
                                                         rosterId={roster.id}
+                                                        occurrenceDate={
+                                                            occurrence.date
+                                                        }
+                                                        autoSelectOccurrence={
+                                                            autoSelectOccurrence
+                                                        }
                                                         slot={slot}
                                                         ownBooking={ownBooking}
                                                         canBook={
@@ -346,22 +612,92 @@ export default function EventRosterPage({
                         ) : null}
                     </div>
                 ) : null}
+                {roster && extraBookings.length ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
+                                Other bookings for this occurrence
+                            </CardTitle>
+                            <CardDescription>
+                                These bookings keep the position and times
+                                originally booked.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="flex flex-col gap-4">
+                                {extraBookings.map((booking) => (
+                                    <li
+                                        key={booking.id}
+                                        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4"
+                                    >
+                                        <div className="flex flex-col gap-1">
+                                            <span className="font-mono font-semibold">
+                                                {booking.callsign}
+                                            </span>
+                                            <span className="text-muted-foreground text-sm">
+                                                {booking.shift_name} ·{' '}
+                                                {staffingTime(
+                                                    booking.starts_at,
+                                                )}{' '}
+                                                –{' '}
+                                                {staffingTime(booking.ends_at)}{' '}
+                                                Z
+                                            </span>
+                                            <span className="text-sm">
+                                                {booking.user.name}
+                                            </span>
+                                        </div>
+                                        {booking.can_withdraw ? (
+                                            <HistoricalWithdrawal
+                                                key={
+                                                    booking.id +
+                                                    '-' +
+                                                    occurrence.date
+                                                }
+                                                rosterId={roster.id}
+                                                booking={booking}
+                                                occurrenceDate={occurrence.date}
+                                                autoSelectOccurrence={
+                                                    autoSelectOccurrence
+                                                }
+                                            />
+                                        ) : null}
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                ) : null}
+                {roster &&
+                ((canManage && roster.mode === 'open_interest') ||
+                    (roster.mode !== 'open_interest' &&
+                        roster.interests.length > 0)) ? (
+                    <InterestSubmissions
+                        roster={roster}
+                        currentUserCid={currentUserCid}
+                        occurrenceDate={occurrence.date}
+                        autoSelectOccurrence={autoSelectOccurrence}
+                    />
+                ) : null}
                 {roster?.mode === 'open_interest' ? (
                     <>
                         {canParticipate || ownInterest ? (
                             <RosterInterestForm
                                 key={
-                                    roster.id + '-' + (ownInterest?.id ?? 'new')
+                                    roster.id +
+                                    '-' +
+                                    occurrence.date +
+                                    '-' +
+                                    (ownInterest?.id ?? 'new')
                                 }
                                 roster={roster}
                                 occurrence={occurrence}
                                 interest={ownInterest}
                                 canSubmit={canSignUp}
+                                autoSelectOccurrence={autoSelectOccurrence}
                             />
                         ) : null}
-                        {canManage ? (
-                            <InterestSubmissions roster={roster} />
-                        ) : null}
+
                         {!canParticipate && !ownInterest ? (
                             <Card>
                                 <CardHeader>

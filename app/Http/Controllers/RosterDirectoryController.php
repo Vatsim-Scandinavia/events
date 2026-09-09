@@ -2,24 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\EventSchedule;
+use App\Actions\RosterSchedule;
 use App\Http\Requests\RosterIndexRequest;
 use App\Models\EventRoster;
-use Carbon\CarbonImmutable;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class RosterDirectoryController extends Controller
 {
-    public function index(RosterIndexRequest $request, EventSchedule $schedule): Response
+    public function index(RosterIndexRequest $request, RosterSchedule $schedule): Response
     {
         return Inertia::render('events/rosters', [
             'rosters' => EventRoster::visibleTo($request->user())
                 ->with(['event.owner', 'event.cancellations'])
-                ->orderByDesc('occurrence_date')->orderByDesc('id')
+                ->orderByDesc('id')
                 ->paginate(12)->withQueryString()
                 ->through(function (EventRoster $roster) use ($schedule): array {
-                    $occurrence = $schedule->occurrence($roster->event, $roster->occurrence_date);
+                    $occurrence = $schedule->currentOrNext($roster->event);
 
                     return [
                         'id' => $roster->id,
@@ -29,7 +28,7 @@ class RosterDirectoryController extends Controller
                         'mode' => $roster->mode,
                         'is_open' => $roster->is_open,
                         'occurrence' => $occurrence,
-                        'has_ended' => $occurrence['ends_at'] !== null && CarbonImmutable::parse($occurrence['ends_at'])->isPast(),
+                        'has_ended' => $occurrence === null,
                     ];
                 }),
         ]);

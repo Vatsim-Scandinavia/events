@@ -8,31 +8,33 @@ use App\Models\EventRoster;
 use App\Models\RosterPosition;
 use App\Models\RosterShift;
 use App\Models\RosterSlot;
-use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class SaveEventRoster
 {
-    public function __construct(private RosterMutation $mutation, private RecordAudit $audit) {}
+    public function __construct(private RosterMutation $mutation, private RecordAudit $audit, private RosterSchedule $schedule) {}
 
-    public function handle(EventRosterRequest $request, Event $event, string $date): EventRoster
+    public function handle(EventRosterRequest $request, Event $event): EventRoster
     {
-        return DB::transaction(function () use ($request, $event, $date): EventRoster {
+        return DB::transaction(function () use ($request, $event): EventRoster {
+            $date = $request->validated('occurrence_date');
             $event = $this->mutation->lockEvent($event->id);
             Gate::authorize('update', $event);
             $occurrence = $this->mutation->occurrence($event, $date);
             $data = $request->validated();
-            $roster = EventRoster::where('event_id', $event->id)->where('occurrence_date', $date)->first()
-                ?? new EventRoster(['event_id' => $event->id, 'occurrence_date' => $date]);
+            $roster = EventRoster::where('event_id', $event->id)->first()
+                ?? new EventRoster(['event_id' => $event->id]);
             $before = $roster->exists ? $roster->auditValues() : [];
             $existingSlots = $roster->exists ? $roster->slots()->get()->keyBy('id') : collect();
             $existingShifts = $roster->exists ? $roster->shifts()->get()->keyBy('id') : collect();
             $existingPositions = $roster->exists ? $roster->positions()->get()->keyBy('id') : collect();
-            $interestedPositionIds = $roster->exists ? $roster->interests()->get()->flatMap->position_ids->unique()->all() : [];
-            $hasBookings = $existingSlots->contains(fn (RosterSlot $slot): bool => $slot->booked_by !== null);
-            if ($roster->exists && $data['mode'] !== $roster->mode && ($hasBookings || $interestedPositionIds !== [])) {
+            $interestedPositionIds = $roster->exists ? $roster->interests()->where('occurrence_ends_at', '>', now())->get()->flatMap->position_ids->unique()->all() : [];
+            $bookedSlotIds = $roster->exists ? $roster->bookings()->where('ends_at', '>', now())->whereNotNull('slot_id')->pluck('slot_id')->all() : [];
+            $hasBookings = $roster->exists && $roster->bookings()->where('ends_at', '>', now())->exists();
+            $hasFutureInterests = $roster->exists && $roster->interests()->where('occurrence_ends_at', '>', now())->exists();
+            if ($roster->exists && $data['mode'] !== $roster->mode && ($hasBookings || $hasFutureInterests)) {
                 throw ValidationException::withMessages(['mode' => 'Withdraw existing bookings or interest before changing the roster type.']);
             }
             if ($data['mode'] === 'pre_slotted' && $data['positions'] !== []) {
@@ -45,6 +47,7 @@ class SaveEventRoster
             $slotIds = [];
             $shiftIds = [];
             $ranges = [];
+            $templates = [];
             foreach ($data['shifts'] as $shiftIndex => $shiftData) {
                 $shiftId = $shiftData['id'] ?? null;
                 if ($shiftId !== null && ! $existingShifts->has($shiftId)) {
@@ -74,16 +77,16 @@ class SaveEventRoster
                         }
                     }
                     $ranges[$slotData['callsign']][] = $slotData;
+                    $templates[$field] = $this->schedule->templateFor($event, $date, $slotData['starts_at'], $slotData['ends_at'], "$field.starts_at");
                     $existingSlot = $slotId === null ? null : $existingSlots->get($slotId);
-                    if ($existingSlot?->booked_by !== null && ($existingSlot->callsign !== $slotData['callsign']
-                        || $existingSlot->starts_at->format('Y-m-d\TH:i') !== $slotData['starts_at']
-                        || $existingSlot->ends_at->format('Y-m-d\TH:i') !== $slotData['ends_at'])) {
-                        throw ValidationException::withMessages([$field => 'A booked slot cannot be changed. Its controller must withdraw first.']);
+                    if ($existingSlot !== null && in_array($existingSlot->id, $bookedSlotIds)
+                        && ($existingSlot->callsign !== $slotData['callsign'] || $existingSlot->only(array_keys($templates[$field])) !== $templates[$field])) {
+                        throw ValidationException::withMessages([$field => 'A slot with a future booking cannot be changed. Its controller must withdraw first.']);
                     }
                 }
             }
             foreach ($existingSlots as $slot) {
-                if ($slot->booked_by !== null && ! in_array($slot->id, $slotIds)) {
+                if (in_array($slot->id, $bookedSlotIds) && ! in_array($slot->id, $slotIds)) {
                     throw ValidationException::withMessages(['shifts' => 'A booked slot cannot be removed. Its controller must withdraw first.']);
                 }
             }
@@ -118,7 +121,7 @@ class SaveEventRoster
 
             /** Temporarily free unique callsigns so valid swaps retain slot and position identities. */
             foreach ($existingSlots->whereIn('id', $slotIds) as $slot) {
-                if ($slot->booked_by === null) {
+                if (! in_array($slot->id, $bookedSlotIds)) {
                     $slot->update(['callsign' => '_'.$slot->id]);
                 }
             }
@@ -127,15 +130,14 @@ class SaveEventRoster
                     $position->update(['callsign' => '_'.$position->id]);
                 }
             }
-            foreach ($data['shifts'] as $shiftData) {
+            foreach ($data['shifts'] as $shiftIndex => $shiftData) {
                 $shift = isset($shiftData['id']) ? $existingShifts->get($shiftData['id']) : new RosterShift(['roster_id' => $roster->id]);
                 $shift->fill(['name' => $shiftData['name']])->save();
-                foreach ($shiftData['slots'] as $slotData) {
+                foreach ($shiftData['slots'] as $slotIndex => $slotData) {
                     $slot = isset($slotData['id']) ? $existingSlots->get($slotData['id']) : new RosterSlot(['shift_id' => $shift->id]);
                     $slot->fill([
                         'callsign' => $slotData['callsign'],
-                        'starts_at' => CarbonImmutable::parse($slotData['starts_at'], 'UTC'),
-                        'ends_at' => CarbonImmutable::parse($slotData['ends_at'], 'UTC'),
+                        ...$templates["shifts.$shiftIndex.slots.$slotIndex"],
                     ])->save();
                 }
             }

@@ -285,6 +285,13 @@ export default function EventDetails({
                         />
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        {can.edit || event.roster_exists ? (
+                            <Button asChild variant="outline">
+                                <Link href={roster({ event: event.id })}>
+                                    {can.edit ? 'Manage roster' : 'View roster'}
+                                </Link>
+                            </Button>
+                        ) : null}
                         {can.edit ? (
                             <Button asChild variant="outline">
                                 <Link href={edit(event.id)}>
@@ -475,10 +482,7 @@ export default function EventDetails({
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {occurrence.status ===
-                                                    'scheduled' &&
-                                                (can.edit ||
-                                                    occurrence.roster_exists) ? (
+                                                {event.roster_exists ? (
                                                     <Button
                                                         asChild
                                                         variant="outline"
@@ -490,7 +494,7 @@ export default function EventDetails({
                                                                 date: occurrence.date,
                                                             })}
                                                         >
-                                                            Roster
+                                                            View roster
                                                         </Link>
                                                     </Button>
                                                 ) : null}

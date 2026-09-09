@@ -43,10 +43,11 @@ Route::middleware('auth')->group(function () {
     Route::patch('events/{event}/collaborations/{collaboration}', [EventCollaborationController::class, 'update'])->name('events.collaborations.update');
     Route::delete('events/{event}/collaborations/{collaboration}', [EventCollaborationController::class, 'destroy'])->name('events.collaborations.destroy');
     Route::get('rosters', [RosterDirectoryController::class, 'index'])->name('rosters.index');
-    Route::get('events/{event}/roster/{date}', [EventRosterController::class, 'show'])->name('events.roster.show');
-    Route::put('events/{event}/roster/{date}', [EventRosterController::class, 'update'])->name('events.roster.update');
+    Route::get('events/{event}/roster/{date?}', [EventRosterController::class, 'show'])->name('events.roster.show');
+    Route::put('events/{event}/roster', [EventRosterController::class, 'update'])->name('events.roster.update');
     Route::post('rosters/{roster}/slots/{slot}/booking', [RosterBookingController::class, 'store'])->name('roster.bookings.store');
     Route::delete('rosters/{roster}/slots/{slot}/booking', [RosterBookingController::class, 'destroy'])->name('roster.bookings.destroy');
+    Route::delete('rosters/{roster}/bookings/{booking}', [RosterBookingController::class, 'withdraw'])->name('roster.bookings.withdraw');
     Route::put('rosters/{roster}/interest', [RosterInterestController::class, 'update'])->name('roster.interest.update');
     Route::delete('rosters/{roster}/interest', [RosterInterestController::class, 'destroy'])->name('roster.interest.destroy');
     Route::resource('airports', AirportController::class)->only(['index', 'store']);

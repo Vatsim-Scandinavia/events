@@ -28,13 +28,13 @@ class EventRosterPolicy
         return $user->can('update', $roster->event);
     }
 
-    public function participate(User $user, EventRoster $roster): bool
+    public function participate(User $user, EventRoster $roster, string $date): bool
     {
         if (! $roster->is_open || ! $this->isEligibleController($user)) {
             return false;
         }
 
-        $occurrence = $this->schedule->occurrence($roster->event, $roster->occurrence_date);
+        $occurrence = $this->schedule->occurrence($roster->event, $date);
 
         return $occurrence !== null && $occurrence['status'] === 'scheduled'
             && CarbonImmutable::parse($occurrence['ends_at'])->isFuture();

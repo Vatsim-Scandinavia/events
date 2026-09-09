@@ -12,6 +12,7 @@ export type Pagination<T> = {
     total: number;
 };
 export type EventSummary = {
+    roster_exists?: boolean;
     id: number;
     title: string;
     short_description: string;
@@ -37,7 +38,6 @@ export type ManagedEvent = EventSummary & {
     schedule_locked: boolean;
 };
 export type Occurrence = {
-    roster_exists?: boolean;
     date: string;
     starts_at: string | null;
     ends_at: string | null;

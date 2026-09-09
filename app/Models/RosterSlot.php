@@ -2,24 +2,26 @@
 
 namespace App\Models;
 
-use Carbon\CarbonImmutable;
 use Database\Factories\RosterSlotFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
  * @property int $shift_id
  * @property string $callsign
- * @property CarbonImmutable $starts_at
- * @property CarbonImmutable $ends_at
- * @property int|null $booked_by
+ * @property int $start_day_offset
+ * @property string $start_time
+ * @property int $end_day_offset
+ * @property string $end_time
  * @property RosterShift $shift
- * @property User|null $controller
+ * @property Collection<int, RosterBooking> $bookings
  */
-#[Fillable(['shift_id', 'callsign', 'starts_at', 'ends_at', 'booked_by'])]
+#[Fillable(['shift_id', 'callsign', 'start_day_offset', 'start_time', 'end_day_offset', 'end_time'])]
 class RosterSlot extends Model
 {
     /** @use HasFactory<RosterSlotFactory> */
@@ -31,15 +33,15 @@ class RosterSlot extends Model
         return $this->belongsTo(RosterShift::class, 'shift_id');
     }
 
-    /** @return BelongsTo<User, $this> */
-    public function controller(): BelongsTo
+    /** @return HasMany<RosterBooking, $this> */
+    public function bookings(): HasMany
     {
-        return $this->belongsTo(User::class, 'booked_by', 'cid');
+        return $this->hasMany(RosterBooking::class, 'slot_id');
     }
 
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['starts_at' => 'immutable_datetime', 'ends_at' => 'immutable_datetime', 'booked_by' => 'integer'];
+        return ['start_day_offset' => 'integer', 'end_day_offset' => 'integer'];
     }
 }

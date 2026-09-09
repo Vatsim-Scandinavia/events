@@ -6,6 +6,7 @@ import AlertError from '@/components/alert-error';
 import { EventField } from '@/components/event-field';
 import { RosterTimeFields } from '@/components/roster-time-fields';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
     Card,
     CardContent,
@@ -36,6 +37,8 @@ type EditableShift = {
 type RosterFormData = {
     mode: RosterMode;
     is_open: boolean;
+    occurrence_date: string;
+    return_to_current?: boolean;
     shifts: EditableShift[];
     positions: EditablePosition[];
 };
@@ -44,8 +47,12 @@ export function RosterEditor({
     event,
     occurrence,
     roster,
+    autoSelectOccurrence,
     onClose,
-}: Pick<RosterPageProps, 'event' | 'occurrence' | 'roster'> & {
+}: Pick<
+    RosterPageProps,
+    'event' | 'occurrence' | 'roster' | 'autoSelectOccurrence'
+> & {
     onClose: () => void;
 }) {
     const nextKey = useRef(0);
@@ -53,6 +60,8 @@ export function RosterEditor({
     const maximum = occurrence.ends_at?.slice(0, 16) ?? '';
     const form = useForm<RosterFormData>({
         mode: roster?.mode ?? 'pre_slotted',
+        occurrence_date: occurrence.date,
+        ...(autoSelectOccurrence ? { return_to_current: true } : {}),
         is_open: roster?.is_open ?? false,
         shifts:
             roster?.shifts.map((shift) => ({
@@ -63,8 +72,8 @@ export function RosterEditor({
                     key: 'slot-' + slot.id,
                     id: slot.id,
                     callsign: slot.callsign,
-                    starts_at: slot.starts_at.slice(0, 16),
-                    ends_at: slot.ends_at.slice(0, 16),
+                    starts_at: slot.starts_at?.slice(0, 16) ?? '',
+                    ends_at: slot.ends_at?.slice(0, 16) ?? '',
                 })),
             })) ?? [],
         positions:
@@ -76,14 +85,15 @@ export function RosterEditor({
     const errors: Record<string, string | undefined> = form.errors;
     const bookedSlots = new Set(
         roster?.shifts.flatMap((shift) =>
-            shift.slots.filter((slot) => slot.booking).map((slot) => slot.id),
+            shift.slots.filter((slot) => slot.is_locked).map((slot) => slot.id),
         ) ?? [],
     );
     const interestedPositions = new Set(
-        roster?.interests.flatMap((interest) => interest.position_ids) ?? [],
+        roster?.positions
+            .filter((position) => position.is_locked)
+            .map((position) => position.id) ?? [],
     );
-    const modeLocked =
-        bookedSlots.size > 0 || (roster?.interests.length ?? 0) > 0;
+    const modeLocked = roster?.mode_locked ?? false;
     const changeSlot = (
         shiftIndex: number,
         slotIndex: number,
@@ -106,15 +116,48 @@ export function RosterEditor({
         );
     };
 
+    if (
+        roster?.shifts.some((shift) =>
+            shift.slots.some((slot) => slot.is_unavailable),
+        )
+    ) {
+        return (
+            <Alert>
+                <AlertTitle>
+                    Choose another occurrence to edit the roster
+                </AlertTitle>
+                <AlertDescription>
+                    Some local staffing times do not exist on this date because
+                    of a daylight saving change. Select another occurrence to
+                    edit the event's shared schedule.
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="w-fit"
+                        onClick={onClose}
+                    >
+                        Close editor
+                    </Button>
+                </AlertDescription>
+            </Alert>
+        );
+    }
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>
-                    {roster ? 'Edit roster' : 'Set up a roster'}
+                    {roster ? 'Edit event roster' : 'Set up the event roster'}
                 </CardTitle>
                 <CardDescription>
-                    Configure this occurrence. All staffing times are in UTC and
-                    must fall within the event.
+                    Set up shifts and positions once for this event. They are
+                    reused for each occurrence, while controller bookings and
+                    interest remain separate for each date.
+                </CardDescription>
+                <CardDescription>
+                    Times below are UTC for {occurrence.date}. Future
+                    occurrences follow the same local schedule in{' '}
+                    {event.timezone}, including daylight saving changes.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -125,6 +168,10 @@ export function RosterEditor({
                         form.transform((data) => ({
                             mode: data.mode,
                             is_open: data.is_open,
+                            occurrence_date: data.occurrence_date,
+                            ...(data.return_to_current
+                                ? { return_to_current: true }
+                                : {}),
                             shifts:
                                 data.mode === 'pre_slotted'
                                     ? data.shifts.map((shift) => ({
@@ -155,16 +202,13 @@ export function RosterEditor({
                                       )
                                     : [],
                         }));
-                        form.submit(
-                            update({ event: event.id, date: occurrence.date }),
-                            {
-                                preserveScroll: true,
-                                onSuccess: () => {
-                                    toast.success('Roster saved.');
-                                    onClose();
-                                },
+                        form.submit(update(event.id), {
+                            preserveScroll: true,
+                            onSuccess: () => {
+                                toast.success('Roster saved.');
+                                onClose();
                             },
-                        );
+                        });
                     }}
                 >
                     {form.hasErrors ? (
@@ -203,7 +247,7 @@ export function RosterEditor({
                         </ToggleGroup>
                         <p className="text-muted-foreground text-sm">
                             {modeLocked
-                                ? 'The roster type is fixed while bookings or interest submissions exist.'
+                                ? 'The roster type is fixed while an occurrence has bookings or interest submissions.'
                                 : form.data.mode === 'pre_slotted'
                                   ? 'Create shifts and positions that controllers can book.'
                                   : 'Choose positions so controllers can submit their interest and availability.'}
@@ -446,10 +490,10 @@ export function RosterEditor({
                                                     </div>
                                                     {locked ? (
                                                         <p className="text-muted-foreground text-xs">
-                                                            Booked positions are
-                                                            locked until the
-                                                            controller
-                                                            withdraws.
+                                                            This position has a
+                                                            booking on an
+                                                            occurrence and is
+                                                            locked.
                                                         </p>
                                                     ) : null}
                                                 </div>
@@ -620,7 +664,8 @@ export function RosterEditor({
                                         {locked ? (
                                             <p className="text-muted-foreground text-xs">
                                                 This position has controller
-                                                interest and is locked.
+                                                interest on an occurrence and is
+                                                locked.
                                             </p>
                                         ) : null}
                                     </div>
@@ -661,9 +706,10 @@ export function RosterEditor({
                                 Open for controller signups
                             </Label>
                             <p className="text-muted-foreground text-xs">
-                                Controllers can view this roster and sign up
-                                when it is open. Closing signups preserves
-                                existing bookings and interest.
+                                Controllers can view the event roster and sign
+                                up for each occurrence when it is open. Closing
+                                signups preserves existing bookings and
+                                interest.
                             </p>
                         </div>
                     </div>
