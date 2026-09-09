@@ -1,0 +1,35 @@
+{
+    "name": "Events",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "24",
+            "pnpmVersion": "11.25.0"
+        },
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+    "remoteUser": "vscode",
+    "forwardPorts": [8080],
+    "portsAttributes": {
+        "8080": {
+            "label": "Events (Laravel + Vite)",
+            "onAutoForward": "notify",
+            "protocol": "http"
+        },
+        "8000": { "onAutoForward": "ignore" },
+        "5173": { "onAutoForward": "ignore" }
+    },
+    "postCreateCommand": "node .devcontainer/setup.mjs && composer setup",
+    "postStartCommand": "node .devcontainer/setup.mjs && php artisan config:clear --no-interaction && sudo service nginx restart",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "laravel.vscode-laravel",
+                "bmewburn.vscode-intelephense-client",
+                "bradlc.vscode-tailwindcss"
+            ]
+        }
+    }
+}

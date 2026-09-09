@@ -40,3 +40,6 @@ jobs:
 
       - name: Run CI Checks
         run: composer ci:check
+
+      - name: Test Dev Container Configuration
+        run: node --test tests/Unit/DevContainerTest.mjs
