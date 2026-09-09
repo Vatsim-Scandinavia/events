@@ -114,6 +114,13 @@ class User extends Authenticatable
         return $query;
     }
 
+    /** @return Builder<Team> */
+    public function controllerTeams(): Builder
+    {
+        return Team::whereIn('id', $this->assignedRoles()->select('model_has_roles.team_id')
+            ->where('guard_name', 'web')->where('name', RoleName::Controller->value));
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\EventRoster;
 use App\Models\Team;
 use App\Models\User;
 use App\PermissionName;
@@ -29,7 +30,13 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
 
-        Gate::before(fn (User $user): ?bool => $user->isAdministrator() ? true : null);
+        Gate::before(function (User $user, string $ability, array $arguments): ?bool {
+            if ($ability === 'participate' && ($arguments[0] ?? null) instanceof EventRoster) {
+                return null;
+            }
+
+            return $user->isAdministrator() ? true : null;
+        });
 
         Gate::define(PermissionName::ManageRoles->value, fn (User $user): bool => false);
         Gate::define(PermissionName::ManageFirs->value, fn (User $user): bool => false);

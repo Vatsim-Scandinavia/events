@@ -18,4 +18,5 @@ export type Auth = {
     can_manage_firs: boolean;
     can_view_audit_logs: boolean;
     can_view_events: boolean;
+    can_view_rosters: boolean;
 };

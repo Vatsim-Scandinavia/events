@@ -315,6 +315,20 @@ class AuditLogTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page->has('logs.data', 1)->where('logs.data.0.id', $target->id));
     }
 
+    #[TestWith(['booked'])]
+    #[TestWith(['withdrawn'])]
+    #[TestWith(['interest_submitted'])]
+    #[TestWith(['interest_withdrawn'])]
+    public function test_roster_actions_can_be_filtered_in_audit_history(string $action): void
+    {
+        $administrator = $this->administrator();
+        $target = AuditLog::factory()->create(['subject_type' => 'roster', 'event' => $action]);
+        AuditLog::factory()->create(['subject_type' => 'event', 'event' => 'updated']);
+
+        $this->actingAs($administrator)->get(route('audit-logs.index', ['subject_type' => 'roster', 'event' => $action]))
+            ->assertInertia(fn (Assert $page) => $page->has('logs.data', 1)->where('logs.data.0.id', $target->id));
+    }
+
     public function test_date_filters_include_the_whole_utc_day_and_combine_with_other_filters(): void
     {
         $administrator = $this->administrator();

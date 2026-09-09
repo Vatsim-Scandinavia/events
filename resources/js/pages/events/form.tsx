@@ -271,11 +271,11 @@ export default function EventForm({
                                     {locked ? (
                                         <Alert>
                                             <AlertDescription>
-                                                This series has cancelled
-                                                occurrences. Its schedule is
-                                                fixed to preserve those
-                                                cancellations. Create a new
-                                                event for a different schedule.
+                                                This event has rosters or
+                                                cancelled occurrences. Its
+                                                schedule is fixed to preserve
+                                                them. Create a new event for a
+                                                different schedule.
                                             </AlertDescription>
                                         </Alert>
                                     ) : null}

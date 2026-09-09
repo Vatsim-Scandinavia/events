@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     BookOpen,
     CalendarDays,
+    ClipboardList,
     Plane,
     FolderGit2,
     Globe2,
@@ -28,6 +29,7 @@ import { index as firsIndex } from '@/routes/firs';
 import { index as eventsIndex } from '@/routes/events';
 import { index as airportsIndex } from '@/routes/airports';
 import { index } from '@/routes/users';
+import { index as rostersIndex } from '@/routes/rosters';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -86,7 +88,20 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} />
+                <NavMain
+                    items={[
+                        ...mainNavItems,
+                        ...(auth.can_view_rosters
+                            ? [
+                                  {
+                                      title: 'Rosters',
+                                      href: rostersIndex(),
+                                      icon: ClipboardList,
+                                  },
+                              ]
+                            : []),
+                    ]}
+                />
                 {managementNavItems.length > 0 && (
                     <NavMain items={managementNavItems} label="Management" />
                 )}

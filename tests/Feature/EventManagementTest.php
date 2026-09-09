@@ -7,6 +7,7 @@ use App\Models\Airport;
 use App\Models\AuditLog;
 use App\Models\Event;
 use App\Models\EventCancellation;
+use App\Models\EventRoster;
 use App\Models\Team;
 use App\Models\User;
 use App\RoleName;
@@ -393,6 +394,32 @@ class EventManagementTest extends TestCase
 
         $this->assertSame('Updated title', $event->fresh()->title);
         $this->assertDatabaseHas('event_cancellations', ['event_id' => $event->id, 'occurrence_date' => '2026-10-18']);
+    }
+
+    public function test_rosters_lock_the_event_schedule_but_allow_content_updates(): void
+    {
+        $fir = Team::factory()->create();
+        $payload = $this->payload($fir);
+        $event = Event::factory()->weekly(2)->create([
+            'owner_team_id' => $fir->id, 'local_start' => $payload['local_start'],
+            'local_end' => $payload['local_end'], 'timezone' => $payload['timezone'],
+        ]);
+        $roster = EventRoster::factory()->for($event)->create(['occurrence_date' => '2026-10-18']);
+        $this->actingAs($this->member($fir));
+
+        $this->get(route('events.edit', $event))->assertInertia(fn (Assert $page) => $page->where('event.schedule_locked', true));
+        $this->put(route('events.update', $event), [...$payload, 'local_start' => '2026-10-18T19:00'])
+            ->assertSessionHasErrors('recurrence');
+
+        $this->assertSame('2026-10-18T18:00', $event->fresh()->local_start);
+        $this->assertSame(0, AuditLog::where('subject_type', 'event')->count());
+        $this->assertModelExists($roster);
+
+        $this->put(route('events.update', $event), [...$payload, 'title' => 'Updated briefing'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('Updated briefing', $event->fresh()->title);
+        $this->assertModelExists($roster);
     }
 
     private function member(Team $fir, RoleName $role = RoleName::EventCoordinator): User

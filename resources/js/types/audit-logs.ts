@@ -17,10 +17,18 @@ export type AuditLog = {
     id: number;
     actor_cid: number | null;
     actor_name: string | null;
-    subject_type: 'fir' | 'user' | 'event' | 'airport';
+    subject_type: 'fir' | 'user' | 'event' | 'airport' | 'roster';
     subject_id: number;
     subject_label: string;
-    event: 'created' | 'updated' | 'deleted' | 'roles_updated';
+    event:
+        | 'created'
+        | 'updated'
+        | 'deleted'
+        | 'roles_updated'
+        | 'booked'
+        | 'withdrawn'
+        | 'interest_submitted'
+        | 'interest_withdrawn';
     source: string;
     old_values: Record<string, AuditValue>;
     new_values: Record<string, AuditValue>;

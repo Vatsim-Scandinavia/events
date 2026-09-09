@@ -28,6 +28,10 @@ const events: Record<AuditLog['event'], string> = {
     updated: 'Updated',
     deleted: 'Deleted',
     roles_updated: 'Roles changed',
+    booked: 'Position booked',
+    withdrawn: 'Booking withdrawn',
+    interest_submitted: 'Interest submitted',
+    interest_withdrawn: 'Interest withdrawn',
 };
 
 const fieldNames: Record<string, string> = {
@@ -40,6 +44,13 @@ const fieldNames: Record<string, string> = {
     subdivision: 'Subdivision',
     oauth_provider: 'Sign-in provider',
     roles: 'Role assignments',
+    event_id: 'Event',
+    occurrence_date: 'Occurrence date',
+    mode: 'Roster type',
+    is_open: 'Signups open',
+    shifts: 'Shifts and bookings',
+    positions: 'Selected positions',
+    interests: 'Controller interest',
 };
 
 function ChangeValue({
@@ -124,6 +135,7 @@ function LogEntry({ log }: { log: AuditLog }) {
                                     user: 'User',
                                     event: 'Event',
                                     airport: 'Airport',
+                                    roster: 'Roster',
                                 }[log.subject_type]
                             }{' '}
                             #{log.subject_id}
@@ -301,6 +313,9 @@ export default function AuditLogs({
                                             </SelectItem>
                                             <SelectItem value="airport">
                                                 Airports
+                                            </SelectItem>
+                                            <SelectItem value="roster">
+                                                Rosters
                                             </SelectItem>
                                         </SelectGroup>
                                     </SelectContent>

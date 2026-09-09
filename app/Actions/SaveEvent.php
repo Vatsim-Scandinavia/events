@@ -51,10 +51,10 @@ class SaveEvent
                 }
 
                 $before = $event->exists ? $event->auditValues() : [];
-                if ($event->exists && $event->cancellations()->exists()) {
+                if ($event->exists && ($event->cancellations()->exists() || $event->rosters()->exists())) {
                     foreach (['timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until'] as $field) {
                         if ((string) ($before[$field] ?? '') !== (string) ($data[$field] ?? '')) {
-                            throw ValidationException::withMessages(['recurrence' => 'This series has cancelled occurrences. Keep its schedule and create a new event for a different schedule.']);
+                            throw ValidationException::withMessages(['recurrence' => 'This event has rosters or cancelled occurrences. Keep its schedule and create a new event for a different schedule.']);
                         }
                     }
                 }

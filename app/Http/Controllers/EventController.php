@@ -76,7 +76,7 @@ class EventController extends Controller
     public function show(EventIndexRequest $request, Event $event, EventSchedule $schedule): Response
     {
         abort_unless(Event::visibleTo($request->user())->whereKey($event->id)->exists(), 404);
-        $event->load(['owner', 'airports', 'cancellations', 'collaborations.team']);
+        $event->load(['owner', 'airports', 'cancellations', 'collaborations.team', 'rosters']);
         $currentTime = CarbonImmutable::now($event->timezone);
         $from = $request->validated('from') ?? $currentTime->toDateString();
         $occurrences = $schedule->upcoming($event, $from, 13, $request->filled('from') ? null : $currentTime);
@@ -85,7 +85,10 @@ class EventController extends Controller
         return Inertia::render('events/show', [
             'event' => $this->details($event),
             'description_html' => $this->markdown->handle($event->description),
-            'occurrences' => array_slice($occurrences, 0, 12),
+            'occurrences' => array_map(fn (array $occurrence): array => [
+                ...$occurrence,
+                'roster_exists' => $event->rosters->contains('occurrence_date', $occurrence['date']),
+            ], array_slice($occurrences, 0, 12)),
             'from' => $from, 'next_from' => $nextFrom,
             'collaborations' => $event->collaborations->map(fn (EventCollaboration $collaboration): array => [
                 'id' => $collaboration->id, 'team' => $collaboration->team->only(['id', 'code', 'name']),
@@ -133,7 +136,7 @@ class EventController extends Controller
             'owner' => $event->owner->only(['id', 'code', 'name']),
             'airports' => $event->airports->map->only(['id', 'icao', 'name', 'country']),
             'banner_url' => $event->banner_path === null ? null : route('events.banner', $event),
-            'schedule_locked' => $event->cancellations()->exists(),
+            'schedule_locked' => $event->cancellations()->exists() || $event->rosters()->exists(),
         ];
     }
 }

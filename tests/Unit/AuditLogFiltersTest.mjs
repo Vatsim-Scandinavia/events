@@ -142,3 +142,92 @@ await test('rejected audit filters retain entered dates and show an error until 
         0,
     );
 });
+
+await test('roster actions have readable audit labels and can be selected as filters', async (t) => {
+    const actions = {
+        booked: 'Position booked',
+        withdrawn: 'Booking withdrawn',
+        interest_submitted: 'Interest submitted',
+        interest_withdrawn: 'Interest withdrawn',
+    };
+    const filters = {
+        search: '',
+        subject_type: '',
+        event: '',
+        from: '',
+        to: '',
+    };
+    const logs = {
+        data: Object.keys(actions).map((event, index) => ({
+            id: index + 1,
+            actor_cid: 1000001,
+            actor_name: 'Chris Controller',
+            subject_type: 'roster',
+            subject_id: 9,
+            subject_label: 'Copenhagen staffing · 2026-12-10',
+            event,
+            source: 'manual',
+            old_values: {},
+            new_values: {},
+            created_at: '2026-12-01T10:00:00Z',
+        })),
+        current_page: 1,
+        last_page: 1,
+        from: 1,
+        to: 4,
+        total: 4,
+    };
+    let submitted;
+    t.mock.method(router, 'get', (url, data) => {
+        submitted = { url, data };
+    });
+    const view = await renderComponent(
+        createElement(AuditLogs, { logs, filters }),
+    );
+    t.after(() => view.unmount());
+    const content = (node) => node.text ?? node.children.map(content).join('');
+    for (const label of Object.values(actions)) {
+        assert.equal(
+            view.findAll(
+                (node) => node.type === 'span' && content(node) === label,
+            ).length,
+            1,
+        );
+    }
+    assert.equal(
+        view.findAll(
+            (node) => node.type === 'span' && content(node) === 'Roster #9',
+        ).length,
+        4,
+    );
+    assert.equal(
+        content(
+            view.find(
+                (node) =>
+                    node.type === 'option' && node.props.value === 'roster',
+            ),
+        ),
+        'Rosters',
+    );
+
+    await act(async () =>
+        view
+            .findAll((node) => node.type === 'select')[0]
+            .props.onValueChange('roster'),
+    );
+    await act(async () =>
+        view
+            .findAll((node) => node.type === 'select')[1]
+            .props.onValueChange('booked'),
+    );
+    await act(async () =>
+        view
+            .find((node) => node.type === 'form')
+            .props.onSubmit({ preventDefault() {} }),
+    );
+
+    assert.deepEqual(submitted, {
+        url: '/audit-logs',
+        data: { ...filters, subject_type: 'roster', event: 'booked' },
+    });
+});

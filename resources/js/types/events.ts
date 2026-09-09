@@ -37,6 +37,7 @@ export type ManagedEvent = EventSummary & {
     schedule_locked: boolean;
 };
 export type Occurrence = {
+    roster_exists?: boolean;
     date: string;
     starts_at: string | null;
     ends_at: string | null;

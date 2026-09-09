@@ -55,6 +55,7 @@ import {
     store as invite,
     destroy as revoke,
 } from '@/routes/events/collaborations';
+import { show as roster } from '@/routes/events/roster';
 import type { Fir, ManagedEvent, Occurrence } from '@/types/events';
 
 type Props = {
@@ -474,6 +475,25 @@ export default function EventDetails({
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
+                                                {occurrence.status ===
+                                                    'scheduled' &&
+                                                (can.edit ||
+                                                    occurrence.roster_exists) ? (
+                                                    <Button
+                                                        asChild
+                                                        variant="outline"
+                                                        size="sm"
+                                                    >
+                                                        <Link
+                                                            href={roster({
+                                                                event: event.id,
+                                                                date: occurrence.date,
+                                                            })}
+                                                        >
+                                                            Roster
+                                                        </Link>
+                                                    </Button>
+                                                ) : null}
                                                 <Badge
                                                     variant={
                                                         occurrence.status ===

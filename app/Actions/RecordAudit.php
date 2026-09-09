@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Models\Airport;
 use App\Models\AuditLog;
 use App\Models\Event;
+use App\Models\EventRoster;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Support\Arr;
@@ -18,11 +19,12 @@ class RecordAudit
      * @param  array<string, mixed>  $before
      * @param  array<string, mixed>  $after
      */
-    public function handle(Team|User|Event|Airport $subject, string $event, array $before, array $after, string $source = 'manual', ?User $actor = null): void
+    public function handle(Team|User|Event|Airport|EventRoster $subject, string $event, array $before, array $after, string $source = 'manual', ?User $actor = null): void
     {
         [$type, $label, $fields] = match (true) {
             $subject instanceof Team => ['fir', $subject->code.' — '.$subject->name, ['code', 'name']],
             $subject instanceof Airport => ['airport', $subject->icao.' — '.$subject->name, ['icao', 'name', 'country']],
+            $subject instanceof EventRoster => ['roster', $subject->event->title.' — '.$subject->occurrence_date, ['event_id', 'occurrence_date', 'mode', 'is_open', 'shifts', 'positions', 'interests']],
             $subject instanceof Event => ['event', $subject->title, ['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until', 'status', 'banner_path', 'cancellation_reason', 'airports', 'cancellations', 'collaborations']],
             default => ['user', $subject->name_full, ['name_full', 'email', 'controller_rating', 'division', 'subdivision', 'oauth_provider', 'roles']],
         };
