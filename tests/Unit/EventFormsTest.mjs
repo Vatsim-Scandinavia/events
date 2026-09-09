@@ -30,6 +30,9 @@ const ui = {
     '@/components/airport-picker': { AirportPicker: 'airport-picker' },
     '@/components/event-banner': { EventBanner: 'event-banner' },
     '@/components/event-field': { EventField: 'event-field' },
+    '@/components/event-publication-controls': {
+        EventPublicationControls: 'event-publication-controls',
+    },
     '@/components/input-error': { __esModule: true, default: 'input-error' },
     '@/components/markdown-editor': { MarkdownEditor: 'markdown-editor' },
     '@/components/ui/alert': {
@@ -104,6 +107,8 @@ function eventData(overrides = {}) {
         short_description: 'Evening staffing',
         short_description_html: '<p>Evening staffing</p>',
         description: '',
+        description_html: '',
+        occurrence: null,
         status: 'draft',
         timezone: 'UTC',
         recurrence: 'none',
@@ -307,7 +312,6 @@ for (const roster_enabled of [false, true]) {
         const view = await renderComponent(
             createElement(EventDetails, {
                 event,
-                description_html: '',
                 occurrences: [
                     {
                         date: '2026-12-10',

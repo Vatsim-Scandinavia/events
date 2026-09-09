@@ -17,7 +17,7 @@ export type EventSummary = {
     title: string;
     short_description: string;
     short_description_html: string;
-    status: 'draft' | 'cancelled';
+    status: 'draft' | 'published' | 'cancelled';
     timezone: string;
     recurrence: 'none' | 'weekly' | 'monthly';
     starts_at: string;
@@ -46,4 +46,21 @@ export type Occurrence = {
     ends_at: string | null;
     status: 'scheduled' | 'cancelled' | 'skipped';
     reason: string | null;
+};
+
+export type EventListing = Omit<
+    EventSummary,
+    'short_description' | 'roster_exists'
+> & {
+    local_start: string;
+    recurrence_interval: number;
+    monthly_week: number | null;
+    recurrence_until: string | null;
+    occurrence: Occurrence | null;
+};
+export type EventDetails = EventListing & {
+    description_html: string;
+    cancellation_reason: string | null;
+    roster_enabled?: boolean;
+    roster_exists?: boolean;
 };

@@ -28,7 +28,9 @@ export type AuditLog = {
         | 'booked'
         | 'withdrawn'
         | 'interest_submitted'
-        | 'interest_withdrawn';
+        | 'interest_withdrawn'
+        | 'published'
+        | 'unpublished';
     source: string;
     old_values: Record<string, AuditValue>;
     new_values: Record<string, AuditValue>;

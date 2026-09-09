@@ -35,7 +35,7 @@ class RosterDirectoryTest extends TestCase
             ->where('rosters.data.1.is_open', false)->where('rosters.data.1.has_ended', true)
             ->where('rosters.data.1.occurrence', null));
 
-        $this->get(route('events.show', $visible->event))->assertForbidden();
+        $this->get(route('events.show', $visible->event))->assertNotFound();
     }
 
     public function test_pending_collaboration_does_not_expose_unopened_roster_to_staff_but_acceptance_does(): void

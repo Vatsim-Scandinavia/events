@@ -32,6 +32,8 @@ const events: Record<AuditLog['event'], string> = {
     withdrawn: 'Booking withdrawn',
     interest_submitted: 'Interest submitted',
     interest_withdrawn: 'Interest withdrawn',
+    published: 'Published',
+    unpublished: 'Unpublished',
 };
 
 const fieldNames: Record<string, string> = {

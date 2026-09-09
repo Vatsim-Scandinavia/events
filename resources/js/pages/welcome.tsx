@@ -1,5 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { dashboard, login } from '@/routes';
+import { index as browseEvents } from '@/routes/events';
 
 export default function Welcome() {
     const { auth } = usePage().props;
@@ -10,6 +11,12 @@ export default function Welcome() {
             <div className="flex min-h-screen flex-col items-center bg-[#FDFDFC] p-6 text-[#1b1b18] lg:justify-center lg:p-8 dark:bg-[#0a0a0a]">
                 <header className="mb-6 w-full max-w-[335px] text-sm not-has-[nav]:hidden lg:max-w-4xl">
                     <nav className="flex items-center justify-end gap-4">
+                        <Link
+                            href={browseEvents()}
+                            className="text-sm hover:underline"
+                        >
+                            Browse events
+                        </Link>
                         {auth.user ? (
                             <Link
                                 href={dashboard()}

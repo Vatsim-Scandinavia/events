@@ -29,6 +29,11 @@ class EventFactory extends Factory
         ];
     }
 
+    public function published(): static
+    {
+        return $this->state(fn (): array => ['status' => 'published', 'published_at' => now()]);
+    }
+
     public function rostered(): static
     {
         return $this->state(fn (): array => ['roster_enabled' => true]);

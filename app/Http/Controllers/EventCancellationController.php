@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\EventSchedule;
 use App\Actions\RecordAudit;
+use App\Actions\RosterMutation;
 use App\Http\Requests\EventCancellationRequest;
 use App\Models\Event;
 use Illuminate\Http\RedirectResponse;
@@ -13,10 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class EventCancellationController extends Controller
 {
-    public function store(EventCancellationRequest $request, Event $event, EventSchedule $schedule, RecordAudit $audit): RedirectResponse
+    public function store(EventCancellationRequest $request, Event $event, EventSchedule $schedule, RecordAudit $audit, RosterMutation $mutation): RedirectResponse
     {
-        DB::transaction(function () use ($request, $event, $schedule, $audit): void {
-            $event = Event::whereKey($event->id)->lockForUpdate()->firstOrFail();
+        DB::transaction(function () use ($request, $event, $schedule, $audit, $mutation): void {
+            $event = $mutation->lockEvent($event->id);
             $date = $request->validated('occurrence_date');
             Gate::authorize($date === null ? 'manageOwner' : 'update', $event);
             if ($event->status === 'cancelled') {
@@ -39,10 +40,10 @@ class EventCancellationController extends Controller
         return back();
     }
 
-    public function destroy(EventCancellationRequest $request, Event $event, EventSchedule $schedule, RecordAudit $audit): RedirectResponse
+    public function destroy(EventCancellationRequest $request, Event $event, EventSchedule $schedule, RecordAudit $audit, RosterMutation $mutation): RedirectResponse
     {
-        DB::transaction(function () use ($request, $event, $schedule, $audit): void {
-            $event = Event::whereKey($event->id)->lockForUpdate()->firstOrFail();
+        DB::transaction(function () use ($request, $event, $schedule, $audit, $mutation): void {
+            $event = $mutation->lockEvent($event->id);
             $date = $request->validated('occurrence_date');
             Gate::authorize($date === null ? 'manageOwner' : 'update', $event);
 
@@ -57,7 +58,7 @@ class EventCancellationController extends Controller
                 }
                 $event->cancellations()->where('occurrence_date', $date)->delete();
             } elseif ($event->status === 'cancelled') {
-                $event->update(['status' => 'draft', 'cancelled_at' => null, 'cancellation_reason' => null]);
+                $event->update(['status' => 'draft', 'published_at' => null, 'cancelled_at' => null, 'cancellation_reason' => null]);
             }
             $audit->handle($event, 'updated', $before, $event->auditValues());
         });

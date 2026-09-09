@@ -145,8 +145,9 @@ export default function EventForm({
                             {event ? 'Edit event' : 'Create event'}
                         </h1>
                         <p className="text-muted-foreground mt-2 text-sm">
-                            Save a private draft for your FIR and its accepted
-                            collaborators.
+                            {event?.status === 'published'
+                                ? 'Changes to this published event appear publicly as soon as you save.'
+                                : 'Save a private draft for your FIR and its accepted collaborators.'}
                         </p>
                     </div>
                 </header>

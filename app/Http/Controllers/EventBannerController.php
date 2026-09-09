@@ -11,7 +11,7 @@ class EventBannerController extends Controller
 {
     public function __invoke(Request $request, Event $event): StreamedResponse
     {
-        abort_unless(Event::visibleTo($request->user())->whereKey($event->id)->exists(), 404);
+        abort_unless($event->isPubliclyVisible() || ($request->user()?->can('view', $event) ?? false), 404);
         abort_if($event->banner_path === null || ! Storage::disk('local')->exists($event->banner_path), 404);
 
         return Storage::disk('local')->response($event->banner_path, null, [

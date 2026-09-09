@@ -64,12 +64,13 @@ class EventRestorationTest extends TestCase
         $this->assertModelExists($cancellation);
         $this->assertDatabaseHas('events', ['id' => $event->id, 'status' => 'draft', 'cancelled_at' => null, 'cancellation_reason' => null]);
         $this->get(route('events.show', ['event' => $event, 'from' => '2026-10-04']))->assertInertia(fn (Assert $page) => $page
-            ->where('event.schedule_locked', true)->has('occurrences', 3)
+            ->has('occurrences', 3)
             ->where('occurrences.0.date', '2026-10-04')->where('occurrences.0.status', 'scheduled')
             ->where('occurrences.1.date', '2026-10-18')->where('occurrences.1.status', 'cancelled')
             ->where('occurrences.1.reason', 'Insufficient staffing')
             ->where('occurrences.2.date', '2026-11-01')->where('occurrences.2.status', 'scheduled')
             ->where('occurrences.2.starts_at', '2026-11-01T17:00:00+00:00'));
+        $this->get(route('events.edit', $event))->assertInertia(fn (Assert $page) => $page->where('event.schedule_locked', true));
     }
 
     public function test_restoring_one_occurrence_preserves_other_dates_and_other_events_and_is_audited_once(): void
@@ -90,7 +91,6 @@ class EventRestorationTest extends TestCase
         $this->assertModelExists($other);
         $this->assertDatabaseHas('events', ['id' => $event->id, 'status' => 'draft']);
         $this->get($url)->assertInertia(fn (Assert $page) => $page
-            ->where('event.schedule_locked', true)
             ->where('occurrences.0.status', 'scheduled')
             ->where('occurrences.1.date', '2026-10-11')->where('occurrences.1.status', 'scheduled')
             ->where('occurrences.1.reason', null)->where('occurrences.1.starts_at', '2026-10-11T18:00:00+00:00')
@@ -105,6 +105,7 @@ class EventRestorationTest extends TestCase
         $this->assertSame(['cancellations' => [
             ['occurrence_date' => '2026-10-18', 'reason' => 'Insufficient staffing'],
         ]], $audit->new_values);
+        $this->get(route('events.edit', $event))->assertInertia(fn (Assert $page) => $page->where('event.schedule_locked', true));
     }
 
     public function test_accepted_collaborator_can_restore_the_last_cancelled_occurrence(): void
@@ -118,8 +119,9 @@ class EventRestorationTest extends TestCase
 
         $this->assertModelMissing($cancellation);
         $this->get(route('events.show', ['event' => $event, 'from' => '2026-10-04']))->assertInertia(fn (Assert $page) => $page
-            ->where('event.schedule_locked', false)->where('can.edit', true)->where('can.manage_owner', false)
+            ->where('can.edit', true)->where('can.manage_owner', false)
             ->where('occurrences.0.status', 'scheduled'));
+        $this->get(route('events.edit', $event))->assertInertia(fn (Assert $page) => $page->where('event.schedule_locked', false));
     }
 
     public function test_collaborator_cannot_restore_the_entire_event(): void

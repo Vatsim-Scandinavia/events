@@ -13,6 +13,7 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { EventBanner } from '@/components/event-banner';
 import { EventField } from '@/components/event-field';
+import { EventPublicationControls } from '@/components/event-publication-controls';
 import InputError from '@/components/input-error';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -56,17 +57,25 @@ import {
     destroy as revoke,
 } from '@/routes/events/collaborations';
 import { show as roster } from '@/routes/events/roster';
-import type { Fir, ManagedEvent, Occurrence } from '@/types/events';
+import type {
+    Fir,
+    EventDetails as EventDetailsData,
+    Occurrence,
+} from '@/types/events';
 
 type Props = {
-    event: ManagedEvent;
-    description_html: string;
+    event: EventDetailsData;
     occurrences: Occurrence[];
     from: string;
     next_from: string | null;
-    collaborations: { id: number; team: Fir; accepted: boolean }[];
-    firs: Fir[];
-    can: { edit: boolean; manage_owner: boolean };
+    collaborations?: { id: number; team: Fir; accepted: boolean }[];
+    firs?: Fir[];
+    can?: {
+        edit: boolean;
+        manage_owner: boolean;
+        publish: boolean;
+        unpublish: boolean;
+    };
 };
 
 function CancellationDialog({
@@ -75,7 +84,7 @@ function CancellationDialog({
     onClose,
     returnFocus,
 }: {
-    event: ManagedEvent;
+    event: EventDetailsData;
     date: string | null;
     onClose: () => void;
     returnFocus: () => void;
@@ -179,7 +188,7 @@ function RestorationButton({
     date = null,
     onRestored,
 }: {
-    event: ManagedEvent;
+    event: EventDetailsData;
     date?: string | null;
     onRestored: () => void;
 }) {
@@ -226,13 +235,17 @@ function RestorationButton({
 
 export default function EventDetails({
     event,
-    description_html,
     occurrences,
     from,
     next_from,
     collaborations,
-    firs,
-    can,
+    firs = [],
+    can = {
+        edit: false,
+        manage_owner: false,
+        publish: false,
+        unpublish: false,
+    },
 }: Props) {
     const [displayZone, setDisplayZone] = useState('UTC');
     const [cancellation, setCancellation] = useState<{
@@ -245,7 +258,7 @@ export default function EventDetails({
     return (
         <>
             <Head title={event.title} />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-8">
+            <div className="flex flex-1 flex-col gap-6">
                 <Link
                     href={index()}
                     className="text-muted-foreground flex w-fit items-center gap-2 text-sm hover:underline"
@@ -265,11 +278,12 @@ export default function EventDetails({
                             >
                                 {event.status === 'draft'
                                     ? 'Draft'
-                                    : 'Cancelled'}
+                                    : event.status === 'published'
+                                      ? 'Published'
+                                      : 'Cancelled'}
                             </Badge>
                             <Badge variant="outline">{event.owner.code}</Badge>
-                            <Badge variant="outline">Private</Badge>
-                            {!event.roster_enabled ? (
+                            {event.roster_enabled === false ? (
                                 <Badge variant="outline">No roster</Badge>
                             ) : null}
                         </div>
@@ -288,6 +302,11 @@ export default function EventDetails({
                         />
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        <EventPublicationControls
+                            event={event}
+                            canPublish={can.publish}
+                            canUnpublish={can.unpublish}
+                        />
                         {event.roster_enabled &&
                         (can.edit || event.roster_exists) ? (
                             <Button asChild variant="outline">
@@ -330,6 +349,12 @@ export default function EventDetails({
                         ) : null}
                     </div>
                 </header>
+                {event.status === 'draft' ? (
+                    <p className="text-muted-foreground text-sm">
+                        This draft is private to the owner FIR and accepted
+                        collaborators.
+                    </p>
+                ) : null}
                 {event.status === 'cancelled' ? (
                     <Alert>
                         <AlertTitle>Event cancelled</AlertTitle>
@@ -357,7 +382,7 @@ export default function EventDetails({
                                 <div
                                     className="event-markdown"
                                     dangerouslySetInnerHTML={{
-                                        __html: description_html,
+                                        __html: event.description_html,
                                     }}
                                 />
                             </CardContent>
@@ -409,7 +434,7 @@ export default function EventDetails({
                                     onSubmit={(e) => {
                                         e.preventDefault();
                                         dates.get(show.url(event.id), {
-                                            preserveState: true,
+                                            preserveState: 'errors',
                                             preserveScroll: true,
                                         });
                                     }}
@@ -429,9 +454,12 @@ export default function EventDetails({
                                                 )
                                             }
                                             required
+                                            disabled={dates.processing}
                                             aria-invalid={!!dates.errors.from}
+                                            aria-describedby="occurrences-from-error"
                                         />
                                         <InputError
+                                            id="occurrences-from-error"
                                             message={dates.errors.from}
                                         />
                                     </div>
@@ -582,6 +610,11 @@ export default function EventDetails({
                                 <CardTitle>Participating airports</CardTitle>
                             </CardHeader>
                             <CardContent>
+                                {!event.airports.length ? (
+                                    <p className="text-muted-foreground text-sm">
+                                        No airports specified.
+                                    </p>
+                                ) : null}
                                 <ul className="flex flex-col gap-4">
                                     {event.airports.map((airport) => (
                                         <li
@@ -604,145 +637,160 @@ export default function EventDetails({
                         </Card>
                         <Card>
                             <CardHeader>
-                                <CardTitle>FIR access</CardTitle>
-                                <CardDescription>
-                                    Event Coordinators can edit. vACC Staff have
-                                    read-only access.
-                                </CardDescription>
+                                <CardTitle>Hosted by</CardTitle>
                             </CardHeader>
-                            <CardContent className="flex flex-col gap-5">
-                                <div className="flex flex-col gap-1">
-                                    <span className="text-sm font-medium">
-                                        {event.owner.code} · {event.owner.name}
-                                    </span>
-                                    <span className="text-muted-foreground text-xs">
-                                        Owner FIR
-                                    </span>
-                                </div>
-                                <ul className="flex flex-col gap-3">
-                                    {collaborations.map((collaboration) => (
-                                        <li
-                                            key={collaboration.id}
-                                            className="flex items-center justify-between gap-3"
-                                        >
-                                            <div>
-                                                <p className="text-sm">
-                                                    {collaboration.team.code} ·{' '}
-                                                    {collaboration.team.name}
-                                                </p>
-                                                <p className="text-muted-foreground text-xs">
-                                                    {collaboration.accepted
-                                                        ? 'Collaborator'
-                                                        : 'Invitation pending'}
-                                                </p>
-                                            </div>
-                                            {can.manage_owner ? (
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    aria-label={
-                                                        'Remove access for ' +
-                                                        collaboration.team.code
-                                                    }
-                                                    onClick={() =>
-                                                        router.delete(
-                                                            revoke.url({
-                                                                event: event.id,
-                                                                collaboration:
-                                                                    collaboration.id,
-                                                            }),
-                                                            {
-                                                                preserveScroll: true,
-                                                                onSuccess: () =>
-                                                                    toast.success(
-                                                                        'FIR access removed.',
-                                                                    ),
-                                                            },
-                                                        )
-                                                    }
-                                                >
-                                                    <X />
-                                                </Button>
-                                            ) : null}
-                                        </li>
-                                    ))}
-                                </ul>
-                                {can.manage_owner && firs.length > 0 ? (
-                                    <form
-                                        className="flex flex-col gap-3"
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            invitation.post(
-                                                invite.url(event.id),
-                                                {
-                                                    preserveScroll: true,
-                                                    onSuccess: () => {
-                                                        invitation.reset();
-                                                        toast.success(
-                                                            'Collaboration invitation created.',
-                                                        );
-                                                    },
-                                                },
-                                            );
-                                        }}
-                                    >
-                                        <Label htmlFor="invite-fir">
-                                            Invite an FIR
-                                        </Label>
-                                        <Select
-                                            value={invitation.data.team_id}
-                                            onValueChange={(value) =>
-                                                invitation.setData(
-                                                    'team_id',
-                                                    value,
-                                                )
-                                            }
-                                            disabled={invitation.processing}
-                                        >
-                                            <SelectTrigger
-                                                id="invite-fir"
-                                                className="w-full"
-                                            >
-                                                <SelectValue placeholder="Choose FIR" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectGroup>
-                                                    {firs.map((fir) => (
-                                                        <SelectItem
-                                                            key={fir.id}
-                                                            value={String(
-                                                                fir.id,
-                                                            )}
-                                                        >
-                                                            {fir.code} ·{' '}
-                                                            {fir.name}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectGroup>
-                                            </SelectContent>
-                                        </Select>
-                                        <InputError
-                                            message={invitation.errors.team_id}
-                                        />
-                                        <Button
-                                            variant="outline"
-                                            disabled={
-                                                invitation.processing ||
-                                                !invitation.data.team_id
-                                            }
-                                        >
-                                            <Plus data-icon="inline-start" />
-                                            Invite FIR
-                                        </Button>
-                                        <p className="text-muted-foreground text-xs">
-                                            A coordinator of the invited FIR
-                                            must accept before its members can
-                                            view the event.
-                                        </p>
-                                    </form>
-                                ) : null}
+                            <CardContent>
+                                <p className="font-medium">
+                                    {event.owner.code} · {event.owner.name}
+                                </p>
                             </CardContent>
                         </Card>
+                        {collaborations ? (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>FIR access</CardTitle>
+                                    <CardDescription>
+                                        Event Coordinators can edit. vACC Staff
+                                        have read-only access.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="flex flex-col gap-5">
+                                    <ul className="flex flex-col gap-3">
+                                        {collaborations.map((collaboration) => (
+                                            <li
+                                                key={collaboration.id}
+                                                className="flex items-center justify-between gap-3"
+                                            >
+                                                <div>
+                                                    <p className="text-sm">
+                                                        {
+                                                            collaboration.team
+                                                                .code
+                                                        }{' '}
+                                                        ·{' '}
+                                                        {
+                                                            collaboration.team
+                                                                .name
+                                                        }
+                                                    </p>
+                                                    <p className="text-muted-foreground text-xs">
+                                                        {collaboration.accepted
+                                                            ? 'Collaborator'
+                                                            : 'Invitation pending'}
+                                                    </p>
+                                                </div>
+                                                {can.manage_owner ? (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label={
+                                                            'Remove access for ' +
+                                                            collaboration.team
+                                                                .code
+                                                        }
+                                                        onClick={() =>
+                                                            router.delete(
+                                                                revoke.url({
+                                                                    event: event.id,
+                                                                    collaboration:
+                                                                        collaboration.id,
+                                                                }),
+                                                                {
+                                                                    preserveScroll: true,
+                                                                    onSuccess:
+                                                                        () =>
+                                                                            toast.success(
+                                                                                'FIR access removed.',
+                                                                            ),
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        <X />
+                                                    </Button>
+                                                ) : null}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    {can.manage_owner && firs.length > 0 ? (
+                                        <form
+                                            className="flex flex-col gap-3"
+                                            onSubmit={(e) => {
+                                                e.preventDefault();
+                                                invitation.post(
+                                                    invite.url(event.id),
+                                                    {
+                                                        preserveScroll: true,
+                                                        onSuccess: () => {
+                                                            invitation.reset();
+                                                            toast.success(
+                                                                'Collaboration invitation created.',
+                                                            );
+                                                        },
+                                                    },
+                                                );
+                                            }}
+                                        >
+                                            <Label htmlFor="invite-fir">
+                                                Invite an FIR
+                                            </Label>
+                                            <Select
+                                                value={invitation.data.team_id}
+                                                onValueChange={(value) =>
+                                                    invitation.setData(
+                                                        'team_id',
+                                                        value,
+                                                    )
+                                                }
+                                                disabled={invitation.processing}
+                                            >
+                                                <SelectTrigger
+                                                    id="invite-fir"
+                                                    className="w-full"
+                                                >
+                                                    <SelectValue placeholder="Choose FIR" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectGroup>
+                                                        {firs.map((fir) => (
+                                                            <SelectItem
+                                                                key={fir.id}
+                                                                value={String(
+                                                                    fir.id,
+                                                                )}
+                                                            >
+                                                                {fir.code} ·{' '}
+                                                                {fir.name}
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectGroup>
+                                                </SelectContent>
+                                            </Select>
+                                            <InputError
+                                                message={
+                                                    invitation.errors.team_id
+                                                }
+                                            />
+                                            <Button
+                                                variant="outline"
+                                                disabled={
+                                                    invitation.processing ||
+                                                    !invitation.data.team_id
+                                                }
+                                            >
+                                                <Plus data-icon="inline-start" />
+                                                Invite FIR
+                                            </Button>
+                                            <p className="text-muted-foreground text-xs">
+                                                A coordinator of the invited FIR
+                                                must accept before its members
+                                                gain staff access to the event.
+                                            </p>
+                                        </form>
+                                    ) : null}
+                                </CardContent>
+                            </Card>
+                        ) : null}
                     </div>
                 </div>
             </div>

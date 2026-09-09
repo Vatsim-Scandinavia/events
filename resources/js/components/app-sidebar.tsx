@@ -38,6 +38,7 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+    { title: 'Events', href: eventsIndex(), icon: CalendarDays },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -57,10 +58,7 @@ export function AppSidebar() {
     const { auth } = usePage().props;
     const managementNavItems: NavItem[] = [
         ...(auth.can_view_events
-            ? [
-                  { title: 'Events', href: eventsIndex(), icon: CalendarDays },
-                  { title: 'Airports', href: airportsIndex(), icon: Plane },
-              ]
+            ? [{ title: 'Airports', href: airportsIndex(), icon: Plane }]
             : []),
         ...(auth.can_manage_users
             ? [{ title: 'Users', href: index(), icon: Users }]

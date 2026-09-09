@@ -8,6 +8,7 @@ use App\Http\Controllers\EventCancellationController;
 use App\Http\Controllers\EventCollaborationController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventMarkdownPreviewController;
+use App\Http\Controllers\EventPublicationController;
 use App\Http\Controllers\EventRosterController;
 use App\Http\Controllers\FirController;
 use App\Http\Controllers\RosterBookingController;
@@ -18,6 +19,10 @@ use App\Http\Controllers\UserRoleController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+
+Route::get('events', [EventController::class, 'index'])->name('events.index');
+Route::get('events/{event}', [EventController::class, 'show'])->whereNumber('event')->name('events.show');
+Route::get('events/{event}/banner', EventBannerController::class)->whereNumber('event')->name('events.banner');
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [OAuthController::class, 'index'])->name('login');
@@ -34,9 +39,10 @@ Route::middleware('auth')->group(function () {
     Route::get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 
     Route::resource('firs', FirController::class)->only(['index', 'store', 'update', 'destroy']);
-    Route::resource('events', EventController::class)->except(['destroy']);
+    Route::resource('events', EventController::class)->only(['create', 'store', 'edit', 'update']);
+    Route::post('events/{event}/publication', [EventPublicationController::class, 'store'])->name('events.publication.store');
+    Route::delete('events/{event}/publication', [EventPublicationController::class, 'destroy'])->name('events.publication.destroy');
     Route::post('events/markdown-preview', EventMarkdownPreviewController::class)->name('events.markdown-preview');
-    Route::get('events/{event}/banner', EventBannerController::class)->name('events.banner');
     Route::post('events/{event}/cancellations', [EventCancellationController::class, 'store'])->name('events.cancellations.store');
     Route::delete('events/{event}/cancellations', [EventCancellationController::class, 'destroy'])->name('events.cancellations.destroy');
     Route::post('events/{event}/collaborations', [EventCollaborationController::class, 'store'])->name('events.collaborations.store');

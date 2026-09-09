@@ -29,6 +29,11 @@ class EventPolicy
         return $this->hasAccess($user, $event, PermissionName::ManageEvents);
     }
 
+    public function publish(User $user, Event $event): bool
+    {
+        return $this->manageOwner($user, $event);
+    }
+
     public function manageOwner(User $user, Event $event): bool
     {
         return $user->can(PermissionName::ManageEvents, $event->owner);

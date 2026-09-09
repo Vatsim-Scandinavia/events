@@ -3,7 +3,6 @@ import {
     CalendarDays,
     ChevronLeft,
     ChevronRight,
-    LockKeyhole,
     Plus,
     Search,
 } from 'lucide-react';
@@ -31,16 +30,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
 import { eventTime } from '@/lib/event-time';
 import { create, index, show } from '@/routes/events';
 import { update as accept } from '@/routes/events/collaborations';
-import type { EventSummary, Pagination } from '@/types/events';
+import type { EventListing, Pagination } from '@/types/events';
 
 type Props = {
-    events: Pagination<EventSummary>;
+    events: Pagination<EventListing>;
     filters: { search: string; status: string };
-    can_create: boolean;
-    invitations: {
+    can_create?: boolean;
+    invitations?: {
         id: number;
         event_id: number;
         owner_code: string;
@@ -50,14 +50,15 @@ type Props = {
 export default function Events({
     events,
     filters,
-    can_create,
+    can_create = false,
     invitations,
 }: Props) {
     const form = useForm(filters);
+    const pendingInvitations = invitations ?? [];
     return (
         <>
             <Head title="Events" />
-            <div className="flex flex-1 flex-col gap-6 p-4 md:p-8">
+            <div className="flex flex-1 flex-col gap-6">
                 <header className="flex flex-wrap items-start justify-between gap-4">
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center gap-3">
@@ -67,8 +68,8 @@ export default function Events({
                             <Badge variant="secondary">{events.total}</Badge>
                         </div>
                         <p className="text-muted-foreground text-sm">
-                            Plan events with your FIR. All times below are UTC /
-                            Zulu.
+                            Explore events from participating FIRs. All times
+                            below are UTC / Zulu.
                         </p>
                     </div>
                     {can_create ? (
@@ -80,12 +81,12 @@ export default function Events({
                         </Button>
                     ) : null}
                 </header>
-                {invitations.length ? (
+                {pendingInvitations.length ? (
                     <Alert>
                         <AlertTitle>Collaboration invitations</AlertTitle>
                         <AlertDescription>
                             <ul className="flex flex-col gap-3">
-                                {invitations.map((invitation) => (
+                                {pendingInvitations.map((invitation) => (
                                     <li
                                         key={invitation.id}
                                         className="flex flex-wrap items-center gap-3"
@@ -127,10 +128,10 @@ export default function Events({
                     className="flex flex-wrap items-end gap-3"
                     onSubmit={(event) => {
                         event.preventDefault();
-                        form.get(index.url(), { preserveState: false });
+                        form.get(index.url(), { preserveState: 'errors' });
                     }}
                 >
-                    <div className="flex min-w-48 flex-1 flex-col gap-2">
+                    <div className="flex min-w-0 flex-1 flex-col gap-2">
                         <Label htmlFor="event-search">Search events</Label>
                         <Input
                             id="event-search"
@@ -139,13 +140,19 @@ export default function Events({
                                 form.setData('search', event.target.value)
                             }
                             placeholder="Search by title"
+                            disabled={form.processing}
                             aria-invalid={!!form.errors.search}
+                            aria-describedby="event-search-error"
                         />
-                        <InputError message={form.errors.search} />
+                        <InputError
+                            id="event-search-error"
+                            message={form.errors.search}
+                        />
                     </div>
                     <div className="flex min-w-40 flex-col gap-2">
                         <Label htmlFor="event-status">Status</Label>
                         <Select
+                            disabled={form.processing}
                             value={form.data.status || 'all'}
                             onValueChange={(value) =>
                                 form.setData(
@@ -162,27 +169,35 @@ export default function Events({
                                     <SelectItem value="all">
                                         All statuses
                                     </SelectItem>
-                                    <SelectItem value="draft">Draft</SelectItem>
+                                    {invitations !== undefined ? (
+                                        <SelectItem value="draft">
+                                            Draft
+                                        </SelectItem>
+                                    ) : null}
+                                    <SelectItem value="published">
+                                        Published
+                                    </SelectItem>
                                     <SelectItem value="cancelled">
                                         Cancelled
                                     </SelectItem>
                                 </SelectGroup>
                             </SelectContent>
                         </Select>
+                        <InputError message={form.errors.status} />
                     </div>
                     <Button
                         type="submit"
                         variant="outline"
                         disabled={form.processing}
                     >
-                        <Search data-icon="inline-start" />
+                        {form.processing ? (
+                            <Spinner data-icon="inline-start" />
+                        ) : (
+                            <Search data-icon="inline-start" />
+                        )}
                         Search
                     </Button>
                 </form>
-                <p className="text-muted-foreground flex items-center gap-2 text-xs">
-                    <LockKeyhole className="size-3.5" />
-                    Private to the owner FIR and accepted collaborators.
-                </p>
                 {events.data.length ? (
                     <div className="grid gap-5 md:grid-cols-2 2xl:grid-cols-3">
                         {events.data.map((event) => (
@@ -207,7 +222,9 @@ export default function Events({
                                         >
                                             {event.status === 'draft'
                                                 ? 'Draft'
-                                                : 'Cancelled'}
+                                                : event.status === 'published'
+                                                  ? 'Published'
+                                                  : 'Cancelled'}
                                         </Badge>
                                         <Badge variant="outline">
                                             {event.owner.code}
@@ -236,16 +253,34 @@ export default function Events({
                                 <CardContent className="flex flex-col gap-3">
                                     <div className="flex gap-2 text-sm">
                                         <CalendarDays className="mt-0.5 size-4 shrink-0" />
-                                        <div>
-                                            <p>
-                                                {eventTime(event.starts_at)} Z
-                                            </p>
-                                            <p className="text-muted-foreground text-xs">
-                                                {event.recurrence !== 'none'
-                                                    ? 'First occurrence · '
-                                                    : 'Ends '}
-                                                {eventTime(event.ends_at)} Z
-                                            </p>
+                                        <div className="flex flex-col gap-1">
+                                            {event.occurrence?.starts_at ? (
+                                                <>
+                                                    <p>
+                                                        {eventTime(
+                                                            event.occurrence
+                                                                .starts_at,
+                                                        )}{' '}
+                                                        Z
+                                                    </p>
+                                                    <p className="text-muted-foreground text-xs">
+                                                        {event.occurrence
+                                                            .ends_at
+                                                            ? 'Ends ' +
+                                                              eventTime(
+                                                                  event
+                                                                      .occurrence
+                                                                      .ends_at,
+                                                              ) +
+                                                              ' Z'
+                                                            : null}
+                                                    </p>
+                                                </>
+                                            ) : (
+                                                <p className="text-muted-foreground">
+                                                    No upcoming occurrences
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
@@ -284,7 +319,7 @@ export default function Events({
                         <p className="text-muted-foreground max-w-md text-sm">
                             {can_create
                                 ? 'Create a draft to begin planning an event with your FIR.'
-                                : 'Events shared with your FIR will appear here.'}
+                                : 'Published events will appear here.'}
                         </p>
                         {can_create ? (
                             <Button asChild variant="outline">

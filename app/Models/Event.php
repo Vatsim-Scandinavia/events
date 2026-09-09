@@ -36,13 +36,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property string|null $banner_path
  * @property string|null $cancellation_reason
  * @property CarbonImmutable|null $cancelled_at
+ * @property CarbonImmutable|null $published_at
  * @property Team $owner
  * @property Collection<int, Airport> $airports
  * @property Collection<int, EventCancellation> $cancellations
  * @property Collection<int, EventCollaboration> $collaborations
  * @property EventRoster|null $roster
  */
-#[Fillable(['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'starts_at', 'ends_at', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until', 'roster_enabled', 'status', 'banner_path', 'cancellation_reason', 'cancelled_at'])]
+#[Fillable(['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'starts_at', 'ends_at', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until', 'roster_enabled', 'status', 'banner_path', 'cancellation_reason', 'cancelled_at', 'published_at'])]
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
@@ -92,12 +93,25 @@ class Event extends Model
                 ->whereNotNull('accepted_at')->whereIn('team_id', $teamIds)));
     }
 
+    /** @param Builder<Event> $query */
+    #[Scope]
+    protected function publiclyVisible(Builder $query): void
+    {
+        $query->whereNotNull('published_at')->whereIn('status', ['published', 'cancelled']);
+    }
+
+    public function isPubliclyVisible(): bool
+    {
+        return $this->published_at !== null && in_array($this->status, ['published', 'cancelled'], true);
+    }
+
     /** @return array<string, mixed> */
     public function auditValues(): array
     {
         return [
             ...$this->only(['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'roster_enabled', 'status', 'banner_path', 'cancellation_reason']),
             'recurrence_until' => $this->recurrence_until?->toDateString(),
+            'published_at' => $this->published_at?->toIso8601String(),
             'airports' => $this->airports()->pluck('icao')->all(),
             'cancellations' => $this->cancellations()->orderBy('occurrence_date')->get(['occurrence_date', 'reason'])->toArray(),
             'collaborations' => $this->collaborations()->orderBy('team_id')->get(['team_id', 'accepted_at'])->toArray(),
@@ -109,7 +123,7 @@ class Event extends Model
     {
         return [
             'starts_at' => 'immutable_datetime', 'ends_at' => 'immutable_datetime',
-            'recurrence_until' => 'immutable_date', 'cancelled_at' => 'immutable_datetime',
+            'recurrence_until' => 'immutable_date', 'cancelled_at' => 'immutable_datetime', 'published_at' => 'immutable_datetime',
             'recurrence_interval' => 'integer', 'monthly_week' => 'integer', 'roster_enabled' => 'boolean',
         ];
     }

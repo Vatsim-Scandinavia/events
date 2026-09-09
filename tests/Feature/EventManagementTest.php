@@ -25,17 +25,14 @@ class EventManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    #[TestWith(['get', 'events.index'])]
     #[TestWith(['get', 'events.create'])]
-    #[TestWith(['get', 'events.show'])]
     #[TestWith(['get', 'events.edit'])]
-    #[TestWith(['get', 'events.banner'])]
     #[TestWith(['post', 'events.store'])]
     #[TestWith(['post', 'events.markdown-preview'])]
     #[TestWith(['put', 'events.update'])]
     #[TestWith(['post', 'events.cancellations.store'])]
     #[TestWith(['delete', 'events.cancellations.destroy'])]
-    public function test_guests_cannot_access_events(string $method, string $route): void
+    public function test_guests_cannot_create_edit_or_mutate_events(string $method, string $route): void
     {
         $event = Event::factory()->create();
 
@@ -43,6 +40,17 @@ class EventManagementTest extends TestCase
 
         $this->assertDatabaseCount('events', 1);
         $this->assertDatabaseCount('event_cancellations', 0);
+    }
+
+    public function test_guests_can_browse_events_but_cannot_read_private_drafts_or_their_banners(): void
+    {
+        $event = Event::factory()->create(['banner_path' => 'event-banners/private.png']);
+
+        $this->get(route('events.index'))->assertInertia(fn (Assert $page) => $page->component('events/index')->has('events.data', 0));
+        $this->get(route('events.show', $event))->assertNotFound();
+        $this->get(route('events.banner', $event))->assertNotFound();
+
+        $this->assertDatabaseCount('audit_logs', 0);
     }
 
     #[TestWith([RoleName::EventCoordinator, true, true])]
@@ -126,7 +134,7 @@ class EventManagementTest extends TestCase
             ->where('event.banner_url', null)
             ->where('event.short_description_html', fn (string $html): bool => str_contains($html, '<strong>Summary</strong>')
                 && ! str_contains($html, '<img') && ! str_contains($html, 'href="javascript:'))
-            ->where('description_html', fn (string $html): bool => str_contains($html, '<h1>Heading</h1>')
+            ->where('event.description_html', fn (string $html): bool => str_contains($html, '<h1>Heading</h1>')
                 && str_contains($html, '<strong>Bold</strong>') && ! str_contains($html, '<script>') && ! str_contains($html, 'href="javascript:')));
 
         $this->get(route('events.index'))->assertInertia(fn (Assert $page) => $page
@@ -153,7 +161,7 @@ class EventManagementTest extends TestCase
         $this->assertStringContainsString('<table>', $html);
         $this->assertStringNotContainsString('<script>', $html);
         $this->assertStringNotContainsString('href="javascript:', $html);
-        $this->get(route('events.show', $event))->assertInertia(fn (Assert $page) => $page->where('description_html', $html));
+        $this->get(route('events.show', $event))->assertInertia(fn (Assert $page) => $page->where('event.description_html', $html));
         $this->assertDatabaseCount('events', 1);
         $this->assertDatabaseCount('audit_logs', $auditCount);
     }
