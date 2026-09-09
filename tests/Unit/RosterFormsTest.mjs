@@ -772,7 +772,11 @@ await test('changing occurrence keeps a reused slot booking tied to the displaye
     ]);
 });
 
-await test('unavailable daylight saving slots show an explanation and cannot be edited on that occurrence', async (t) => {
+await test('unavailable staffing slots can be repaired with valid UTC times', async (t) => {
+    let submitted;
+    t.mock.method(inertia.router, 'put', (url, data) => {
+        submitted = { url, data };
+    });
     const roster = emptyRoster({
         shifts: [
             {
@@ -813,11 +817,33 @@ await test('unavailable daylight saving slots show an explanation and cannot be 
         ).length,
         1,
     );
-    assert.equal(editor.findAll((node) => node.type === 'form').length, 0);
+    assert.equal(
+        editor.find(
+            (node) =>
+                node.type === 'input' && node.props.id === 'slot-11-starts_at',
+        ).props.value,
+        '',
+    );
     assert.equal(
         text(editor.find((node) => node.type === 'alert-title')),
-        'Choose another occurrence to edit the roster',
+        'Update unavailable staffing times',
     );
+
+    await change(editor, 'slot-11-starts_at', '2026-12-10T18:30');
+    await change(editor, 'slot-11-ends_at', '2026-12-10T19:30');
+    await act(async () =>
+        editor
+            .find((node) => node.type === 'form')
+            .props.onSubmit({ preventDefault() {} }),
+    );
+
+    assert.equal(submitted.url, '/events/7/roster');
+    assert.deepEqual(submitted.data.shifts[0].slots[0], {
+        id: 11,
+        callsign: 'EKCH_A_TWR',
+        starts_at: '2026-12-10T18:30',
+        ends_at: '2026-12-10T19:30',
+    });
 });
 
 await test('separate booking snapshots retain their original times and withdraw against their own occurrence', async (t) => {

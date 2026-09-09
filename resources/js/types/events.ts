@@ -27,6 +27,7 @@ export type EventSummary = {
     airports: Airport[];
 };
 export type ManagedEvent = EventSummary & {
+    roster_enabled: boolean;
     owner_team_id: number;
     description: string;
     local_start: string;
@@ -36,6 +37,8 @@ export type ManagedEvent = EventSummary & {
     recurrence_until: string | null;
     cancellation_reason: string | null;
     schedule_locked: boolean;
+    schedule_locked_by_cancellations: boolean;
+    roster_toggle_locked: boolean;
 };
 export type Occurrence = {
     date: string;

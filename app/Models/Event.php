@@ -32,6 +32,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int|null $monthly_week
  * @property CarbonImmutable|null $recurrence_until
  * @property string $status
+ * @property bool $roster_enabled
  * @property string|null $banner_path
  * @property string|null $cancellation_reason
  * @property CarbonImmutable|null $cancelled_at
@@ -41,7 +42,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property Collection<int, EventCollaboration> $collaborations
  * @property EventRoster|null $roster
  */
-#[Fillable(['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'starts_at', 'ends_at', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until', 'status', 'banner_path', 'cancellation_reason', 'cancelled_at'])]
+#[Fillable(['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'starts_at', 'ends_at', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until', 'roster_enabled', 'status', 'banner_path', 'cancellation_reason', 'cancelled_at'])]
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
@@ -95,7 +96,7 @@ class Event extends Model
     public function auditValues(): array
     {
         return [
-            ...$this->only(['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'status', 'banner_path', 'cancellation_reason']),
+            ...$this->only(['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'roster_enabled', 'status', 'banner_path', 'cancellation_reason']),
             'recurrence_until' => $this->recurrence_until?->toDateString(),
             'airports' => $this->airports()->pluck('icao')->all(),
             'cancellations' => $this->cancellations()->orderBy('occurrence_date')->get(['occurrence_date', 'reason'])->toArray(),
@@ -109,7 +110,7 @@ class Event extends Model
         return [
             'starts_at' => 'immutable_datetime', 'ends_at' => 'immutable_datetime',
             'recurrence_until' => 'immutable_date', 'cancelled_at' => 'immutable_datetime',
-            'recurrence_interval' => 'integer', 'monthly_week' => 'integer',
+            'recurrence_interval' => 'integer', 'monthly_week' => 'integer', 'roster_enabled' => 'boolean',
         ];
     }
 }

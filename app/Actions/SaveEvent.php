@@ -15,7 +15,7 @@ use Throwable;
 
 class SaveEvent
 {
-    public function __construct(private EventSchedule $schedule, private RecordAudit $audit) {}
+    public function __construct(private EventSchedule $schedule, private RecordAudit $audit, private RosterMutation $rosterMutation) {}
 
     public function handle(EventRequest $request, ?Event $event = null): Event
     {
@@ -39,7 +39,7 @@ class SaveEvent
             }
 
             $saved = DB::transaction(function () use ($request, $event, $data, $newPath, &$oldPath): Event {
-                $event = $event === null ? new Event : Event::whereKey($event->id)->lockForUpdate()->firstOrFail();
+                $event = $event === null ? new Event : $this->rosterMutation->lockEvent($event->id);
                 if ($event->exists) {
                     Gate::authorize('update', $event);
                     if ($event->status === 'cancelled') {
@@ -51,12 +51,27 @@ class SaveEvent
                 }
 
                 $before = $event->exists ? $event->auditValues() : [];
-                if ($event->exists && ($event->cancellations()->exists() || $event->roster()->exists())) {
+                $data['roster_enabled'] = (bool) ($data['roster_enabled'] ?? ($event->exists ? $event->roster_enabled : false));
+                $roster = $event->exists ? $event->roster()->first() : null;
+                $hasSubmissions = $roster !== null && ($roster->bookings()->exists() || $roster->interests()->exists());
+                if (! $data['roster_enabled'] && $hasSubmissions) {
+                    throw ValidationException::withMessages(['roster_enabled' => 'Withdraw all bookings and interest before turning off the roster.']);
+                }
+                $hasCancellations = $event->exists && $event->cancellations()->exists();
+                if ($hasCancellations || ($data['roster_enabled'] && $roster !== null) || $hasSubmissions) {
                     foreach (['timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until'] as $field) {
                         if ((string) ($before[$field] ?? '') !== (string) ($data[$field] ?? '')) {
-                            throw ValidationException::withMessages(['recurrence' => 'This event has rosters or cancelled occurrences. Keep its schedule and create a new event for a different schedule.']);
+                            throw ValidationException::withMessages(['recurrence' => $hasCancellations
+                                ? 'Events with cancelled occurrences must keep their schedule.'
+                                : 'Turn off the roster before changing the schedule. All bookings and interest must be withdrawn first.']);
                         }
                     }
+                }
+
+                if (! $data['roster_enabled'] && $roster?->is_open) {
+                    $rosterBefore = $roster->auditValues();
+                    $roster->update(['is_open' => false]);
+                    $this->audit->handle($roster, 'updated', $rosterBefore, $roster->auditValues());
                 }
 
                 $oldPath = $event->banner_path;

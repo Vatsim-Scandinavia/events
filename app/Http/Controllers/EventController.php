@@ -124,8 +124,12 @@ class EventController extends Controller
     /** @return array<string, mixed> */
     private function details(Event $event): array
     {
+        $roster = $event->roster;
+        $hasSubmissions = $roster !== null && ($roster->bookings()->exists() || $roster->interests()->exists());
+        $hasCancellations = $event->cancellations()->exists();
+
         return [
-            ...$event->only(['id', 'owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'status', 'cancellation_reason']),
+            ...$event->only(['id', 'owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'roster_enabled', 'status', 'cancellation_reason']),
             'short_description_html' => $this->markdown->handle($event->short_description),
             'recurrence_until' => $event->recurrence_until?->toDateString(),
             'starts_at' => $event->starts_at->toIso8601String(),
@@ -133,8 +137,10 @@ class EventController extends Controller
             'owner' => $event->owner->only(['id', 'code', 'name']),
             'airports' => $event->airports->map->only(['id', 'icao', 'name', 'country']),
             'banner_url' => $event->banner_path === null ? null : route('events.banner', $event),
-            'roster_exists' => $event->roster()->exists(),
-            'schedule_locked' => $event->cancellations()->exists() || $event->roster()->exists(),
+            'roster_exists' => $roster !== null,
+            'roster_toggle_locked' => $hasSubmissions,
+            'schedule_locked' => $hasCancellations || ($event->roster_enabled && $roster !== null) || $hasSubmissions,
+            'schedule_locked_by_cancellations' => $hasCancellations,
         ];
     }
 }

@@ -72,9 +72,10 @@ class EventRoster extends Model
     #[Scope]
     protected function visibleTo(Builder $query, User $user): void
     {
-        $query->where(fn (Builder $query) => $query
-            ->whereIn('event_id', Event::visibleTo($user)->select('events.id'))
-            ->when($user->controllerTeams()->exists(), fn (Builder $query) => $query->orWhereNotNull('opened_at')));
+        $query->whereHas('event', fn (Builder $query) => $query->where('roster_enabled', true))
+            ->where(fn (Builder $query) => $query
+                ->whereIn('event_id', Event::visibleTo($user)->select('events.id'))
+                ->when($user->controllerTeams()->exists(), fn (Builder $query) => $query->orWhereNotNull('opened_at')));
     }
 
     /** @return array<string, mixed> */

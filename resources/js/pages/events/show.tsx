@@ -269,6 +269,9 @@ export default function EventDetails({
                             </Badge>
                             <Badge variant="outline">{event.owner.code}</Badge>
                             <Badge variant="outline">Private</Badge>
+                            {!event.roster_enabled ? (
+                                <Badge variant="outline">No roster</Badge>
+                            ) : null}
                         </div>
                         <h1
                             ref={heading}
@@ -285,7 +288,8 @@ export default function EventDetails({
                         />
                     </div>
                     <div className="flex flex-wrap gap-2">
-                        {can.edit || event.roster_exists ? (
+                        {event.roster_enabled &&
+                        (can.edit || event.roster_exists) ? (
                             <Button asChild variant="outline">
                                 <Link href={roster({ event: event.id })}>
                                     {can.edit ? 'Manage roster' : 'View roster'}
@@ -482,7 +486,8 @@ export default function EventDetails({
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                {event.roster_exists ? (
+                                                {event.roster_enabled &&
+                                                event.roster_exists ? (
                                                     <Button
                                                         asChild
                                                         variant="outline"

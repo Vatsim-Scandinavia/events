@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { AirportPicker } from '@/components/airport-picker';
 import { EventBanner } from '@/components/event-banner';
 import { EventField } from '@/components/event-field';
+import InputError from '@/components/input-error';
 import { MarkdownEditor } from '@/components/markdown-editor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ import { index, show, store, update } from '@/routes/events';
 import type { Airport, Fir, ManagedEvent } from '@/types/events';
 
 type EventFormData = {
+    roster_enabled: boolean;
     owner_team_id: string;
     title: string;
     short_description: string;
@@ -81,6 +83,7 @@ export default function EventForm({
     timezones: string[];
 }) {
     const form = useForm<EventFormData>({
+        roster_enabled: event?.roster_enabled ?? false,
         owner_team_id: String(event?.owner_team_id ?? firs[0]?.id ?? ''),
         title: event?.title ?? '',
         short_description: event?.short_description ?? '',
@@ -98,7 +101,12 @@ export default function EventForm({
     });
     const [airports, setAirports] = useState<Airport[]>(event?.airports ?? []);
     const [preview, setPreview] = useState<string | null>(null);
-    const locked = event?.schedule_locked ?? false;
+    const scheduleLockedByCancellations =
+        event?.schedule_locked_by_cancellations ?? false;
+    const rosterToggleLocked = event?.roster_toggle_locked ?? false;
+    const locked =
+        scheduleLockedByCancellations ||
+        (!!event?.roster_exists && form.data.roster_enabled);
     const recurrenceOption = recurrenceOptions.find(
         (option) =>
             option.recurrence === form.data.recurrence &&
@@ -268,14 +276,63 @@ export default function EventForm({
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="flex flex-col gap-5">
+                                    <div
+                                        className="flex items-start gap-3"
+                                        data-invalid={
+                                            !!form.errors.roster_enabled
+                                        }
+                                    >
+                                        <Checkbox
+                                            id="roster_enabled"
+                                            checked={form.data.roster_enabled}
+                                            onCheckedChange={(checked) =>
+                                                form.setData(
+                                                    'roster_enabled',
+                                                    checked === true,
+                                                )
+                                            }
+                                            disabled={
+                                                form.processing ||
+                                                rosterToggleLocked
+                                            }
+                                            aria-invalid={
+                                                !!form.errors.roster_enabled
+                                            }
+                                            aria-describedby="roster_enabled-hint roster_enabled-error"
+                                        />
+                                        <div className="flex flex-col gap-2">
+                                            <Label htmlFor="roster_enabled">
+                                                Use a roster
+                                            </Label>
+                                            <p
+                                                id="roster_enabled-hint"
+                                                className="text-muted-foreground text-xs"
+                                            >
+                                                {rosterToggleLocked
+                                                    ? 'Withdraw all bookings and interest submissions before turning the roster off.'
+                                                    : event?.roster_exists &&
+                                                        (!event.roster_enabled ||
+                                                            !form.data
+                                                                .roster_enabled)
+                                                      ? 'Your saved setup is kept. Re-enabling keeps signups closed until you review and open the roster.'
+                                                      : 'Set up positions or collect controller interest after saving. The roster is reused for each occurrence.'}
+                                            </p>
+                                            <InputError
+                                                id="roster_enabled-error"
+                                                message={
+                                                    form.errors.roster_enabled
+                                                }
+                                            />
+                                        </div>
+                                    </div>
                                     {locked ? (
                                         <Alert>
                                             <AlertDescription>
-                                                This event has rosters or
-                                                cancelled occurrences. Its
-                                                schedule is fixed to preserve
-                                                them. Create a new event for a
-                                                different schedule.
+                                                {scheduleLockedByCancellations
+                                                    ? 'This event has cancelled occurrences. Its schedule is fixed to preserve them.'
+                                                    : rosterToggleLocked
+                                                      ? 'The schedule is fixed while this roster has bookings or interest submissions.'
+                                                      : 'The schedule is fixed while the saved roster is enabled. Turn off Use a roster to change the schedule.'}
                                             </AlertDescription>
                                         </Alert>
                                     ) : null}

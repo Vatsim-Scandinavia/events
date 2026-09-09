@@ -736,7 +736,7 @@ class EventRosterTest extends TestCase
     {
         $this->travelTo(CarbonImmutable::parse('2026-09-09T12:00:00Z'));
 
-        return Event::factory()->create($attributes);
+        return Event::factory()->rostered()->create($attributes);
     }
 
     /** @param array<string, mixed> $attributes */

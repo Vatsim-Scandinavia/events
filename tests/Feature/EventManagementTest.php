@@ -399,8 +399,8 @@ class EventManagementTest extends TestCase
     public function test_rosters_lock_the_event_schedule_but_allow_content_updates(): void
     {
         $fir = Team::factory()->create();
-        $payload = $this->payload($fir);
-        $event = Event::factory()->weekly(2)->create([
+        $payload = [...$this->payload($fir), 'roster_enabled' => true];
+        $event = Event::factory()->rostered()->weekly(2)->create([
             'owner_team_id' => $fir->id, 'local_start' => $payload['local_start'],
             'local_end' => $payload['local_end'], 'timezone' => $payload['timezone'],
         ]);

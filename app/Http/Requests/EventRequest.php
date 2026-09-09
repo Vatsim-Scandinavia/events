@@ -28,6 +28,7 @@ class EventRequest extends FormRequest
     {
         return [
             'owner_team_id' => ['required', 'integer', Rule::exists(Team::class, 'id')],
+            'roster_enabled' => ['sometimes', 'boolean'],
             'title' => ['required', 'string', 'max:255'],
             'short_description' => ['required', 'string', 'max:500'],
             'description' => ['required', 'string', 'max:50000'],

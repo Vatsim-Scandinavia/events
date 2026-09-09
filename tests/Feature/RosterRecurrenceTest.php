@@ -27,7 +27,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_the_same_slot_has_independent_bookings_on_each_date_and_withdrawal_only_affects_the_selected_date(): void
     {
         $this->travelTo('2026-09-09 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->open()->create();
         $slot = $this->slot($roster);
         $first = $this->member($roster->event->owner, RoleName::Controller);
         $second = $this->member(Team::factory()->create(), RoleName::Controller);
@@ -51,7 +51,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_interest_is_created_updated_and_withdrawn_independently_for_each_occurrence(): void
     {
         $this->travelTo('2026-09-09 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->openInterest()->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->openInterest()->open()->create();
         $position = RosterPosition::factory()->create(['roster_id' => $roster->id]);
         $controller = $this->member($roster->event->owner, RoleName::Controller);
         $this->actingAs($controller)->put(route('roster.interest.update', $roster), $this->interest($position, '2026-10-04'))->assertSessionHasNoErrors();
@@ -77,7 +77,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_default_roster_keeps_an_ongoing_occurrence_and_rolls_forward_exactly_when_it_ends(): void
     {
         $this->travelTo('2026-10-04 20:59:59');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->open()->create();
         $slot = $this->slot($roster);
         $controller = $this->member($roster->event->owner, RoleName::Controller);
         RosterBooking::factory()->create(['roster_id' => $roster->id, 'slot_id' => $slot->id, 'user_cid' => $controller->cid, 'occurrence_date' => '2026-10-04']);
@@ -98,7 +98,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_default_roster_skips_more_than_one_page_of_cancelled_occurrences(): void
     {
         $this->travelTo('2026-10-05 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->open()->create();
         $this->slot($roster);
         foreach (['2026-10-11', '2026-10-18', '2026-10-25', '2026-11-01', '2026-11-08', '2026-11-15', '2026-11-22', '2026-11-29', '2026-12-06', '2026-12-13', '2026-12-20', '2026-12-27', '2027-01-03'] as $date) {
             EventCancellation::factory()->for($roster->event)->create(['occurrence_date' => $date]);
@@ -113,7 +113,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_a_completed_series_keeps_its_latest_booked_occurrence_available_as_history(): void
     {
         $this->travelTo('2026-10-12 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly()->state(['recurrence_until' => '2026-10-11']))->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly()->state(['recurrence_until' => '2026-10-11']))->open()->create();
         $slot = $this->slot($roster);
         $controller = $this->member($roster->event->owner, RoleName::Controller);
         RosterBooking::factory()->create(['roster_id' => $roster->id, 'slot_id' => $slot->id, 'user_cid' => $controller->cid, 'occurrence_date' => '2026-10-11']);
@@ -126,9 +126,9 @@ class RosterRecurrenceTest extends TestCase
     public function test_stale_booking_and_interest_forms_do_not_submit_to_the_next_occurrence(): void
     {
         $this->travelTo('2026-10-05 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->open()->create();
         $slot = $this->slot($roster);
-        $interestRoster = EventRoster::factory()->for(Event::factory()->weekly())->openInterest()->open()->create();
+        $interestRoster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->openInterest()->open()->create();
         $position = RosterPosition::factory()->create(['roster_id' => $interestRoster->id]);
         $controller = $this->member($roster->event->owner, RoleName::Controller);
         $auditCount = AuditLog::count();
@@ -144,7 +144,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_auto_selected_booking_returns_to_the_current_roster_without_retargeting_stale_forms(): void
     {
         $this->travelTo('2026-10-04 17:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->open()->create();
         $slot = $this->slot($roster);
         $controller = $this->member($roster->event->owner, RoleName::Controller);
 
@@ -166,7 +166,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_participation_writes_require_an_explicit_occurrence_date(): void
     {
         $this->travelTo('2026-09-09 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->open()->create();
         $slot = $this->slot($roster);
         $controller = $this->member($roster->event->owner, RoleName::Controller);
         $auditCount = AuditLog::count();
@@ -184,7 +184,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_shared_slot_times_follow_local_wall_times_across_autumn_dst(): void
     {
         $this->travelTo('2026-09-09 12:00:00');
-        $event = Event::factory()->weekly()->create(['timezone' => 'Europe/Copenhagen', 'local_start' => '2026-10-18T18:00', 'local_end' => '2026-10-18T21:00', 'starts_at' => '2026-10-18 16:00:00', 'ends_at' => '2026-10-18 19:00:00']);
+        $event = Event::factory()->rostered()->weekly()->create(['timezone' => 'Europe/Copenhagen', 'local_start' => '2026-10-18T18:00', 'local_end' => '2026-10-18T21:00', 'starts_at' => '2026-10-18 16:00:00', 'ends_at' => '2026-10-18 19:00:00']);
         $coordinator = $this->member($event->owner, RoleName::EventCoordinator);
         $this->actingAs($coordinator)->put(route('events.roster.update', $event), $this->configuration('2026-10-18', '2026-10-18T16:00', '2026-10-18T17:00'))->assertSessionHasNoErrors();
         $roster = EventRoster::firstOrFail();
@@ -202,7 +202,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_overnight_template_offsets_follow_local_dates_across_dst(): void
     {
         $this->travelTo('2026-09-09 12:00:00');
-        $event = Event::factory()->weekly()->create(['timezone' => 'Europe/Copenhagen', 'local_start' => '2026-10-18T23:00', 'local_end' => '2026-10-19T03:00', 'starts_at' => '2026-10-18 21:00:00', 'ends_at' => '2026-10-19 01:00:00']);
+        $event = Event::factory()->rostered()->weekly()->create(['timezone' => 'Europe/Copenhagen', 'local_start' => '2026-10-18T23:00', 'local_end' => '2026-10-19T03:00', 'starts_at' => '2026-10-18 21:00:00', 'ends_at' => '2026-10-19 01:00:00']);
         $coordinator = $this->member($event->owner, RoleName::EventCoordinator);
         $this->actingAs($coordinator)->put(route('events.roster.update', $event), $this->configuration('2026-10-18', '2026-10-18T21:30', '2026-10-18T23:30'))->assertSessionHasNoErrors();
 
@@ -215,7 +215,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_a_slot_in_a_spring_dst_gap_is_unavailable_without_changing_the_event_or_template(): void
     {
         $this->travelTo('2026-03-01 12:00:00');
-        $event = Event::factory()->weekly()->create(['timezone' => 'Europe/Copenhagen', 'local_start' => '2026-03-22T01:00', 'local_end' => '2026-03-22T04:00', 'starts_at' => '2026-03-22 00:00:00', 'ends_at' => '2026-03-22 03:00:00']);
+        $event = Event::factory()->rostered()->weekly()->create(['timezone' => 'Europe/Copenhagen', 'local_start' => '2026-03-22T01:00', 'local_end' => '2026-03-22T04:00', 'starts_at' => '2026-03-22 00:00:00', 'ends_at' => '2026-03-22 03:00:00']);
         $roster = EventRoster::factory()->for($event)->open()->create();
         $slot = $this->slot($roster, ['start_time' => '02:30', 'end_time' => '03:30']);
         $controller = $this->member($event->owner, RoleName::Controller);
@@ -234,7 +234,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_future_bookings_protect_shared_slots_even_when_editing_another_occurrence(): void
     {
         $this->travelTo('2026-09-09 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->open()->create();
         $slot = $this->slot($roster);
         RosterBooking::factory()->create(['roster_id' => $roster->id, 'slot_id' => $slot->id, 'occurrence_date' => '2026-10-11']);
         $coordinator = $this->member($roster->event->owner, RoleName::EventCoordinator);
@@ -255,7 +255,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_past_booking_snapshots_survive_replacing_the_shared_roster_mode(): void
     {
         $this->travelTo('2026-10-05 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->open()->create();
         $slot = $this->slot($roster);
         $booking = RosterBooking::factory()->create(['roster_id' => $roster->id, 'slot_id' => $slot->id, 'occurrence_date' => '2026-10-04', 'callsign' => 'EKCH_A_TWR', 'shift_name' => 'Early', 'starts_at' => '2026-10-04 18:00:00', 'ends_at' => '2026-10-04 19:00:00']);
         $coordinator = $this->member($roster->event->owner, RoleName::EventCoordinator);
@@ -270,7 +270,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_future_interest_snapshots_lock_the_mode_even_when_their_original_positions_are_gone(): void
     {
         $this->travelTo('2026-09-09 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->openInterest()->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->openInterest()->open()->create();
         $interest = RosterInterest::factory()->create(['roster_id' => $roster->id, 'occurrence_date' => '2026-10-11', 'position_ids' => [], 'position_callsigns' => ['EKCH_APP'], 'occurrence_ends_at' => '2026-10-11 21:00:00']);
         $coordinator = $this->member($roster->event->owner, RoleName::EventCoordinator);
         $auditCount = AuditLog::count();
@@ -287,7 +287,7 @@ class RosterRecurrenceTest extends TestCase
     public function test_preserved_bookings_without_a_template_slot_can_only_be_withdrawn_by_their_controller_for_their_date(): void
     {
         $this->travelTo('2026-09-09 12:00:00');
-        $roster = EventRoster::factory()->for(Event::factory()->weekly())->open()->create();
+        $roster = EventRoster::factory()->for(Event::factory()->rostered()->weekly())->open()->create();
         $controller = $this->member($roster->event->owner, RoleName::Controller);
         $other = $this->member($roster->event->owner, RoleName::Controller);
         $booking = RosterBooking::factory()->create(['roster_id' => $roster->id, 'slot_id' => null, 'user_cid' => $controller->cid, 'occurrence_date' => '2026-10-04', 'callsign' => 'EKCH_APP', 'shift_name' => 'Old section', 'starts_at' => '2026-10-04 18:00:00', 'ends_at' => '2026-10-04 19:00:00']);

@@ -19,18 +19,18 @@ class EventRosterPolicy
 
     public function view(User $user, EventRoster $roster): bool
     {
-        return $user->can('view', $roster->event)
-            || ($roster->opened_at !== null && $this->isEligibleController($user));
+        return $roster->event->roster_enabled && ($user->can('view', $roster->event)
+            || ($roster->opened_at !== null && $this->isEligibleController($user)));
     }
 
     public function update(User $user, EventRoster $roster): bool
     {
-        return $user->can('update', $roster->event);
+        return $roster->event->roster_enabled && $user->can('update', $roster->event);
     }
 
     public function participate(User $user, EventRoster $roster, string $date): bool
     {
-        if (! $roster->is_open || ! $this->isEligibleController($user)) {
+        if (! $roster->event->roster_enabled || ! $roster->is_open || ! $this->isEligibleController($user)) {
             return false;
         }
 

@@ -25,7 +25,7 @@ class RecordAudit
             $subject instanceof Team => ['fir', $subject->code.' — '.$subject->name, ['code', 'name']],
             $subject instanceof Airport => ['airport', $subject->icao.' — '.$subject->name, ['icao', 'name', 'country']],
             $subject instanceof EventRoster => ['roster', $subject->event->title, ['event_id', 'mode', 'is_open', 'shifts', 'positions', 'bookings', 'interests']],
-            $subject instanceof Event => ['event', $subject->title, ['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until', 'status', 'banner_path', 'cancellation_reason', 'airports', 'cancellations', 'collaborations']],
+            $subject instanceof Event => ['event', $subject->title, ['owner_team_id', 'title', 'short_description', 'description', 'timezone', 'local_start', 'local_end', 'recurrence', 'recurrence_interval', 'monthly_week', 'recurrence_until', 'roster_enabled', 'status', 'banner_path', 'cancellation_reason', 'airports', 'cancellations', 'collaborations']],
             default => ['user', $subject->name_full, ['name_full', 'email', 'controller_rating', 'division', 'subdivision', 'oauth_provider', 'roles']],
         };
         $before = Arr::only($before, $fields);

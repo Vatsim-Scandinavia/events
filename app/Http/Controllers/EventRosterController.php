@@ -25,6 +25,7 @@ class EventRosterController extends Controller
 {
     public function show(Request $request, Event $event, EventSchedule $schedule, RosterSchedule $rosterSchedule, ?string $date = null): Response
     {
+        abort_unless($event->roster_enabled, 404);
         $roster = EventRoster::where('event_id', $event->id)->first();
         abort_unless(Gate::allows('view', $roster ?? $event), 404);
         $autoSelectOccurrence = $date === null;

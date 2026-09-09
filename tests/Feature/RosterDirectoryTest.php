@@ -80,7 +80,7 @@ class RosterDirectoryTest extends TestCase
 
     public function test_directory_keeps_one_entry_and_advances_to_the_next_uncancelled_occurrence(): void
     {
-        $event = Event::factory()->weekly()->create();
+        $event = Event::factory()->rostered()->weekly()->create();
         $roster = EventRoster::factory()->for($event)->open()->create();
         EventCancellation::factory()->for($event)->create(['occurrence_date' => '2026-10-11']);
         $this->actingAs($this->member($event->owner, RoleName::Controller));

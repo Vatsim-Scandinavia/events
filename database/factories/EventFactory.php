@@ -25,7 +25,13 @@ class EventFactory extends Factory
             'recurrence' => 'none',
             'recurrence_interval' => 1,
             'status' => 'draft',
+            'roster_enabled' => false,
         ];
+    }
+
+    public function rostered(): static
+    {
+        return $this->state(fn (): array => ['roster_enabled' => true]);
     }
 
     public function weekly(int $interval = 1): static

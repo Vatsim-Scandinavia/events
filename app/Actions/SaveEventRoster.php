@@ -22,6 +22,9 @@ class SaveEventRoster
             $date = $request->validated('occurrence_date');
             $event = $this->mutation->lockEvent($event->id);
             Gate::authorize('update', $event);
+            if (! $event->roster_enabled) {
+                throw ValidationException::withMessages(['roster' => 'Enable the roster in the event settings before configuring it.']);
+            }
             $occurrence = $this->mutation->occurrence($event, $date);
             $data = $request->validated();
             $roster = EventRoster::where('event_id', $event->id)->first()

@@ -116,33 +116,6 @@ export function RosterEditor({
         );
     };
 
-    if (
-        roster?.shifts.some((shift) =>
-            shift.slots.some((slot) => slot.is_unavailable),
-        )
-    ) {
-        return (
-            <Alert>
-                <AlertTitle>
-                    Choose another occurrence to edit the roster
-                </AlertTitle>
-                <AlertDescription>
-                    Some local staffing times do not exist on this date because
-                    of a daylight saving change. Select another occurrence to
-                    edit the event's shared schedule.
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="w-fit"
-                        onClick={onClose}
-                    >
-                        Close editor
-                    </Button>
-                </AlertDescription>
-            </Alert>
-        );
-    }
-
     return (
         <Card>
             <CardHeader>
@@ -211,6 +184,22 @@ export function RosterEditor({
                         });
                     }}
                 >
+                    {roster?.shifts.some((shift) =>
+                        shift.slots.some((slot) => slot.is_unavailable),
+                    ) ? (
+                        <Alert>
+                            <AlertTitle>
+                                Update unavailable staffing times
+                            </AlertTitle>
+                            <AlertDescription>
+                                Some positions do not have valid times for this
+                                occurrence. Enter replacement UTC times or
+                                remove those positions before saving. Changes
+                                apply to the event's shared roster. You can also
+                                select another occurrence to review it.
+                            </AlertDescription>
+                        </Alert>
+                    ) : null}
                     {form.hasErrors ? (
                         <AlertError
                             title="Check the roster details"

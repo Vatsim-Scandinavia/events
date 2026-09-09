@@ -13,7 +13,7 @@ class EventRosterFactory extends Factory
     public function definition(): array
     {
         return [
-            'event_id' => Event::factory(),
+            'event_id' => Event::factory()->rostered(),
             'mode' => 'pre_slotted',
             'is_open' => false,
             'opened_at' => null,
