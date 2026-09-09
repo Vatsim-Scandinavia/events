@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\EventSchedule;
 use App\Models\Event;
 use App\Models\EventCancellation;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\TestWith;
 use Tests\TestCase;
@@ -84,6 +85,47 @@ class EventScheduleTest extends TestCase
         $this->assertSame('Insufficient staffing', $dates[1]['reason']);
         $this->assertNull(app(EventSchedule::class)->occurrence($event, '2026-10-11'));
         $this->assertNull(app(EventSchedule::class)->occurrence($event, '2026-11-15'));
+    }
+
+    #[TestWith(['weekly', '2026-09-01', '2026-09-15'])]
+    #[TestWith(['monthly', '2026-08-11', '2026-10-13'])]
+    public function test_ongoing_recurring_events_are_included_without_repeating_them_on_the_next_page(string $recurrence, string $firstDate, string $nextDate): void
+    {
+        $event = Event::factory()->create([
+            'recurrence' => $recurrence, 'monthly_week' => $recurrence === 'monthly' ? 2 : null,
+            'local_start' => $firstDate.'T23:00',
+            'local_end' => CarbonImmutable::parse($firstDate)->addDay()->toDateString().'T03:00',
+        ]);
+        $schedule = app(EventSchedule::class);
+
+        $dates = $schedule->upcoming($event, '2026-09-09', 2, CarbonImmutable::parse('2026-09-09T01:00:00Z'));
+
+        $this->assertSame(['2026-09-08', $nextDate], array_column($dates, 'date'));
+        $this->assertSame($nextDate, $schedule->upcoming($event, $nextDate, 1)[0]['date']);
+    }
+
+    public function test_an_ongoing_final_occurrence_is_included_after_the_series_end_date(): void
+    {
+        $event = Event::factory()->weekly()->create([
+            'local_start' => '2026-09-01T23:00', 'local_end' => '2026-09-03T03:00',
+            'recurrence_until' => '2026-09-08',
+        ]);
+
+        $dates = app(EventSchedule::class)->upcoming($event, '2026-09-10', 12, CarbonImmutable::parse('2026-09-10T01:00:00Z'));
+
+        $this->assertSame(['2026-09-08'], array_column($dates, 'date'));
+    }
+
+    public function test_a_cancelled_overnight_occurrence_is_not_included_as_ongoing(): void
+    {
+        $event = Event::factory()->weekly()->create([
+            'local_start' => '2026-09-01T23:00', 'local_end' => '2026-09-02T03:00',
+        ]);
+        EventCancellation::factory()->for($event)->create(['occurrence_date' => '2026-09-08']);
+
+        $dates = app(EventSchedule::class)->upcoming($event, '2026-09-09', 1, CarbonImmutable::parse('2026-09-09T01:00:00Z'));
+
+        $this->assertSame(['2026-09-15'], array_column($dates, 'date'));
     }
 
     public function test_one_off_events_and_far_future_pagination_are_bounded(): void

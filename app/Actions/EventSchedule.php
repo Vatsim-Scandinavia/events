@@ -76,17 +76,22 @@ class EventSchedule
     }
 
     /** @return list<array{date: string, starts_at: string|null, ends_at: string|null, status: string, reason: string|null}> */
-    public function upcoming(Event $event, string $from, int $limit = 12): array
+    public function upcoming(Event $event, string $from, int $limit = 12, ?CarbonImmutable $ongoingAt = null): array
     {
         $first = CarbonImmutable::parse(substr($event->local_start, 0, 10), 'UTC');
         $after = CarbonImmutable::parse($from, 'UTC');
+        $searchFrom = $after;
+        if ($ongoingAt !== null) {
+            $endDay = CarbonImmutable::parse(substr($event->local_end, 0, 10), 'UTC');
+            $searchFrom = $after->subDays((int) $first->diffInDays($endDay));
+        }
         $event->loadMissing('cancellations');
         $index = 0;
 
-        if ($after->gt($first)) {
+        if ($searchFrom->gt($first)) {
             $index = match ($event->recurrence) {
-                'weekly' => max(0, (int) floor($first->diffInDays($after) / (7 * $event->recurrence_interval))),
-                'monthly' => max(0, intdiv(($after->year - $first->year) * 12 + $after->month - $first->month, $event->recurrence_interval)),
+                'weekly' => max(0, (int) floor($first->diffInDays($searchFrom) / (7 * $event->recurrence_interval))),
+                'monthly' => max(0, intdiv(($searchFrom->year - $first->year) * 12 + $searchFrom->month - $first->month, $event->recurrence_interval)),
                 default => 0,
             };
         }
@@ -103,8 +108,13 @@ class EventSchedule
                 if ($day->year > 9999 || ($event->recurrence_until !== null && $day->toDateString() > $event->recurrence_until->toDateString())) {
                     break;
                 }
-                if ($day->gte($after) && ($occurrence = $this->occurrence($event, $day->toDateString())) !== null) {
-                    $occurrences[] = $occurrence;
+                if ($day->gte($searchFrom) && ($occurrence = $this->occurrence($event, $day->toDateString())) !== null) {
+                    $ongoing = $ongoingAt !== null && $occurrence['status'] === 'scheduled'
+                        && CarbonImmutable::parse($occurrence['starts_at'])->lte($ongoingAt)
+                        && CarbonImmutable::parse($occurrence['ends_at'])->gt($ongoingAt);
+                    if ($day->gte($after) || $ongoing) {
+                        $occurrences[] = $occurrence;
+                    }
                 }
             }
             if ($event->recurrence === 'none') {

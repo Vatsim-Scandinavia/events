@@ -11,6 +11,7 @@ use App\Models\Event;
 use App\Models\EventCollaboration;
 use App\Models\Team;
 use App\PermissionName;
+use Carbon\CarbonImmutable;
 use DateTimeZone;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -76,8 +77,9 @@ class EventController extends Controller
     {
         abort_unless(Event::visibleTo($request->user())->whereKey($event->id)->exists(), 404);
         $event->load(['owner', 'airports', 'cancellations', 'collaborations.team']);
-        $from = $request->validated('from') ?? now($event->timezone)->toDateString();
-        $occurrences = $schedule->upcoming($event, $from, 13);
+        $currentTime = CarbonImmutable::now($event->timezone);
+        $from = $request->validated('from') ?? $currentTime->toDateString();
+        $occurrences = $schedule->upcoming($event, $from, 13, $request->filled('from') ? null : $currentTime);
         $nextFrom = count($occurrences) > 12 ? $occurrences[12]['date'] : null;
 
         return Inertia::render('events/show', [

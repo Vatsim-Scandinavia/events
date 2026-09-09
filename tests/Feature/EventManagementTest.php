@@ -10,6 +10,7 @@ use App\Models\EventCancellation;
 use App\Models\Team;
 use App\Models\User;
 use App\RoleName;
+use Carbon\CarbonImmutable;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Testing\File;
@@ -235,6 +236,26 @@ class EventManagementTest extends TestCase
         $this->assertSame(1, AuditLog::where('subject_type', 'event')->count());
         $this->get(route('events.show', ['event' => $event, 'from' => '2026-10-04']))->assertInertia(fn (Assert $page) => $page
             ->where('occurrences.0.status', 'scheduled')->where('occurrences.1.status', 'cancelled')->where('occurrences.2.status', 'scheduled'));
+    }
+
+    public function test_default_schedule_keeps_an_ongoing_overnight_event_but_explicit_dates_filter_by_start(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-09-09T00:30:00Z'));
+        $event = Event::factory()->create([
+            'timezone' => 'Europe/Copenhagen',
+            'local_start' => '2026-09-08T23:00', 'local_end' => '2026-09-09T03:00',
+            'starts_at' => '2026-09-08 21:00:00', 'ends_at' => '2026-09-09 01:00:00',
+        ]);
+        $user = $this->member($event->owner);
+
+        $this->actingAs($user)->get(route('events.show', $event))->assertInertia(fn (Assert $page) => $page
+            ->where('from', '2026-09-09')->has('occurrences', 1)
+            ->where('occurrences.0.date', '2026-09-08')->where('occurrences.0.ends_at', '2026-09-09T01:00:00+00:00'));
+        $this->get(route('events.show', ['event' => $event, 'from' => '2026-09-09']))
+            ->assertInertia(fn (Assert $page) => $page->has('occurrences', 0));
+
+        $this->travelTo(CarbonImmutable::parse('2026-09-09T01:00:00Z'));
+        $this->get(route('events.show', $event))->assertInertia(fn (Assert $page) => $page->has('occurrences', 0));
     }
 
     public function test_entire_series_cancellation_preserves_records_and_prevents_editing(): void
