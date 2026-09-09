@@ -1,6 +1,6 @@
 import { useHttp } from '@inertiajs/react';
 import { Search, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { AirportDialog } from '@/components/airport-dialog';
 import { EventField } from '@/components/event-field';
@@ -26,9 +26,15 @@ export function AirportPicker({
     });
     const [unknownCode, setUnknownCode] = useState<string | null>(null);
     const input = useRef<HTMLInputElement>(null);
+    const selection = useRef({ airports, onChange });
+    useLayoutEffect(() => {
+        selection.current = { airports, onChange };
+    }, [airports, onChange]);
     const add = (airport: Airport) => {
-        if (!airports.some((selected) => selected.id === airport.id))
-            onChange([...airports, airport]);
+        const { airports: selectedAirports, onChange: updateSelection } =
+            selection.current;
+        if (!selectedAirports.some((selected) => selected.id === airport.id))
+            updateSelection([...selectedAirports, airport]);
         lookup.resetAndClearErrors();
     };
     function findAirport() {

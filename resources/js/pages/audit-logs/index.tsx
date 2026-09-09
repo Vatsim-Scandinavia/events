@@ -238,7 +238,7 @@ export default function AuditLogs({
                         onSubmit={(event) => {
                             event.preventDefault();
                             form.get(index.url(), {
-                                preserveState: false,
+                                preserveState: 'errors',
                                 preserveScroll: true,
                             });
                         }}

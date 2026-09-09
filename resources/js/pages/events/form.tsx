@@ -27,7 +27,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
-import { recurrenceLabel } from '@/lib/event-time';
+import { recurrenceLabel, updateEventStart } from '@/lib/event-time';
 import { index, show, store, update } from '@/routes/events';
 import type { Airport, Fir, ManagedEvent } from '@/types/events';
 
@@ -320,21 +320,14 @@ export default function EventForm({
                                                 type="datetime-local"
                                                 value={form.data.local_start}
                                                 onChange={(e) => {
-                                                    form.setData(
-                                                        'local_start',
-                                                        e.target.value,
-                                                    );
-                                                    const day = Number(
-                                                        e.target.value.slice(
-                                                            8,
-                                                            10,
+                                                    const localStart =
+                                                        e.target.value;
+                                                    form.setData((data) =>
+                                                        updateEventStart(
+                                                            data,
+                                                            localStart,
                                                         ),
                                                     );
-                                                    if (day)
-                                                        form.setData(
-                                                            'monthly_week',
-                                                            Math.ceil(day / 7),
-                                                        );
                                                 }}
                                                 required
                                                 {...control('local_start')}

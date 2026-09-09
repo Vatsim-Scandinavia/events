@@ -54,6 +54,42 @@ class UserRoleTest extends TestCase
         $this->assertDatabaseHas('role_grants', ['user_id' => $user->cid, 'team_id' => null, 'scope_id' => 0]);
     }
 
+    public function test_the_final_administrator_cannot_revoke_their_own_role(): void
+    {
+        $administrator = User::factory()->create();
+        app(UpdateRoleAssignments::class)->grant($administrator, RoleName::Administrator);
+
+        $this->actingAs($administrator)
+            ->deleteJson(route('users.roles.destroy', $administrator), ['role' => 'Administrator'])
+            ->assertUnprocessable()
+            ->assertInvalid(['role' => 'At least one Administrator must remain.']);
+
+        $this->assertTrue($administrator->fresh()->isAdministrator());
+        $this->assertDatabaseCount('role_grants', 1);
+        $this->assertDatabaseCount('model_has_roles', 1);
+        $this->assertDatabaseCount('audit_logs', 1);
+        $this->get(route('users.index'))->assertOk();
+    }
+
+    public function test_an_administrator_can_revoke_their_own_role_when_another_administrator_remains(): void
+    {
+        $administrator = User::factory()->create();
+        $otherAdministrator = User::factory()->create();
+        $assignments = app(UpdateRoleAssignments::class);
+        $assignments->grant($administrator, RoleName::Administrator);
+        $assignments->grant($otherAdministrator, RoleName::Administrator);
+
+        $this->actingAs($administrator)
+            ->deleteJson(route('users.roles.destroy', $administrator), ['role' => 'Administrator'])
+            ->assertNoContent();
+
+        $this->assertFalse($administrator->fresh()->isAdministrator());
+        $this->assertTrue($otherAdministrator->fresh()->isAdministrator());
+        $this->assertDatabaseMissing('role_grants', ['user_id' => $administrator->cid]);
+        $this->assertDatabaseCount('model_has_roles', 1);
+        $this->assertDatabaseCount('audit_logs', 3);
+    }
+
     #[TestWith([null])]
     #[TestWith([RoleName::EventCoordinator])]
     #[TestWith([RoleName::VaccStaff])]

@@ -9,6 +9,21 @@ export function eventTime(iso: string, timezone = 'UTC') {
     }).format(new Date(iso));
 }
 
+export function updateEventStart<
+    T extends Pick<ManagedEvent, 'local_start' | 'monthly_week'>,
+>(data: T, localStart: string): T {
+    const day = Number(localStart.slice(8, 10));
+    const dateChanged =
+        localStart.slice(0, 10) !== data.local_start.slice(0, 10);
+
+    return {
+        ...data,
+        local_start: localStart,
+        monthly_week:
+            dateChanged && day ? Math.ceil(day / 7) : data.monthly_week,
+    };
+}
+
 export function recurrenceLabel(
     event: Pick<
         ManagedEvent,

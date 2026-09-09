@@ -25,3 +25,6 @@ Events start as private drafts: only the owner FIR and accepted collaborator FIR
 
 ## Event restoration preserves separate cancellations
 Restoring an event or series returns it to a private draft and clears only event-level cancellation details; individually cancelled dates remain cancelled until restored separately. Restore the event before its individual occurrences. Restoration uses the same owner-versus-collaborator permissions as cancellation and is audited in the event write transaction.
+
+## Preserve the final effective Administrator
+UpdateRoleAssignments must reject any manual or external role update that removes the final effective Administrator, counting all grant sources after the complete change. Acquire the shared Administrator role write lock before user or grant locks, even inside callers' transactions; the unchanged write provides SQLite serialization where FOR UPDATE is ignored. Rejected changes must roll back grants, their role projection, and audits together.

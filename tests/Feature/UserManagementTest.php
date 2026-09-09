@@ -132,6 +132,7 @@ class UserManagementTest extends TestCase
         $user->load('assignedRoles');
         $assignments = app(UpdateRoleAssignments::class);
         $assignments->grant($user, RoleName::Administrator);
+        $assignments->grant(User::factory()->create(), RoleName::Administrator);
 
         $this->assertSame(['Administrator'], $user->effectiveRoleNames()->all());
         $user->load('assignedRoles');

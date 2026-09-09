@@ -121,6 +121,7 @@ class AuthorizationTest extends TestCase
         $user = User::factory()->create();
         $assignments = app(UpdateRoleAssignments::class);
         $assignments->grant($user, RoleName::Administrator);
+        $assignments->grant(User::factory()->create(), RoleName::Administrator);
         $otherInstance = $user->fresh();
         $this->assertTrue($otherInstance->can(PermissionName::ManageRoles));
 

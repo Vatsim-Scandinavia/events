@@ -21,18 +21,37 @@ composer run dev
 ```
 
 `composer setup` installs the locked PHP and frontend dependencies, creates
-`.env` when missing, generates the application key, creates the SQLite database,
-runs migrations, and builds the frontend. Use this command for initial setup;
-it generates a new application key each time it runs.
+`.env` when missing, generates an application key only if none is configured,
+creates the SQLite database, runs migrations and seeders, and builds the
+frontend. Rerunning setup preserves the existing key and encrypted data.
 
 Open [http://localhost:8000](http://localhost:8000). The development command runs
 the Laravel server, queue listener, and Vite together using the project's locked
 `concurrently` dependency. Press Ctrl+C to stop development processes.
 
 SQLite is configured by default at `database/database.sqlite`. Email is written
-to `storage/logs/laravel.log` with the local `log` mail driver. The starter kit
-includes registration, login, password resets, email verification, two-factor
-authentication, passkeys, account settings, and light/dark appearance settings.
+to `storage/logs/laravel.log` with the local `log` mail driver.
+
+## Sign-in and account settings
+
+Sign-in uses VATSIM Connect or the optional VATSCA Handover provider. Accounts
+are created or refreshed from the provider's verified VATSIM CID on sign-in.
+Profile details are read-only and refreshed at each sign-in; users can also
+choose light, dark, or system appearance in settings. Local registration,
+password login and resets, email verification, two-factor authentication, and
+passkey routes are disabled; authentication is managed by the selected provider.
+
+For local VATSIM Connect sign-in, configure `.env` with `VATSIM_ENABLED=true`,
+`VATSIM_CLIENT_ID`, and `VATSIM_CLIENT_SECRET`. Use sandbox credentials with
+`VATSIM_BASE_URL=https://auth-dev.vatsim.net` during development. Set `APP_URL`
+to your development origin and register the exact `VATSIM_REDIRECT_URI` with
+the provider; the default is `${APP_URL}/auth/vatsim/callback`.
+
+To enable Handover, set `HANDOVER_ENABLED=true`, `HANDOVER_CLIENT_ID`, and
+`HANDOVER_CLIENT_SECRET`. Set `HANDOVER_BASE_URL` to the provider instance and
+register the exact `HANDOVER_REDIRECT_URI`, which defaults to
+`${APP_URL}/auth/handover/callback`. A sign-in button appears only when its
+provider is enabled and its credentials, base URL, and redirect URI are set.
 
 ## Frontend development
 

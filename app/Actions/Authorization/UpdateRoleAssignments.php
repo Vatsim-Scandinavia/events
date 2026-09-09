@@ -9,6 +9,7 @@ use App\Models\User;
 use App\RoleName;
 use Closure;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Spatie\Permission\Models\Role;
 
@@ -97,9 +98,17 @@ class UpdateRoleAssignments
     private function update(User $user, Closure $change, string $source = 'manual'): void
     {
         DB::transaction(function () use ($user, $change, $source): void {
+            $administratorRole = $this->lockAdministratorRole();
             $user = User::whereKey($user->getKey())->lockForUpdate()->firstOrFail();
+            $wasAdministrator = $user->roleGrants()->where('role_id', $administratorRole->getKey())
+                ->whereNull('team_id')->lockForUpdate()->first(['id']) !== null;
             $before = $this->snapshot($user);
             $change();
+
+            if ($wasAdministrator && RoleGrant::where('role_id', $administratorRole->getKey())
+                ->whereNull('team_id')->lockForUpdate()->first(['id']) === null) {
+                throw ValidationException::withMessages(['role' => 'At least one Administrator must remain.']);
+            }
 
             $assignments = $user->roleGrants()->select('role_id', 'scope_id')->distinct()->get()
                 ->map(fn (RoleGrant $grant): array => [
@@ -120,6 +129,18 @@ class UpdateRoleAssignments
         });
 
         $user->unsetRelation('roles')->unsetRelation('assignedRoles')->unsetRelation('permissions')->unsetRelation('roleGrants')->unsetRelation('teams');
+    }
+
+    /**
+     * Serialize role changes before reading grants, including changes to different users.
+     * The unchanged write also acquires SQLite's write lock, where FOR UPDATE is ignored.
+     */
+    private function lockAdministratorRole(): Role
+    {
+        $query = Role::where('name', RoleName::Administrator->value)->where('guard_name', 'web')->whereNull('team_id');
+        $query->toBase()->update(['name' => RoleName::Administrator->value]);
+
+        return $query->firstOrFail();
     }
 
     /** @return list<array{role: string, fir_id: int|null, fir: string|null, source: string}> */
