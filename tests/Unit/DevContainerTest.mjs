@@ -103,7 +103,10 @@ await test('Vite serves assets and advertises hot reload through the HTTPS gatew
     let server;
     try {
         mkdirSync(join(root, 'public'));
-        writeFileSync(join(root, '.env'), 'APP_ENV=local\n');
+        writeFileSync(
+            join(root, '.env'),
+            'APP_ENV=local\nCI=true\nLARAVEL_BYPASS_ENV_CHECK=1\n',
+        );
         const config = devContainerViteConfig(
             'serve',
             'https://sample-8080.app.github.dev',
@@ -111,6 +114,7 @@ await test('Vite serves assets and advertises hot reload through the HTTPS gatew
         server = await createServer({
             ...config,
             root,
+            envDir: root,
             configFile: false,
             plugins: [
                 laravel({
