@@ -173,3 +173,115 @@ await test('Vite serves assets and advertises hot reload through the HTTPS gatew
         rmSync(root, { recursive: true, force: true });
     }
 });
+
+await test('the gateway preserves the tunnel hostname and supports direct local access', async (context) => {
+    if (spawnSync('nginx', ['-v']).error?.code === 'ENOENT') {
+        context.skip('Nginx is installed in the devcontainer.');
+        return;
+    }
+
+    const { createServer: createHttpServer } = await import('node:http');
+    const upstream = createHttpServer((request, response) => {
+        response.setHeader('Content-Type', 'application/json');
+        response.end(JSON.stringify(request.headers));
+    });
+    const root = mkdtempSync(join(tmpdir(), 'events-proxy-'));
+    const socketPath = join(root, 'gateway.sock');
+    const args = [
+        '-e',
+        join(root, 'error.log'),
+        '-p',
+        `${root}/`,
+        '-c',
+        'nginx.conf',
+    ];
+    let started = false;
+
+    try {
+        upstream.listen(0, '127.0.0.1');
+        await once(upstream, 'listening');
+        const address = upstream.address();
+        const gateway = readFileSync('.devcontainer/nginx.conf', 'utf8')
+            .replace('listen 8080;', `listen unix:${socketPath};`)
+            .replaceAll(
+                /127\.0\.0\.1:(8000|5173)/g,
+                `127.0.0.1:${address.port}`,
+            );
+        writeFileSync(
+            join(root, 'nginx.conf'),
+            `pid ${root}/nginx.pid;\nevents {}\nhttp {\naccess_log off;\nclient_body_temp_path ${root}/client;\nproxy_temp_path ${root}/proxy;\n${gateway}\n}`,
+        );
+        const start = spawnSync('nginx', args, { stdio: 'ignore' });
+        assert.equal(
+            start.status,
+            0,
+            readFileSync(join(root, 'error.log'), 'utf8'),
+        );
+        started = true;
+
+        for (const [
+            path,
+            headers,
+            expectedHost,
+            expectedScheme,
+            expectedPort,
+        ] of [
+            [
+                '/firs',
+                {
+                    Host: 'localhost:8080',
+                    'X-Forwarded-Host': 'sample-8080.app.github.dev',
+                    'X-Forwarded-Proto': 'https',
+                },
+                'sample-8080.app.github.dev',
+                'https',
+                '443',
+            ],
+            [
+                '/__vite/@vite/client',
+                {
+                    Host: 'localhost:8080',
+                    'X-Forwarded-Host': 'sample-8080.app.github.dev',
+                    'X-Forwarded-Proto': 'https',
+                },
+                'sample-8080.app.github.dev',
+                'https',
+                '443',
+            ],
+            [
+                '/firs',
+                { Host: 'localhost:8080' },
+                'localhost:8080',
+                'http',
+                '8080',
+            ],
+        ]) {
+            const forwarded = await new Promise((resolve, reject) => {
+                get({ socketPath, path, headers }, (response) => {
+                    let body = '';
+                    response.setEncoding('utf8');
+                    response.on('data', (chunk) => {
+                        body += chunk;
+                    });
+                    response.on('end', () => {
+                        try {
+                            resolve(JSON.parse(body));
+                        } catch (error) {
+                            reject(error);
+                        }
+                    });
+                }).on('error', reject);
+            });
+            assert.equal(forwarded.host, expectedHost, path);
+            assert.equal(forwarded['x-forwarded-host'], expectedHost, path);
+            assert.equal(forwarded['x-forwarded-proto'], expectedScheme, path);
+            assert.equal(forwarded['x-forwarded-port'], expectedPort, path);
+        }
+    } finally {
+        if (started) {
+            spawnSync('nginx', [...args, '-s', 'quit']);
+        }
+        await new Promise((resolve) => upstream.close(resolve));
+        rmSync(root, { recursive: true, force: true });
+    }
+});
