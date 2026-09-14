@@ -1,53 +1,48 @@
-## Event Manager
-Event Calendar Manager with API endpoints for VATSIM events. Created by [Markus N.](https://github.com/Marko259) (1401513) using `Laravel 10`.
+# Events
 
-## Prerequisites
+Laravel 13 with the official React starter kit: Inertia 3, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, and pnpm. Includes OAuth authentication, a dashboard, and account settings.
 
-### Docker (Recommended)
-- A Docker environment to deploy containers. We recommend [Portainer](https://www.portainer.io/).
-- MySQL database to store data.
-- Preferably a reverse proxy setup if you plan to host more than one website on the same server.
+## Requirements
 
-In the instructions where we use `docker exec`, we assume your container is named `events`. If you have named it differently, please replace this.
+- PHP 8.4+ and Composer
+- Node.js 22.12+ and pnpm 11.24.0
+- SQLite PHP extension
 
-### Manual (Unsupported)
-If you don't want to use Docker, you need:
-- An environment that can host PHP websites, such as Apache, Ngnix or similar.
-- MySQL database to store data.
-- Comply with [Laravel 10 Requirements](https://laravel.com/docs/10.x/deployment)
-- Manually build the composer, npm and setting up cron jobs and clearing all caches on updates.
+## Setup
 
-## Setup and install
-
-To setup your Docker instance simply follow these steps:
-1. Pull the `ghcr.io/vatsim-scandinavia/events:v1` Docker image
-2. Setup your MySQL database (not included in Docker image)
-3. Configure the `.env` based on the provided example in `.env.example`
-4. To ensure that event banners don't get deleted upon redeployment of the image, you need to create and store an application key in your environment and setup a shared volume. 
-   ```sh
-   docker exec -it events php artisan key:get
-   docker volume create events_storage
-   ```
-   Copy the key and set it as the `APP_KEY` environment variable in your Docker configuration and bind the volume when creating the container with `events_storage:/app/storage`.
-5. Start the container in the background.
-6. Setup the database.
-   ```sh
-   docker exec -it --user www-data events php artisan migrate
-   ```
-7. Setup a crontab _outside_ the container to run `* * * * * docker exec --user www-data -i events php artisan schedule:run >/dev/null` every minute. This patches into the container and runs the required cronjobs.
-8. Bind the 8080 (HTTP) and/or 8443 (HTTPS) port to your reverse proxy or similar.
-
-## Updating
-
-After recreating the docker container, remember to run the migration to make sure your database is up to date.
 ```sh
-docker exec -it --user www-data events php artisan migrate
+composer run setup
 ```
 
-## Caching
-This application uses the OPCache to cache the compiled PHP code. Default setting is for production which means that the cache is not cleared automatically. To clear the cache, you need to restart the container if you change a file.
+This installs dependencies, creates `.env`, generates the app key, runs SQLite migrations, and builds frontend assets. The initial workspace is already set up.
 
-For development, change `validate_timestamps` to `1` in the `/usr/local/etc/php/php.ini` file to make sure that the cache is cleared automatically when a file is changed.
+## Development
 
-## Contribution and conventions
-Contributions are much appreciated to help everyone move this service forward with fixes and functionalities. We recommend you to fork this repository here on GitHub so you can easily create pull requests back to the main project.
+```sh
+composer run dev
+```
+
+Open http://localhost:8000. This starts Laravel, the queue listener, logs, and Vite together.
+
+Alternatively, run `php artisan serve` and `pnpm dev` in separate terminals.
+
+## Checks
+
+```sh
+composer test
+pnpm build
+pnpm types:check
+pnpm check
+```
+
+Routes live in `routes/web.php`; React pages live in `resources/js/pages`; Tailwind styles start in `resources/css/app.css`.
+
+Dependencies are locked in `composer.lock` and `pnpm-lock.yaml`. Use pnpm for frontend dependencies.
+
+## OAuth authentication
+
+Set `OAUTH_PROVIDER=vatsim` for VATSIM Connect or `OAUTH_PROVIDER=handover` for Handover. Only the selected provider is available. Configure its client ID, client secret, and redirect URI in `.env` using the variables in `.env.example`. Handover also requires `HANDOVER_BASE_URL` (your deployment URL). VATSIM Connect defaults to `https://auth.vatsim.net`; `VATSIM_BASE_URL` can point to its sandbox.
+
+Register `${APP_URL}/auth/callback` as the OAuth callback URL with the selected provider and allow the `full_name` and `email` scopes. Run `php artisan config:clear` after changing configuration. Keep credentials in `.env`, not source control.
+
+Accounts are created on first sign-in and matched by VATSIM CID. Names and email addresses refresh from the provider at login. Existing accounts without a CID are not automatically linked by email. There are no local password, registration, passkey, two-factor, or email-verification flows; identity and authentication are managed by the provider. Profile settings show provider-managed identity; appearance settings remain editable.

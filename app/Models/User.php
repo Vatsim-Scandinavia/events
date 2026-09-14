@@ -3,94 +3,45 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-
+use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $email
+ * @property Carbon|null $email_verified_at
+ * @property string|null $password
+ * @property string|null $vatsim_cid
+ * @property string|null $two_factor_secret
+ * @property string|null $two_factor_recovery_codes
+ * @property Carbon|null $two_factor_confirmed_at
+ * @property string|null $remember_token
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ */
+#[Fillable(['name', 'email', 'vatsim_cid'])]
+#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * Get the attributes that should be cast.
      *
-     * @var array<int, string>
+     * @return array<string, string>
      */
-    protected $fillable = [
-        'id',
-        'email',
-        'first_name',
-        'last_name',
-        'last_login',
-        'access_token',
-        'refresh_token',
-        'token_expires',
-    ];
-
-    public $timestamps = false;
-
-    protected $dates = [
-        'last_login',
-    ];
-
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'remember_token',
-    ];
-
-    /**
-     * Relationship of all permissions to this user
-     *
-     * @return Illuminate\Database\Eloquent\Collection|Illuminate\Database\Eloquent\Relations\BelongsToMany
-     */
-    public function groups()
+    protected function casts(): array
     {
-        return $this->belongsToMany(Group::class, 'permissions');
-    }
-
-    public function events()
-    {
-        return $this->hasMany(Event::class);
-    }
-
-    public function getNameAttribute()
-    {
-        return "{$this->first_name} {$this->last_name}";
-    }
-
-    /**
-     * Return if user is a moderator
-     *
-     * @return bool
-     */
-    public function isModerator()
-    {
-        return $this->groups->where('id', 2)->isNotEmpty();
-    }
-
-    /**
-     * Return if user is a moderator or above
-     *
-     * @return bool
-     */
-    public function isModeratorOrAbove()
-    {
-        return $this->groups->where('id', '<=', 2)->isNotEmpty();
-    }
-
-    /**
-     * Return if user is an admin
-     *
-     * @return bool
-     */
-    public function isAdmin()
-    {
-        return $this->groups->contains('id', 1);
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
     }
 }
