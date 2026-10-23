@@ -2,20 +2,37 @@
 
 An event hub for a single VATSIM vACC. Pilots find upcoming events, their airports, routes and briefings; controllers book shifts or show interest in staffing; Event Staff plan positions, shifts and rosters.
 
+The words used here and in the app (Occurrence, Shift Booking, Staffing Interest and so on) are defined in [GLOSSARY.md](GLOSSARY.md).
+
 ## Features
 
-- **Events** with banners, airports, suggested routes and booking/briefing links. Events can repeat weekly, every other week or monthly, and single dates or whole events can be cancelled and restored.
+- **Events** with banners, airports, suggested routes, a slot link and a briefing link. Events can repeat weekly, every other week or monthly, and single dates (Occurrences) or whole events can be cancelled and restored.
+- **Drafts and publishing**: a new event starts as a Draft, seen only by staff who can view or manage events in its FIR. Publishing it shows it to everyone and announces it once on Discord, if a webhook is set.
 - **Two ways to staff an event**, chosen per event:
-  - *Pre-defined shifts*: staff lay out shifts per position on a timeline, and rated controllers book them first come, first served.
-  - *Open interest*: controllers say which positions they want and when they're available, and staff build and publish a roster from that.
-- **Roles and permissions**: Admin and Event Staff are built in, and admins can create more roles. Nobody can hand out more than they can do themselves.
+  - *Pre-defined shifts*: staff lay out shifts per position on a timeline, and controllers make Shift Bookings first come, first served.
+  - *Open interest*: controllers show Staffing Interest in the positions they want, with their availability, and staff build and publish a roster of Roster Entries from that.
+- **Roles per FIR**: see [Roles](#roles).
 - **Live network stats** from the VATSIM data feed on the home page.
 
-All times are UTC.
+All times are UTC unless someone picks another time zone in their settings.
+
+## Roles
+
+| Role | Can |
+| --- | --- |
+| Administrator | Everything. Always held across the whole hub, and the only role that can change the vACC's settings, FIRs, event types and role definitions, or give someone Administrator. |
+| Event Staff | Create, edit, publish and cancel events, and plan their staffing. |
+| vACC Staff | See every event and its staffing, including Drafts, without changing anything. |
+| Controller | Book shifts, show Staffing Interest and be put on rosters. |
+| Pilot | Not a role: anyone who has signed in without one. |
+
+Every role except Administrator can be held across the hub or in a single FIR, where it only covers that FIR's events. Administrators can change what the built-in roles allow and create more roles. People who manage users in a FIR can only give roles there, and only ones that allow nothing beyond what they can do there themselves.
+
+**Who can book shifts**: anyone holding the Controller role, or another role that allows staffing events. When *Give the Controller role automatically* is switched on under **Admin → Settings**, members rated S1 or above in the vACC's subdivision get it when they sign in and lose it when they leave or lose their rating. Visiting controllers can be given it by hand, across the hub or in one FIR, and the automatic rules never take a role given by hand away.
 
 ## Stack
 
-Laravel 13 (PHP 8.3+) with Inertia v3, React 19, TypeScript, Tailwind CSS 4 and shadcn/ui. Roles use spatie/laravel-permission. SQLite works out of the box; MySQL and PostgreSQL work too.
+Laravel 13 (PHP 8.3+) with Inertia v3, React 19, TypeScript, Tailwind CSS 4 and shadcn/ui. Permissions use spatie/laravel-permission. SQLite works out of the box; MySQL and PostgreSQL work too.
 
 ## Getting started
 
@@ -25,18 +42,19 @@ composer run setup
 
 This installs dependencies, creates `.env` from `.env.example`, generates the app key, runs the migrations and builds the frontend. Then:
 
-1. The vACC's name, division, FIRs, website and logo are set by an admin under **Admin → Settings** once the hub is running. To lock any of these details instead, so they can't be changed in the app, set them in `.env`:
+1. The vACC's name, division, subdivision, FIRs, website and logo are set by an Administrator under **Admin → Settings** once the hub is running. To lock any of these instead, so they can't be changed in the app, set them in `.env`:
 
    ```env
    VACC_NAME="Example vACC"
    VACC_DIVISION="Example Division"
+   VACC_SUBDIVISION=SCA
    VACC_FIRS=EKDK,ESAA
    VACC_WEBSITE=https://example.org
    ```
 
-   Keys and secrets for VATSIM and other services are only ever set in `.env`.
+   Keys and secrets for VATSIM, Discord and other services are only ever set in `.env`.
 
-2. Set up sign-in with [VATSIM Connect](https://auth.vatsim.net). Create an OAuth client there, or in the sandbox at `https://auth-dev.vatsim.net` for local development, with the redirect URL `APP_URL/auth/vatsim/callback` (for example `http://localhost:8000/auth/vatsim/callback`), and add its details:
+2. Set up sign-in with [VATSIM Connect](https://auth.vatsim.net). Create an OAuth client there, or in the sandbox at `https://auth-dev.vatsim.net`, with the redirect URL `APP_URL/auth/vatsim/callback` (for example `http://127.0.0.1:8000/auth/vatsim/callback`), and add its details:
 
    ```env
    VATSIM_CONNECT_CLIENT_ID=your-client-id
@@ -47,29 +65,29 @@ This installs dependencies, creates `.env` from `.env.example`, generates the ap
    VATSIM_CONNECT_BASE_URL=
    ```
 
-   The client must be allowed the `full_name`, `vatsim_details` and `email` scopes. People are matched by CID, and their name, email and controller rating are refreshed each time they sign in.
+   The client must be allowed the `full_name`, `vatsim_details` and `email` scopes. People are matched by CID, and their name, email, rating and subdivision are refreshed each time they sign in.
 
-   To skip VATSIM Connect locally, turn on development sign-in instead, **on your own machine only**:
+   To skip VATSIM Connect, turn on development sign-in instead. It only works with `APP_ENV=local`:
 
    ```env
    AUTH_DEV_LOGIN=true
    ```
 
-   `/login` then lets you sign in as any user. It is always off when `APP_ENV=production`.
+   `/login` then lets you sign in as any user.
 
-3. Add example events and users (an admin, Event Staff, controllers of several ratings and an observer):
+3. Add example events and users (an Administrator, Event Staff, controllers of several ratings and an observer):
 
    ```bash
    php artisan db:seed
    ```
 
-4. Start the app, the Vite dev server, the queue worker and log tailing together:
+4. Start the app, the Vite dev server and log tailing together:
 
    ```bash
    composer run dev
    ```
 
-To make someone an admin once they have signed in:
+To make someone an Administrator once they have signed in:
 
 ```bash
 php artisan users:make-admin <vatsim-cid>
@@ -85,8 +103,21 @@ php artisan users:make-admin <vatsim-cid>
 | Type-check TypeScript | `npm run typecheck` |
 | Build the frontend | `npm run build` |
 
-Backend code lives in `app/`, with staffing rules in `app/Staffing`. Pages are in `resources/js/pages`, shared components in `resources/js/components`.
+Backend code lives in `app/`, with staffing rules in `app/Staffing`. Pages are in `resources/js/pages`, shared components in `resources/js/components`. CI runs the tests, type check, lint and formatting on every push and pull request to `dev`.
 
 ## Deploying
 
-Run `php artisan schedule:run` every minute so repeating events keep getting new dates (`events:extend-repeats` runs daily). On a public server set at least `APP_ENV=production`, `APP_DEBUG=false`, an `https://` `APP_URL`, `SESSION_SECURE_COOKIE=true` and `SESSION_ENCRYPT=true`, and leave `AUTH_DEV_LOGIN` off. `.env.example` lists these as well.
+The hub ships as a Docker image, published as `ghcr.io/vatsim-scandinavia/events:dev` on every push to `dev`. [compose.yaml](compose.yaml) runs it with a scheduler and one storage volume for uploads, logs and SQLite; its comments cover the settings. Starting the container migrates the database and caches the configuration.
+
+**Background jobs.** Two jobs run daily through Laravel's scheduler (`php artisan schedule:work` in the Compose setup, or `php artisan schedule:run` every minute from cron):
+
+- `events:extend-repeats` adds new dates to events that repeat indefinitely.
+- `users:sync-vatsim` refreshes ratings and subdivisions from the VATSIM API, and with them the automatic Controller role. Set `VATSIM_SYNC=false` where people sign in with sandbox accounts, which the live API doesn't know.
+
+No queue worker is needed: nothing is queued.
+
+**Discord.** Set `DISCORD_EVENTS_WEBHOOK` to a channel webhook to announce each event once, when it's published. Leave it empty to announce nothing.
+
+**Settings.** On a public server set at least `APP_ENV=production` (or `staging`), `APP_DEBUG=false`, an `https://` `APP_URL`, `LOG_STACK=daily`, `LOG_LEVEL=warning`, `SESSION_SECURE_COOKIE=true` and `SESSION_ENCRYPT=true`. Put the hub behind a reverse proxy that handles HTTPS and name it in `TRUSTED_PROXIES`. Requests for any host but `APP_URL`'s are refused. `.env.example` lists all of these.
+
+**First Administrator.** Sign in once through VATSIM, then run `php artisan users:make-admin <vatsim-cid>` (with Compose: `docker compose exec app php artisan users:make-admin <vatsim-cid>`).
