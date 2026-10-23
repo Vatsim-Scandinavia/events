@@ -23,7 +23,7 @@ export type SchedulePreview = { dates: { date: string; id: number | null }[]; re
 // 'invalid' when saving would be refused (the errors say why), null when the preview couldn't be loaded.
 type PreviewResult = SchedulePreview | 'invalid' | null;
 
-// The bookings, interest and roster slots on the given dates, or null when there are none.
+// The Shift Bookings, Staffing Interest and Roster Entries on the given dates, or null when there are none.
 export function describeStaffing(dates: EditableDate[]): string | null {
     const bookings = dates.reduce((sum, date) => sum + date.bookings, 0);
     const interests = dates.reduce((sum, date) => sum + date.interests, 0);
@@ -31,7 +31,7 @@ export function describeStaffing(dates: EditableDate[]): string | null {
     const parts = [
         bookings && plural(bookings, 'shift booking'),
         interests && `interest from ${plural(interests, 'controller')}`,
-        roster && plural(roster, 'roster slot'),
+        roster && plural(roster, 'roster entry', 'roster entries'),
     ].filter(Boolean) as string[];
 
     return parts.length ? new Intl.ListFormat('en-GB').format(parts) : null;

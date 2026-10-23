@@ -19,7 +19,7 @@ use Illuminate\Validation\ValidationException;
  *
  * The plan describes the full desired state. Positions are identified by a key: the id
  * of an existing position, or a negative number for one added in this plan. Shifts and
- * roster slots carry their id when they already exist; anything left out is removed.
+ * roster entries carry their id when they already exist; anything left out is removed.
  * Times are minutes from the start of the event (shifts) or occurrence (roster).
  */
 final class StaffingPlan
@@ -43,7 +43,7 @@ final class StaffingPlan
     public function save(Event $event, EventOccurrence $occurrence, array $plan): void
     {
         if ($event->staffing_mode === StaffingMode::None) {
-            $this->fail('Choose how controllers sign up before adding positions.');
+            $this->fail('Choose how controllers staff this event before adding positions.');
         }
 
         $positions = $this->positions($event, $plan['positions']);
@@ -161,7 +161,7 @@ final class StaffingPlan
 
         foreach ($planned as $entry) {
             $id = $entry['id'] ?? null;
-            $callsign = $callsigns[$entry['position']] ?? $this->fail('A roster slot belongs to a position that is no longer in the plan.');
+            $callsign = $callsigns[$entry['position']] ?? $this->fail('A roster entry belongs to a position that is no longer in the plan.');
             $user = $users[$entry['user_id']] ?? $this->fail("A controller rostered on {$callsign} no longer exists.");
 
             if (! $user->isEligibleController($occurrence->event)) {
@@ -169,10 +169,10 @@ final class StaffingPlan
             }
 
             if ($id !== null && ! $existing->contains($id)) {
-                $this->fail("{$user->name}'s slot was removed by someone else. Reload the page and try again.");
+                $this->fail("{$user->name}'s roster entry was removed by someone else. Reload the page and try again.");
             }
 
-            $this->ensureWithin($entry['start'], $entry['end'], $duration, "{$user->name}'s slot on {$callsign}");
+            $this->ensureWithin($entry['start'], $entry['end'], $duration, "{$user->name}'s roster entry on {$callsign}");
 
             $entries[] = ['id' => $id, 'position' => $entry['position'], 'user_id' => $user->id, 'start' => $entry['start'], 'end' => $entry['end']];
         }
@@ -189,7 +189,7 @@ final class StaffingPlan
      */
     private function savePositions(Event $event, Collection $positions): array
     {
-        // Removing a position takes its shifts, bookings, interest picks and roster slots with it.
+        // Removing a position takes its shifts, bookings, interest picks and roster entries with it.
         $event->positions()->whereNotIn('id', $positions->pluck('key')->filter(fn (int $key) => $key > 0))->delete();
 
         $ids = [];

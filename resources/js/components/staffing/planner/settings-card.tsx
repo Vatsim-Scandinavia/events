@@ -47,7 +47,7 @@ function clearedBySwitching({ settings, positions, interests, roster }: Staffing
         }
 
         if (roster.length > 0) {
-            lost.push(`the roster (${plural(roster.length, 'slot')})`);
+            lost.push(`the roster (${plural(roster.length, 'roster entry', 'roster entries')})`);
         }
     }
 
@@ -74,7 +74,7 @@ export function SettingsCard(props: StaffingPageProps) {
         if (
             cleared &&
             !(await confirm({
-                title: 'Change how controllers sign up?',
+                title: 'Change how controllers staff this event?',
                 description: `${switching[form.data.mode]} clears ${cleared}.${form.data.mode !== 'none' && props.positions.length > 0 ? ' Positions are kept.' : ''} This can’t be undone.`,
                 confirmLabel: 'Change and clear',
                 destructive: true,
@@ -89,7 +89,7 @@ export function SettingsCard(props: StaffingPageProps) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>How controllers sign up</CardTitle>
+                <CardTitle>How controllers staff this event</CardTitle>
             </CardHeader>
             <CardContent>
                 <form onSubmit={submit} className="flex flex-col gap-5">

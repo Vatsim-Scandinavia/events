@@ -33,6 +33,8 @@ export type TimelineItem = {
 };
 
 type Props = {
+    // What the items are, for messages: "shift" or "roster entry".
+    noun: string;
     startsAt: string;
     duration: number;
     rows: TimelineRow[];
@@ -84,6 +86,7 @@ function useSpanLabel(startsAt: string) {
  * 15 minutes and are shown in the viewer's time zone.
  */
 export default function Timeline({
+    noun,
     startsAt,
     duration,
     rows,
@@ -191,8 +194,8 @@ export default function Timeline({
             if (current.end - current.start < SNAP || clashes(current.rowId, current.start, current.end, current.item?.id)) {
                 setRejected(
                     current.kind === 'create'
-                        ? 'There’s no room for a shift there; it would overlap another one.'
-                        : 'That would overlap another slot on the same position.',
+                        ? `There’s no room for a ${noun} there; it would overlap another one.`
+                        : `That would overlap another ${noun} on the same position.`,
                 );
 
                 return;
@@ -304,7 +307,7 @@ export default function Timeline({
         }
 
         if (clashes(rowId, start, end, item.id)) {
-            setRejected('That would overlap another slot on the same position.');
+            setRejected(`That would overlap another ${noun} on the same position.`);
 
             return;
         }
@@ -507,7 +510,7 @@ export default function Timeline({
             </div>
             {!readOnly && (
                 <p id={hintId} className="text-xs text-muted-foreground">
-                    With the keyboard: Tab to a slot, then use the arrow keys to move it by {SNAP} minutes, Shift + arrows to change its length
+                    With the keyboard: Tab to a {noun}, then use the arrow keys to move it by {SNAP} minutes, Shift + arrows to change its length
                     {allowRowChange && ', up and down to move it to another position'}, and Delete to remove it.
                 </p>
             )}

@@ -91,7 +91,7 @@ export function RosterCard({ occurrence, controllers, interests, draft, update, 
                 <CardDescription>
                     {locked
                         ? 'The event has ended, so this roster is kept as a record and can no longer change.'
-                        : 'Add the positions you want staffed below the timeline, so controllers can pick them when showing interest. Then drag a controller onto a position to roster them for their availability, and drag the slot or its edges to adjust it. You can keep editing the roster until the event ends.'}
+                        : 'Add the positions you want staffed below the timeline, so controllers can pick them when showing interest. Then drag a controller onto a position to roster them for their availability, and drag the roster entry or its edges to adjust it. You can keep editing the roster until the event ends.'}
                 </CardDescription>
                 {!locked && occurrence.rosterPublished && (
                     <CardAction>
@@ -183,6 +183,7 @@ export function RosterCard({ occurrence, controllers, interests, draft, update, 
                 )}
 
                 <Timeline
+                    noun="roster entry"
                     startsAt={occurrence.startsAt}
                     duration={durationMinutes}
                     readOnly={locked}
