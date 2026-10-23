@@ -21,8 +21,8 @@ return [
     |--------------------------------------------------------------------------
     |
     | Until VATSIM Connect is wired up, local installs can sign in as any user
-    | from /login. It must be switched on explicitly, and is always off in
-    | production. Never enable this on a public site.
+    | from /login. It must be switched on explicitly, and only works when
+    | APP_ENV=local, so a staging or production server can't turn it on.
     |
     */
 

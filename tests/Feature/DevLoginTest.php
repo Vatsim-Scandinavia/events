@@ -33,6 +33,23 @@ class DevLoginTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_dev_login_is_only_available_in_local_development(): void
+    {
+        config(['auth.dev_login' => true]);
+        $user = User::factory()->create();
+
+        foreach (['staging', 'production', 'anything-else'] as $environment) {
+            $this->app->detectEnvironment(fn () => $environment);
+
+            $this->get('/login')->assertNotFound();
+            $this->withSession(['_token' => 'token'])->post("/login/{$user->id}", ['_token' => 'token'])->assertNotFound();
+            $this->assertGuest();
+        }
+
+        $this->app->detectEnvironment(fn () => 'local');
+        $this->get('/login')->assertOk();
+    }
+
     public function test_when_enabled_you_can_sign_in_as_any_user(): void
     {
         config(['auth.dev_login' => true]);
