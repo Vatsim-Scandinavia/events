@@ -95,8 +95,16 @@ final class Roles
         return collect($permissions)->diff($user->permissionNames())->isEmpty();
     }
 
+    /**
+     * Administrator also runs the hub's configuration, which no permission covers, so only
+     * Administrators can hand it out or take it away.
+     */
     public static function canGrant(User $user, Role $role): bool
     {
+        if (self::isAdministrator($role)) {
+            return $user->isAdministrator();
+        }
+
         return self::within($user, $role->permissions->pluck('name'));
     }
 

@@ -13,7 +13,7 @@ class EventTypeManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_only_people_who_manage_settings_can_open_the_event_type_pages(): void
+    public function test_only_administrators_can_open_the_event_type_pages(): void
     {
         $flyIn = EventType::query()->where('name', 'Fly-in')->sole();
         Event::factory()->count(2)->for($flyIn)->create();

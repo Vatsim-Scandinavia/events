@@ -80,11 +80,9 @@ Route::middleware(['auth', 'throttle:signed-in'])->group(function () {
             Route::delete('/users/{user}/roles/{roleAssignment}', [RoleAssignmentController::class, 'destroy'])->scopeBindings()->name('users.roles.destroy');
         });
 
-        Route::middleware('can:manage-roles')->group(function () {
+        Route::middleware('can:administer')->group(function () {
             Route::resource('roles', RoleController::class)->except('show');
-        });
 
-        Route::middleware('can:manage-settings')->group(function () {
             Route::get('/settings', [SiteSettingsController::class, 'edit'])->name('settings.edit');
             // POST, as the form is sent as multipart when it carries a logo.
             Route::post('/settings', [SiteSettingsController::class, 'update'])->name('settings.update');

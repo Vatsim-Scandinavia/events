@@ -30,13 +30,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
     const { vacc, auth } = usePage().props;
     const { url } = usePage();
     const [menuOpen, setMenuOpen] = useState(false);
-    const admin = auth.user?.can['manage-users']
-        ? '/admin/users'
-        : auth.user?.can['manage-roles']
-          ? '/admin/roles'
-          : auth.user?.can['manage-settings']
-            ? '/admin/settings'
-            : null;
+    // Administrators hold every permission, so this covers them too.
+    const admin = auth.user?.can['manage-users'] ? '/admin/users' : null;
     const links = admin ? [...navigation, { label: 'Admin', href: admin, section: '/admin' }] : navigation;
 
     const isActive = (item: NavigationItem) => {

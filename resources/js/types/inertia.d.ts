@@ -23,7 +23,7 @@ export type Vacc = {
 export type HeroGradient = { from: string; to: string };
 
 // Mirrors App\Enums\Permission.
-export type PermissionName = 'manage-events' | 'manage-staffing' | 'view-events' | 'manage-users' | 'manage-roles' | 'manage-settings';
+export type PermissionName = 'manage-events' | 'manage-staffing' | 'view-events' | 'book-positions' | 'manage-users';
 
 // Mirrors the auth props shared by App\Http\Middleware\HandleInertiaRequests.
 export type AuthUser = {
@@ -32,6 +32,7 @@ export type AuthUser = {
     cid: number | null;
     rating: string | null;
     roles: string[];
+    isAdministrator: boolean;
     can: Record<PermissionName, boolean>;
 };
 

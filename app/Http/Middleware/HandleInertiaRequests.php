@@ -39,6 +39,7 @@ class HandleInertiaRequests extends Middleware
                     'cid' => $request->user()->vatsim_cid,
                     'rating' => $request->user()->rating?->label(),
                     'roles' => Roles::labelsFor($request->user()),
+                    'isAdministrator' => $request->user()->isAdministrator(),
                     // Which permissions the user holds, keyed by permission name.
                     'can' => collect(Permission::cases())
                         ->mapWithKeys(fn (Permission $permission) => [$permission->value => $request->user()->can($permission->value)]),

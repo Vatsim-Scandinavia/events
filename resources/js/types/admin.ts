@@ -16,7 +16,6 @@ export type PermissionOption = {
     value: PermissionName;
     label: string;
     description: string;
-    canGrant: boolean;
 };
 
 // Laravel's length-aware paginator, as Inertia serializes it.

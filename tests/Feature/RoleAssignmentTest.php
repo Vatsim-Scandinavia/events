@@ -42,7 +42,7 @@ class RoleAssignmentTest extends TestCase
         Gate::define('something-new', fn () => false);
 
         $this->assertTrue(Gate::forUser($admin)->allows('something-new'));
-        $this->assertTrue($admin->hasPermission(Permission::ManageSettings, Fir::factory()->create()));
+        $this->assertTrue($admin->hasPermission(Permission::ManageUsers, Fir::factory()->create()));
     }
 
     public function test_administrator_cannot_be_held_in_a_single_fir(): void
