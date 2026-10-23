@@ -65,7 +65,9 @@ class FirScopedUserManagementTest extends TestCase
 
         $this->actingAs($anna)->post("/admin/users/{$newcomer->id}/roles", ['role_id' => $staff->id, 'fir_id' => $this->copenhagen->id])
             ->assertSessionHasNoErrors();
+        $this->assertSame($this->copenhagen->id, $newcomer->roleAssignments()->sole()->fir_id);
         $this->assertTrue($newcomer->fresh()->can('manage-events', $this->copenhagen));
+        $this->assertFalse($newcomer->fresh()->can('manage-events', $this->sweden));
 
         $this->actingAs($anna)->post("/admin/users/{$newcomer->id}/roles", ['role_id' => $staff->id, 'fir_id' => $this->sweden->id])
             ->assertSessionHasErrors(['roles' => 'You can only give or take away roles in FIRs where you manage users.']);

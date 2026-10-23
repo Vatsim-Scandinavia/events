@@ -19,8 +19,10 @@ use Inertia\Inertia;
 /**
  * Gives someone a role, across the hub or in one FIR, or takes one away, one at a time.
  *
- * People can only hand out or take away roles that allow no more than they can do across the
- * hub, Administrator always applies across the hub, and the hub keeps at least one.
+ * People can only hand out or take away a role where they manage users: in a FIR they manage
+ * users in, or across the hub if they manage users across the hub. The role must allow no more
+ * than they can do there, counting their hub-wide roles. Only Administrators can give or take
+ * away Administrator, which always applies across the hub, and the hub keeps at least one.
  */
 class RoleAssignmentController extends Controller
 {
