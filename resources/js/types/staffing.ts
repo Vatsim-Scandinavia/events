@@ -76,6 +76,8 @@ export type RosterEntry = {
 export type InterestWindowState = 'upcoming' | 'open' | 'closed';
 
 type StaffingBase = {
+    // Controllers can't book or show interest until the event is published.
+    draft: boolean;
     canManage: boolean;
     viewer: { signedIn: boolean; eligible: boolean };
     occurrence: Occurrence;

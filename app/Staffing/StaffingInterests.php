@@ -28,6 +28,10 @@ final class StaffingInterests
      */
     public function submit(User $user, EventOccurrence $occurrence, array $positionIds, array $windows, ?string $notes): StaffingInterest
     {
+        if ($occurrence->event->isDraft()) {
+            throw ValidationException::withMessages(['interest' => 'This event isn’t published yet.']);
+        }
+
         $this->ensureWindowIsOpen($user, $occurrence);
 
         if ($occurrence->isCancelled()) {

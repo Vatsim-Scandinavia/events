@@ -30,6 +30,10 @@ final class ShiftBookings
             throw ValidationException::withMessages(['booking' => 'That shift belongs to a different event.']);
         }
 
+        if ($event->isDraft()) {
+            throw ValidationException::withMessages(['booking' => 'This event isn’t published yet.']);
+        }
+
         if (! $user->isEligibleController($event)) {
             throw new AuthorizationException('Only controllers can book shifts.');
         }

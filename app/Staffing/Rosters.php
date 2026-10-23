@@ -19,6 +19,11 @@ final class Rosters
     {
         $this->ensureEditable($occurrence);
 
+        // Staff can lay the roster on a Draft, but controllers would be told about an event they can't see.
+        if ($occurrence->event->isDraft()) {
+            throw ValidationException::withMessages(['roster' => 'Publish the event before its roster.']);
+        }
+
         $occurrence->update(['roster_published_at' => $occurrence->roster_published_at ?? now()]);
     }
 

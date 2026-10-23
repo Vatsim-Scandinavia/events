@@ -41,6 +41,8 @@ final class StaffingPresenter
 
         $staffing = [
             'mode' => $event->staffing_mode->value,
+            // Staff see a Draft's staffing, but controllers can't staff it until it's published.
+            'draft' => $event->isDraft(),
             'canManage' => (bool) $viewer?->can('manageStaffing', $event),
             'viewer' => [
                 'signedIn' => $viewer !== null,

@@ -13,7 +13,8 @@ class HomeController extends Controller
     public function index(VatsimNetworkStats $networkStats): Response
     {
         return Inertia::render('Home', [
-            'upcomingEvents' => EventResource::collection(Event::upcoming()->limit(3)->get())->resolve(),
+            // The public showcase, so only published events, even for staff who can see Drafts.
+            'upcomingEvents' => EventResource::collection(Event::upcoming()->published()->limit(3)->get())->resolve(),
             'networkStats' => Inertia::defer(fn () => $networkStats->get()),
         ]);
     }
