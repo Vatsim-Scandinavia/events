@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Services\DisplayTime;
-use App\Services\EventCancellations;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -16,34 +15,34 @@ use Inertia\Inertia;
  */
 class EventCancellationController extends Controller
 {
-    public function cancelEvent(Event $event, EventCancellations $cancellations): RedirectResponse
+    public function cancelEvent(Event $event): RedirectResponse
     {
         Gate::authorize('cancel', $event);
-        $cancellations->cancelEvent($event);
+        $event->cancel();
 
         return Inertia::flash('success', "{$event->name} is cancelled.")->back();
     }
 
-    public function restoreEvent(Event $event, EventCancellations $cancellations): RedirectResponse
+    public function restoreEvent(Event $event): RedirectResponse
     {
         Gate::authorize('cancel', $event);
-        $cancellations->restoreEvent($event);
+        $event->restore();
 
         return Inertia::flash('success', "{$event->name} is back on.")->back();
     }
 
-    public function cancelOccurrence(EventOccurrence $occurrence, EventCancellations $cancellations, DisplayTime $display): RedirectResponse
+    public function cancelOccurrence(EventOccurrence $occurrence, DisplayTime $display): RedirectResponse
     {
         Gate::authorize('cancel', $occurrence->event);
-        $cancellations->cancelOccurrence($occurrence);
+        $occurrence->cancel();
 
         return Inertia::flash('success', $display->date($occurrence->starts_at).' is cancelled.')->back();
     }
 
-    public function restoreOccurrence(EventOccurrence $occurrence, EventCancellations $cancellations, DisplayTime $display): RedirectResponse
+    public function restoreOccurrence(EventOccurrence $occurrence, DisplayTime $display): RedirectResponse
     {
         Gate::authorize('cancel', $occurrence->event);
-        $cancellations->restoreOccurrence($occurrence);
+        $occurrence->restore();
 
         return Inertia::flash('success', $display->date($occurrence->starts_at).' is back on.')->back();
     }

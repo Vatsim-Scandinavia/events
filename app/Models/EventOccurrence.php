@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\StaffingMode;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Validation\ValidationException;
 
 /**
  * One date an event takes place on. Bookings, interest and rosters belong here,
@@ -82,6 +84,37 @@ class EventOccurrence extends Model
         return $this->cancelled_at !== null || $this->event->isCancelled();
     }
 
+    /**
+     * Calls off this date. Nothing is deleted: bookings, interest and its roster stay so a
+     * restored date picks up where it was.
+     *
+     * @throws ValidationException when the date has started
+     */
+    public function cancel(): void
+    {
+        if ($this->hasStarted()) {
+            throw ValidationException::withMessages(['cancel' => 'This date has already started, so it can’t be cancelled.']);
+        }
+
+        $this->update(['cancelled_at' => $this->cancelled_at ?? now()]);
+    }
+
+    /**
+     * @throws ValidationException when the date has started or the whole event is cancelled
+     */
+    public function restore(): void
+    {
+        if ($this->hasStarted()) {
+            throw ValidationException::withMessages(['cancel' => 'This date has already started, so it can’t be restored.']);
+        }
+
+        if ($this->event->isCancelled()) {
+            throw ValidationException::withMessages(['cancel' => 'The whole event is cancelled. Restore the event first.']);
+        }
+
+        $this->update(['cancelled_at' => null]);
+    }
+
     public function interestOpensAt(): CarbonImmutable
     {
         return $this->starts_at->subHours($this->event->interest_opens_hours);
@@ -115,5 +148,47 @@ class EventOccurrence extends Model
     public function isRosterArchived(): bool
     {
         return $this->hasEnded();
+    }
+
+    /**
+     * Shows the roster to everyone. Its entries are saved with the rest of the staffing plan
+     * (see StaffingPlan).
+     *
+     * @throws ValidationException
+     */
+    public function publishRoster(): void
+    {
+        $this->ensureRosterEditable();
+
+        // Staff can lay the roster on a Draft, but controllers would be told about an event they can't see.
+        if ($this->event->isDraft()) {
+            throw ValidationException::withMessages(['roster' => 'Publish the event before its roster.']);
+        }
+
+        $this->update(['roster_published_at' => $this->roster_published_at ?? now()]);
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function unpublishRoster(): void
+    {
+        $this->ensureRosterEditable();
+
+        $this->update(['roster_published_at' => null]);
+    }
+
+    /**
+     * @throws ValidationException when the event has no roster or it has been archived
+     */
+    private function ensureRosterEditable(): void
+    {
+        if ($this->event->staffing_mode !== StaffingMode::OpenInterest) {
+            throw ValidationException::withMessages(['roster' => 'Only open-interest events have a roster.']);
+        }
+
+        if ($this->isRosterArchived()) {
+            throw ValidationException::withMessages(['roster' => 'The event has ended, so its roster is archived.']);
+        }
     }
 }

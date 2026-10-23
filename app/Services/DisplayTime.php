@@ -9,7 +9,7 @@ use Carbon\CarbonImmutable;
  * Formats moments for display in the viewer's time zone. UTC is shown the VATSIM way, with
  * a "z" after the time; any other zone gets its abbreviation, such as "CEST".
  *
- * Times people type stay in UTC: see App\Staffing\ZuluTime.
+ * Times people type stay in UTC: see ZuluTime.
  */
 final class DisplayTime
 {
