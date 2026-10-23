@@ -53,6 +53,8 @@ class HubAdministrationTest extends TestCase
         $someone = User::factory()->create();
         $admin = User::factory()->admin()->create();
         $assignment = $admin->roleAssignments()->sole();
+        // A second Administrator, so the rule that the hub keeps one can't be what refuses the removal.
+        User::factory()->admin()->create();
 
         $this->actingAs($manager)->post("/admin/users/{$someone->id}/roles", ['role_id' => $administrator->id])->assertSessionHasErrors('roles');
         $this->actingAs($manager)->delete("/admin/users/{$admin->id}/roles/{$assignment->id}")->assertSessionHasErrors('roles');
@@ -89,6 +91,19 @@ class HubAdministrationTest extends TestCase
         $this->assertDatabaseMissing('permissions', ['name' => 'manage-roles']);
         $this->assertSame([Permission::ManageEvents->value], $team->fresh()->permissions->pluck('name')->all());
         $this->assertEqualsCanonicalizing(Roles::all(), Role::findByName(Roles::ADMINISTRATOR)->permissions->pluck('name')->all());
+    }
+
+    public function test_rolling_back_gives_the_permissions_back_to_administrator_only(): void
+    {
+        $team = Role::create(['name' => 'Settings Team'])->givePermissionTo(Permission::ManageEvents->value);
+
+        (require database_path('migrations/2026_10_23_162642_remove_hub_configuration_permissions.php'))->down();
+
+        $this->assertEqualsCanonicalizing(
+            [...Roles::all(), 'manage-roles', 'manage-settings'],
+            Role::findByName(Roles::ADMINISTRATOR)->fresh()->permissions->pluck('name')->all(),
+        );
+        $this->assertSame([Permission::ManageEvents->value], $team->fresh()->permissions->pluck('name')->all());
     }
 
     public function test_only_administrators_are_shown_the_hub_configuration_sections(): void

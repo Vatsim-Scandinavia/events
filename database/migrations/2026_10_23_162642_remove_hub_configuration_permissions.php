@@ -2,6 +2,7 @@
 
 use App\Auth\Roles;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -14,7 +15,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Permission::query()->whereIn('name', ['manage-roles', 'manage-settings'])->get()->each->delete();
+        DB::transaction(fn () => Permission::query()->whereIn('name', ['manage-roles', 'manage-settings'])->get()->each->delete());
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
@@ -25,9 +26,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        foreach (['manage-roles', 'manage-settings'] as $name) {
-            Permission::findOrCreate($name, 'web')->assignRole(Roles::ADMINISTRATOR);
-        }
+        DB::transaction(function () {
+            foreach (['manage-roles', 'manage-settings'] as $name) {
+                Permission::findOrCreate($name, 'web')->assignRole(Roles::ADMINISTRATOR);
+            }
+        });
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
