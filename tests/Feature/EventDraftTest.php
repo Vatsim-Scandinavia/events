@@ -124,11 +124,12 @@ class EventDraftTest extends TestCase
         $second = Event::query()->find($draft->id);
 
         $this->travelTo(now()->startOfMinute());
-        $first->publish();
+        $this->assertTrue($first->publish());
         $publishedAt = now();
 
         $this->travel(5)->minutes();
-        $second->publish();
+        // Only the first one counts as publishing it, so only it gets announced.
+        $this->assertFalse($second->publish());
 
         $this->assertTrue($draft->fresh()->published_at->equalTo($publishedAt));
         $this->assertTrue($second->published_at->equalTo($publishedAt));
