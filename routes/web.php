@@ -14,6 +14,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShiftBookingController;
 use App\Http\Controllers\Staff\EventCancellationController;
 use App\Http\Controllers\Staff\EventManagementController;
+use App\Http\Controllers\Staff\EventPublicationController;
 use App\Http\Controllers\Staff\RosterController;
 use App\Http\Controllers\Staff\StaffingController;
 use App\Http\Controllers\StaffingInterestController;
@@ -56,6 +57,8 @@ Route::middleware(['auth', 'throttle:signed-in'])->group(function () {
         // The dates a schedule gives a new or existing event, previewed on the form.
         Route::post('/events/schedule', [EventManagementController::class, 'preview'])->name('events.schedule');
         Route::post('/events/{event}/schedule', [EventManagementController::class, 'preview'])->name('events.edit-schedule');
+
+        Route::post('/events/{event}/publish', [EventPublicationController::class, 'publish'])->name('events.publish');
 
         Route::post('/events/{event}/cancel', [EventCancellationController::class, 'cancelEvent'])->name('events.cancel');
         Route::delete('/events/{event}/cancel', [EventCancellationController::class, 'restoreEvent'])->name('events.restore');

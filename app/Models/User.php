@@ -146,6 +146,28 @@ class User extends Authenticatable
     }
 
     /**
+     * The FIRs (by id) where one of the user's roles grants any of the permissions, or null
+     * when a role held across the hub does, which covers every FIR.
+     *
+     * @return list<int>|null
+     */
+    public function firIdsWithAny(Permission ...$permissions): ?array
+    {
+        $names = array_map(fn (Permission $permission) => $permission->value, $permissions);
+
+        if ($this->permissionNames()->intersect($names)->isNotEmpty()) {
+            return null;
+        }
+
+        return $this->roles
+            ->filter(fn (Role $role) => $role->pivot->fir_id !== null && $role->permissions->pluck('name')->intersect($names)->isNotEmpty())
+            ->map(fn (Role $role) => (int) $role->pivot->fir_id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
      * Whether the user may give and take away roles in the given FIR, or across the hub when
      * none is given. Managing users across the hub covers every FIR.
      */

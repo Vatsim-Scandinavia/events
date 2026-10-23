@@ -32,7 +32,16 @@ class EventFactory extends Factory
             'routes' => null,
             'booking_url' => null,
             'briefing_url' => null,
+            'published_at' => now(),
         ];
+    }
+
+    /**
+     * A Draft, not yet published.
+     */
+    public function draft(): static
+    {
+        return $this->state(['published_at' => null]);
     }
 
     /**

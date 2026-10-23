@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\Permission;
 use App\Enums\RepeatInterval;
 use App\Enums\StaffingMode;
 use App\Services\EventBanners;
@@ -72,6 +73,7 @@ class Event extends Model
             'repeat_count' => 'integer',
             'repeat_until' => 'immutable_date',
             'cancelled_at' => 'immutable_datetime',
+            'published_at' => 'immutable_datetime',
             'staffing_mode' => StaffingMode::class,
             'interest_opens_hours' => 'integer',
             'interest_closes_hours' => 'integer',
@@ -144,6 +146,51 @@ class Event extends Model
         return $upcoming->first(fn (EventOccurrence $occurrence) => ! $occurrence->isCancelled())
             ?? $upcoming->first()
             ?? $occurrences->last();
+    }
+
+    /**
+     * Whether the event is still a Draft: visible only to staff who can view or manage events
+     * in its FIR, until it's published.
+     */
+    public function isDraft(): bool
+    {
+        return $this->published_at === null;
+    }
+
+    /**
+     * Makes a Draft visible to everyone. Publishing is one-way, and publishing again keeps
+     * when it was first published.
+     */
+    public function publish(): void
+    {
+        if ($this->isDraft()) {
+            $this->forceFill(['published_at' => now()])->save();
+        }
+    }
+
+    /**
+     * Events the user may see: published ones, plus Drafts in FIRs where they can view or
+     * manage events. Guests only see published events.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function visibleTo(Builder $query, ?User $user): void
+    {
+        if ($user === null) {
+            $query->whereNotNull('published_at');
+
+            return;
+        }
+
+        $firs = $user->firIdsWithAny(Permission::ManageEvents, Permission::ViewEvents);
+
+        // Held across the hub, so every Draft.
+        if ($firs === null) {
+            return;
+        }
+
+        $query->where(fn (Builder $query) => $query->whereNotNull('published_at')->orWhereIn('fir_id', $firs));
     }
 
     /**

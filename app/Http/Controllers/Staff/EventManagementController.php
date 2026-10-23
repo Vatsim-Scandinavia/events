@@ -58,7 +58,7 @@ class EventManagementController extends Controller
             return $event;
         }));
 
-        Inertia::flash('success', 'Event created.');
+        Inertia::flash('success', 'Draft created. Publish it when it’s ready for everyone to see.');
 
         return redirect("/events/{$event->id}");
     }

@@ -41,6 +41,7 @@ class EventResource extends JsonResource
             'time' => $display->range($next->starts_at, $next->ends_at),
             'banner' => app(EventBanners::class)->url($this->banner_path),
             'repeats' => $this->repeats->describe($this->starts_at->setTimezone($this->timezone)),
+            'draft' => $this->isDraft(),
         ];
     }
 }
