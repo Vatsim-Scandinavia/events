@@ -38,6 +38,29 @@ class BehindProxyTest extends TestCase
         $this->assertFalse(request()->isSecure());
     }
 
+    public function test_a_forwarded_host_is_never_believed(): void
+    {
+        config(['trustedproxy.proxies' => '10.0.0.2', 'app.url' => 'https://events.example.org']);
+
+        $this->withServerVariables(['REMOTE_ADDR' => '10.0.0.2', 'HTTP_HOST' => 'events.example.org'])
+            ->withHeaders(['X-Forwarded-Proto' => 'https', 'X-Forwarded-Host' => 'attacker.example'])
+            ->get('https://events.example.org/')
+            ->assertOk();
+
+        $this->assertSame('https://events.example.org/events', url('/events'));
+    }
+
+    public function test_requests_for_other_hosts_are_refused_on_a_server(): void
+    {
+        // Laravel only checks hosts outside local development and tests.
+        $this->app->detectEnvironment(fn () => 'staging');
+        config(['app.url' => 'https://events.example.org']);
+
+        $this->get('https://attacker.example/')->assertStatus(400);
+        $this->get('https://sub.events.example.org/')->assertStatus(400);
+        $this->get('https://events.example.org/')->assertOk();
+    }
+
     public function test_a_plain_error_page_shows_when_the_frontend_cannot_render(): void
     {
         config(['app.debug' => false]);

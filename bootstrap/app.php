@@ -15,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Proxies come from config/trustedproxy.php. Only their scheme, port and client address are
+        // believed, never X-Forwarded-Host, so links can't be pointed at someone else's site.
+        $middleware->trustProxies(headers: Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PROTO | Request::HEADER_X_FORWARDED_PORT);
+        // And requests for any host but APP_URL's are refused (Laravel skips this locally and in tests).
+        $middleware->trustHosts(at: fn () => ['^'.preg_quote((string) parse_url((string) config('app.url'), PHP_URL_HOST)).'$'], subdomains: false);
+
         $middleware->redirectGuestsTo(fn () => DevLogin::enabled() ? route('login') : route('auth.vatsim'));
 
         $middleware->web(append: [
