@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import { CalendarDays, ChevronRight, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AirportBadges, EventTypeBadge } from '@/components/event-card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout';
 import { describeTimezone } from '@/lib/time';
@@ -107,6 +108,7 @@ function EventRow({ event }: { event: HubEvent }) {
                     <span className="font-medium text-foreground">{event.name}</span>
                     <div className="flex flex-wrap items-center gap-1.5">
                         <EventTypeBadge type={event.type} />
+                        {event.draft && <Badge variant="outline">Draft</Badge>}
                         {event.fir && (
                             <span className="font-mono text-xs text-muted-foreground" title={event.fir.name}>
                                 {event.fir.icao}

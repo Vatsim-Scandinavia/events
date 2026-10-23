@@ -20,6 +20,8 @@ export type HubEvent = {
     banner: string | null;
     // How the event repeats in words, e.g. "Every week on Saturday", or null.
     repeats: string | null;
+    // Not yet published, so only staff who can view or manage events in its FIR see it.
+    draft: boolean;
 };
 
 export type EventRoute = {

@@ -1,4 +1,4 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     CalendarDays,
@@ -12,9 +12,11 @@ import {
     Hourglass,
     Pencil,
     Repeat,
+    Send,
     Route,
 } from 'lucide-react';
 import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useConfirm } from '@/components/confirm-dialog';
 import { AirportBadges, EventBanner, EventTypeBadge } from '@/components/event-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -52,12 +54,15 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                             </Link>
                         </Button>
                         {canEdit && (
-                            <Button variant="outline" size="sm" asChild>
-                                <Link href={`/events/${event.id}/edit`}>
-                                    <Pencil />
-                                    Edit event
-                                </Link>
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                {event.draft && <PublishButton event={event} />}
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link href={`/events/${event.id}/edit`}>
+                                        <Pencil />
+                                        Edit event
+                                    </Link>
+                                </Button>
+                            </div>
                         )}
                     </div>
 
@@ -68,6 +73,11 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                     <div className="flex flex-col items-start gap-3">
                         <div className="flex items-center gap-2">
                             <EventTypeBadge type={event.type} />
+                            {event.draft && (
+                                <Badge variant="outline" title="Only staff who can view or manage this FIR’s events can see it until it’s published.">
+                                    Draft
+                                </Badge>
+                            )}
                             {cancelled && <Badge variant="destructive">Cancelled</Badge>}
                             {event.fir && (
                                 <span className="text-sm text-muted-foreground">
@@ -197,6 +207,32 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                 </Card>
             </div>
         </>
+    );
+}
+
+/**
+ * Publishes a Draft after asking, since it can't be taken back.
+ */
+function PublishButton({ event }: { event: HubEventDetail }) {
+    const confirm = useConfirm();
+
+    const publish = async () => {
+        const confirmed = await confirm({
+            title: `Publish ${event.name}?`,
+            description: 'Everyone will be able to see it on the events list. Published events can’t go back to being a Draft.',
+            confirmLabel: 'Publish',
+        });
+
+        if (confirmed) {
+            router.post(`/events/${event.id}/publish`, {}, { preserveScroll: true });
+        }
+    };
+
+    return (
+        <Button size="sm" onClick={publish}>
+            <Send />
+            Publish
+        </Button>
     );
 }
 

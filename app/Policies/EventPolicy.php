@@ -14,6 +14,28 @@ use App\Models\User;
  */
 class EventPolicy
 {
+    /**
+     * Everyone sees published events. Drafts only show to staff who can view or manage events
+     * in the event's FIR.
+     */
+    public function view(?User $user, Event $event): bool
+    {
+        if (! $event->isDraft()) {
+            return true;
+        }
+
+        return $user !== null
+            && ($user->hasPermissionFor(Permission::ManageEvents, $event) || $user->hasPermissionFor(Permission::ViewEvents, $event));
+    }
+
+    /**
+     * Make a Draft visible to everyone.
+     */
+    public function publish(User $user, Event $event): bool
+    {
+        return $user->hasPermissionFor(Permission::ManageEvents, $event);
+    }
+
     public function update(User $user, Event $event): bool
     {
         return $user->hasPermissionFor(Permission::ManageEvents, $event);
