@@ -120,7 +120,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
 
                     {!cancelled && staffing.mode === 'none' && staffing.canManage && (
                         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm ring-1 ring-foreground/10">
-                            <span className="text-muted-foreground">Controllers can't sign up to staff this event yet.</span>
+                            <span className="text-muted-foreground">Controllers can't staff this event yet.</span>
                             <Button variant="outline" size="sm" asChild>
                                 <Link href={`/events/${event.id}/staffing`}>Set up staffing</Link>
                             </Button>
@@ -186,7 +186,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                             event.bookingUrl && (
                                 <Button className="w-full" asChild>
                                     <a href={event.bookingUrl} target="_blank" rel="noreferrer">
-                                        Book a slot
+                                        Reserve a slot
                                         <ExternalLink />
                                     </a>
                                 </Button>
@@ -201,7 +201,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                             </Button>
                         )}
                         {!cancelled && !event.hasEnded && !event.bookingUrl && (
-                            <p className="text-center text-xs text-muted-foreground">No booking needed. Just show up and fly.</p>
+                            <p className="text-center text-xs text-muted-foreground">No slot needed. Just show up and fly.</p>
                         )}
                     </CardFooter>
                 </Card>

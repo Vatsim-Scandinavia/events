@@ -16,7 +16,7 @@ enum Permission: string
     /** See every event and its staffing as staff do, without changing anything. */
     case ViewEvents = 'view-events';
 
-    /** Book shifts, show interest in staffing and be put on rosters. */
+    /** Book shifts, show interest and be rostered. */
     case BookPositions = 'book-positions';
 
     /** See every user and assign their roles. */
@@ -28,7 +28,7 @@ enum Permission: string
             self::ManageEvents => 'Manage events',
             self::ManageStaffing => 'Manage staffing',
             self::ViewEvents => 'View all events',
-            self::BookPositions => 'Control events',
+            self::BookPositions => 'Staff events',
             self::ManageUsers => 'Manage users',
         };
     }
@@ -39,7 +39,7 @@ enum Permission: string
             self::ManageEvents => 'Create, edit and delete events and their dates.',
             self::ManageStaffing => 'Set up positions and shifts, see everyone’s interest and publish rosters.',
             self::ViewEvents => 'See every event and its staffing as staff do, without changing anything.',
-            self::BookPositions => 'Book shifts, show interest in staffing and be put on rosters.',
+            self::BookPositions => 'Book shifts, show interest and be rostered.',
             self::ManageUsers => 'See every user and assign their roles.',
         };
     }

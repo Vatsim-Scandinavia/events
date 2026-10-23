@@ -3,7 +3,7 @@
 namespace App\Enums;
 
 /**
- * How controllers sign up to staff an event.
+ * How controllers staff an event: by booking shifts, or by showing interest for a roster.
  */
 enum StaffingMode: string
 {

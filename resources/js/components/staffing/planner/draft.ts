@@ -54,7 +54,7 @@ export type DraftProps = {
     newKey: () => number;
 };
 
-// Removes a position from the draft, with its shifts and roster slots.
+// Removes a position from the draft, with its shifts and roster entries.
 export async function removePosition({ draft, update }: DraftProps, key: number, confirm: ReturnType<typeof useConfirm>) {
     const position = draft.positions.find((item) => item.key === key)!;
     const booked = draft.shifts.filter((shift) => shift.position === key && shift.booking).length;

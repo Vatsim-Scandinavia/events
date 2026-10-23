@@ -363,11 +363,13 @@ export default function EventForm({ event, types, firs, timezones }: EventFormPr
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Booking and briefing</CardTitle>
-                        <CardDescription>Optional links shown on the event page.</CardDescription>
+                        <CardTitle>Slot and briefing links</CardTitle>
+                        <CardDescription>
+                            Optional links shown on the event page. The slot link is where pilots reserve arrival or departure slots.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-5 sm:grid-cols-2">
-                        <Field label="Slot booking link" error={errors.booking_url}>
+                        <Field label="Slot link" error={errors.booking_url}>
                             <Input
                                 type="url"
                                 value={data.booking_url}

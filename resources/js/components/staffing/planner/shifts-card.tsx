@@ -76,6 +76,7 @@ export function ShiftsCard({ occurrence, draft, saved, update, newKey }: DraftPr
             </CardHeader>
             <CardContent>
                 <Timeline
+                    noun="shift"
                     startsAt={occurrence.startsAt}
                     duration={occurrence.durationMinutes}
                     rows={draft.positions.map((position) => ({ id: position.key, label: position.callsign, detail: position.frequency }))}
