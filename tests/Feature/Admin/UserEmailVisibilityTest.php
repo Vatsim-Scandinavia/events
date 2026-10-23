@@ -17,7 +17,7 @@ class UserEmailVisibilityTest extends TestCase
     private function userManager(): User
     {
         $manager = User::factory()->create(['name' => 'Anna']);
-        $manager->assignRole(Role::create(['name' => 'User Manager'])->givePermissionTo(Permission::ManageUsers->value), Fir::factory()->create());
+        $manager->assignRole(Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]), Fir::factory()->create());
 
         return $manager;
     }

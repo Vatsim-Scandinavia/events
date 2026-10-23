@@ -8,8 +8,8 @@ export type HubEvent = {
     name: string;
     type: string;
     airports: string[];
-    // The FIR that runs the event; null only for events from before FIRs existed.
-    fir: Fir | null;
+    // The FIR that runs the event.
+    fir: Fir;
     startsAt: string;
     // Day of the month and short weekday, e.g. 18 and "Sat".
     day: number;
@@ -64,7 +64,7 @@ export type EditableDate = {
 
 export type EditableEvent = {
     id: number;
-    firId: number | null;
+    firId: number;
     name: string;
     typeId: number | null;
     // The zone startsAt, endsAt and the dates are given in, e.g. "Europe/Copenhagen".

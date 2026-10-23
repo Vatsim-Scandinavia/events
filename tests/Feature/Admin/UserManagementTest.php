@@ -16,13 +16,13 @@ class UserManagementTest extends TestCase
 
     public function test_the_built_in_roles_exist_with_the_right_permissions(): void
     {
-        $this->assertEqualsCanonicalizing(Roles::all(), Role::findByName(Roles::ADMINISTRATOR)->permissions->pluck('name')->all());
+        $this->assertEqualsCanonicalizing(Roles::all(), Role::findByName(Roles::ADMINISTRATOR)->permissions->pluck('value')->all());
         $this->assertEqualsCanonicalizing(
             [Permission::ManageEvents->value, Permission::ManageStaffing->value],
-            Role::findByName(Roles::EVENT_STAFF)->permissions->pluck('name')->all(),
+            Role::findByName(Roles::EVENT_STAFF)->permissions->pluck('value')->all(),
         );
-        $this->assertSame([Permission::ViewEvents->value], Role::findByName(Roles::VACC_STAFF)->permissions->pluck('name')->all());
-        $this->assertSame([Permission::BookPositions->value], Role::findByName(Roles::CONTROLLER)->permissions->pluck('name')->all());
+        $this->assertSame([Permission::ViewEvents->value], Role::findByName(Roles::VACC_STAFF)->permissions->pluck('value')->all());
+        $this->assertSame([Permission::BookPositions->value], Role::findByName(Roles::CONTROLLER)->permissions->pluck('value')->all());
     }
 
     public function test_the_existing_gates_follow_role_permissions(): void
@@ -36,7 +36,7 @@ class UserManagementTest extends TestCase
         $this->assertFalse($controller->can('manage-events'));
 
         // Taking a permission off the role takes it off everyone holding it.
-        Role::findByName(Roles::EVENT_STAFF)->revokePermissionTo(Permission::ManageEvents->value);
+        Role::findByName(Roles::EVENT_STAFF)->update(['permissions' => [Permission::ManageStaffing]]);
         $this->assertFalse($staff->fresh()->can('manage-events'));
         $this->actingAs($staff->fresh())->get('/events/create')->assertForbidden();
     }

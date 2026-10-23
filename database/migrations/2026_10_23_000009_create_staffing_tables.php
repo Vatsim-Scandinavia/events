@@ -28,7 +28,6 @@ return new class extends Migration
             $table->foreignId('event_occurrence_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
-
             $table->unique(['position_shift_id', 'event_occurrence_id']);
         });
 
@@ -36,18 +35,22 @@ return new class extends Migration
             $table->id();
             $table->foreignId('event_occurrence_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->dateTime('available_from');
-            $table->dateTime('available_until');
             $table->text('notes')->nullable();
             $table->timestamps();
-
             $table->unique(['event_occurrence_id', 'user_id']);
+        });
+
+        // A Staffing Interest's Availability.
+        Schema::create('staffing_interest_windows', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('staffing_interest_id')->constrained()->cascadeOnDelete();
+            $table->dateTime('starts_at');
+            $table->dateTime('ends_at');
         });
 
         Schema::create('event_position_staffing_interest', function (Blueprint $table) {
             $table->foreignId('staffing_interest_id')->constrained()->cascadeOnDelete();
             $table->foreignId('event_position_id')->constrained()->cascadeOnDelete();
-
             $table->primary(['staffing_interest_id', 'event_position_id']);
         });
 
@@ -69,6 +72,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('roster_entries');
         Schema::dropIfExists('event_position_staffing_interest');
+        Schema::dropIfExists('staffing_interest_windows');
         Schema::dropIfExists('staffing_interests');
         Schema::dropIfExists('shift_bookings');
         Schema::dropIfExists('position_shifts');

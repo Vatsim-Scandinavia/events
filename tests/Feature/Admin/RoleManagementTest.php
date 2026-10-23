@@ -40,7 +40,7 @@ class RoleManagementTest extends TestCase
         ])->assertRedirect('/admin/roles');
 
         $role = Role::findByName('Roster Team');
-        $this->assertSame([Permission::ManageStaffing->value], $role->permissions->pluck('name')->all());
+        $this->assertSame([Permission::ManageStaffing->value], $role->permissions->pluck('value')->all());
 
         $this->actingAs($admin)->put("/admin/roles/{$role->id}", [
             'name' => 'Rostering',
@@ -49,7 +49,7 @@ class RoleManagementTest extends TestCase
 
         $role->refresh();
         $this->assertSame('Rostering', $role->name);
-        $this->assertEqualsCanonicalizing([Permission::ManageStaffing->value, Permission::ManageEvents->value], $role->permissions->pluck('name')->all());
+        $this->assertEqualsCanonicalizing([Permission::ManageStaffing->value, Permission::ManageEvents->value], $role->permissions->pluck('value')->all());
 
         $member = User::factory()->create();
         $member->assignRole($role);
@@ -77,7 +77,7 @@ class RoleManagementTest extends TestCase
 
         $role->refresh();
         $this->assertSame(Roles::ADMINISTRATOR, $role->name);
-        $this->assertEqualsCanonicalizing(Roles::all(), $role->permissions->pluck('name')->all());
+        $this->assertEqualsCanonicalizing(Roles::all(), $role->permissions->pluck('value')->all());
     }
 
     public function test_other_built_in_roles_keep_their_name_but_their_permissions_can_change(): void
@@ -98,7 +98,7 @@ class RoleManagementTest extends TestCase
 
         $this->assertEqualsCanonicalizing(
             [Permission::ViewEvents->value, Permission::ManageStaffing->value],
-            $role->fresh()->permissions->pluck('name')->all(),
+            $role->fresh()->permissions->pluck('value')->all(),
         );
     }
 }

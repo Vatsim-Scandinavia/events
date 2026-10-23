@@ -97,7 +97,7 @@ class Event extends Model
     }
 
     /**
-     * The FIR that runs the event. Only events from before FIRs existed can be without one.
+     * The FIR that runs the event.
      *
      * @return BelongsTo<Fir, $this>
      */

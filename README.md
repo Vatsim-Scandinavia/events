@@ -32,7 +32,7 @@ Every role except Administrator can be held across the hub or in a single FIR, w
 
 ## Stack
 
-Laravel 13 (PHP 8.3+) with Inertia v3, React 19, TypeScript, Tailwind CSS 4 and shadcn/ui. Permissions use spatie/laravel-permission. SQLite works out of the box; MySQL and PostgreSQL work too.
+Laravel 13 (PHP 8.3+) with Inertia v3, React 19, TypeScript, Tailwind CSS 4 and shadcn/ui. Roles and their permissions are the app's own; see [ADR 0002](docs/adr/0002-own-roles-instead-of-spatie-permission.md). SQLite works out of the box; MySQL and PostgreSQL work too.
 
 ## Getting started
 
@@ -108,7 +108,7 @@ Backend code lives in `app/`, with staffing rules in `app/Staffing`. Pages are i
 
 ## Deploying
 
-The hub ships as a Docker image, published as `ghcr.io/vatsim-scandinavia/events:dev` on every push to `dev`. [compose.yaml](compose.yaml) runs it with a scheduler and one storage volume for uploads, logs and SQLite; its comments cover the settings. Starting the container migrates the database and caches the configuration.
+The hub ships as a Docker image, published as `ghcr.io/vatsim-scandinavia/events:dev` on every push to `dev`. [compose.yaml](compose.yaml) runs it with a scheduler and one storage volume for uploads, logs and SQLite; its comments cover the settings. Starting the container migrates the database, creates the built-in roles (`php artisan roles:sync`) and caches the configuration.
 
 **Background jobs.** Two jobs run daily through Laravel's scheduler (`php artisan schedule:work` in the Compose setup, or `php artisan schedule:run` every minute from cron):
 

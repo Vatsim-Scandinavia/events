@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Auth\Roles;
 use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
@@ -58,9 +57,6 @@ class User extends Authenticatable
      * The roles the user holds, once per assignment. The pivot's fir_id is the FIR a role
      * applies in, or null when it applies across the hub.
      *
-     * For reading only: give roles with assignRole() and take them away through
-     * roleAssignments(), so RoleAssignment keeps fir_key in step for the unique index.
-     *
      * @return BelongsToMany<Role, $this>
      */
     public function roles(): BelongsToMany
@@ -104,23 +100,17 @@ class User extends Authenticatable
             return true;
         }
 
-        $this->loadMissing('roles.permissions');
-
         return $this->roles->contains(fn (Role $role) => ($fir === null || $role->pivot->fir_id === null || (int) $role->pivot->fir_id === $fir->id)
-            && $role->permissions->contains('name', $permission->value));
+            && $role->grants($permission));
     }
 
     /**
      * Whether the user holds the permission for an event: in the FIR that runs it, or across
-     * the hub. Events from before FIRs existed have none, so only hub-wide roles count there.
+     * the hub.
      */
     public function hasPermissionFor(Permission $permission, Event $event): bool
     {
-        if ($event->fir_id !== null) {
-            return $this->hasPermission($permission, $event->fir);
-        }
-
-        return $this->permissionNames()->contains($permission->value);
+        return $this->hasPermission($permission, $event->fir);
     }
 
     /**
@@ -135,11 +125,9 @@ class User extends Authenticatable
             return collect(Roles::all());
         }
 
-        $this->loadMissing('roles.permissions');
-
         return $this->roles
             ->filter(fn (Role $role) => $role->pivot->fir_id === null || ($fir !== null && (int) $role->pivot->fir_id === $fir->id))
-            ->flatMap(fn (Role $role) => $role->permissions->pluck('name'))
+            ->flatMap(fn (Role $role) => $role->permissions->pluck('value'))
             ->unique()
             ->values();
     }
@@ -159,7 +147,7 @@ class User extends Authenticatable
         }
 
         return $this->roles
-            ->filter(fn (Role $role) => $role->pivot->fir_id !== null && $role->permissions->pluck('name')->intersect($names)->isNotEmpty())
+            ->filter(fn (Role $role) => $role->pivot->fir_id !== null && $role->permissions->pluck('value')->intersect($names)->isNotEmpty())
             ->map(fn (Role $role) => (int) $role->pivot->fir_id)
             ->unique()
             ->values()
@@ -187,10 +175,10 @@ class User extends Authenticatable
         $query->whereHas('roles', fn (Builder $roles) => $roles
             ->where(fn (Builder $roles) => $roles
                 ->where('name', Roles::ADMINISTRATOR)
-                ->orWhereHas('permissions', fn (Builder $permissions) => $permissions->where('name', Permission::BookPositions->value)))
+                ->orWhereJsonContains('permissions', Permission::BookPositions->value))
             ->where(fn (Builder $roles) => $roles
                 ->whereNull('role_assignments.fir_id')
-                ->when($event->fir_id, fn (Builder $roles) => $roles->orWhere('role_assignments.fir_id', $event->fir_id))));
+                ->orWhere('role_assignments.fir_id', $event->fir_id)));
     }
 
     /**

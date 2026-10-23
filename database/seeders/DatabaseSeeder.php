@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->command->call('roles:sync');
         $this->call(EventSeeder::class);
 
         // A few people to sign in as from the dev login page.

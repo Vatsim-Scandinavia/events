@@ -7,7 +7,6 @@ use App\Models\EventType;
 use App\Models\Fir;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -144,18 +143,5 @@ class EventDraftTest extends TestCase
         $this->actingAs(User::factory()->staff($this->sweden)->create())->post("/events/{$draft->id}/publish")->assertForbidden();
 
         $this->assertTrue($draft->fresh()->isDraft());
-    }
-
-    public function test_events_from_before_drafts_count_as_published(): void
-    {
-        $event = Event::factory()->draft()->for($this->copenhagen)->create();
-        $migration = require database_path('migrations/2026_10_23_171452_add_published_at_to_events_table.php');
-
-        // Back to before drafts existed, then forward again.
-        $migration->down();
-        $this->assertFalse(Schema::hasColumn('events', 'published_at'));
-        $migration->up();
-
-        $this->assertFalse($event->fresh()->isDraft());
     }
 }

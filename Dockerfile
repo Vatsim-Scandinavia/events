@@ -80,8 +80,8 @@ RUN composer dump-autoload --optimize --no-dev \
     && php artisan storage:link \
     && chown -R www-data:www-data storage bootstrap/cache
 
-# Runs before Apache (or any other command, e.g. the scheduler): readies storage, migrates and
-# caches the configuration from the container's environment.
+# Runs before Apache (or any other command, e.g. the scheduler): readies storage, migrates, keeps
+# the built-in roles in place and caches the configuration from the container's environment.
 COPY --chmod=755 <<'EOF' /usr/local/bin/hub-entrypoint
 #!/bin/sh
 set -e
@@ -108,6 +108,7 @@ fi
 
 if [ "${RUN_MIGRATIONS:-true}" = true ]; then
     as_web php artisan migrate --force
+    as_web php artisan roles:sync
 fi
 
 as_web php artisan optimize

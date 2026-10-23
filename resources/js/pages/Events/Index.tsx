@@ -109,11 +109,9 @@ function EventRow({ event }: { event: HubEvent }) {
                     <div className="flex flex-wrap items-center gap-1.5">
                         <EventTypeBadge type={event.type} />
                         {event.draft && <Badge variant="outline">Draft</Badge>}
-                        {event.fir && (
-                            <span className="font-mono text-xs text-muted-foreground" title={event.fir.name}>
-                                {event.fir.icao}
-                            </span>
-                        )}
+                        <span className="font-mono text-xs text-muted-foreground" title={event.fir.name}>
+                            {event.fir.icao}
+                        </span>
                         <span className="text-xs text-muted-foreground tabular-nums sm:hidden">{event.time}</span>
                     </div>
                     <div className="md:hidden">

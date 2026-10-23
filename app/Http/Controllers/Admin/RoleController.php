@@ -26,7 +26,6 @@ class RoleController extends Controller
     public function index(Request $request): Response
     {
         $roles = Role::query()
-            ->with('permissions')
             ->withCount(['assignments as users_count' => fn (Builder $query) => $query->select(DB::raw('count(distinct user_id)'))])
             ->orderBy('name')
             ->get();
@@ -55,8 +54,7 @@ class RoleController extends Controller
     {
         $validated = $this->validated($request, null);
 
-        $role = Role::create(['name' => $validated['name'], 'guard_name' => 'web']);
-        $role->syncPermissions($validated['permissions']);
+        $role = Role::create($validated);
 
         Inertia::flash('success', "{$role->name} was created.");
 
@@ -69,7 +67,7 @@ class RoleController extends Controller
             'role' => [
                 'id' => $role->id,
                 'name' => $role->name,
-                'permissions' => $role->permissions->pluck('name'),
+                'permissions' => $role->permissions->pluck('value'),
                 'users' => $role->assignments()->distinct()->count('user_id'),
                 'builtIn' => Roles::isBuiltIn($role),
                 'administrator' => Roles::isAdministrator($role),
@@ -88,8 +86,7 @@ class RoleController extends Controller
             throw ValidationException::withMessages(['name' => "{$role->name} is built in, so it can’t be renamed."]);
         }
 
-        $role->update(['name' => $validated['name']]);
-        $role->syncPermissions($validated['permissions']);
+        $role->update($validated);
 
         Inertia::flash('success', "{$role->name} was saved.");
 
@@ -117,7 +114,7 @@ class RoleController extends Controller
     private function validated(Request $request, ?Role $role): array
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:50', Rule::unique('roles', 'name')->where('guard_name', 'web')->ignore($role)],
+            'name' => ['required', 'string', 'max:50', Rule::unique('roles', 'name')->ignore($role)],
             'permissions' => ['present', 'array'],
             'permissions.*' => ['string', Rule::enum(Permission::class)],
         ]);

@@ -8,8 +8,6 @@ use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\User;
 use Illuminate\Support\Collection;
-use Spatie\Permission\Models\Permission as PermissionModel;
-use Spatie\Permission\PermissionRegistrar;
 
 /**
  * The roles the hub ships with, and the rules for who may hand out which role.
@@ -43,26 +41,16 @@ final class Roles
     ];
 
     /**
-     * Makes sure every permission and built-in role exists, and that Administrator holds
-     * everything. Other built-in roles get their permissions only when first created.
+     * Makes sure every built-in role exists, and that Administrator holds every permission.
+     * Other built-in roles get their permissions only when first created.
      */
     public static function sync(): void
     {
-        foreach (Permission::cases() as $permission) {
-            PermissionModel::findOrCreate($permission->value, 'web');
-        }
-
-        Role::findOrCreate(self::ADMINISTRATOR, 'web')->syncPermissions(self::all());
+        Role::query()->updateOrCreate(['name' => self::ADMINISTRATOR], ['permissions' => Permission::cases()]);
 
         foreach (self::DEFAULTS as $name => $permissions) {
-            $role = Role::firstOrCreate(['name' => $name, 'guard_name' => 'web']);
-
-            if ($role->wasRecentlyCreated) {
-                $role->syncPermissions(array_map(fn (Permission $permission) => $permission->value, $permissions));
-            }
+            Role::query()->firstOrCreate(['name' => $name], ['permissions' => $permissions]);
         }
-
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
     /**
@@ -108,7 +96,7 @@ final class Roles
             return $user->isAdministrator();
         }
 
-        return $user->managesUsersIn($fir) && self::within($user, $role->permissions->pluck('name'), $fir);
+        return $user->managesUsersIn($fir) && self::within($user, $role->permissions->pluck('value'), $fir);
     }
 
     /**
@@ -136,11 +124,7 @@ final class Roles
      */
     public static function permissionLabels(Role $role): array
     {
-        return $role->permissions
-            ->map(fn (PermissionModel $permission) => Permission::tryFrom($permission->name)?->label())
-            ->filter()
-            ->values()
-            ->all();
+        return $role->permissions->map(fn (Permission $permission) => $permission->label())->values()->all();
     }
 
     /**
