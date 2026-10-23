@@ -7,14 +7,14 @@ The words used here and in the app (Occurrence, Shift Booking, Staffing Interest
 ## Features
 
 - **Events** with banners, airports, suggested routes, a slot link and a briefing link. Events can repeat weekly, every other week or monthly, and single dates (Occurrences) or whole events can be cancelled and restored.
-- **Drafts and publishing**: a new event starts as a Draft, seen only by staff who can view or manage events in its FIR. Publishing it shows it to everyone and announces it once on Discord, if a webhook is set.
+- **Drafts and publishing**: a new event starts as a Draft, seen only by staff who can view or manage events in its FIR. Publishing it shows it to everyone and announces it once on Discord, if a webhook is set. If Discord can't be reached, that's logged and the announcement isn't retried.
 - **Two ways to staff an event**, chosen per event:
   - *Pre-defined shifts*: staff lay out shifts per position on a timeline, and controllers make Shift Bookings first come, first served.
   - *Open interest*: controllers show Staffing Interest in the positions they want, with their availability, and staff build and publish a roster of Roster Entries from that.
 - **Roles per FIR**: see [Roles](#roles).
 - **Live network stats** from the VATSIM data feed on the home page.
 
-All times are UTC unless someone picks another time zone in their settings.
+Times are shown in UTC unless someone picks another time zone in their settings. Staff enter an event's times in a time zone of their choice, which also keeps a repeating event at the same local time across daylight saving changes.
 
 ## Roles
 
@@ -42,15 +42,16 @@ composer run setup
 
 This installs dependencies, creates `.env` from `.env.example`, generates the app key, runs the migrations and builds the frontend. Then:
 
-1. The vACC's name, division, subdivision, FIRs, website and logo are set by an Administrator under **Admin → Settings** once the hub is running. To lock any of these instead, so they can't be changed in the app, set them in `.env`:
+1. The vACC's name, division, subdivision, website and logo are set by an Administrator under **Admin → Settings** once the hub is running. To lock any of these but the logo instead, so they can't be changed in the app, set them in `.env`:
 
    ```env
    VACC_NAME="Example vACC"
    VACC_DIVISION="Example Division"
    VACC_SUBDIVISION=SCA
-   VACC_FIRS=EKDK,ESAA
    VACC_WEBSITE=https://example.org
    ```
+
+   FIRs are added under **Admin → FIRs**. For the Scandinavian FIRs on a fresh database, run `php artisan db:seed --class=FirSeeder`.
 
    Keys and secrets for VATSIM, Discord and other services are only ever set in `.env`.
 
@@ -112,7 +113,7 @@ The hub ships as a Docker image, published as `ghcr.io/vatsim-scandinavia/events
 **Background jobs.** Two jobs run daily through Laravel's scheduler (`php artisan schedule:work` in the Compose setup, or `php artisan schedule:run` every minute from cron):
 
 - `events:extend-repeats` adds new dates to events that repeat indefinitely.
-- `users:sync-vatsim` refreshes ratings and subdivisions from the VATSIM API, and with them the automatic Controller role. Set `VATSIM_SYNC=false` where people sign in with sandbox accounts, which the live API doesn't know.
+- `users:sync-vatsim` keeps the automatic Controller role up to date between sign-ins. While that role is switched on, it refreshes the rating and subdivision of everyone it could affect (people in the subdivision, or holding the automatic role) from the VATSIM API. Everyone else is refreshed when they sign in. Set `VATSIM_SYNC=false` where people sign in with sandbox accounts, which the live API doesn't know.
 
 No queue worker is needed: nothing is queued.
 
