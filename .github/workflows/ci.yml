@@ -73,10 +73,6 @@ jobs:
   image:
     name: Docker image
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      # Only used to publish the image on pushes to dev.
-      packages: write
 
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -97,10 +93,11 @@ jobs:
       # Start it as a server would run it and check it migrates, answers and refuses other hosts.
       - name: Smoke test
         run: |
+          # No DB_DATABASE, so SQLite has to land in the storage volume by itself.
           docker run -d --name hub \
             -e APP_KEY="base64:$(openssl rand -base64 32)" \
             -e APP_ENV=production -e APP_DEBUG=false -e APP_URL=http://hub.test \
-            -e DB_CONNECTION=sqlite -e DB_DATABASE=/app/storage/database.sqlite \
+            -e DB_CONNECTION=sqlite \
             -e LOG_CHANNEL=stderr \
             -p 8080:80 events:ci
 
@@ -115,8 +112,36 @@ jobs:
           curl -fsS -o /dev/null -H 'Host: hub.test' http://127.0.0.1:8080/events
           test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: attacker.example' http://127.0.0.1:8080/)" = 400
 
+          docker exec hub test -f /app/storage/database.sqlite
+          # The web server can't change the code, only storage/ and bootstrap/cache.
+          docker exec -u www-data hub sh -c 'test ! -w /app/app/Models/User.php && test -w /app/storage'
+          # Query strings (VATSIM's sign-in codes) stay out of the access log.
+          curl -s -o /dev/null -H 'Host: hub.test' 'http://127.0.0.1:8080/auth/vatsim/callback?code=smoke-secret&state=x'
+          if docker logs hub 2>&1 | grep -q smoke-secret; then echo "The access log recorded a query string."; exit 1; fi
+
+          # A SQLite path outside the storage volume stops the container with a clear message.
+          docker run --name bad-path -e APP_KEY="base64:$(openssl rand -base64 32)" -e APP_URL=http://hub.test \
+            -e DB_CONNECTION=sqlite -e DB_DATABASE=/app/database/elsewhere.sqlite events:ci || true
+          docker logs bad-path 2>&1 | grep -q 'Point DB_DATABASE into /app/storage'
+
+  # Its own job, so pull request builds never hold registry write access.
+  publish:
+    name: Publish image
+    if: github.event_name == 'push'
+    needs: [checks, image]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
       - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push'
         uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
@@ -125,7 +150,6 @@ jobs:
 
       # Only dev and the commit's sha, never latest, which may be what the current production app runs.
       - name: Publish the image
-        if: github.event_name == 'push'
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .

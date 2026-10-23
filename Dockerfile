@@ -43,8 +43,11 @@ opcache.validate_timestamps = 0
 opcache.max_accelerated_files = 20000
 EOF
 
-# Apache serves public/ on port 80 and logs to the container's output.
+# Apache serves public/ on port 80 and logs to the container's output. The access log leaves out
+# query strings and referrers, which carry VATSIM's one-time sign-in codes after sign-in.
 COPY <<'EOF' /etc/apache2/sites-available/000-default.conf
+LogFormat "%h %l %u %t \"%m %U %H\" %>s %O \"%{User-Agent}i\"" hub
+
 <VirtualHost *:80>
     DocumentRoot /app/public
 
@@ -55,7 +58,7 @@ COPY <<'EOF' /etc/apache2/sites-available/000-default.conf
     </Directory>
 
     ErrorLog /dev/stderr
-    CustomLog /dev/stdout combined
+    CustomLog /dev/stdout hub
 </VirtualHost>
 EOF
 COPY <<'EOF' /etc/apache2/conf-enabled/hub.conf
@@ -69,8 +72,9 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts --no-autoloader
 
-COPY --chown=www-data:www-data . .
-COPY --from=frontend --chown=www-data:www-data /app/public/build public/build
+# The code stays owned by root, so the web server can only write to storage/ and bootstrap/cache.
+COPY . .
+COPY --from=frontend /app/public/build public/build
 
 RUN composer dump-autoload --optimize --no-dev \
     && php artisan storage:link \
@@ -92,9 +96,14 @@ as_web() {
 mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs
 if [ "$(id -u)" = 0 ]; then chown -R www-data:www-data storage; fi
 
-# A SQLite database has to exist before migrating, e.g. DB_DATABASE=/app/storage/database.sqlite.
-if [ "${DB_CONNECTION:-sqlite}" = sqlite ] && [ -n "$DB_DATABASE" ] && [ ! -f "$DB_DATABASE" ]; then
-    as_web touch "$DB_DATABASE"
+# SQLite lives in the storage volume unless DB_DATABASE says otherwise, so it survives new images,
+# and the file has to exist before migrating.
+if [ "${DB_CONNECTION:-sqlite}" = sqlite ]; then
+    export DB_DATABASE="${DB_DATABASE:-/app/storage/database.sqlite}"
+    if [ ! -f "$DB_DATABASE" ] && ! as_web touch "$DB_DATABASE"; then
+        echo "Can't create the SQLite database at $DB_DATABASE. Point DB_DATABASE into /app/storage, the persistent volume." >&2
+        exit 1
+    fi
 fi
 
 if [ "${RUN_MIGRATIONS:-true}" = true ]; then

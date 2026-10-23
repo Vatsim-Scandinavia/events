@@ -1,8 +1,12 @@
 # Runs the hub from the image CI publishes (or builds it here with `docker compose build`).
 #
 # Put the settings in a .env next to this file, starting from .env.example. For a server set at
-# least APP_KEY, APP_URL, APP_ENV, APP_DEBUG=false and the VATSIM Connect client. With SQLite,
-# point DB_DATABASE into the storage volume, e.g. DB_DATABASE=/app/storage/database.sqlite.
+# least APP_KEY, APP_URL, APP_ENV, APP_DEBUG=false, SESSION_SECURE_COOKIE=true and the VATSIM
+# Connect client. SQLite is kept at /app/storage/database.sqlite unless DB_DATABASE says otherwise
+# (keep it inside /app/storage, the only place that survives new images).
+#
+# Each start caches the configuration, so `docker compose exec app php artisan …` uses the same
+# database. After `php artisan config:clear` in a container, restart it to cache it again.
 #
 # Everything uploaded, logged or stored in SQLite lives in the "storage" volume, so it survives
 # new images. Put a reverse proxy that handles HTTPS in front of port 8080 and list it in
@@ -14,7 +18,9 @@ services:
     build: .
     env_file: .env
     ports:
-      - "8080:80"
+      # Only reachable from this machine, where the reverse proxy runs. If the proxy is elsewhere,
+      # bind to the interface it reaches you on, never the open internet: the app speaks plain HTTP.
+      - "127.0.0.1:8080:80"
     volumes:
       - storage:/app/storage
     restart: unless-stopped
