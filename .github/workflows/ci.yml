@@ -69,3 +69,68 @@ jobs:
 
       - name: Run tests
         run: php artisan test --compact
+
+  image:
+    name: Docker image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Only used to publish the image on pushes to dev.
+      packages: write
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build the image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          tags: events:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Start it as a server would run it and check it migrates, answers and refuses other hosts.
+      - name: Smoke test
+        run: |
+          docker run -d --name hub \
+            -e APP_KEY="base64:$(openssl rand -base64 32)" \
+            -e APP_ENV=production -e APP_DEBUG=false -e APP_URL=http://hub.test \
+            -e DB_CONNECTION=sqlite -e DB_DATABASE=/app/storage/database.sqlite \
+            -e LOG_CHANNEL=stderr \
+            -p 8080:80 events:ci
+
+          for _ in $(seq 1 30); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' hub)
+            [ "$status" = healthy ] && break
+            sleep 3
+          done
+          docker logs hub
+          test "$status" = healthy
+
+          curl -fsS -o /dev/null -H 'Host: hub.test' http://127.0.0.1:8080/events
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: attacker.example' http://127.0.0.1:8080/)" = 400
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Only dev and the commit's sha, never latest, which may be what the current production app runs.
+      - name: Publish the image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/vatsim-scandinavia/events:dev
+            ghcr.io/vatsim-scandinavia/events:sha-${{ github.sha }}
+          cache-from: type=gha
