@@ -8,6 +8,7 @@ use App\Models\Fir;
 use App\Models\User;
 use App\Services\DisplayTime;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Foundation\ViteException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
@@ -15,6 +16,7 @@ use Illuminate\Support\ServiceProvider;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -55,6 +57,12 @@ class AppServiceProvider extends ServiceProvider
             $status = $response->statusCode();
             $request = $response->request;
 
+            // The branded page needs the frontend build too, so when that's what failed, fall back
+            // to the plain page in resources/views/errors.
+            if ($this->isFrontendFailure($response->exception)) {
+                return null;
+            }
+
             // Keep Laravel's detailed error page for server errors while debugging, and plain JSON for API clients.
             $debugging = $status >= 500 && config('app.debug');
             $wantsJson = $request->expectsJson() && ! $request->inertia();
@@ -65,5 +73,19 @@ class AppServiceProvider extends ServiceProvider
 
             return null;
         });
+    }
+
+    /**
+     * Whether the exception, or one it wraps, is the frontend build missing or broken.
+     */
+    private function isFrontendFailure(Throwable $exception): bool
+    {
+        for ($current = $exception; $current !== null; $current = $current->getPrevious()) {
+            if ($current instanceof ViteException) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
