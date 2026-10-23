@@ -1,0 +1,34 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": ["typescript", "react", "jsx-a11y"],
+    "categories": {
+        "correctness": "error",
+        "suspicious": "warn"
+    },
+    "rules": {
+        "react/rules-of-hooks": "error",
+        "react/exhaustive-deps": "warn",
+        "react/react-in-jsx-scope": "off",
+
+        // `{ omitted, ...rest }` is how the app drops a field from an object.
+        "no-unused-vars": ["error", { "ignoreRestSiblings": true }],
+
+        // React Compiler style advice: worth following in new code, not errors in existing code.
+        "react/set-state-in-effect": "warn",
+        "react/purity": "warn",
+        "react/refs": "warn",
+
+        // False positives: table cells, <datalist> options and labels whose text is in child spans.
+        "jsx-a11y/control-has-associated-label": "off",
+        "jsx-a11y/label-has-associated-control": "off",
+        // Timeline slots are focusable groups with keyboard handlers, by design (see timeline.tsx).
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/no-noninteractive-tabindex": "off",
+        "jsx-a11y/prefer-tag-over-role": "off",
+        // The inline "add position" field focuses itself when opened from its button.
+        "jsx-a11y/no-autofocus": "off",
+        // The banner drop zone is a button styled through aria-invalid.
+        "jsx-a11y/role-supports-aria-props": "off"
+    },
+    "ignorePatterns": ["resources/js/components/ui/**"]
+}
