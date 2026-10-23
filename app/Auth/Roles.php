@@ -84,28 +84,49 @@ final class Roles
     }
 
     /**
-     * People can only hand out, take away or change roles that allow no more than they can do
-     * themselves across the hub, so managing users or roles never becomes a way to gain
-     * permissions.
+     * Whether the permissions allow no more than the user can do across the hub, or in the
+     * given FIR (counting their hub-wide roles too).
      *
      * @param  iterable<string>  $permissions
      */
-    public static function within(User $user, iterable $permissions): bool
+    public static function within(User $user, iterable $permissions, ?Fir $fir = null): bool
     {
-        return collect($permissions)->diff($user->permissionNames())->isEmpty();
+        return collect($permissions)->diff($user->permissionNames($fir))->isEmpty();
     }
 
     /**
+     * Whether the user may give or take away the role in the given FIR, or across the hub when
+     * none is given: they must manage users there, and the role must allow no more than they
+     * can do there, so managing users never becomes a way to gain permissions.
+     *
      * Administrator also runs the hub's configuration, which no permission covers, so only
      * Administrators can hand it out or take it away.
      */
-    public static function canGrant(User $user, Role $role): bool
+    public static function canGrant(User $user, Role $role, ?Fir $fir = null): bool
     {
         if (self::isAdministrator($role)) {
             return $user->isAdministrator();
         }
 
-        return self::within($user, $role->permissions->pluck('name'));
+        return $user->managesUsersIn($fir) && self::within($user, $role->permissions->pluck('name'), $fir);
+    }
+
+    /**
+     * Where the user may give the role: across the hub (null) and the FIRs (by id), in that
+     * order. Empty when they can't give it anywhere.
+     *
+     * @param  Collection<int, Fir>  $firs
+     * @return list<int|null>
+     */
+    public static function grantableIn(User $user, Role $role, Collection $firs): array
+    {
+        $places = self::isAdministrator($role) ? [null] : [null, ...$firs->all()];
+
+        return collect($places)
+            ->filter(fn (?Fir $fir) => self::canGrant($user, $role, $fir))
+            ->map(fn (?Fir $fir) => $fir?->id)
+            ->values()
+            ->all();
     }
 
     /**

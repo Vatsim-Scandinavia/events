@@ -103,24 +103,11 @@ class RoleAssignmentManagementTest extends TestCase
         $this->actingAs($manager)->get("/admin/users/{$staff->id}")->assertInertia(fn (Assert $page) => $page
             ->where('assignments.0.canRemove', false)
             ->where('roles.0.name', Roles::ADMINISTRATOR)
-            ->where('roles.0.canGrant', false)
+            ->where('roles.0.grantableIn', [])
             ->where('roles.0.hubOnly', true)
             ->where('roles.3.name', 'User Manager')
-            ->where('roles.3.canGrant', true)
+            ->where('roles.3.grantableIn', [null])
         );
-    }
-
-    public function test_roles_held_in_a_single_fir_do_not_let_you_hand_out_roles(): void
-    {
-        $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'User Manager'])->givePermissionTo(Permission::ManageUsers->value));
-        $copenhagen = Fir::factory()->create();
-        $manager->assignRole(Roles::EVENT_STAFF, $copenhagen);
-        $user = User::factory()->create();
-
-        $this->actingAs($manager)
-            ->post("/admin/users/{$user->id}/roles", ['role_id' => Role::findByName(Roles::EVENT_STAFF)->id, 'fir_id' => $copenhagen->id])
-            ->assertSessionHasErrors('roles');
     }
 
     public function test_the_last_administrator_cannot_be_removed(): void

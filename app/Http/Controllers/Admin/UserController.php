@@ -52,6 +52,10 @@ class UserController extends Controller
     public function edit(Request $request, User $user): Response
     {
         $roles = Role::query()->with('permissions')->orderBy('name')->get();
+        // Only the FIRs the signed-in user may give roles in.
+        $firs = Fir::query()->orderBy('icao')->get(['id', 'icao', 'name'])
+            ->filter(fn (Fir $fir) => $request->user()->managesUsersIn($fir))
+            ->values();
 
         return Inertia::render('Admin/Users/Edit', [
             'user' => $this->summary($user),
@@ -64,17 +68,17 @@ class UserController extends Controller
                     'fir' => $assignment->fir ? ['icao' => $assignment->fir->icao, 'name' => $assignment->fir->name] : null,
                     // Given by the hub's automatic Controller role, which would give it straight back.
                     'automatic' => $assignment->source === AssignmentSource::Automatic,
-                    'canRemove' => $assignment->source !== AssignmentSource::Automatic && Roles::canGrant($request->user(), $assignment->role),
+                    'canRemove' => $assignment->source !== AssignmentSource::Automatic && Roles::canGrant($request->user(), $assignment->role, $assignment->fir),
                 ])
                 ->values(),
             'roles' => $roles->map(fn (Role $role) => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'permissions' => Roles::permissionLabels($role),
-                'canGrant' => Roles::canGrant($request->user(), $role),
+                'grantableIn' => Roles::grantableIn($request->user(), $role, $firs),
                 'hubOnly' => Roles::isAdministrator($role),
             ]),
-            'firs' => Fir::query()->orderBy('icao')->get(['id', 'icao', 'name']),
+            'firs' => $firs,
         ]);
     }
 
