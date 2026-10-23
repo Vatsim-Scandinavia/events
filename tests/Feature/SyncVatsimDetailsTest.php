@@ -85,6 +85,53 @@ class SyncVatsimDetailsTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_the_daily_sync_can_be_switched_off(): void
+    {
+        $this->configure(automatic: true);
+        config(['services.vatsim.sync' => false]);
+        $controller = $this->automaticController(1000001);
+        Http::fake();
+
+        $this->artisan('users:sync-vatsim')
+            ->expectsOutput('Syncing with VATSIM is switched off (VATSIM_SYNC=false); nothing to sync.')
+            ->assertSuccessful();
+
+        Http::assertNothingSent();
+        $this->assertTrue($this->holdsController($controller, AssignmentSource::Automatic));
+    }
+
+    public function test_members_vatsim_does_not_know_are_left_alone(): void
+    {
+        // Sandbox accounts sign in with member IDs the live VATSIM API has never heard of.
+        $this->configure(automatic: true);
+        $sandbox = $this->automaticController(10000005);
+
+        Http::fake(['api.vatsim.net/v2/members/10000005' => Http::response(['detail' => 'Not found.'], 404)]);
+
+        $this->artisan('users:sync-vatsim')->assertSuccessful();
+
+        $this->assertSame('SCA', $sandbox->fresh()->subdivision);
+        $this->assertSame(ControllerRating::S2, $sandbox->fresh()->rating);
+        $this->assertTrue($this->holdsController($sandbox, AssignmentSource::Automatic));
+    }
+
+    public function test_roles_given_by_hand_are_never_taken_away(): void
+    {
+        $this->configure(automatic: true);
+        $visitor = User::factory()->rated(ControllerRating::S2)->create(['vatsim_cid' => 1000001, 'subdivision' => 'SCA']);
+        $visitor->assignRole(Roles::CONTROLLER);
+        $visitor->assignRole(Roles::EVENT_STAFF);
+
+        // VATSIM says they've left the subdivision, which would take an automatic role away.
+        Http::fake(['api.vatsim.net/v2/members/1000001' => Http::response(['id' => 1000001, 'rating' => ControllerRating::S2->value, 'subdivision_id' => 'GER'])]);
+
+        $this->artisan('users:sync-vatsim')->assertSuccessful();
+
+        $this->assertSame('GER', $visitor->fresh()->subdivision);
+        $this->assertTrue($this->holdsController($visitor, AssignmentSource::Manual));
+        $this->assertSame(2, $visitor->roleAssignments()->count());
+    }
+
     private function configure(bool $automatic): void
     {
         $identity = app(VaccIdentity::class);
