@@ -2,7 +2,7 @@ import { router } from '@inertiajs/react';
 import { EyeOff, GripVertical } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useConfirm } from '@/components/confirm-dialog';
-import { formatWindows } from '@/components/staffing/event-staffing';
+import { formatWindows } from '@/components/staffing/open-interest';
 import Timeline, { type TimelineItem } from '@/components/staffing/timeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

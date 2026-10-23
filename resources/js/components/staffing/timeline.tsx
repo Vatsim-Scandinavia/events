@@ -2,7 +2,6 @@ import { Lock, Plus, Trash2, X } from 'lucide-react';
 import {
     useEffect,
     useId,
-    useRef,
     useState,
     type DragEvent,
     type KeyboardEvent as ReactKeyboardEvent,
@@ -10,6 +9,7 @@ import {
     type ReactNode,
 } from 'react';
 import { usePage } from '@inertiajs/react';
+import { clashes, SNAP, useTimelineDrag, type Drag } from '@/components/staffing/use-timeline-drag';
 import { clockIn, zoneSuffix } from '@/lib/time';
 import { cn } from '@/lib/utils';
 
@@ -56,18 +56,6 @@ type Props = {
     footer?: ReactNode;
 };
 
-type Drag = {
-    kind: 'create' | 'move' | 'resize-start' | 'resize-end';
-    item?: TimelineItem;
-    rowId: number;
-    origin: number;
-    start: number;
-    end: number;
-    moved: boolean;
-};
-
-const SNAP = 15;
-
 // Labels a span of minutes from the start in the viewer's time zone, e.g. "18:00–20:00 CEST".
 function useSpanLabel(startsAt: string) {
     const { displayTimezone } = usePage().props;
@@ -103,15 +91,21 @@ export default function Timeline({
     footer,
 }: Props) {
     const { clock, span: spanLabel, suffix } = useSpanLabel(startsAt);
-    const trackRef = useRef<HTMLDivElement>(null);
-    const [drag, setDrag] = useState<Drag | null>(null);
     const [dropTarget, setDropTarget] = useState<{
         rowId: number;
         minute: number;
     } | null>(null);
     const [rejected, setRejected] = useState<string | null>(null);
-    const dragRef = useRef<Drag | null>(null);
-    dragRef.current = drag;
+    const { trackRef, drag, begin, minuteAt } = useTimelineDrag({
+        noun,
+        duration,
+        items,
+        readOnly,
+        allowRowChange,
+        onCreate,
+        onChange,
+        onReject: setRejected,
+    });
     const hintId = useId();
 
     useEffect(() => {
@@ -123,125 +117,6 @@ export default function Timeline({
 
         return () => clearTimeout(timer);
     }, [rejected]);
-
-    const minuteAt = (clientX: number) => {
-        const rect = trackRef.current!.getBoundingClientRect();
-        const raw = ((clientX - rect.left) / rect.width) * duration;
-
-        return Math.min(duration, Math.max(0, Math.round(raw / SNAP) * SNAP));
-    };
-
-    const rowAt = (clientX: number, clientY: number, fallback: number) => {
-        const element = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>('[data-timeline-row]');
-
-        return element ? Number(element.dataset.timelineRow) : fallback;
-    };
-
-    const clashes = (rowId: number, start: number, end: number, except?: number) =>
-        items.some((item) => item.rowId === rowId && item.id !== except && item.start < end && item.end > start);
-
-    useEffect(() => {
-        if (!drag) {
-            return;
-        }
-
-        const move = (event: PointerEvent) => {
-            const current = dragRef.current!;
-            const minute = minuteAt(event.clientX);
-            const next = {
-                ...current,
-                moved: current.moved || minute !== current.origin,
-            };
-
-            if (current.kind === 'create') {
-                next.start = Math.min(current.origin, minute);
-                next.end = Math.max(current.origin, minute);
-            } else if (current.kind === 'move') {
-                const item = current.item!;
-                const length = item.end - item.start;
-                next.start = Math.min(duration - length, Math.max(0, item.start + minute - current.origin));
-                next.end = next.start + length;
-                next.rowId = allowRowChange ? rowAt(event.clientX, event.clientY, current.rowId) : current.rowId;
-                next.moved = next.moved || next.rowId !== item.rowId;
-            } else if (current.kind === 'resize-start') {
-                next.start = Math.min(current.item!.end - SNAP, minute);
-            } else {
-                next.end = Math.max(current.item!.start + SNAP, minute);
-            }
-
-            setDrag(next);
-        };
-
-        const up = () => {
-            const current = dragRef.current!;
-            setDrag(null);
-
-            // A click on an empty stretch adds an hour, cut short by the next span or the end.
-            if (current.kind === 'create' && !current.moved) {
-                const next = Math.min(
-                    duration,
-                    ...items.filter((item) => item.rowId === current.rowId && item.start >= current.origin).map((item) => item.start),
-                );
-                current.start = Math.min(current.origin, duration - SNAP);
-                current.end = Math.min(current.start + 60, next);
-                current.moved = true;
-            }
-
-            if (!current.moved) {
-                return;
-            }
-
-            if (current.end - current.start < SNAP || clashes(current.rowId, current.start, current.end, current.item?.id)) {
-                setRejected(
-                    current.kind === 'create'
-                        ? `There’s no room for a ${noun} there; it would overlap another one.`
-                        : `That would overlap another ${noun} on the same position.`,
-                );
-
-                return;
-            }
-
-            if (current.kind === 'create') {
-                onCreate?.(current.rowId, current.start, current.end);
-            } else if (current.item) {
-                const { item } = current;
-
-                if (item.rowId !== current.rowId || item.start !== current.start || item.end !== current.end) {
-                    onChange?.(item, current.rowId, current.start, current.end);
-                }
-            }
-        };
-
-        window.addEventListener('pointermove', move);
-        window.addEventListener('pointerup', up, { once: true });
-
-        return () => {
-            window.removeEventListener('pointermove', move);
-            window.removeEventListener('pointerup', up);
-        };
-        // The listeners only need re-binding when a drag starts or ends.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [drag !== null]);
-
-    const begin = (event: ReactPointerEvent, kind: Drag['kind'], rowId: number, item?: TimelineItem) => {
-        event.stopPropagation();
-
-        if (readOnly || event.button !== 0 || item?.locked) {
-            return;
-        }
-
-        event.preventDefault();
-        const minute = minuteAt(event.clientX);
-        setDrag({
-            kind,
-            item,
-            rowId,
-            origin: minute,
-            start: item?.start ?? minute,
-            end: item?.end ?? minute,
-            moved: false,
-        });
-    };
 
     // Keyboard editing: arrows move a span by one snap, Shift+arrows change its length,
     // up and down move it to the next row, and Delete removes it.
@@ -306,7 +181,7 @@ export default function Timeline({
             return;
         }
 
-        if (clashes(rowId, start, end, item.id)) {
+        if (clashes(items, rowId, start, end, item.id)) {
             setRejected(`That would overlap another ${noun} on the same position.`);
 
             return;
@@ -386,7 +261,7 @@ export default function Timeline({
                     {rows.map((row) => {
                         const rowItems = items.filter((item) => item.rowId === row.id);
                         const ghost = drag && drag.rowId === row.id && drag.end > drag.start ? drag : null;
-                        const ghostClashes = ghost && clashes(row.id, ghost.start, ghost.end, ghost.item?.id);
+                        const ghostClashes = ghost && clashes(items, row.id, ghost.start, ghost.end, ghost.item?.id);
 
                         return (
                             <div key={row.id} className="flex border-b last:border-b-0">
