@@ -118,6 +118,32 @@ class DiscordAnnouncementTest extends TestCase
         Log::shouldHaveReceived('warning')->twice()->withArgs(fn (string $message) => $message === 'Could not announce the event on Discord.');
     }
 
+    public function test_the_webhook_never_appears_in_the_logs(): void
+    {
+        Log::spy();
+        // Connection errors name the URL they were calling, which here is the secret.
+        Http::fake([self::WEBHOOK => fn () => throw new ConnectionException('cURL error 28: Operation timed out for '.self::WEBHOOK)]);
+        $event = $this->weeklyDraft();
+
+        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+
+        Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message, array $context) => ! str_contains(json_encode($context), 'secret')
+            && str_contains($context['exception'], 'Operation timed out for [webhook]'));
+    }
+
+    public function test_an_event_running_past_midnight_shows_the_day_it_ends(): void
+    {
+        Http::fake([self::WEBHOOK => Http::response(null, 204)]);
+        $event = Event::factory()->draft()->for($this->copenhagen)->create([
+            'starts_at' => Carbon::parse('2026-11-10 22:00', 'UTC'),
+            'ends_at' => Carbon::parse('2026-11-11 02:00', 'UTC'),
+        ]);
+
+        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+
+        Http::assertSent(fn (Request $request) => collect($request['embeds'][0]['fields'])->pluck('value', 'name')['Dates (UTC)'] === 'Tue 10 Nov 2026, 22:00–Wed 11 Nov 02:00z');
+    }
+
     public function test_nothing_is_posted_on_create_edit_cancel_or_delete(): void
     {
         Http::fake();

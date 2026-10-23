@@ -38,7 +38,11 @@ final class DiscordAnnouncements
                 'allowed_mentions' => ['parse' => []],
             ])->throw();
         } catch (ConnectionException|RequestException $e) {
-            Log::warning('Could not announce the event on Discord.', ['event' => $event->id, 'exception' => $e->getMessage()]);
+            // Connection errors name the URL they called, and the webhook URL is a secret.
+            Log::warning('Could not announce the event on Discord.', [
+                'event' => $event->id,
+                'exception' => str_replace($webhook, '[webhook]', $e->getMessage()),
+            ]);
         }
     }
 
@@ -64,15 +68,20 @@ final class DiscordAnnouncements
     }
 
     /**
-     * The dates still to come that aren't cancelled, one per line.
+     * The dates still to come that aren't cancelled, one per line. An event that runs past
+     * midnight UTC shows the day it ends too.
      */
     private function dates(Event $event): string
     {
         $upcoming = $event->occurrences()->orderBy('starts_at')->get()
             ->reject(fn (EventOccurrence $occurrence) => $occurrence->hasEnded() || $occurrence->isCancelled());
 
-        $lines = $upcoming->take(self::MAX_DATES)->map(fn (EventOccurrence $occurrence) => $occurrence->starts_at->utc()->format('D j M Y, H:i')
-            .'–'.$occurrence->ends_at->utc()->format('H:i').'z');
+        $lines = $upcoming->take(self::MAX_DATES)->map(function (EventOccurrence $occurrence) {
+            $startsAt = $occurrence->starts_at->utc();
+            $endsAt = $occurrence->ends_at->utc();
+
+            return $startsAt->format('D j M Y, H:i').'–'.$endsAt->format($endsAt->isSameDay($startsAt) ? 'H:i' : 'D j M H:i').'z';
+        });
 
         if ($upcoming->count() > self::MAX_DATES) {
             $lines->push('and '.($upcoming->count() - self::MAX_DATES).' more');
