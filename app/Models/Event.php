@@ -13,6 +13,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class Event extends Model
 {
@@ -214,6 +216,56 @@ class Event extends Model
     public function isCancelled(): bool
     {
         return $this->cancelled_at !== null;
+    }
+
+    /**
+     * Calls off the whole event. Nothing is deleted: bookings, interest and rosters stay so a
+     * restored event picks up where it was.
+     *
+     * @throws ValidationException when every date is already over
+     */
+    public function cancel(): void
+    {
+        if ($this->occurrences->every(fn (EventOccurrence $occurrence) => $occurrence->hasEnded())) {
+            throw ValidationException::withMessages(['cancel' => 'All of this event’s dates are already over.']);
+        }
+
+        $this->update(['cancelled_at' => $this->cancelled_at ?? now()]);
+    }
+
+    public function restore(): void
+    {
+        $this->update(['cancelled_at' => null]);
+    }
+
+    /**
+     * Switches how the event is staffed. Data that belongs to the old mode is cleared, so it
+     * can't resurface if staff switch back later:
+     *
+     * - Shifts and their bookings.
+     * - Interest and rosters for dates that haven't ended (rosters of past dates stay as a record).
+     * - Positions too, when staffing is switched off.
+     */
+    public function switchStaffingMode(StaffingMode $mode): void
+    {
+        if ($this->staffing_mode === $mode) {
+            return;
+        }
+
+        DB::transaction(function () use ($mode) {
+            PositionShift::query()->whereIn('event_position_id', $this->positions()->select('id'))->delete();
+
+            $upcoming = $this->occurrences()->where('ends_at', '>', now())->pluck('id');
+            StaffingInterest::query()->whereIn('event_occurrence_id', $upcoming)->delete();
+            RosterEntry::query()->whereIn('event_occurrence_id', $upcoming)->delete();
+            $this->occurrences()->whereKey($upcoming)->update(['roster_published_at' => null]);
+
+            if ($mode === StaffingMode::None) {
+                $this->positions()->delete();
+            }
+
+            $this->update(['staffing_mode' => $mode]);
+        });
     }
 
     /**

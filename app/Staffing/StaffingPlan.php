@@ -28,8 +28,6 @@ final class StaffingPlan
 
     private const string FREQUENCY = '/^1[1-3]\d\.\d{2,3}$/';
 
-    public function __construct(private readonly Rosters $rosters) {}
-
     /**
      * @param  array{
      *     positions: list<array{key: int, callsign: string, frequency?: string|null}>,
@@ -67,7 +65,7 @@ final class StaffingPlan
                 $this->saveRoster($occurrence, $roster, $ids);
 
                 if ($plan['publish'] ?? false) {
-                    $this->rosters->publish($occurrence);
+                    $occurrence->publishRoster();
                 }
             }
         });

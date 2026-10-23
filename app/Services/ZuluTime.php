@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Staffing;
+namespace App\Services;
 
 use Carbon\CarbonImmutable;
 

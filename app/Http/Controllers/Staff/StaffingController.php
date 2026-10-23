@@ -7,7 +7,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\EventResource;
 use App\Models\Event;
 use App\Models\EventOccurrence;
-use App\Staffing\StaffingModes;
 use App\Staffing\StaffingPlan;
 use App\Staffing\StaffingPresenter;
 use Illuminate\Http\RedirectResponse;
@@ -36,7 +35,7 @@ class StaffingController extends Controller
     /**
      * Changing the staffing mode clears the old mode's shifts, bookings, interest and roster.
      */
-    public function update(Request $request, Event $event, StaffingModes $modes): RedirectResponse
+    public function update(Request $request, Event $event): RedirectResponse
     {
         Gate::authorize('manageStaffing', $event);
 
@@ -52,7 +51,7 @@ class StaffingController extends Controller
             'interest_opens_hours' => $validated['interest_opens_hours'],
             'interest_closes_hours' => $validated['interest_closes_hours'],
         ]);
-        $modes->switch($event, StaffingMode::from($validated['mode']));
+        $event->switchStaffingMode(StaffingMode::from($validated['mode']));
 
         return Inertia::flash('success', 'Staffing settings saved.')->back();
     }

@@ -2,7 +2,7 @@
 
 namespace Tests\Unit;
 
-use App\Staffing\ZuluTime;
+use App\Services\ZuluTime;
 use Carbon\CarbonImmutable;
 use PHPUnit\Framework\TestCase;
 
