@@ -9,7 +9,6 @@ use App\Enums\ControllerRating;
 use App\Enums\Permission;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,8 +19,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
-#[Fillable(['vatsim_cid', 'name', 'email', 'password', 'rating', 'subdivision', 'timezone'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['vatsim_cid', 'name', 'email', 'rating', 'subdivision', 'timezone'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -35,8 +33,6 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
             'vatsim_cid' => 'integer',
             'rating' => ControllerRating::class,
         ];

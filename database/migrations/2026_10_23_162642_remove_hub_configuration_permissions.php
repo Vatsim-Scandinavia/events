@@ -3,6 +3,7 @@
 use App\Auth\Roles;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -15,7 +16,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::transaction(fn () => Permission::query()->whereIn('name', ['manage-roles', 'manage-settings'])->get()->each->delete());
+        $tables = config('permission.table_names');
+
+        // Plain queries, so this keeps working once the per-user permission table is dropped.
+        DB::transaction(function () use ($tables) {
+            $ids = DB::table($tables['permissions'])->whereIn('name', ['manage-roles', 'manage-settings'])->pluck('id');
+
+            DB::table($tables['role_has_permissions'])->whereIn('permission_id', $ids)->delete();
+
+            if (Schema::hasTable($tables['model_has_permissions'])) {
+                DB::table($tables['model_has_permissions'])->whereIn('permission_id', $ids)->delete();
+            }
+
+            DB::table($tables['permissions'])->whereIn('id', $ids)->delete();
+        });
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
