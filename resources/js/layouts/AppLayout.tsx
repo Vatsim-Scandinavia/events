@@ -21,9 +21,7 @@ type AppLayoutProps = {
 
 type NavigationItem = { label: string; href: string; section?: string };
 
-const navigation: NavigationItem[] = [
-    { label: 'Events', href: '/events' },
-];
+const navigation: NavigationItem[] = [{ label: 'Events', href: '/events' }];
 
 // Errors that aren't tied to a form field, raised by sign-in and the staffing and role rules on the server.
 const generalErrorKeys = ['signIn', 'booking', 'interest', 'roster', 'staffing', 'role', 'fir', 'cancel'];
