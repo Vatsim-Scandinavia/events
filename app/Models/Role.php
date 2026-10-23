@@ -13,7 +13,8 @@ use Spatie\Permission\Models\Role as SpatieRole;
 class Role extends SpatieRole
 {
     /**
-     * Everyone holding the role, once per assignment.
+     * Everyone holding the role, once per assignment. For reading only: give roles with
+     * User::assignRole(), so RoleAssignment keeps fir_key in step for the unique index.
      */
     public function users(): BelongsToMany
     {

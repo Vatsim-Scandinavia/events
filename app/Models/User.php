@@ -58,6 +58,9 @@ class User extends Authenticatable
      * The roles the user holds, once per assignment. The pivot's fir_id is the FIR a role
      * applies in, or null when it applies across the hub.
      *
+     * For reading only: give roles with assignRole() and take them away through
+     * roleAssignments(), so RoleAssignment keeps fir_key in step for the unique index.
+     *
      * @return BelongsToMany<Role, $this>
      */
     public function roles(): BelongsToMany
