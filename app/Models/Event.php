@@ -159,13 +159,13 @@ class Event extends Model
 
     /**
      * Makes a Draft visible to everyone. Publishing is one-way, and publishing again keeps
-     * when it was first published.
+     * when it was first published, even when two requests publish at once.
      */
     public function publish(): void
     {
-        if ($this->isDraft()) {
-            $this->forceFill(['published_at' => now()])->save();
-        }
+        static::query()->whereKey($this->getKey())->whereNull('published_at')->update(['published_at' => now()]);
+
+        $this->forceFill(['published_at' => static::query()->whereKey($this->getKey())->value('published_at')])->syncOriginal();
     }
 
     /**

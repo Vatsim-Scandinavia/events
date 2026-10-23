@@ -116,6 +116,24 @@ class EventDraftTest extends TestCase
         $this->assertTrue($event->fresh()->published_at->equalTo($firstPublished));
     }
 
+    public function test_publishing_twice_at_once_keeps_the_first_time(): void
+    {
+        $draft = Event::factory()->draft()->for($this->copenhagen)->create();
+        // Two requests that both loaded the event while it was still a Draft.
+        $first = Event::query()->find($draft->id);
+        $second = Event::query()->find($draft->id);
+
+        $this->travelTo(now()->startOfMinute());
+        $first->publish();
+        $publishedAt = now();
+
+        $this->travel(5)->minutes();
+        $second->publish();
+
+        $this->assertTrue($draft->fresh()->published_at->equalTo($publishedAt));
+        $this->assertTrue($second->published_at->equalTo($publishedAt));
+    }
+
     public function test_only_people_who_manage_the_event_can_publish_it(): void
     {
         $draft = Event::factory()->draft()->for($this->copenhagen)->create();
