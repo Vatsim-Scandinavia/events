@@ -1,4 +1,4 @@
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { AdminHeader, RoleBadges } from '@/components/admin-header';
@@ -16,6 +16,7 @@ type UsersIndexProps = {
 };
 
 export default function UsersIndex({ users, filters, roles, firs }: UsersIndexProps) {
+    const { auth } = usePage().props;
     const [search, setSearch] = useState(filters.search);
     const first = useRef(true);
 
@@ -57,7 +58,7 @@ export default function UsersIndex({ users, filters, roles, firs }: UsersIndexPr
                             type="search"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by name, email or CID"
+                            placeholder={auth.user?.isAdministrator ? 'Search by name, email or CID' : 'Search by name or CID'}
                             aria-label="Search users"
                             className="pl-8"
                         />
@@ -122,7 +123,7 @@ export default function UsersIndex({ users, filters, roles, firs }: UsersIndexPr
                                         <td className="px-4 py-3 align-middle">
                                             <div className="flex min-w-0 flex-col gap-1">
                                                 <span className="truncate font-medium text-foreground">{user.name}</span>
-                                                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                                                {user.email && <span className="truncate text-xs text-muted-foreground">{user.email}</span>}
                                                 <div className="lg:hidden">
                                                     <RoleBadges roles={user.roles} />
                                                 </div>

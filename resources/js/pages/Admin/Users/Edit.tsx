@@ -81,7 +81,8 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
     const details = [
         ['VATSIM CID', user.cid ?? '—'],
         ['Rating', user.rating ?? '—'],
-        ['Email', user.email],
+        // Only Administrators are sent email addresses.
+        ...(user.email !== undefined ? [['Email', user.email]] : []),
         ['Joined', user.joinedAt ?? '—'],
     ];
 
