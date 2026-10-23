@@ -23,7 +23,7 @@ class SiteSettingsTest extends TestCase
         Storage::fake('public');
     }
 
-    public function test_only_people_who_manage_settings_can_open_or_save_the_settings(): void
+    public function test_only_administrators_can_open_or_save_the_settings(): void
     {
         $this->get('/admin/settings')->assertRedirect('/auth/vatsim');
         $this->post('/admin/settings', $this->payload())->assertRedirect('/auth/vatsim');

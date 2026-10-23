@@ -22,12 +22,6 @@ enum Permission: string
     /** See every user and assign their roles. */
     case ManageUsers = 'manage-users';
 
-    /** Create, edit and delete roles and choose their permissions. */
-    case ManageRoles = 'manage-roles';
-
-    /** Change the vACC's name, airspace, website and logo. */
-    case ManageSettings = 'manage-settings';
-
     public function label(): string
     {
         return match ($this) {
@@ -36,8 +30,6 @@ enum Permission: string
             self::ViewEvents => 'View all events',
             self::BookPositions => 'Control events',
             self::ManageUsers => 'Manage users',
-            self::ManageRoles => 'Manage roles',
-            self::ManageSettings => 'Manage settings',
         };
     }
 
@@ -49,8 +41,6 @@ enum Permission: string
             self::ViewEvents => 'See every event and its staffing as staff do, without changing anything.',
             self::BookPositions => 'Book shifts, show interest in staffing and be put on rosters.',
             self::ManageUsers => 'See every user and assign their roles.',
-            self::ManageRoles => 'Create, edit and delete roles and choose what they allow.',
-            self::ManageSettings => 'Change the vACC’s name, airspace, website and logo.',
         };
     }
 }

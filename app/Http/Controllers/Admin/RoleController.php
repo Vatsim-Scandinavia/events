@@ -16,7 +16,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * Lets admins create roles and choose which permissions each one grants.
+ * Lets Administrators create roles and choose which permissions each one grants. Roles are
+ * shared by every FIR, so no one else may change them.
  *
  * Built-in roles can't be renamed or deleted, and Administrator always has every permission.
  */
@@ -46,7 +47,7 @@ class RoleController extends Controller
     {
         return Inertia::render('Admin/Roles/Form', [
             'role' => null,
-            'permissions' => $this->permissions($request),
+            'permissions' => $this->permissions(),
         ]);
     }
 
@@ -72,15 +73,15 @@ class RoleController extends Controller
                 'users' => $role->assignments()->distinct()->count('user_id'),
                 'builtIn' => Roles::isBuiltIn($role),
                 'administrator' => Roles::isAdministrator($role),
-                'canChange' => ! Roles::isAdministrator($role) && Roles::canGrant($request->user(), $role),
+                'canChange' => ! Roles::isAdministrator($role),
             ],
-            'permissions' => $this->permissions($request),
+            'permissions' => $this->permissions(),
         ]);
     }
 
     public function update(Request $request, Role $role): RedirectResponse
     {
-        $this->ensureChangeable($request, $role);
+        $this->ensureChangeable($role);
         $validated = $this->validated($request, $role);
 
         if (Roles::isBuiltIn($role) && $validated['name'] !== $role->name) {
@@ -95,9 +96,9 @@ class RoleController extends Controller
         return redirect('/admin/roles');
     }
 
-    public function destroy(Request $request, Role $role): RedirectResponse
+    public function destroy(Role $role): RedirectResponse
     {
-        $this->ensureChangeable($request, $role);
+        $this->ensureChangeable($role);
 
         if (Roles::isBuiltIn($role)) {
             throw ValidationException::withMessages(['role' => "{$role->name} is built in, so it can’t be deleted."]);
@@ -123,38 +124,27 @@ class RoleController extends Controller
 
         $validated['permissions'] = array_values(array_unique($validated['permissions']));
 
-        if (! Roles::within($request->user(), $validated['permissions'])) {
-            throw ValidationException::withMessages([
-                'permissions' => 'You can only give a role permissions you have yourself.',
-            ]);
-        }
-
         return $validated;
     }
 
-    private function ensureChangeable(Request $request, Role $role): void
+    private function ensureChangeable(Role $role): void
     {
         if (Roles::isAdministrator($role)) {
             throw ValidationException::withMessages(['role' => 'Administrator is built in and always has every permission.']);
         }
-
-        if (! Roles::canGrant($request->user(), $role)) {
-            throw ValidationException::withMessages(['role' => "{$role->name} allows more than you can do yourself, so you can’t change it."]);
-        }
     }
 
     /**
-     * Every permission, and whether the signed-in user may hand it out.
+     * Every permission a role can grant.
      *
-     * @return list<array{value: string, label: string, description: string, canGrant: bool}>
+     * @return list<array{value: string, label: string, description: string}>
      */
-    private function permissions(Request $request): array
+    private function permissions(): array
     {
         return array_map(fn (Permission $permission) => [
             'value' => $permission->value,
             'label' => $permission->label(),
             'description' => $permission->description(),
-            'canGrant' => Roles::within($request->user(), [$permission->value]),
         ], Permission::cases());
     }
 }

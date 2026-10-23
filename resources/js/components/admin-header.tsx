@@ -17,10 +17,10 @@ export function AdminHeader({ title, description, action }: AdminHeaderProps) {
     const { url } = usePage();
     const tabs = [
         auth.user?.can['manage-users'] && { label: 'Users', href: '/admin/users' },
-        auth.user?.can['manage-roles'] && { label: 'Roles', href: '/admin/roles' },
-        auth.user?.can['manage-settings'] && { label: 'FIRs', href: '/admin/firs' },
-        auth.user?.can['manage-settings'] && { label: 'Event types', href: '/admin/event-types' },
-        auth.user?.can['manage-settings'] && { label: 'Settings', href: '/admin/settings' },
+        auth.user?.isAdministrator && { label: 'Roles', href: '/admin/roles' },
+        auth.user?.isAdministrator && { label: 'FIRs', href: '/admin/firs' },
+        auth.user?.isAdministrator && { label: 'Event types', href: '/admin/event-types' },
+        auth.user?.isAdministrator && { label: 'Settings', href: '/admin/settings' },
     ].filter((tab): tab is { label: string; href: string } => Boolean(tab));
 
     return (

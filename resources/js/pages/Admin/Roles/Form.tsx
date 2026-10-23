@@ -63,9 +63,7 @@ export default function RoleForm({ role, permissions }: RoleFormProps) {
                 {locked && (
                     <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm text-muted-foreground">
                         <Lock className="mt-0.5 size-4 shrink-0" />
-                        {role.administrator
-                            ? 'Administrator is built in. It always has every permission and can’t be renamed or deleted.'
-                            : 'This role allows more than you can do yourself, so you can’t change it.'}
+                        Administrator is built in. It always has every permission and can’t be renamed or deleted.
                     </p>
                 )}
 
@@ -97,7 +95,7 @@ export default function RoleForm({ role, permissions }: RoleFormProps) {
                 <Card>
                     <CardHeader>
                         <CardTitle>Permissions</CardTitle>
-                        <CardDescription>What people with this role can do. You can only give permissions you have yourself.</CardDescription>
+                        <CardDescription>What people with this role can do.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-4">
                         <ul className="flex flex-col divide-y">
@@ -110,14 +108,11 @@ export default function RoleForm({ role, permissions }: RoleFormProps) {
                                             id={id}
                                             className="mt-0.5"
                                             checked={form.data.permissions.includes(permission.value)}
-                                            disabled={locked || !permission.canGrant}
+                                            disabled={locked}
                                             onCheckedChange={(checked) => toggle(permission.value, checked === true)}
                                         />
                                         <label htmlFor={id} className="flex flex-1 flex-col gap-0.5">
-                                            <span className="flex items-center gap-1.5 font-medium">
-                                                {permission.label}
-                                                {!permission.canGrant && !locked && <Lock className="size-3.5 text-muted-foreground" aria-hidden />}
-                                            </span>
+                                            <span className="font-medium">{permission.label}</span>
                                             <span className="text-sm text-muted-foreground">{permission.description}</span>
                                         </label>
                                     </li>

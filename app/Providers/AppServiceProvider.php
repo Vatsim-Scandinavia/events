@@ -40,6 +40,10 @@ class AppServiceProvider extends ServiceProvider
             Gate::define($permission->value, fn (User $user, ?Fir $fir = null) => $user->hasPermission($permission, $fir));
         }
 
+        // Roles and the hub's settings, FIRs and event types are shared by every FIR, so only
+        // Administrators may change them.
+        Gate::define('administer', fn (User $user) => $user->isAdministrator());
+
         // Generous for people clicking around, but stops scripts hammering bookings and admin pages.
         RateLimiter::for('signed-in', fn (Request $request) => Limit::perMinute(120)->by((string) $request->user()?->id));
         RateLimiter::for('sign-in', fn (Request $request) => Limit::perMinute(10)->by((string) $request->ip()));

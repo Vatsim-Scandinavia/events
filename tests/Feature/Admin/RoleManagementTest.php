@@ -14,7 +14,7 @@ class RoleManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_only_people_who_manage_roles_can_open_the_role_pages(): void
+    public function test_only_administrators_can_open_the_role_pages(): void
     {
         $this->get('/admin/roles')->assertRedirect('/auth/vatsim');
         $this->actingAs(User::factory()->staff()->create())->get('/admin/roles')->assertForbidden();
@@ -100,38 +100,5 @@ class RoleManagementTest extends TestCase
             [Permission::ViewEvents->value, Permission::ManageStaffing->value],
             $role->fresh()->permissions->pluck('name')->all(),
         );
-    }
-
-    public function test_you_can_only_build_roles_from_permissions_you_hold(): void
-    {
-        $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'Role Manager'])->givePermissionTo([
-            Permission::ManageRoles->value,
-            Permission::ManageStaffing->value,
-        ]));
-
-        $this->actingAs($manager)->post('/admin/roles', [
-            'name' => 'Sneaky',
-            'permissions' => [Permission::ManageUsers->value],
-        ])->assertSessionHasErrors('permissions');
-        $this->assertDatabaseMissing('roles', ['name' => 'Sneaky']);
-
-        // Event Staff can manage events, which this manager can't, so it's out of reach.
-        $staff = Role::findByName(Roles::EVENT_STAFF);
-        $this->actingAs($manager)->put("/admin/roles/{$staff->id}", ['name' => 'Event Staff', 'permissions' => []])->assertSessionHasErrors('role');
-        $this->actingAs($manager)->delete("/admin/roles/{$staff->id}")->assertSessionHasErrors('role');
-
-        $this->actingAs($manager)->get("/admin/roles/{$staff->id}/edit")->assertInertia(fn (Assert $page) => $page
-            ->component('Admin/Roles/Form')
-            ->where('role.canChange', false)
-            ->where('permissions.1.value', Permission::ManageStaffing->value)
-            ->where('permissions.1.canGrant', true)
-            ->where('permissions.2.canGrant', false)
-        );
-
-        $this->actingAs($manager)->post('/admin/roles', [
-            'name' => 'Rostering',
-            'permissions' => [Permission::ManageStaffing->value],
-        ])->assertSessionHasNoErrors();
     }
 }

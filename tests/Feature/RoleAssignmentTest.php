@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Auth\Roles;
 use App\Enums\Permission;
 use App\Models\Fir;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
@@ -38,11 +39,12 @@ class RoleAssignmentTest extends TestCase
 
     public function test_administrators_pass_every_check_even_without_the_permission(): void
     {
+        Role::findByName(Roles::ADMINISTRATOR)->revokePermissionTo(Permission::ManageUsers->value);
         $admin = User::factory()->admin()->create();
         Gate::define('something-new', fn () => false);
 
         $this->assertTrue(Gate::forUser($admin)->allows('something-new'));
-        $this->assertTrue($admin->hasPermission(Permission::ManageSettings, Fir::factory()->create()));
+        $this->assertTrue($admin->hasPermission(Permission::ManageUsers, Fir::factory()->create()));
     }
 
     public function test_administrator_cannot_be_held_in_a_single_fir(): void

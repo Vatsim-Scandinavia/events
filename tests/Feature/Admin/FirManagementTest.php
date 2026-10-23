@@ -14,7 +14,7 @@ class FirManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_only_people_who_manage_settings_can_open_the_fir_pages(): void
+    public function test_only_administrators_can_open_the_fir_pages(): void
     {
         $fir = Fir::factory()->create(['icao' => 'EKDK', 'name' => 'Copenhagen']);
         Event::factory()->count(2)->for($fir)->create();
