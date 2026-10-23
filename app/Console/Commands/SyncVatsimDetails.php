@@ -18,7 +18,9 @@ use Illuminate\Support\Sleep;
  * subdivision and never signs in again would keep the automatic Controller role. This
  * re-reads their VATSIM member record every day and gives or takes the role to match.
  *
- * A member whose record can't be fetched is left as they are, so an outage never takes roles away.
+ * A member whose record can't be fetched is left as they are, so an outage, or a sandbox
+ * account the live API doesn't know, never takes roles away. Only the automatic Controller role
+ * is ever taken away; roles given by hand are left alone. VATSIM_SYNC=false switches it off.
  */
 #[Signature('users:sync-vatsim {--pause=1000 : Milliseconds to wait between requests to the VATSIM API}')]
 #[Description('Refresh VATSIM ratings and subdivisions, and the automatic Controller role')]
@@ -28,6 +30,12 @@ class SyncVatsimDetails extends Command
 
     public function handle(ControllerRole $controllerRole): void
     {
+        if (! config('services.vatsim.sync')) {
+            $this->info('Syncing with VATSIM is switched off (VATSIM_SYNC=false); nothing to sync.');
+
+            return;
+        }
+
         if (! $controllerRole->isAutomatic()) {
             $this->info('The automatic Controller role is switched off; nothing to sync.');
 
