@@ -102,6 +102,8 @@ export type StaffOccurrence = Occurrence & {
     interestOpensAt: string;
     rosterPublished: boolean;
     rosterArchived: boolean;
+    // The event is still a Draft, so its roster can't be published yet.
+    eventDraft: boolean;
     startsAt: string;
     durationMinutes: number;
 };

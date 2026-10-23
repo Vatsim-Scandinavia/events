@@ -126,16 +126,18 @@ function Planner(props: StaffingPageProps) {
                 }
                 onSave={() => save()}
                 publish={
-                    mode === 'open_interest' && !occurrence.rosterArchived
+                    mode === 'open_interest' && !occurrence.rosterArchived && !occurrence.eventDraft
                         ? { published: occurrence.rosterPublished, onSaveAndPublish: () => save(true) }
                         : undefined
                 }
                 liveNote={
                     mode === 'shifts'
                         ? 'Shifts become bookable when you save.'
-                        : occurrence.rosterPublished
-                          ? 'The roster is published, so saved changes show to controllers straight away.'
-                          : 'The roster stays hidden from controllers until you publish it.'
+                        : occurrence.eventDraft
+                          ? 'The roster can be published once the event is.'
+                          : occurrence.rosterPublished
+                            ? 'The roster is published, so saved changes show to controllers straight away.'
+                            : 'The roster stays hidden from controllers until you publish it.'
                 }
             />
         </>

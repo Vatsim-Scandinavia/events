@@ -85,6 +85,11 @@ class DraftStaffingTest extends TestCase
             ->assertSessionHasErrors(['roster' => 'Publish the event before its roster.']);
 
         $this->assertNull($occurrence->fresh()->roster_published_at);
+
+        // The planner knows, so it doesn't offer to publish.
+        $this->actingAs(User::factory()->staff()->create())->get("/events/{$draft->id}/staffing")->assertInertia(fn (Assert $page) => $page
+            ->where('occurrence.eventDraft', true)
+        );
     }
 
     public function test_event_staff_can_still_set_up_staffing_on_a_draft(): void
