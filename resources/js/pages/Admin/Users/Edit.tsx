@@ -149,7 +149,12 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
                                             )}
                                         </span>
                                         {assignment.canRemove && (
-                                            <Button variant="ghost" size="sm" onClick={() => remove(assignment)} aria-label={`Remove ${describe(assignment)}`}>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => remove(assignment)}
+                                                aria-label={`Remove ${describe(assignment)}`}
+                                            >
                                                 <Trash2 />
                                             </Button>
                                         )}
