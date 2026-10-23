@@ -6,7 +6,9 @@ use App\Auth\Roles;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use RuntimeException;
 use Tests\TestCase;
 
 class LeftoverSchemaTest extends TestCase
@@ -36,6 +38,24 @@ class LeftoverSchemaTest extends TestCase
         $migration->up();
         $this->assertFalse(Schema::hasColumn('users', 'password'));
         $this->assertFalse(Schema::hasTable('model_has_roles'));
+    }
+
+    public function test_it_refuses_to_drop_role_tables_that_still_hold_rows(): void
+    {
+        $migration = require database_path(self::MIGRATION);
+        $migration->down();
+        $user = User::factory()->create();
+        DB::table('model_has_roles')->insert(['role_id' => Role::findByName(Roles::EVENT_STAFF)->id, 'model_type' => User::class, 'model_id' => $user->id]);
+
+        try {
+            $migration->up();
+            $this->fail('The migration dropped a table that still held a role.');
+        } catch (RuntimeException $exception) {
+            $this->assertStringContainsString('model_has_roles still holds rows', $exception->getMessage());
+        }
+
+        $this->assertSame(1, DB::table('model_has_roles')->count());
+        $this->assertTrue(Schema::hasColumn('users', 'password'));
     }
 
     public function test_signing_out_and_deleting_roles_still_work(): void

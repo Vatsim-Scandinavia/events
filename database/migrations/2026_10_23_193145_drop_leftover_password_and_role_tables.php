@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -13,6 +14,15 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Dropping can't be undone, so stop rather than lose any role or permission still held there.
+        foreach (['model_has_roles', 'model_has_permissions'] as $name) {
+            $table = config("permission.table_names.{$name}");
+
+            if (Schema::hasTable($table) && DB::table($table)->exists()) {
+                throw new RuntimeException("{$table} still holds rows, which would be lost. Move them into role_assignments first.");
+            }
+        }
+
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn(['password', 'email_verified_at', 'remember_token']);
         });
