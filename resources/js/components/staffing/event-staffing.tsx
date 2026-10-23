@@ -54,15 +54,18 @@ export default function EventStaffing({ eventId, staffing }: Props) {
 }
 
 function ShiftBoard({ staffing }: { staffing: Extract<EventStaffing, { mode: 'shifts' }> }) {
-    const { viewer, bookingOpen, occurrence } = staffing;
+    const { viewer, bookingOpen: open, occurrence, draft } = staffing;
+    const bookingOpen = open && !draft;
 
-    const hint = !bookingOpen
-        ? 'Booking closed when the event started.'
-        : !viewer.signedIn
-          ? 'Sign in to book a shift.'
-          : !viewer.eligible
-            ? 'You need a controller rating (S1 or above) to book shifts.'
-            : 'Pick a free shift to book it. You can cancel until the event starts.';
+    const hint = draft
+        ? 'Controllers can book shifts once the event is published.'
+        : !bookingOpen
+          ? 'Booking closed when the event started.'
+          : !viewer.signedIn
+            ? 'Sign in to book a shift.'
+            : !viewer.eligible
+              ? 'You need a controller rating (S1 or above) to book shifts.'
+              : 'Pick a free shift to book it. You can cancel until the event starts.';
 
     return (
         <>
@@ -187,18 +190,27 @@ function ShiftStatus({ shift, callsign, occurrenceId, canBook }: { shift: Shift;
 }
 
 function OpenInterest({ staffing }: { staffing: Extract<EventStaffing, { mode: 'open_interest' }> }) {
-    const { viewer, interest, occurrence } = staffing;
+    const { viewer, interest, occurrence, draft } = staffing;
+    // Nobody can show interest in a Draft, so treat its window as not open.
+    const open = interest.state === 'open' && !draft;
 
     return (
         <>
-            <WindowNotice state={interest.state} opensAt={interest.opensAt} closesAt={interest.closesAt} />
+            {draft ? (
+                <p className="flex items-start gap-2 text-sm text-muted-foreground">
+                    <CalendarClock className="mt-0.5 size-4 shrink-0" />
+                    Controllers can show interest once the event is published.
+                </p>
+            ) : (
+                <WindowNotice state={interest.state} opensAt={interest.opensAt} closesAt={interest.closesAt} />
+            )}
 
-            {interest.state === 'open' && viewer.signedIn && viewer.eligible ? (
+            {open && viewer.signedIn && viewer.eligible ? (
                 <InterestForm occurrenceId={occurrence.id} positions={staffing.positions} mine={interest.mine} />
             ) : (
                 <>
                     {interest.mine && <InterestSummary interest={interest.mine} />}
-                    {interest.state === 'open' &&
+                    {open &&
                         (viewer.signedIn ? (
                             <p className="text-sm text-muted-foreground">You need a controller rating (S1 or above) to show interest.</p>
                         ) : (

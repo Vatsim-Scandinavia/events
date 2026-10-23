@@ -169,6 +169,17 @@ class Event extends Model
     }
 
     /**
+     * Events that aren't Drafts.
+     *
+     * @param  Builder<self>  $query
+     */
+    #[Scope]
+    protected function published(Builder $query): void
+    {
+        $query->whereNotNull('published_at');
+    }
+
+    /**
      * Events the user may see: published ones, plus Drafts in FIRs where they can view or
      * manage events. Guests only see published events.
      *
@@ -178,7 +189,7 @@ class Event extends Model
     protected function visibleTo(Builder $query, ?User $user): void
     {
         if ($user === null) {
-            $query->whereNotNull('published_at');
+            $query->published();
 
             return;
         }

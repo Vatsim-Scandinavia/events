@@ -41,6 +41,8 @@ final class StaffingPresenter
 
         $staffing = [
             'mode' => $event->staffing_mode->value,
+            // Staff see a Draft's staffing, but controllers can't staff it until it's published.
+            'draft' => $event->isDraft(),
             'canManage' => (bool) $viewer?->can('manageStaffing', $event),
             'viewer' => [
                 'signedIn' => $viewer !== null,
@@ -94,6 +96,8 @@ final class StaffingPresenter
                 'interestOpensAt' => $this->moment($occurrence->interestOpensAt()),
                 'rosterPublished' => $occurrence->isRosterPublished(),
                 'rosterArchived' => $occurrence->isRosterArchived(),
+                // A Draft's roster can be laid but not published until the event is.
+                'eventDraft' => $event->isDraft(),
                 'startsAt' => $occurrence->starts_at->utc()->toIso8601String(),
                 'durationMinutes' => (int) $occurrence->starts_at->diffInMinutes($occurrence->ends_at),
             ],
