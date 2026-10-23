@@ -119,6 +119,11 @@ jobs:
           curl -s -o /dev/null -H 'Host: hub.test' 'http://127.0.0.1:8080/auth/vatsim/callback?code=smoke-secret&state=x'
           if docker logs hub 2>&1 | grep -q smoke-secret; then echo "The access log recorded a query string."; exit 1; fi
 
+          # A SQLite path outside the storage volume stops the container with a clear message.
+          docker run --name bad-path -e APP_KEY="base64:$(openssl rand -base64 32)" -e APP_URL=http://hub.test \
+            -e DB_CONNECTION=sqlite -e DB_DATABASE=/app/database/elsewhere.sqlite events:ci || true
+          docker logs bad-path 2>&1 | grep -q 'Point DB_DATABASE into /app/storage'
+
   # Its own job, so pull request builds never hold registry write access.
   publish:
     name: Publish image

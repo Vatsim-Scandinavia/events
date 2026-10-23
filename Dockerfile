@@ -100,7 +100,10 @@ if [ "$(id -u)" = 0 ]; then chown -R www-data:www-data storage; fi
 # and the file has to exist before migrating.
 if [ "${DB_CONNECTION:-sqlite}" = sqlite ]; then
     export DB_DATABASE="${DB_DATABASE:-/app/storage/database.sqlite}"
-    [ -f "$DB_DATABASE" ] || as_web touch "$DB_DATABASE"
+    if [ ! -f "$DB_DATABASE" ] && ! as_web touch "$DB_DATABASE"; then
+        echo "Can't create the SQLite database at $DB_DATABASE. Point DB_DATABASE into /app/storage, the persistent volume." >&2
+        exit 1
+    fi
 fi
 
 if [ "${RUN_MIGRATIONS:-true}" = true ]; then
