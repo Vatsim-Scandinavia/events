@@ -44,13 +44,10 @@ class RoleAssignmentController extends Controller
             throw ValidationException::withMessages(['roles' => 'Administrator always applies across the hub.']);
         }
 
-        $exists = $user->roleAssignments()->where('role_id', $role->id)->where('fir_id', $fir?->id)->exists();
-
-        if ($exists) {
+        // Held already, including when someone else gave it a moment ago: the database keeps one copy.
+        if (! $user->assignRole($role, $fir)->wasRecentlyCreated) {
             throw ValidationException::withMessages(['roles' => "{$user->name} already has ".Roles::label($role, $fir).'.']);
         }
-
-        $user->assignRole($role, $fir);
 
         Inertia::flash('success', "{$user->name} now has ".Roles::label($role, $fir).'.');
 
