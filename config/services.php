@@ -38,6 +38,12 @@ return [
         'base_url' => env('VATSIM_CONNECT_BASE_URL') ?: 'https://auth.vatsim.net',
     ],
 
+    'discord' => [
+        // A channel webhook (Server Settings → Integrations → Webhooks). Published events are
+        // announced there; leave empty to announce nothing.
+        'events_webhook' => env('DISCORD_EVENTS_WEBHOOK'),
+    ],
+
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
