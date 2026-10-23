@@ -23,6 +23,7 @@ class UserController extends Controller
     public function index(Request $request): Response
     {
         $search = trim((string) $request->query('search', ''));
+        $showEmail = $request->user()->isAdministrator();
         $role = $request->integer('role') ?: null;
         $fir = $request->integer('fir') ?: null;
 
@@ -30,7 +31,8 @@ class UserController extends Controller
             ->with('roleAssignments.role', 'roleAssignments.fir')
             ->when($search !== '', fn ($query) => $query->where(fn ($query) => $query
                 ->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")
+                // Only those who can see email addresses can search by them.
+                ->when($showEmail, fn ($query) => $query->orWhere('email', 'like', "%{$search}%"))
                 ->orWhere('vatsim_cid', 'like', "{$search}%")))
             // Both filters have to match the same assignment: Event Staff *in* EKDK.
             ->when($role || $fir, fn ($query) => $query->whereHas('roleAssignments', fn (Builder $query) => $query
@@ -39,7 +41,7 @@ class UserController extends Controller
             ->orderBy('name')
             ->paginate(25)
             ->withQueryString()
-            ->through(fn (User $user) => $this->summary($user));
+            ->through(fn (User $user) => $this->summary($user, $showEmail));
 
         return Inertia::render('Admin/Users/Index', [
             'users' => $users,
@@ -58,7 +60,7 @@ class UserController extends Controller
             ->values();
 
         return Inertia::render('Admin/Users/Edit', [
-            'user' => $this->summary($user),
+            'user' => $this->summary($user, $request->user()->isAdministrator()),
             // Roles held across the hub first, then those held in one FIR.
             'assignments' => $user->roleAssignments()->with('role.permissions', 'fir')->get()
                 ->sortBy(fn (RoleAssignment $assignment) => [$assignment->fir_id === null ? 0 : 1, $assignment->role->name, $assignment->fir?->icao])
@@ -83,14 +85,16 @@ class UserController extends Controller
     }
 
     /**
+     * Email addresses are only sent to Administrators; others see name, CID and roles.
+     *
      * @return array<string, mixed>
      */
-    private function summary(User $user): array
+    private function summary(User $user, bool $showEmail): array
     {
         return [
             'id' => $user->id,
             'name' => $user->name,
-            'email' => $user->email,
+            ...($showEmail ? ['email' => $user->email] : []),
             'cid' => $user->vatsim_cid,
             'rating' => $user->rating?->label(),
             'roles' => Roles::labelsFor($user),

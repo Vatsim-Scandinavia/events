@@ -4,7 +4,8 @@ import type { PermissionName } from '@/types/inertia';
 export type AdminUser = {
     id: number;
     name: string;
-    email: string;
+    // Only sent to Administrators.
+    email?: string;
     cid: number | null;
     rating: string | null;
     roles: string[];
