@@ -30,7 +30,7 @@ final class ControllerRole
         return $this->identity->controllerRoleIsAutomatic() && $this->subdivision() !== null;
     }
 
-    public function qualifies(User $user): bool
+    private function qualifies(User $user): bool
     {
         return $this->isAutomatic()
             && $user->subdivision !== null

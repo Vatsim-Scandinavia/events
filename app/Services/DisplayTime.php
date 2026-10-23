@@ -20,7 +20,7 @@ final class DisplayTime
         return new self($user?->displayTimezone() ?? 'UTC');
     }
 
-    public function isZulu(): bool
+    private function isZulu(): bool
     {
         return $this->timezone === 'UTC';
     }
