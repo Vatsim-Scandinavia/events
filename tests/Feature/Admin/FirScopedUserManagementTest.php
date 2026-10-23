@@ -34,7 +34,7 @@ class FirScopedUserManagementTest extends TestCase
     {
         $anna = User::factory()->create(['name' => 'Anna']);
         $anna->assignRole(
-            Role::create(['name' => 'FIR Lead'])->givePermissionTo([Permission::ManageUsers->value, Permission::ManageEvents->value, Permission::ManageStaffing->value]),
+            Role::create(['name' => 'FIR Lead', 'permissions' => [Permission::ManageUsers->value, Permission::ManageEvents->value, Permission::ManageStaffing->value]]),
             $this->copenhagen,
         );
 
@@ -80,7 +80,7 @@ class FirScopedUserManagementTest extends TestCase
     public function test_they_can_only_give_roles_that_allow_nothing_beyond_what_they_can_do_in_that_fir(): void
     {
         $lead = User::factory()->create();
-        $lead->assignRole(Role::create(['name' => 'Events Lead'])->givePermissionTo([Permission::ManageUsers->value, Permission::ManageEvents->value]), $this->copenhagen);
+        $lead->assignRole(Role::create(['name' => 'Events Lead', 'permissions' => [Permission::ManageUsers->value, Permission::ManageEvents->value]]), $this->copenhagen);
         $newcomer = User::factory()->create();
 
         // Event Staff also manages staffing, which this lead can't do in EKDK.
@@ -140,7 +140,7 @@ class FirScopedUserManagementTest extends TestCase
     public function test_someone_who_manages_users_across_the_hub_can_give_roles_anywhere_their_permissions_reach(): void
     {
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'User Manager'])->givePermissionTo(Permission::ManageUsers->value));
+        $manager->assignRole(Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]));
         $manager->assignRole(Roles::EVENT_STAFF, $this->copenhagen);
         $newcomer = User::factory()->create();
         $staff = Role::findByName(Roles::EVENT_STAFF);

@@ -84,7 +84,7 @@ class RoleAssignmentManagementTest extends TestCase
     {
         // A user manager who can't manage events can't make anyone Event Staff, or an Administrator.
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'User Manager'])->givePermissionTo(Permission::ManageUsers->value));
+        $manager->assignRole(Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]));
         $user = User::factory()->create();
 
         foreach ([Roles::EVENT_STAFF, Roles::ADMINISTRATOR] as $role) {

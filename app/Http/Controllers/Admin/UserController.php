@@ -53,7 +53,7 @@ class UserController extends Controller
 
     public function edit(Request $request, User $user): Response
     {
-        $roles = Role::query()->with('permissions')->orderBy('name')->get();
+        $roles = Role::query()->orderBy('name')->get();
         // Only the FIRs the signed-in user may give roles in.
         $firs = Fir::query()->orderBy('icao')->get(['id', 'icao', 'name'])
             ->filter(fn (Fir $fir) => $request->user()->managesUsersIn($fir))
@@ -62,7 +62,7 @@ class UserController extends Controller
         return Inertia::render('Admin/Users/Edit', [
             'user' => $this->summary($user, $request->user()->isAdministrator()),
             // Roles held across the hub first, then those held in one FIR.
-            'assignments' => $user->roleAssignments()->with('role.permissions', 'fir')->get()
+            'assignments' => $user->roleAssignments()->with('role', 'fir')->get()
                 ->sortBy(fn (RoleAssignment $assignment) => [$assignment->fir_id === null ? 0 : 1, $assignment->role->name, $assignment->fir?->icao])
                 ->map(fn (RoleAssignment $assignment) => [
                     'id' => $assignment->id,

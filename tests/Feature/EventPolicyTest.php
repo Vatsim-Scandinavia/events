@@ -21,7 +21,7 @@ class EventPolicyTest extends TestCase
     private const array VIEW_ONLY = ['viewStaffing'];
 
     /**
-     * Who holds what, which event they act on (one run by EKDK, by ESAA, or by no FIR), and
+     * Who holds what, which event they act on (one run by EKDK or by ESAA), and
      * the abilities they should have on it.
      *
      * @return array<string, array{string, string, list<string>}>
@@ -31,14 +31,11 @@ class EventPolicyTest extends TestCase
         return [
             'EKDK Event Staff on an EKDK event' => ['ekdk-staff', 'EKDK', self::EVERYTHING],
             'EKDK Event Staff on an ESAA event' => ['ekdk-staff', 'ESAA', []],
-            'EKDK Event Staff on an event without a FIR' => ['ekdk-staff', 'none', []],
             'hub-wide Event Staff on an ESAA event' => ['hub-staff', 'ESAA', self::EVERYTHING],
-            'hub-wide Event Staff on an event without a FIR' => ['hub-staff', 'none', self::EVERYTHING],
             'EKDK vACC Staff on an EKDK event' => ['ekdk-vacc', 'EKDK', self::VIEW_ONLY],
             'EKDK vACC Staff on an ESAA event' => ['ekdk-vacc', 'ESAA', []],
             'hub-wide vACC Staff on an ESAA event' => ['hub-vacc', 'ESAA', self::VIEW_ONLY],
-            'hub-wide vACC Staff on an event without a FIR' => ['hub-vacc', 'none', self::VIEW_ONLY],
-            'Administrator on an event without a FIR' => ['administrator', 'none', self::EVERYTHING],
+            'Administrator on an ESAA event' => ['administrator', 'ESAA', self::EVERYTHING],
             'pilot on an EKDK event' => ['pilot', 'EKDK', []],
         ];
     }
@@ -64,7 +61,6 @@ class EventPolicyTest extends TestCase
         $event = Event::factory()->create(['fir_id' => match ($runBy) {
             'EKDK' => $ekdk->id,
             'ESAA' => $esaa->id,
-            'none' => null,
         }]);
 
         $granted = array_values(array_filter(self::ABILITIES, fn (string $ability) => Gate::forUser($user)->allows($ability, $event)));

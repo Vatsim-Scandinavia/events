@@ -36,7 +36,7 @@ class RoleAssignmentController extends Controller
             'fir_id.*' => 'Pick where the role applies.',
         ]);
 
-        $role = Role::query()->with('permissions')->findOrFail($validated['role_id']);
+        $role = Role::query()->findOrFail($validated['role_id']);
         $fir = isset($validated['fir_id']) ? Fir::query()->findOrFail($validated['fir_id']) : null;
         $this->ensureGrantable($request, $role, $fir);
 
@@ -57,7 +57,7 @@ class RoleAssignmentController extends Controller
     public function destroy(Request $request, User $user, RoleAssignment $roleAssignment): RedirectResponse
     {
         $assignment = $roleAssignment;
-        $assignment->load('role.permissions', 'fir');
+        $assignment->load('role', 'fir');
         $this->ensureGrantable($request, $assignment->role, $assignment->fir);
 
         if ($assignment->source === AssignmentSource::Automatic) {

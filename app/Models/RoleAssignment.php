@@ -26,17 +26,6 @@ class RoleAssignment extends Model
     ];
 
     /**
-     * fir_key mirrors fir_id, with 0 for across the hub, so the database can refuse a second copy
-     * of the same role in the same place (see the make_role_assignments_unique migration).
-     */
-    protected static function booted(): void
-    {
-        static::saving(function (RoleAssignment $assignment) {
-            $assignment->fir_key = $assignment->fir_id ?? 0;
-        });
-    }
-
-    /**
      * @return array<string, string>
      */
     protected function casts(): array

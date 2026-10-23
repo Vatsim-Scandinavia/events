@@ -32,7 +32,7 @@ class EventResource extends JsonResource
             'name' => $this->name,
             'type' => $this->eventType?->name ?? EventType::FALLBACK,
             'airports' => $this->airports,
-            'fir' => $this->fir ? ['icao' => $this->fir->icao, 'name' => $this->fir->name] : null,
+            'fir' => ['icao' => $this->fir->icao, 'name' => $this->fir->name],
             'startsAt' => $next->starts_at->utc()->toIso8601String(),
             'day' => (int) $display->date($next->starts_at, 'j'),
             'weekday' => $display->date($next->starts_at, 'D'),

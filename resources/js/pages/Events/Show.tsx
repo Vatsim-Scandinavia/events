@@ -79,12 +79,10 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                                 </Badge>
                             )}
                             {cancelled && <Badge variant="destructive">Cancelled</Badge>}
-                            {event.fir && (
-                                <span className="text-sm text-muted-foreground">
-                                    Run by {event.fir.name !== event.fir.icao ? `${event.fir.name} ` : ''}
-                                    <span className="font-mono">{event.fir.icao}</span>
-                                </span>
-                            )}
+                            <span className="text-sm text-muted-foreground">
+                                Run by {event.fir.name !== event.fir.icao ? `${event.fir.name} ` : ''}
+                                <span className="font-mono">{event.fir.icao}</span>
+                            </span>
                         </div>
                         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{event.name}</h1>
                         <AirportBadges airports={event.airports} />

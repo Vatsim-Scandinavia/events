@@ -2,19 +2,51 @@
 
 namespace App\Models;
 
+use App\Enums\Permission;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Spatie\Permission\Models\Role as SpatieRole;
 
 /**
  * A named set of permissions. People hold roles through role assignments, each either
  * across the hub or in one FIR.
  */
-class Role extends SpatieRole
+#[Fillable(['name', 'permissions'])]
+class Role extends Model
 {
     /**
-     * Everyone holding the role, once per assignment. For reading only: give roles with
-     * User::assignRole(), so RoleAssignment keeps fir_key in step for the unique index.
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'permissions' => '[]',
+    ];
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function casts(): array
+    {
+        return [
+            'permissions' => AsEnumCollection::of(Permission::class),
+        ];
+    }
+
+    public static function findByName(string $name): self
+    {
+        return static::query()->where('name', $name)->firstOrFail();
+    }
+
+    public function grants(Permission $permission): bool
+    {
+        return $this->permissions->contains($permission);
+    }
+
+    /**
+     * Everyone holding the role, once per assignment.
+     *
+     * @return BelongsToMany<User, $this>
      */
     public function users(): BelongsToMany
     {

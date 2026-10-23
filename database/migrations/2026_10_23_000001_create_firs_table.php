@@ -4,9 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Nothing ever counted interest in this column; it only held seeded numbers.
- */
 return new class extends Migration
 {
     /**
@@ -14,8 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            $table->dropColumn('interested_count');
+        Schema::create('firs', function (Blueprint $table) {
+            $table->id();
+            $table->char('icao', 4)->unique();
+            $table->string('name', 60);
+            $table->timestamps();
         });
     }
 
@@ -24,8 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('events', function (Blueprint $table) {
-            $table->unsignedInteger('interested_count')->default(0);
-        });
+        Schema::dropIfExists('firs');
     }
 };

@@ -10,7 +10,6 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
-use Spatie\Permission\Models\Permission as PermissionModel;
 use Tests\TestCase;
 
 class HubAdministrationTest extends TestCase
@@ -20,7 +19,7 @@ class HubAdministrationTest extends TestCase
     public function test_holding_every_permission_across_the_hub_still_leaves_hub_configuration_to_administrators(): void
     {
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'Everything but Administrator'])->givePermissionTo(Roles::all()));
+        $manager->assignRole(Role::create(['name' => 'Everything but Administrator', 'permissions' => Roles::all()]));
         $fir = Fir::factory()->create();
         $type = EventType::query()->firstOrFail();
         $role = Role::findByName(Roles::EVENT_STAFF);
@@ -48,7 +47,7 @@ class HubAdministrationTest extends TestCase
     public function test_only_administrators_can_give_or_take_away_administrator(): void
     {
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'Everything but Administrator'])->givePermissionTo(Roles::all()));
+        $manager->assignRole(Role::create(['name' => 'Everything but Administrator', 'permissions' => Roles::all()]));
         $administrator = Role::findByName(Roles::ADMINISTRATOR);
         $someone = User::factory()->create();
         $admin = User::factory()->admin()->create();
@@ -78,38 +77,10 @@ class HubAdministrationTest extends TestCase
             ->assertSessionHasErrors('permissions.0');
     }
 
-    public function test_migrating_takes_the_hub_configuration_permissions_away_from_every_role(): void
-    {
-        $settings = PermissionModel::findOrCreate('manage-settings', 'web');
-        $roles = PermissionModel::findOrCreate('manage-roles', 'web');
-        $team = Role::create(['name' => 'Settings Team'])->givePermissionTo([$settings, $roles, Permission::ManageEvents->value]);
-        Role::findByName(Roles::ADMINISTRATOR)->givePermissionTo([$settings, $roles]);
-
-        (require database_path('migrations/2026_10_23_162642_remove_hub_configuration_permissions.php'))->up();
-
-        $this->assertDatabaseMissing('permissions', ['name' => 'manage-settings']);
-        $this->assertDatabaseMissing('permissions', ['name' => 'manage-roles']);
-        $this->assertSame([Permission::ManageEvents->value], $team->fresh()->permissions->pluck('name')->all());
-        $this->assertEqualsCanonicalizing(Roles::all(), Role::findByName(Roles::ADMINISTRATOR)->permissions->pluck('name')->all());
-    }
-
-    public function test_rolling_back_gives_the_permissions_back_to_administrator_only(): void
-    {
-        $team = Role::create(['name' => 'Settings Team'])->givePermissionTo(Permission::ManageEvents->value);
-
-        (require database_path('migrations/2026_10_23_162642_remove_hub_configuration_permissions.php'))->down();
-
-        $this->assertEqualsCanonicalizing(
-            [...Roles::all(), 'manage-roles', 'manage-settings'],
-            Role::findByName(Roles::ADMINISTRATOR)->fresh()->permissions->pluck('name')->all(),
-        );
-        $this->assertSame([Permission::ManageEvents->value], $team->fresh()->permissions->pluck('name')->all());
-    }
-
     public function test_only_administrators_are_shown_the_hub_configuration_sections(): void
     {
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'User Manager'])->givePermissionTo(Permission::ManageUsers->value));
+        $manager->assignRole(Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]));
 
         $this->actingAs($manager)->get('/admin/users')->assertInertia(fn (Assert $page) => $page
             ->where('auth.user.isAdministrator', false)
