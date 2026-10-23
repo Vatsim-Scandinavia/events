@@ -19,8 +19,10 @@ use Inertia\Inertia;
 /**
  * Gives someone a role, across the hub or in one FIR, or takes one away, one at a time.
  *
- * People can only hand out or take away roles that allow no more than they can do across the
- * hub, Administrator always applies across the hub, and the hub keeps at least one.
+ * People can only hand out or take away a role where they manage users: in a FIR they manage
+ * users in, or across the hub if they manage users across the hub. The role must allow no more
+ * than they can do there, counting their hub-wide roles. Only Administrators can give or take
+ * away Administrator, which always applies across the hub, and the hub keeps at least one.
  */
 class RoleAssignmentController extends Controller
 {
@@ -36,7 +38,7 @@ class RoleAssignmentController extends Controller
 
         $role = Role::query()->with('permissions')->findOrFail($validated['role_id']);
         $fir = isset($validated['fir_id']) ? Fir::query()->findOrFail($validated['fir_id']) : null;
-        $this->ensureGrantable($request, $role);
+        $this->ensureGrantable($request, $role, $fir);
 
         if ($fir !== null && Roles::isAdministrator($role)) {
             throw ValidationException::withMessages(['roles' => 'Administrator always applies across the hub.']);
@@ -59,7 +61,7 @@ class RoleAssignmentController extends Controller
     {
         $assignment = $roleAssignment;
         $assignment->load('role.permissions', 'fir');
-        $this->ensureGrantable($request, $assignment->role);
+        $this->ensureGrantable($request, $assignment->role, $assignment->fir);
 
         if ($assignment->source === AssignmentSource::Automatic) {
             throw ValidationException::withMessages([
@@ -88,9 +90,17 @@ class RoleAssignmentController extends Controller
         return redirect("/admin/users/{$user->id}");
     }
 
-    private function ensureGrantable(Request $request, Role $role): void
+    private function ensureGrantable(Request $request, Role $role, ?Fir $fir): void
     {
-        if (! Roles::canGrant($request->user(), $role)) {
+        if (! $request->user()->managesUsersIn($fir)) {
+            throw ValidationException::withMessages([
+                'roles' => $fir
+                    ? 'You can only give or take away roles in FIRs where you manage users.'
+                    : 'You can only give or take away roles across the hub if you manage users across the hub.',
+            ]);
+        }
+
+        if (! Roles::canGrant($request->user(), $role, $fir)) {
             throw ValidationException::withMessages([
                 'roles' => "You can’t give or take away {$role->name}, because it allows more than you can do yourself.",
             ]);

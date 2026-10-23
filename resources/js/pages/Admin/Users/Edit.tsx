@@ -27,7 +27,8 @@ type AssignableRole = {
     id: number;
     name: string;
     permissions: string[];
-    canGrant: boolean;
+    // Where the signed-in user may give it: null for across the hub, otherwise a FIR's id.
+    grantableIn: (number | null)[];
     // Administrator always applies across the hub.
     hubOnly: boolean;
 };
@@ -36,6 +37,7 @@ type EditUserProps = {
     user: AdminUser;
     assignments: Assignment[];
     roles: AssignableRole[];
+    // The FIRs the signed-in user may give roles in.
     firs: (Fir & { id: number })[];
 };
 
@@ -47,6 +49,7 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
     const isMe = auth.user?.id === user.id;
     const form = useForm({ role_id: '' as number | '', fir_id: '' as number | '' });
     const picked = roles.find((role) => role.id === form.data.role_id);
+    const places = picked?.grantableIn ?? [];
 
     const add = (e: FormEvent) => {
         e.preventDefault();
@@ -172,7 +175,14 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
                                         value={form.data.role_id}
                                         onChange={(e) => {
                                             const role = roles.find((item) => item.id === Number(e.target.value));
-                                            form.setData((data) => ({ role_id: role?.id ?? '', fir_id: role?.hubOnly ? '' : data.fir_id }));
+                                            // Keep the place if the new role can be given there, otherwise take the first place it can.
+                                            form.setData((data) => {
+                                                const allowed = role?.grantableIn ?? [];
+                                                const current = data.fir_id === '' ? null : data.fir_id;
+                                                const place = allowed.includes(current) ? current : (allowed[0] ?? null);
+
+                                                return { role_id: role?.id ?? '', fir_id: place ?? '' };
+                                            });
                                         }}
                                         required
                                     >
@@ -180,9 +190,9 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
                                             Pick a role
                                         </option>
                                         {roles.map((role) => (
-                                            <option key={role.id} value={role.id} disabled={!role.canGrant}>
+                                            <option key={role.id} value={role.id} disabled={role.grantableIn.length === 0}>
                                                 {role.name}
-                                                {role.canGrant ? '' : ' (needs more than you have)'}
+                                                {role.grantableIn.length > 0 ? '' : ' (needs more than you have)'}
                                             </option>
                                         ))}
                                     </NativeSelect>
@@ -192,14 +202,16 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
                                         aria-label="Where it applies"
                                         value={form.data.fir_id}
                                         onChange={(e) => form.setData('fir_id', e.target.value === '' ? '' : Number(e.target.value))}
-                                        disabled={picked?.hubOnly}
+                                        disabled={!picked || picked.hubOnly}
                                     >
-                                        <option value="">Across the hub</option>
-                                        {firs.map((fir) => (
-                                            <option key={fir.id} value={fir.id}>
-                                                {fir.icao} {fir.name !== fir.icao ? fir.name : ''}
-                                            </option>
-                                        ))}
+                                        {(!picked || places.includes(null)) && <option value="">Across the hub</option>}
+                                        {firs
+                                            .filter((fir) => !picked || places.includes(fir.id))
+                                            .map((fir) => (
+                                                <option key={fir.id} value={fir.id}>
+                                                    {fir.icao} {fir.name !== fir.icao ? fir.name : ''}
+                                                </option>
+                                            ))}
                                     </NativeSelect>
                                 </div>
                                 <Button type="submit" disabled={form.processing || form.data.role_id === ''}>

@@ -125,12 +125,12 @@ class User extends Authenticatable
     }
 
     /**
-     * The permissions the user holds across the hub, by name. Roles held in a single FIR
-     * don't count, so they can't be used to hand out hub-wide roles.
+     * The permissions the user holds across the hub, by name, plus those held in the given
+     * FIR. Without a FIR, roles held in a single FIR don't count.
      *
      * @return Collection<int, string>
      */
-    public function permissionNames(): Collection
+    public function permissionNames(?Fir $fir = null): Collection
     {
         if ($this->isAdministrator()) {
             return collect(Roles::all());
@@ -139,10 +139,19 @@ class User extends Authenticatable
         $this->loadMissing('roles.permissions');
 
         return $this->roles
-            ->filter(fn (Role $role) => $role->pivot->fir_id === null)
+            ->filter(fn (Role $role) => $role->pivot->fir_id === null || ($fir !== null && (int) $role->pivot->fir_id === $fir->id))
             ->flatMap(fn (Role $role) => $role->permissions->pluck('name'))
             ->unique()
             ->values();
+    }
+
+    /**
+     * Whether the user may give and take away roles in the given FIR, or across the hub when
+     * none is given. Managing users across the hub covers every FIR.
+     */
+    public function managesUsersIn(?Fir $fir): bool
+    {
+        return $this->permissionNames($fir)->contains(Permission::ManageUsers->value);
     }
 
     /**
