@@ -150,6 +150,7 @@ jobs:
             sleep 3
           done
           docker logs playground
+          docker inspect --format 'state: {{.State.Status}}, exit code {{.State.ExitCode}}' playground
           test "$status" = healthy
 
           set -x

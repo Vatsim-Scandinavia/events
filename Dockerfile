@@ -175,7 +175,9 @@ fi
 exec docker-php-entrypoint "$@"
 EOF
 
+# A new ENTRYPOINT clears the CMD inherited from app, so name it again.
 ENTRYPOINT ["playground-entrypoint"]
+CMD ["apache2-foreground"]
 
 ####################################################################################################
 # The default target, so a plain `docker build .` is always the app.
