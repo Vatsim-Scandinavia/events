@@ -49,6 +49,8 @@ class AppServiceProvider extends ServiceProvider
         // Generous for people clicking around, but stops scripts hammering bookings and admin pages.
         RateLimiter::for('signed-in', fn (Request $request) => Limit::perMinute(120)->by((string) $request->user()?->id));
         RateLimiter::for('sign-in', fn (Request $request) => Limit::perMinute(10)->by((string) $request->ip()));
+        // The public API has no sign-in, so it's limited per address.
+        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by((string) $request->ip()));
 
         Socialite::extend('vatsim', fn () => Socialite::buildProvider(VatsimConnectProvider::class, config('services.vatsim'))
             ->setBaseUrl(config('services.vatsim.base_url')));
