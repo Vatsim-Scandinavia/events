@@ -120,6 +120,13 @@ jobs:
           # Query strings (VATSIM's sign-in codes) stay out of the access log.
           curl -s -o /dev/null -H 'Host: hub.test' 'http://127.0.0.1:8080/auth/vatsim/callback?code=smoke-secret&state=x'
           if docker logs hub 2>&1 | grep -q smoke-secret; then echo "The access log recorded a query string."; exit 1; fi
+          # Uploads are served as inert files, whatever they contain.
+          docker exec -u www-data hub sh -c 'echo "<svg xmlns=\"http://www.w3.org/2000/svg\"/>" > /app/storage/app/public/smoke.svg'
+          upload_headers=$(curl -fsSI -H 'Host: hub.test' http://127.0.0.1:8080/storage/smoke.svg)
+          echo "$upload_headers" | grep -qi "^content-security-policy: default-src 'none'; style-src 'unsafe-inline'; sandbox"
+          echo "$upload_headers" | grep -qi '^x-content-type-options: nosniff'
+          # In production the session cookie is only sent over HTTPS, without SESSION_SECURE_COOKIE.
+          curl -fsSI -H 'Host: hub.test' http://127.0.0.1:8080/events | grep -i '^set-cookie: [a-z_-]*session=' | grep -qi '; secure'
 
           # A SQLite path outside the storage volume stops the container with a clear message.
           docker run --name bad-path -e APP_KEY="base64:$(openssl rand -base64 32)" -e APP_URL=http://hub.test \

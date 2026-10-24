@@ -1,3 +1,4 @@
+import Link from '@tiptap/extension-link';
 import { Markdown } from '@tiptap/markdown';
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -10,6 +11,19 @@ import { descriptionClasses } from '@/lib/description';
 import { cn } from '@/lib/utils';
 
 /**
+ * Only web and email links are kept: a javascript: or data: link is never added, and is dropped
+ * (keeping its text) from a description loaded with one, so saving the form cleans it out.
+ */
+const isAllowedLink = (url: string) => /^(https?|mailto):/i.test(url.trim());
+
+const DescriptionLink = Link.extend({
+    // Tiptap checks typed, pasted and HTML links against isAllowedUri, but not links read from Markdown.
+    parseMarkdown(token, helpers) {
+        return isAllowedLink(token.href ?? '') && this.parent ? this.parent(token, helpers) : helpers.parseInline(token.tokens ?? []);
+    },
+}).configure({ openOnClick: false, isAllowedUri: isAllowedLink });
+
+/**
  * Edits an event description visually while reading and writing Markdown, so what is stored
  * and how the server renders it stay the same. Typing Markdown (**bold**, "- ", "## ") works too.
  */
@@ -20,7 +34,8 @@ export function DescriptionInput({ value, error, onChange }: { value: string; er
     const editor = useEditor({
         // Only what the event page renders: underline has no Markdown form.
         extensions: [
-            StarterKit.configure({ heading: { levels: [1, 2, 3] }, underline: false, link: { openOnClick: false } }),
+            StarterKit.configure({ heading: { levels: [1, 2, 3] }, underline: false, link: false }),
+            DescriptionLink,
             // Descriptions written before Markdown rely on single newlines becoming line breaks, as on the server.
             Markdown.configure({ markedOptions: { breaks: true } }),
         ],

@@ -1,9 +1,10 @@
 # Runs the hub from the image CI publishes (or builds it here with `docker compose build`).
 #
 # Put the settings in a .env next to this file, starting from .env.example. For a server set at
-# least APP_KEY, APP_URL, APP_ENV, APP_DEBUG=false, SESSION_SECURE_COOKIE=true and the VATSIM
-# Connect client. SQLite is kept at /app/storage/database.sqlite unless DB_DATABASE says otherwise
-# (keep it inside /app/storage, the only place that survives new images).
+# least APP_KEY, APP_URL, APP_ENV, APP_DEBUG=false and the VATSIM Connect client, plus
+# SESSION_SECURE_COOKIE=true when APP_ENV isn't production (where it's on by default). SQLite is
+# kept at /app/storage/database.sqlite unless DB_DATABASE says otherwise (keep it inside
+# /app/storage, the only place that survives new images).
 #
 # Each start caches the configuration, so `docker compose exec app php artisan …` uses the same
 # database. After `php artisan config:clear` in a container, restart it to cache it again.

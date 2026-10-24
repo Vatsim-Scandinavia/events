@@ -63,6 +63,16 @@ class FirScopedEventAccessTest extends TestCase
         $this->assertNull($event->fresh()->cancelled_at);
     }
 
+    public function test_staff_of_one_fir_cannot_publish_another_firs_draft(): void
+    {
+        $staff = User::factory()->staff(Fir::factory()->create(['icao' => 'EKDK']))->create();
+        $draft = Event::factory()->draft()->create(['fir_id' => Fir::factory()->create(['icao' => 'ESAA'])->id]);
+
+        $this->actingAs($staff)->post("/events/{$draft->id}/publish")->assertForbidden();
+
+        $this->assertTrue($draft->fresh()->isDraft());
+    }
+
     public function test_staff_only_see_edit_controls_on_their_own_firs_events(): void
     {
         $ekdk = Fir::factory()->create(['icao' => 'EKDK']);

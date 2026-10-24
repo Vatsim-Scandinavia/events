@@ -76,7 +76,20 @@ class VatsimConnectTest extends TestCase
     #[TestWith(['https://evil.example/phish'])]
     #[TestWith(['//evil.example/phish'])]
     #[TestWith(['/\\evil.example/phish'])]
+    #[TestWith(["/\t/evil.example/phish"])]
     public function test_a_return_address_off_this_site_is_ignored(string $returnTo): void
+    {
+        Socialite::fake('vatsim', $this->vatsimUser(cid: 1234567, name: 'Jane Controller', email: 'jane@example.com', rating: ControllerRating::S2));
+
+        $this->get('/auth/vatsim?return='.urlencode($returnTo));
+
+        $this->get('/auth/vatsim/callback?code=code&state=state')->assertRedirect('/');
+    }
+
+    #[TestWith(["/events\n/15"])]
+    #[TestWith(["/events\x00/15"])]
+    #[TestWith(["/events\x7F/15"])]
+    public function test_a_return_address_with_control_characters_is_ignored(string $returnTo): void
     {
         Socialite::fake('vatsim', $this->vatsimUser(cid: 1234567, name: 'Jane Controller', email: 'jane@example.com', rating: ControllerRating::S2));
 

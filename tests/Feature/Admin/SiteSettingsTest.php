@@ -206,6 +206,21 @@ class SiteSettingsTest extends TestCase
             ->assertDontSee('rel="apple-touch-icon"', false);
     }
 
+    public function test_an_image_named_like_an_svg_is_still_redrawn_as_an_image(): void
+    {
+        // A real upload, as fake files take their type from the name; the browser claims it's an SVG.
+        $png = UploadedFile::fake()->image('logo.png', 512, 256);
+        $upload = new UploadedFile($png->getRealPath(), 'logo.svg', 'image/svg+xml', null, true);
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->post('/admin/settings', $this->payload(['logo' => $upload]))
+            ->assertRedirect('/admin/settings');
+
+        $files = Storage::disk('public')->allFiles('branding');
+        $this->assertCount(3, $files);
+        $this->assertEmpty(array_filter($files, fn (string $path) => str_ends_with($path, '.svg')));
+    }
+
     public function test_an_svg_that_cannot_be_read_is_refused(): void
     {
         $this->actingAs(User::factory()->admin()->create())

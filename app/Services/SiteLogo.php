@@ -55,10 +55,12 @@ final class SiteLogo
         }
     }
 
+    /**
+     * Decided by the file's content, not its name, so a renamed image is still redrawn.
+     */
     private function isSvg(UploadedFile $file): bool
     {
-        return in_array($file->getMimeType(), ['image/svg+xml', 'image/svg'], true)
-            || strtolower($file->getClientOriginalExtension()) === 'svg';
+        return in_array($file->getMimeType(), ['image/svg+xml', 'image/svg'], true);
     }
 
     /**

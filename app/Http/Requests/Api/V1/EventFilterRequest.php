@@ -21,9 +21,9 @@ class EventFilterRequest extends FormRequest
     {
         return [
             /** The ICAO code of the FIR running the event, e.g. EKDK. */
-            'fir' => ['nullable', 'string'],
+            'fir' => ['nullable', 'string', 'max:255'],
             /** The name of the event type. */
-            'type' => ['nullable', 'string'],
+            'type' => ['nullable', 'string', 'max:255'],
             /** Only dates that end on or after this day (UTC). Defaults to now. */
             'from' => ['nullable', 'date_format:Y-m-d'],
             /** Only dates that start on or before this day (UTC). */

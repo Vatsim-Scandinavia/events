@@ -77,6 +77,23 @@ class UserManagementTest extends TestCase
         );
     }
 
+    public function test_percent_and_underscore_in_a_search_match_only_themselves(): void
+    {
+        $admin = User::factory()->admin()->create(['name' => 'Ada Admin']);
+        User::factory()->create(['name' => 'Sam_Staff']);
+        User::factory()->create(['name' => 'SamXStaff']);
+        User::factory()->create(['name' => '100% Olly']);
+
+        $this->actingAs($admin)->get('/admin/users?search=Sam_')->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.name', 'Sam_Staff')
+        );
+        $this->actingAs($admin)->get('/admin/users?search=%25')->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.name', '100% Olly')
+        );
+    }
+
     public function test_the_first_administrator_can_be_made_from_the_command_line(): void
     {
         $user = User::factory()->create(['vatsim_cid' => 1400000]);

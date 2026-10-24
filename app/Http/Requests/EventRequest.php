@@ -46,7 +46,8 @@ class EventRequest extends EventScheduleRequest
     {
         return [
             ...parent::rules(),
-            'fir_id' => ['required', 'integer', Rule::exists('firs', 'id'), function (string $attribute, mixed $value, Closure $fail) {
+            // bail: only a single existing FIR id may reach the permission check below.
+            'fir_id' => ['bail', 'required', 'integer', Rule::exists('firs', 'id'), function (string $attribute, mixed $value, Closure $fail) {
                 $fir = Fir::find($value);
 
                 if ($fir && Gate::denies('manage-events', $fir)) {
