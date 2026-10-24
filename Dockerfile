@@ -151,8 +151,9 @@ ENV APP_ENV=local \
     VATSIM_SYNC=false \
     RESET_PLAYGROUND=true
 
-# Readies the app as usual, then starts over from the sample data on every start, or only when
-# there's no one to sign in as yet with RESET_PLAYGROUND=false. The scheduler leaves it alone.
+# Readies the app as usual, then starts over from the sample data on every start, or with
+# RESET_PLAYGROUND=false only on the first, when there's no SQLite file yet. The scheduler leaves
+# it alone.
 COPY --chmod=755 <<'EOF' /usr/local/bin/playground-entrypoint
 #!/bin/sh
 set -e
@@ -162,13 +163,13 @@ as_web() {
     if [ "$(id -u)" = 0 ]; then runuser -u www-data -- "$@"; else "$@"; fi
 }
 
+first_start=false
+[ -s "${DB_DATABASE:-/app/storage/database.sqlite}" ] || first_start=true
+
 hub-entrypoint true
 
-if [ "${RUN_MIGRATIONS:-true}" = true ]; then
-    people=$(as_web php artisan tinker --execute 'echo App\Models\User::query()->count();')
-    if [ "$RESET_PLAYGROUND" = true ] || [ "$people" = 0 ]; then
-        as_web php artisan migrate:fresh --seed --force
-    fi
+if [ "${RUN_MIGRATIONS:-true}" = true ] && { [ "$RESET_PLAYGROUND" = true ] || [ "$first_start" = true ]; }; then
+    as_web php artisan migrate:fresh --seed --force
 fi
 
 exec docker-php-entrypoint "$@"
