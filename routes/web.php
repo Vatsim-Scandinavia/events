@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\EventTypeController;
 use App\Http\Controllers\Admin\FirController;
+use App\Http\Controllers\Admin\IntegrationController;
 use App\Http\Controllers\Admin\RoleAssignmentController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SiteSettingsController;
@@ -92,6 +93,13 @@ Route::middleware(['auth', 'throttle:signed-in'])->group(function () {
 
             Route::resource('firs', FirController::class)->except('show');
             Route::resource('event-types', EventTypeController::class)->except('show');
+
+            Route::get('/integrations', [IntegrationController::class, 'index'])->name('integrations.index');
+            Route::get('/integrations/{integration}', [IntegrationController::class, 'edit'])->name('integrations.edit');
+            Route::put('/integrations/{integration}', [IntegrationController::class, 'update'])->name('integrations.update');
+            Route::post('/integrations/{integration}/test', [IntegrationController::class, 'test'])->name('integrations.test');
+            Route::post('/integrations/{integration}/features/{feature}/sync', [IntegrationController::class, 'sync'])->name('integrations.sync');
+            Route::post('/integrations/{integration}/runs/{run}/approve', [IntegrationController::class, 'approve'])->name('integrations.approve');
         });
     });
 });

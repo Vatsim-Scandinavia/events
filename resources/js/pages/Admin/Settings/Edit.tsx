@@ -1,4 +1,4 @@
-import { Head, useForm } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { Lock } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import { AdminHeader } from '@/components/admin-header';
@@ -29,9 +29,11 @@ type SiteSettingsProps = {
     };
     // Details set in the server's environment, with the variable each comes from.
     locked: Partial<Record<Detail, string>>;
+    // The Integration feature handing out the Controller role instead, if one is.
+    controllerSource: string | null;
 };
 
-export default function SiteSettings({ settings, locked }: SiteSettingsProps) {
+export default function SiteSettings({ settings, locked, controllerSource }: SiteSettingsProps) {
     const form = useForm({
         name: settings.name,
         division: settings.division ?? '',
@@ -134,10 +136,20 @@ export default function SiteSettings({ settings, locked }: SiteSettingsProps) {
                         <CardDescription>Only people with the Controller role can book shifts, show interest and be rostered.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
+                        {controllerSource && (
+                            <p className="rounded-lg bg-muted px-3 py-2 text-sm">
+                                {controllerSource} hands out the Controller role, so this rule is set aside. Change it on the{' '}
+                                <Link href="/admin/integrations" className="font-medium underline underline-offset-4">
+                                    Integrations
+                                </Link>{' '}
+                                page.
+                            </p>
+                        )}
                         <div className="flex items-start gap-3">
                             <Checkbox
                                 id="auto-controller"
                                 className="mt-0.5"
+                                disabled={!!controllerSource}
                                 checked={data.auto_controller}
                                 onCheckedChange={(checked) => form.setData('auto_controller', checked === true)}
                             />

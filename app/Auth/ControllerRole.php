@@ -4,6 +4,7 @@ namespace App\Auth;
 
 use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
+use App\Integrations\Integrations;
 use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\User;
@@ -11,23 +12,32 @@ use App\Services\VaccIdentity;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Hands out the Controller role automatically, when an admin has switched that on: everyone
- * rated S1 or above in the vACC's subdivision holds it, and loses it when they leave the
- * subdivision or lose their rating.
+ * Hands out the Controller role automatically. By default that's the hub's own rule, when an
+ * admin has switched it on: everyone rated S1 or above in the vACC's subdivision holds it, and
+ * loses it when they leave the subdivision or lose their rating. An Integration feature can take
+ * over as the Controller source (see ControllerSource), and the hub's rule then steps aside.
  *
- * Only roles the hub gave itself are taken away. Controller roles admins give by hand (to
+ * Only roles given automatically are taken away. Controller roles admins give by hand (to
  * visiting controllers, say) are left alone.
  */
 final class ControllerRole
 {
-    public function __construct(private VaccIdentity $identity) {}
+    public function __construct(private VaccIdentity $identity, private Integrations $integrations) {}
 
     /**
-     * Switched on, with a subdivision to check against.
+     * The Integration feature in charge of the Controller role, or null when the hub's rule is.
+     */
+    public function source(): ?ControllerSource
+    {
+        return $this->integrations->controllerSource();
+    }
+
+    /**
+     * The hub's own rule is in charge and switched on, with a subdivision to check against.
      */
     public function isAutomatic(): bool
     {
-        return $this->identity->controllerRoleIsAutomatic() && $this->subdivision() !== null;
+        return $this->source() === null && $this->identity->controllerRoleIsAutomatic() && $this->subdivision() !== null;
     }
 
     private function qualifies(User $user): bool
@@ -43,6 +53,12 @@ final class ControllerRole
      */
     public function sync(User $user): void
     {
+        if ($source = $this->source()) {
+            $source->syncController($user);
+
+            return;
+        }
+
         if (! $this->isAutomatic()) {
             return;
         }
@@ -61,18 +77,32 @@ final class ControllerRole
     }
 
     /**
-     * Re-check everyone it could affect, after the setting or the subdivision changed. Switching it off hands
-     * the roles it gave over to admins, so nobody loses access without someone deciding so.
+     * Re-check everyone the hub's rule could affect, after the setting or the subdivision changed.
+     * Switching it off hands the roles it gave over to admins, so nobody loses access without
+     * someone deciding so. While a Controller source is in charge, the roles are its to manage.
      */
     public function syncEveryone(): void
     {
+        if ($this->source() !== null) {
+            return;
+        }
+
         if (! $this->isAutomatic()) {
-            RoleAssignment::query()->where('source', AssignmentSource::Automatic)->update(['source' => AssignmentSource::Manual]);
+            $this->handOver();
 
             return;
         }
 
         $this->candidates()->chunkById(200, fn ($users) => $users->each(fn (User $user) => $this->sync($user)));
+    }
+
+    /**
+     * Turn every automatic Controller role into one given by hand, when whatever gave them stops
+     * being in charge, so nobody loses access without someone deciding so.
+     */
+    public function handOver(): void
+    {
+        RoleAssignment::query()->where('source', AssignmentSource::Automatic)->update(['source' => AssignmentSource::Manual]);
     }
 
     /**

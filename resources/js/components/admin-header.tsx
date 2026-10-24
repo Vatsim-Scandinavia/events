@@ -20,6 +20,7 @@ export function AdminHeader({ title, description, action }: AdminHeaderProps) {
         auth.user?.isAdministrator && { label: 'Roles', href: '/admin/roles' },
         auth.user?.isAdministrator && { label: 'FIRs', href: '/admin/firs' },
         auth.user?.isAdministrator && { label: 'Event types', href: '/admin/event-types' },
+        auth.user?.isAdministrator && { label: 'Integrations', href: '/admin/integrations' },
         auth.user?.isAdministrator && { label: 'Settings', href: '/admin/settings' },
     ].filter((tab): tab is { label: string; href: string } => Boolean(tab));
 
