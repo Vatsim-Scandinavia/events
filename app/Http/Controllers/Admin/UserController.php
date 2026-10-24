@@ -30,10 +30,10 @@ class UserController extends Controller
         $users = User::query()
             ->with('roleAssignments.role', 'roleAssignments.fir')
             ->when($search !== '', fn ($query) => $query->where(fn ($query) => $query
-                ->where('name', 'like', "%{$search}%")
+                ->whereRaw("name like ? escape '!'", ['%'.$this->literal($search).'%'])
                 // Only those who can see email addresses can search by them.
-                ->when($showEmail, fn ($query) => $query->orWhere('email', 'like', "%{$search}%"))
-                ->orWhere('vatsim_cid', 'like', "{$search}%")))
+                ->when($showEmail, fn ($query) => $query->orWhereRaw("email like ? escape '!'", ['%'.$this->literal($search).'%']))
+                ->orWhereRaw("vatsim_cid like ? escape '!'", [$this->literal($search).'%'])))
             // Both filters have to match the same assignment: Event Staff *in* EKDK.
             ->when($role || $fir, fn ($query) => $query->whereHas('roleAssignments', fn (Builder $query) => $query
                 ->when($role, fn ($query) => $query->where('role_id', $role))
@@ -100,5 +100,13 @@ class UserController extends Controller
             'roles' => Roles::labelsFor($user),
             'joinedAt' => $user->created_at?->toDateString(),
         ];
+    }
+
+    /**
+     * The search term for a LIKE pattern, matching % and _ as typed rather than as wildcards.
+     */
+    private function literal(string $search): string
+    {
+        return str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search);
     }
 }

@@ -23,7 +23,7 @@ FROM php:8.5.12-apache-trixie AS app
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/* \
-    && a2enmod rewrite
+    && a2enmod rewrite headers
 
 COPY --from=mlocati/php-extension-installer:2.12.3 /usr/bin/install-php-extensions /usr/local/bin/
 RUN install-php-extensions gd intl bcmath zip pdo_mysql pdo_pgsql opcache
@@ -56,6 +56,13 @@ LogFormat "%h %l %u %t \"%m %U %H\" %>s %O \"%{User-Agent}i\"" hub
         AllowOverride All
         Require all granted
     </Directory>
+
+    # Uploads (banners, logos) are only ever shown as images. Opened directly, they must not run
+    # as a page or be sniffed as another type, whatever an upload turns out to contain.
+    <Location "/storage/">
+        Header always set Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+        Header always set X-Content-Type-Options "nosniff"
+    </Location>
 
     ErrorLog /dev/stderr
     CustomLog /dev/stdout hub

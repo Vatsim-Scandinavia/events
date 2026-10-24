@@ -78,10 +78,12 @@ class VatsimConnectController extends Controller
 
     /**
      * Only paths on this site, so the link can't be used to send people elsewhere after signing in.
+     * Control characters are refused outright, as browsers strip some of them from URLs.
      */
     private function isLocalPath(string $path): bool
     {
-        return str_starts_with($path, '/') && ! str_starts_with($path, '//') && ! str_contains($path, '\\');
+        return str_starts_with($path, '/') && ! str_starts_with($path, '//') && ! str_contains($path, '\\')
+            && ! preg_match('/[\x00-\x1F\x7F]/', $path);
     }
 
     private function failed(string $message): RedirectResponse

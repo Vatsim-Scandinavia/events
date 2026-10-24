@@ -225,7 +225,9 @@ final class StaffingPlan
 
             $attributes = ['event_position_id' => $ids[$shift['position']], 'starts_offset' => $shift['start'], 'ends_offset' => $shift['end']];
 
-            $shift['id'] ? PositionShift::whereKey($shift['id'])->update($attributes) : PositionShift::create($attributes);
+            $shift['id']
+                ? PositionShift::query()->whereIn('event_position_id', $event->positions()->select('id'))->whereKey($shift['id'])->update($attributes)
+                : PositionShift::create($attributes);
         }
     }
 

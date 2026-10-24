@@ -145,6 +145,8 @@ class EventsApiTest extends TestCase
         $this->getJson('/api/v1/events?from=yesterday')->assertUnprocessable()->assertJsonValidationErrors('from');
         $this->getJson('/api/v1/events?from=2026-07-02&to=2026-07-01')->assertUnprocessable()->assertJsonValidationErrors('to');
         $this->getJson('/api/v1/events?per_page=101')->assertUnprocessable()->assertJsonValidationErrors('per_page');
+        $this->getJson('/api/v1/events?fir='.str_repeat('E', 256))->assertUnprocessable()->assertJsonValidationErrors('fir');
+        $this->getJson('/api/v1/events?type='.str_repeat('t', 256))->assertUnprocessable()->assertJsonValidationErrors('type');
     }
 
     public function test_events_are_paginated(): void

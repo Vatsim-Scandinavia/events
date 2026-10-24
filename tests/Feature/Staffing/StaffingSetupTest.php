@@ -241,6 +241,23 @@ class StaffingSetupTest extends TestCase
         $this->assertSame([30, 150], [$keep->fresh()->starts_offset, $keep->fresh()->ends_offset]);
     }
 
+    public function test_a_shift_of_another_event_cannot_be_moved_through_this_plan(): void
+    {
+        $this->event->update(['staffing_mode' => StaffingMode::Shifts]);
+        $tower = $this->event->positions()->create(['callsign' => 'EKCH_TWR']);
+        $otherShift = Event::factory()->create()->positions()->create(['callsign' => 'ESSA_TWR'])
+            ->shifts()->create(['starts_offset' => 0, 'ends_offset' => 120]);
+
+        $this->savePlan([
+            'positions' => [['key' => $tower->id, 'callsign' => 'EKCH_TWR']],
+            'shifts' => [['id' => $otherShift->id, 'position' => $tower->id, 'start' => 60, 'end' => 180]],
+        ])->assertSessionHasErrors(['plan' => 'A shift on EKCH_TWR was removed by someone else. Reload the page and try again.']);
+
+        $otherShift->refresh();
+        $this->assertSame([0, 120], [$otherShift->starts_offset, $otherShift->ends_offset]);
+        $this->assertNotSame($tower->id, $otherShift->event_position_id);
+    }
+
     public function test_moving_or_removing_a_booked_shift_unbooks_it(): void
     {
         $this->event->update(['staffing_mode' => StaffingMode::Shifts]);

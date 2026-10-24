@@ -149,6 +149,7 @@ class EventManagementTest extends TestCase
         return [
             'no FIR' => [null],
             'a FIR that does not exist' => [999],
+            'a list of FIRs' => [[1]],
         ];
     }
 
