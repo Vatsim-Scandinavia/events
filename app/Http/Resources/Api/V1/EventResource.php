@@ -44,7 +44,8 @@ class EventResource extends JsonResource
             'staffingMode' => $this->staffing_mode,
             'publishedAt' => $this->published_at->utc()->toIso8601String(),
             'cancelledAt' => $this->cancelled_at?->utc()->toIso8601String(),
-            'occurrences' => OccurrenceResource::collection($this->occurrences),
+            /** Every date of the event. Left out where the event is embedded in one of its dates. */
+            'occurrences' => OccurrenceResource::collection($this->whenLoaded('occurrences')),
         ];
     }
 }
