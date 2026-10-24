@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import AppLayout from '@/layouts/AppLayout';
 import type { IntegrationRunStatus } from '@/types/admin';
 
@@ -25,6 +26,8 @@ type EditableIntegration = {
         description: string | null;
         secret: boolean;
         required: boolean;
+        // Entered in a text box, one entry per line.
+        multiline: boolean;
         // Never sent for secrets.
         value: string | null;
         isSet: boolean;
@@ -119,7 +122,11 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                             {integration.settings.map((setting) =>
                                 setting.lockedBy ? (
                                     <Field key={setting.key} label={setting.label}>
-                                        <Input value={setting.secret ? '••••••••' : (setting.value ?? '')} disabled />
+                                        {setting.multiline ? (
+                                            <Textarea value={setting.value ?? ''} className="font-mono" disabled />
+                                        ) : (
+                                            <Input value={setting.secret ? '••••••••' : (setting.value ?? '')} disabled />
+                                        )}
                                         <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
                                             <Lock className="size-3" aria-hidden />
                                             Set by the server ({setting.lockedBy})
@@ -127,14 +134,24 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                                     </Field>
                                 ) : (
                                     <Field key={setting.key} label={setting.label} error={settingError(setting.key)}>
-                                        <Input
-                                            type={setting.secret ? 'password' : 'text'}
-                                            autoComplete="off"
-                                            value={data.settings[setting.key] ?? ''}
-                                            onChange={(e) => form.setData('settings', { ...data.settings, [setting.key]: e.target.value })}
-                                            aria-invalid={!!settingError(setting.key)}
-                                            placeholder={setting.secret && setting.isSet ? 'Saved; leave empty to keep it' : undefined}
-                                        />
+                                        {setting.multiline ? (
+                                            <Textarea
+                                                value={data.settings[setting.key] ?? ''}
+                                                onChange={(e) => form.setData('settings', { ...data.settings, [setting.key]: e.target.value })}
+                                                aria-invalid={!!settingError(setting.key)}
+                                                className="font-mono"
+                                                rows={4}
+                                            />
+                                        ) : (
+                                            <Input
+                                                type={setting.secret ? 'password' : 'text'}
+                                                autoComplete="off"
+                                                value={data.settings[setting.key] ?? ''}
+                                                onChange={(e) => form.setData('settings', { ...data.settings, [setting.key]: e.target.value })}
+                                                aria-invalid={!!settingError(setting.key)}
+                                                placeholder={setting.secret && setting.isSet ? 'Saved; leave empty to keep it' : undefined}
+                                            />
+                                        )}
                                         {setting.description && (
                                             <span className="text-xs font-normal text-muted-foreground">{setting.description}</span>
                                         )}

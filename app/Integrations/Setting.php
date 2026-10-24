@@ -12,6 +12,7 @@ final readonly class Setting
 {
     /**
      * @param  list<mixed>  $rules  Validation rules for a value that is entered.
+     * @param  bool  $multiline  Entered in a text box, one entry per line.
      */
     public function __construct(
         public string $key,
@@ -21,5 +22,6 @@ final readonly class Setting
         public bool $secret = false,
         public bool $required = true,
         public ?string $description = null,
+        public bool $multiline = false,
     ) {}
 }
