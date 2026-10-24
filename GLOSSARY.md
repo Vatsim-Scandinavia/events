@@ -67,9 +67,27 @@ The built-in role for vACC staff outside the events team, who can see every Even
 _Avoid_: Observer, read-only staff
 
 **Controller**:
-The built-in role that may book shifts and show Staffing Interest; given automatically to members rated S1 or above in the vACC's subdivision, or granted by hand.
+The built-in role that may book shifts and show Staffing Interest; given automatically by the Controller source, or granted by hand.
 _Avoid_: ATC, rated member
+
+**Controller source**:
+Whatever currently decides who automatically holds the Controller role, and where: either the hub's own rule (rated S1 or above in the vACC's subdivision, across the Hub) or one Integration feature. Only one is in charge at a time.
+_Avoid_: Roster provider, role sync
 
 **Pilot**:
 What someone with no role is; not a role itself.
 _Avoid_: Guest, member
+
+## Integrations
+
+**Integration**:
+A connection to one external system, such as the vACC's training system, that Administrators can switch on for the whole Hub. The Hub works fully with every Integration switched off.
+_Avoid_: Plugin, module, connector
+
+**Integration feature**:
+One job an Integration can do, switched on separately, such as syncing the controller roster, syncing positions or pushing bookings.
+_Avoid_: Capability, sub-integration
+
+**Position catalogue**:
+The Hub-wide list of known controller positions that staff pick from when adding positions to an Event.
+_Avoid_: Position list, position registry
