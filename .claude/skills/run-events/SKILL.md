@@ -5,7 +5,9 @@ description: Run, start, serve, screenshot or click through the Event Hub (Larav
 
 # Run the Event Hub
 
-The app is served by PHP's built-in server on `http://127.0.0.1:8123`, using a throwaway SQLite database. It is driven by `driver.mjs`, which runs Playwright in headless Chromium. Paths below are relative to the repo root. Everything the skill installs or writes goes under `~/.cache/run-events/`: Playwright, unpacked system libraries, `dev.sqlite`, `serve.log` and `shots/`. The repo's `package.json` and `database/database.sqlite` are never touched.
+The app is served by PHP's built-in server on `http://127.0.0.1:8123` (or `$PORT`), using a throwaway SQLite database. It is driven by `driver.mjs`, which runs Playwright in headless Chromium. Paths below are relative to the repo root.
+
+Everything the skill installs or writes goes under `~/.cache/run-events/` (or `$RUN_EVENTS_HOME`): Playwright, Chromium (`browsers/`), unpacked system libraries, `dev.sqlite`, `serve.log`, the server's pid file and `shots/`. The one exception is the frontend build: when it's stale, `serve.sh` runs the project's own `npm run build` into `public/build`, which is gitignored. The repo's `package.json`, `.env` and `database/database.sqlite` are never touched.
 
 ## Prerequisites (once per machine)
 
@@ -13,7 +15,7 @@ The app is served by PHP's built-in server on `http://127.0.0.1:8123`, using a t
 .claude/skills/run-events/setup.sh
 ```
 
-This installs Playwright 1.49.1 and Chromium under `~/.cache/run-events`. There is no sudo here, so any `.so` Chromium can't find (on Ubuntu: libnss3, libnspr4, libasound2t64) is fetched with `apt-get download` and unpacked with `dpkg -x` into `~/.cache/run-events/libs`. The driver points Chromium at them itself. PHP 8.5, Composer dependencies (`vendor/`) and `node_modules` must already be installed.
+This installs Playwright 1.49.1 and Chromium (about 150MB) under `~/.cache/run-events`. There is no sudo here, so any `.so` Chromium can't find (on Ubuntu: libnss3, libnspr4, libasound2t64) is fetched with `apt-get download` and unpacked with `dpkg -x` into `~/.cache/run-events/libs`. The driver points Chromium at them itself. PHP 8.5, Composer dependencies (`vendor/`) and `node_modules` must already be installed.
 
 ## Serve
 
@@ -21,9 +23,10 @@ This installs Playwright 1.49.1 and Chromium under `~/.cache/run-events`. There 
 .claude/skills/run-events/serve.sh        # fresh: new DB, migrate:fresh, db:seed (runs roles:sync), serve
 .claude/skills/run-events/serve.sh keep   # restart on the same DB; needed after any PHP change
 .claude/skills/run-events/serve.sh stop
+PORT=8124 .claude/skills/run-events/serve.sh   # another port; pass the same PORT to driver.mjs
 ```
 
-A fresh start takes about 30s. Before serving, the script runs `npm run build` if anything in `resources/` or `vite.config.js` is newer than `public/build`. It also sets `AUTH_DEV_LOGIN=true` and `DEBUGBAR_ENABLED=false` for the server only, without editing `.env`.
+A fresh start takes about 30s. Before serving, the script runs `npm run build` if anything in `resources/`, `vite.config.js`, `package.json` or `package-lock.json` is newer than `public/build`. It also sets `APP_ENV=local`, `AUTH_DEV_LOGIN=true` and `DEBUGBAR_ENABLED=false` for the server only, without editing `.env`. It only ever stops the server it started itself, and refuses to start if something else holds the port. Concurrent runs wait on a lock rather than seeding the same database at once.
 
 ## Drive (agent path)
 
@@ -84,7 +87,8 @@ php artisan test --compact     # 271 tests, about 2 minutes on /mnt/c
 | Symptom | Fix |
 |---|---|
 | `error while loading shared libraries: libnss3.so` | Rerun `setup.sh`. If you launch Chromium yourself instead of through the driver, add `~/.cache/run-events/libs/root/usr/lib/x86_64-linux-gnu` to `LD_LIBRARY_PATH` |
-| `Host system is missing dependencies` stack trace from `playwright install` | Harmless; `setup.sh` sets `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1` |
+| `Host system is missing dependencies to run browsers` from `playwright install` or `browserType.launch` | Playwright's check doesn't see the unpacked libraries; `setup.sh` and `driver.mjs` set `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1`. Set it too if you launch Chromium yourself |
+| `port 8123 is in use by something serve.sh didn't start` | Another server (e.g. `php artisan serve`) holds the port; stop it, or use `PORT=8124` for both `serve.sh` and the driver |
 | `page.goto: Timeout 30000ms` on the first request | Server was started without opcache (e.g. `php artisan serve`); use `serve.sh` |
 | `Failed opening required '.../index.php'` from `php -S` | `server.php` resolves `public/` from the working directory; start it from `public/` as `serve.sh` does |
 | Screenshot shows the guest header and "No events are scheduled" | Not signed in (see the sign-in gotcha), or the events are still Drafts |

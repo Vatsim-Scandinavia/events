@@ -13,7 +13,12 @@ import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const HOME = process.env.RUN_EVENTS_HOME ?? `${homedir()}/.cache/run-events`;
+const HOME = resolve(process.env.RUN_EVENTS_HOME ?? `${homedir()}/.cache/run-events`);
+// setup.sh installs Chromium here too, so the whole skill lives in one directory.
+process.env.PLAYWRIGHT_BROWSERS_PATH ??= `${HOME}/browsers`;
+// Playwright's own dependency check can't see the libraries setup.sh unpacked (they're found
+// through LD_LIBRARY_PATH at launch), so it would refuse to start.
+process.env.PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = '1';
 const { chromium } = createRequire(`${HOME}/package.json`)('playwright');
 const shotsDir = `${HOME}/shots`;
 mkdirSync(shotsDir, { recursive: true });
@@ -34,7 +39,7 @@ const problems = [];
 let context;
 
 const app = {
-    base: process.env.BASE_URL ?? 'http://127.0.0.1:8123',
+    base: process.env.BASE_URL ?? `http://127.0.0.1:${process.env.PORT ?? 8123}`,
     page: null,
 
     // A fresh browser context, so a previous user's session is gone.
@@ -59,7 +64,7 @@ const app = {
     },
 
     async shot(name) {
-        const file = name.includes('/') ? name : `${shotsDir}/${name}.png`;
+        const file = name.includes('/') ? name : `${shotsDir}/${name.replace(/\.png$/, '')}.png`;
         await app.page.screenshot({ path: file, fullPage: true });
         console.log(`screenshot: ${file}`);
         return file;
@@ -103,8 +108,8 @@ const app = {
 
 let failed = false;
 try {
-    const as = option('--as');
-    await (as ? app.signIn(as) : app.newPage());
+    const userName = option('--as');
+    await (userName ? app.signIn(userName) : app.newPage());
 
     if (command === 'shot') {
         await app.go(target ?? '/');

@@ -2,7 +2,9 @@
 # One-time: Playwright + Chromium + the system libraries Chromium needs, all under
 # $RUN_EVENTS_HOME (default ~/.cache/run-events) so neither the repo nor the system changes.
 set -euo pipefail
-HOME_DIR="${RUN_EVENTS_HOME:-$HOME/.cache/run-events}"
+mkdir -p "${RUN_EVENTS_HOME:-$HOME/.cache/run-events}"
+HOME_DIR="$(cd "${RUN_EVENTS_HOME:-$HOME/.cache/run-events}" && pwd)"
+export PLAYWRIGHT_BROWSERS_PATH="$HOME_DIR/browsers"
 mkdir -p "$HOME_DIR/libs/debs" "$HOME_DIR/libs/root"
 cd "$HOME_DIR"
 
@@ -11,7 +13,7 @@ cd "$HOME_DIR"
 PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1 npx playwright install chromium >/dev/null
 
 # Without sudo, missing .so files are fetched with apt-get download and unpacked locally.
-shell=$(ls -d ~/.cache/ms-playwright/chromium_headless_shell-*/chrome-linux/headless_shell | tail -1)
+shell=$(ls -d "$PLAYWRIGHT_BROWSERS_PATH"/chromium_headless_shell-*/chrome-linux/headless_shell | tail -1)
 export LD_LIBRARY_PATH="$HOME_DIR/libs/root/usr/lib/x86_64-linux-gnu"
 missing=$(ldd "$shell" | awk '/not found/ {print $1}')
 if [ -n "$missing" ]; then

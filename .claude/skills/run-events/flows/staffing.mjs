@@ -23,7 +23,11 @@ export default async function (app) {
         await app.page.keyboard.press('Shift+ArrowLeft');
     }
     const after = await items.first().getAttribute('aria-label');
-    app.check('Shift+ArrowLeft resizes', `${before} -> ${after}`, before !== after);
+    // Labels read like "Open, 16:00–18:00z": the start must stay put and the end come earlier.
+    const span = (label) => label.match(/(\d\d:\d\d)–(\d\d:\d\d)z/).slice(1);
+    const [startBefore, endBefore] = span(before);
+    const [startAfter, endAfter] = span(after);
+    app.check('Shift+ArrowLeft shortens', `${before} -> ${after}`, startAfter === startBefore && endAfter < endBefore);
     await app.page.getByRole('button', { name: 'Save changes' }).click();
     await app.settle();
     await app.shot('planner-saved');
