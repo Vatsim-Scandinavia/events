@@ -1,5 +1,6 @@
-// Every seeded event is a Draft. Event 4 (Copenhagen Fly-in) takes shift bookings and event 2
-// (Scandinavian Night Ops) takes open interest. Needs a fresh database (serve.sh): it publishes.
+// Event 4 (Copenhagen Fly-in) takes shift bookings, event 2 (Scandinavian Night Ops) takes open
+// interest and event 7 (Winter Wonderland Fly-in) is the one Draft. Needs a fresh database
+// (serve.sh): it publishes and books.
 const publish = async (app, id) => {
     await app.go(`/events/${id}`);
     await app.page.getByRole('button', { name: 'Publish' }).click();
@@ -11,8 +12,7 @@ const publish = async (app, id) => {
 
 export default async function (app) {
     await app.signIn('Hub Admin');
-    await publish(app, 4);
-    await publish(app, 2);
+    await publish(app, 7);
 
     // Planner: shorten the first shift with the keyboard, then save.
     await app.go('/events/4/staffing');

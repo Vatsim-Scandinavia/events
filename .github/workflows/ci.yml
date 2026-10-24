@@ -113,6 +113,8 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: attacker.example' http://127.0.0.1:8080/)" = 400
 
           docker exec hub test -f /app/storage/database.sqlite
+          # Dev sign-in stays off outside local development.
+          test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: hub.test' http://127.0.0.1:8080/login)" = 404
           # The web server can't change the code, only storage/ and bootstrap/cache.
           docker exec -u www-data hub sh -c 'test ! -w /app/app/Models/User.php && test -w /app/storage'
           # Query strings (VATSIM's sign-in codes) stay out of the access log.
@@ -123,6 +125,38 @@ jobs:
           docker run --name bad-path -e APP_KEY="base64:$(openssl rand -base64 32)" -e APP_URL=http://hub.test \
             -e DB_CONNECTION=sqlite -e DB_DATABASE=/app/database/elsewhere.sqlite events:ci || true
           docker logs bad-path 2>&1 | grep -q 'Point DB_DATABASE into /app/storage'
+
+      - name: Build the playground image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: playground
+          load: true
+          tags: events:playground
+          cache-from: type=gha
+
+      # It starts from the sample data, with dev sign-in on and published events for guests.
+      - name: Smoke test the playground
+        run: |
+          docker run -d --name playground \
+            -e APP_KEY="base64:$(openssl rand -base64 32)" \
+            -e APP_URL=http://playground.test \
+            -e LOG_CHANNEL=stderr \
+            -p 8081:80 events:playground
+
+          for _ in $(seq 1 30); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' playground)
+            [ "$status" = healthy ] && break
+            sleep 3
+          done
+          docker logs playground
+          test "$status" = healthy
+
+          curl -fsS -H 'Host: playground.test' http://127.0.0.1:8081/login | grep -q 'Hub Admin'
+          curl -fsS -H 'Host: playground.test' http://127.0.0.1:8081/events | grep -q 'Copenhagen Fly-in'
+          # Debug pages, Boost and the debug bar stay off.
+          docker exec playground php artisan about --only=environment --json | grep -q '"debug_mode":false'
+          test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Host: playground.test' http://127.0.0.1:8081/_boost/browser-logs)" = 404
 
   # Its own job, so pull request builds never hold registry write access.
   publish:
@@ -157,4 +191,14 @@ jobs:
           tags: |
             ghcr.io/vatsim-scandinavia/events:dev
             ghcr.io/vatsim-scandinavia/events:sha-${{ github.sha }}
+          cache-from: type=gha
+
+      # The playground, with sample data and dev sign-in, for people to try the hub out.
+      - name: Publish the playground image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          target: playground
+          push: true
+          tags: ghcr.io/vatsim-scandinavia/events:playground
           cache-from: type=gha

@@ -13,7 +13,7 @@ class EventSeeder extends Seeder
 {
     /**
      * Seed the VATSIM Scandinavia FIRs, and sample events relative to today so there is
-     * always something upcoming.
+     * always something upcoming. All are published but the last, which stays a Draft.
      */
     public function run(): void
     {
@@ -51,6 +51,10 @@ class EventSeeder extends Seeder
 
             foreach ($positions as $sort => $position) {
                 $event->positions()->create([...$position, 'sort' => $sort]);
+            }
+
+            if ($name !== 'Winter Wonderland Fly-in') {
+                $event->publish();
             }
         }
 
