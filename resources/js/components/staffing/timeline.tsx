@@ -2,6 +2,7 @@ import { Lock, Plus, Trash2, X } from 'lucide-react';
 import {
     useEffect,
     useId,
+    useRef,
     useState,
     type DragEvent,
     type KeyboardEvent as ReactKeyboardEvent,
@@ -119,17 +120,15 @@ export default function Timeline({
     }, [rejected]);
 
     // Keyboard editing: arrows move a span by one snap, Shift+arrows change its length,
-    // up and down move it to the next row, and Delete removes it.
-    const [focusId, setFocusId] = useState<number | null>(null);
-
-    useEffect(() => {
-        if (focusId === null) {
-            return;
+    // up and down move it to the next row, and Delete removes it. A span moved to another
+    // row is remounted there, so it takes focus back as it renders.
+    const refocusId = useRef<number | null>(null);
+    const refocus = (element: HTMLDivElement | null, id: number) => {
+        if (element && refocusId.current === id) {
+            refocusId.current = null;
+            element.focus();
         }
-
-        document.querySelector<HTMLElement>(`[data-timeline-item="${focusId}"]`)?.focus();
-        setFocusId(null);
-    }, [focusId, items]);
+    };
 
     const keyboard = (event: ReactKeyboardEvent, item: TimelineItem) => {
         if (readOnly || item.locked) {
@@ -188,7 +187,7 @@ export default function Timeline({
         }
 
         onChange?.(item, rowId, start, end);
-        setFocusId(item.id);
+        refocusId.current = item.id;
     };
 
     // Adds an hour in the first free stretch of the row, for people not using a mouse.
@@ -352,6 +351,7 @@ export default function Timeline({
                                                 onPointerDown={(event, kind) => begin(event, kind, row.id, item)}
                                                 onKeyDown={(event) => keyboard(event, item)}
                                                 onDelete={onDelete}
+                                                focusRef={(element) => refocus(element, item.id)}
                                             />
                                         ),
                                     )}
@@ -408,6 +408,7 @@ function Block({
     onPointerDown,
     onKeyDown,
     onDelete,
+    focusRef,
 }: {
     item: TimelineItem;
     startsAt: string;
@@ -418,6 +419,7 @@ function Block({
     onPointerDown: (event: ReactPointerEvent, kind: Drag['kind']) => void;
     onKeyDown: (event: ReactKeyboardEvent) => void;
     onDelete?: (item: TimelineItem) => void;
+    focusRef: (element: HTMLDivElement | null) => void;
 }): ReactNode {
     const time = useSpanLabel(startsAt).span(item.start, item.end);
     const editable = !readOnly && !item.locked;
@@ -425,6 +427,7 @@ function Block({
 
     return (
         <div
+            ref={focusRef}
             role="group"
             aria-label={label}
             aria-describedby={editable ? hintId : undefined}
