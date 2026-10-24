@@ -152,10 +152,14 @@ jobs:
           docker logs playground
           test "$status" = healthy
 
-          curl -fsS -H 'Host: playground.test' http://127.0.0.1:8081/login | grep -q 'Hub Admin'
-          curl -fsS -H 'Host: playground.test' http://127.0.0.1:8081/events | grep -q 'Copenhagen Fly-in'
+          set -x
+          # Saved first: grep -q stops reading at a match, which fails curl under pipefail.
+          curl -fsS -o login.html -H 'Host: playground.test' http://127.0.0.1:8081/login
+          grep -q 'Hub Admin' login.html
+          curl -fsS -o events.html -H 'Host: playground.test' http://127.0.0.1:8081/events
+          grep -q 'Copenhagen Fly-in' events.html
           # Debug pages, Boost and the debug bar stay off.
-          docker exec playground php artisan about --only=environment --json | grep -q '"debug_mode":false'
+          test "$(docker exec playground php artisan about --only=environment --json | grep -o '"debug_mode":[a-z]*')" = '"debug_mode":false'
           test "$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Host: playground.test' http://127.0.0.1:8081/_boost/browser-logs)" = 404
 
   # Its own job, so pull request builds never hold registry write access.
