@@ -51,11 +51,11 @@ For anything interactive, write a flow file. A flow default-exports `async (app)
 | `app.dragTo(source, dest, {x, y})` | HTML5 drag-and-drop, dropped at a point given as fractions of `dest`'s size |
 | `app.check(label, value, ok)` | Prints `ok`/`FAIL`; a `FAIL` makes the run exit 1 |
 
-`flows/staffing.mjs` is the worked example, and it passes on a fresh database. As Hub Admin it publishes events 4 and 2, then shortens a shift with Shift+← and saves it. As Tower Controller it books a shift and shows interest. As Hub Admin it drags that controller onto the roster and publishes the roster. Finally, as Tower Controller, it checks the roster appears on the event page. Copy it to start a new flow. Flows that publish or book need `serve.sh` (fresh) first.
+`flows/staffing.mjs` is the worked example, and it passes on a fresh database. As Hub Admin it publishes the Draft (event 7), then shortens a shift with Shift+← and saves it. As Tower Controller it books a shift and shows interest. As Hub Admin it drags that controller onto the roster and publishes the roster. Finally, as Tower Controller, it checks the roster appears on the event page. Copy it to start a new flow. Flows that publish or book need `serve.sh` (fresh) first.
 
 **Seeded users** (dev login names): Hub Admin, Event Staff, Copenhagen Event Staff, vACC Director, Tower Controller (S2), Approach Controller (S3), Centre Controller (C1), Test User.
 
-**Seeded events:** 7 events, **all Drafts**, so guests and controllers see none until a flow publishes one.
+**Seeded events:** 7 events, all published except `/events/7` (Winter Wonderland Fly-in), which stays a Draft.
 - `/events/4`, Copenhagen Fly-in: pre-defined shifts.
 - `/events/2`, Scandinavian Night Ops: open interest. The window opens 21 days before the event, so it is open now.
 - The staffing planner for an event is at `/events/{id}/staffing`.
@@ -91,5 +91,5 @@ php artisan test --compact     # 271 tests, about 2 minutes on /mnt/c
 | `port 8123 is in use by something serve.sh didn't start` | Another server (e.g. `php artisan serve`) holds the port; stop it, or use `PORT=8124` for both `serve.sh` and the driver |
 | `page.goto: Timeout 30000ms` on the first request | Server was started without opcache (e.g. `php artisan serve`); use `serve.sh` |
 | `Failed opening required '.../index.php'` from `php -S` | `server.php` resolves `public/` from the working directory; start it from `public/` as `serve.sh` does |
-| Screenshot shows the guest header and "No events are scheduled" | Not signed in (see the sign-in gotcha), or the events are still Drafts |
+| Screenshot shows the guest header where you expected a signed-in page | Not signed in (see the sign-in gotcha) |
 | `locator.dispatchEvent: Timeout` on `li[draggable=true]` | No controller has shown interest in that event yet |

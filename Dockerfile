@@ -17,7 +17,7 @@ RUN npm run build
 
 ####################################################################################################
 # The app
-FROM php:8.5.12-apache-trixie
+FROM php:8.5.12-apache-trixie AS app
 
 # curl is for the health check below.
 RUN apt-get update \
@@ -127,3 +127,59 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s CMD ["hub-healthcheck"]
 ENTRYPOINT ["hub-entrypoint"]
 CMD ["apache2-foreground"]
+
+####################################################################################################
+# The playground: the app with sample data and dev sign-in, for people to try out. Anyone who can
+# reach it can sign in as anyone, Administrator included, so keep it behind a password and never
+# give it real data. Built only with --target playground.
+
+FROM app AS playground
+
+# Faker, which the seeders' factories need, comes with the dev packages.
+RUN composer install --no-interaction --prefer-dist --no-scripts \
+    && composer dump-autoload --optimize \
+    && chown -R www-data:www-data bootstrap/cache
+
+# Dev sign-in only works with APP_ENV=local. Debug stays off: its error pages show the
+# environment, APP_KEY included. Boost and the debug bar would switch themselves on locally and
+# answer the public. The sample people aren't real VATSIM members, so don't sync them.
+ENV APP_ENV=local \
+    APP_DEBUG=false \
+    AUTH_DEV_LOGIN=true \
+    BOOST_ENABLED=false \
+    DEBUGBAR_ENABLED=false \
+    VATSIM_SYNC=false \
+    RESET_PLAYGROUND=true
+
+# Readies the app as usual, then starts over from the sample data on every start, or with
+# RESET_PLAYGROUND=false only on the first, when there's no SQLite file yet. The scheduler leaves
+# it alone.
+COPY --chmod=755 <<'EOF' /usr/local/bin/playground-entrypoint
+#!/bin/sh
+set -e
+cd /app
+
+as_web() {
+    if [ "$(id -u)" = 0 ]; then runuser -u www-data -- "$@"; else "$@"; fi
+}
+
+first_start=false
+[ -s "${DB_DATABASE:-/app/storage/database.sqlite}" ] || first_start=true
+
+hub-entrypoint true
+
+if [ "${RUN_MIGRATIONS:-true}" = true ] && { [ "$RESET_PLAYGROUND" = true ] || [ "$first_start" = true ]; }; then
+    as_web php artisan migrate:fresh --seed --force
+fi
+
+exec docker-php-entrypoint "$@"
+EOF
+
+# A new ENTRYPOINT clears the CMD inherited from app, so name it again.
+ENTRYPOINT ["playground-entrypoint"]
+CMD ["apache2-foreground"]
+
+####################################################################################################
+# The default target, so a plain `docker build .` is always the app.
+
+FROM app
