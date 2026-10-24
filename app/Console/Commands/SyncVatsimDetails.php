@@ -20,7 +20,8 @@ use Illuminate\Support\Sleep;
  *
  * A member whose record can't be fetched is left as they are, so an outage, or a sandbox
  * account the live API doesn't know, never takes roles away. Only the automatic Controller role
- * is ever taken away; roles given by hand are left alone. VATSIM_SYNC=false switches it off.
+ * is ever taken away; roles given by hand are left alone. VATSIM_SYNC=false switches it off, and
+ * it steps aside while an Integration is the Controller source.
  */
 #[Signature('users:sync-vatsim {--pause=1000 : Milliseconds to wait between requests to the VATSIM API}')]
 #[Description('Refresh VATSIM ratings and subdivisions, and the automatic Controller role')]
@@ -32,6 +33,12 @@ class SyncVatsimDetails extends Command
     {
         if (! config('services.vatsim.sync')) {
             $this->info('Syncing with VATSIM is switched off (VATSIM_SYNC=false); nothing to sync.');
+
+            return;
+        }
+
+        if ($source = $controllerRole->source()) {
+            $this->info("The Controller role comes from {$source->controllerSourceName()}; nothing to sync.");
 
             return;
         }

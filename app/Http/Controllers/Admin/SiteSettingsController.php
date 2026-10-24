@@ -19,7 +19,7 @@ use Throwable;
  */
 class SiteSettingsController extends Controller
 {
-    public function edit(VaccIdentity $identity): Response
+    public function edit(VaccIdentity $identity, ControllerRole $controllerRole): Response
     {
         $effective = $identity->effective();
 
@@ -33,6 +33,8 @@ class SiteSettingsController extends Controller
                 'heroGradient' => $effective['heroGradient'],
                 'autoController' => $identity->controllerRoleIsAutomatic(),
             ],
+            // The Integration feature handing out the Controller role instead of the hub's rule.
+            'controllerSource' => $controllerRole->source()?->controllerSourceName(),
             // Each locked detail and the environment variable it is set by.
             'locked' => collect($identity->locked())->mapWithKeys(fn (string $field) => [$field => VaccIdentity::FIELDS[$field]]),
         ]);

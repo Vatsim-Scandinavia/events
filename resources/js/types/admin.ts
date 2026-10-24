@@ -30,3 +30,6 @@ export type Paginated<T> = {
     prev_page_url: string | null;
     next_page_url: string | null;
 };
+
+// Mirrors App\Enums\IntegrationRunStatus.
+export type IntegrationRunStatus = 'running' | 'succeeded' | 'failed' | 'held' | 'approved';
