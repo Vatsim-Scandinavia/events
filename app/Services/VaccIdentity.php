@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\Theme;
 use App\Models\Fir;
 use App\Models\SiteSetting;
 use Illuminate\Support\Facades\Cache;
@@ -29,6 +30,23 @@ final class VaccIdentity
         'subdivision' => 'VACC_SUBDIVISION',
         'website' => 'VACC_WEBSITE',
     ];
+
+    /**
+     * The CSS variables each Brand color sets. Each also sets its "-foreground" variable.
+     *
+     * @var array<string, list<string>>
+     */
+    private const array BRAND_VARIABLES = [
+        'primary' => ['primary', 'sidebar-primary'],
+        'accent' => ['accent', 'secondary', 'sidebar-accent'],
+    ];
+
+    /**
+     * The text colors put on a Brand color, matching the Default theme's lightest and darkest.
+     */
+    private const string LIGHT_TEXT = '#ffffff';
+
+    private const string DARK_TEXT = '#0a0a0a';
 
     private const string CACHE_KEY = 'site-settings';
 
@@ -66,6 +84,84 @@ final class VaccIdentity
     public function saveHeroGradient(?array $gradient): void
     {
         $this->put('hero_gradient', $gradient);
+    }
+
+    public function theme(): Theme
+    {
+        return Theme::tryFrom($this->stored()['theme'] ?? '') ?? Theme::Default;
+    }
+
+    /**
+     * The Brand theme's colors. They're kept while the Default theme is in use.
+     *
+     * @return array{primary: string, accent: string}|null
+     */
+    public function brandColors(): ?array
+    {
+        return $this->stored()['brand_colors'] ?? null;
+    }
+
+    /**
+     * @param  array{primary: string, accent: string}|null  $colors
+     */
+    public function saveTheme(Theme $theme, ?array $colors): void
+    {
+        $this->put('theme', $theme === Theme::Default ? null : $theme->value);
+        $this->put('brand_colors', $colors);
+    }
+
+    /**
+     * The CSS variables the theme overrides on every page, each with readable text to go on it.
+     * Empty for the Default theme.
+     *
+     * @return array<string, string>
+     */
+    public function themeVariables(): array
+    {
+        $colors = $this->brandColors();
+
+        if ($this->theme() !== Theme::Brand || $colors === null) {
+            return [];
+        }
+
+        $variables = [];
+
+        foreach (self::BRAND_VARIABLES as $color => $names) {
+            $text = $this->readableTextOn($colors[$color]);
+
+            foreach ($names as $name) {
+                $variables["--{$name}"] = $colors[$color];
+                $variables["--{$name}-foreground"] = $text;
+            }
+        }
+
+        $variables['--ring'] = $colors['primary'];
+
+        return $variables;
+    }
+
+    /**
+     * White or near-black, whichever contrasts better with the color (WCAG relative luminance).
+     */
+    private function readableTextOn(string $hex): string
+    {
+        $luminance = $this->luminance($hex);
+
+        $againstLight = ($this->luminance(self::LIGHT_TEXT) + 0.05) / ($luminance + 0.05);
+        $againstDark = ($luminance + 0.05) / ($this->luminance(self::DARK_TEXT) + 0.05);
+
+        return $againstDark > $againstLight ? self::DARK_TEXT : self::LIGHT_TEXT;
+    }
+
+    private function luminance(string $hex): float
+    {
+        [$red, $green, $blue] = array_map(function (string $pair): float {
+            $value = hexdec($pair) / 255;
+
+            return $value <= 0.04045 ? $value / 12.92 : (($value + 0.055) / 1.055) ** 2.4;
+        }, str_split(ltrim($hex, '#'), 2));
+
+        return 0.2126 * $red + 0.7152 * $green + 0.0722 * $blue;
     }
 
     /**

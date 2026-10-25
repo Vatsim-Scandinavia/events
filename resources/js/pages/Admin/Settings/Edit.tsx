@@ -8,11 +8,20 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Checkbox } from '@/components/ui/checkbox';
 import { Field, FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import AppLayout from '@/layouts/AppLayout';
 import type { HeroGradient } from '@/types/inertia';
 
 // Where the hero's gradient starts when an admin first turns it on.
 const defaultHeroGradient: HeroGradient = { from: '#2563eb', to: '#9333ea' };
+
+// Mirrors App\Enums\Theme.
+type Theme = 'default' | 'brand';
+
+type BrandColors = { primary: string; accent: string };
+
+// Where the Brand colors start when an admin first picks the Brand theme.
+const defaultBrandColors: BrandColors = { primary: '#2563eb', accent: '#1e3a8a' };
 
 type Detail = 'name' | 'division' | 'subdivision' | 'website';
 
@@ -25,6 +34,9 @@ type SiteSettingsProps = {
         website: string | null;
         logo: string | null;
         heroGradient: HeroGradient | null;
+        theme: Theme;
+        // Kept while the Default theme is in use, so switching back brings them back.
+        brandColors: BrandColors | null;
         autoController: boolean;
     };
     // Details set in the server's environment, with the variable each comes from.
@@ -43,10 +55,13 @@ export default function SiteSettings({ settings, locked, controllerSource }: Sit
         logo: null as File | null,
         remove_logo: false,
         hero_gradient: settings.heroGradient,
+        theme: settings.theme,
+        brand_colors: settings.brandColors,
     });
 
     const { data, errors } = form;
     const heroGradient = data.hero_gradient;
+    const brandColors = data.brand_colors;
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
@@ -70,7 +85,7 @@ export default function SiteSettings({ settings, locked, controllerSource }: Sit
         <>
             <Head title="Settings · Admin" />
 
-            <AdminHeader title="Settings" description="Who this Event Hub belongs to: the vACC’s details and logo, shown across the site." />
+            <AdminHeader title="Settings" description="Who this Event Hub belongs to: the vACC’s details, logo and colors, shown across the site." />
 
             <form onSubmit={submit} className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
                 <Card>
@@ -179,6 +194,51 @@ export default function SiteSettings({ settings, locked, controllerSource }: Sit
                                 form.setData((values) => ({ ...values, logo: null, remove_logo: values.logo ? values.remove_logo : true }))
                             }
                         />
+                        <div className="flex flex-col gap-4">
+                            <Field label="Theme" error={errors.theme}>
+                                <NativeSelect
+                                    value={data.theme}
+                                    onChange={(e) => {
+                                        const theme = e.target.value as Theme;
+                                        form.setData((values) => ({
+                                            ...values,
+                                            theme,
+                                            brand_colors: theme === 'brand' ? (values.brand_colors ?? defaultBrandColors) : values.brand_colors,
+                                        }));
+                                    }}
+                                >
+                                    <option value="default">Default</option>
+                                    <option value="brand">Brand</option>
+                                </NativeSelect>
+                                <span className="text-xs font-normal text-muted-foreground">
+                                    The colors the whole site is shown in. Brand uses your own colors for buttons, links and highlights.
+                                </span>
+                            </Field>
+                            {data.theme === 'brand' && brandColors && (
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <Field label="Primary color" error={errors['brand_colors.primary']}>
+                                        <Input
+                                            type="color"
+                                            className="h-10 w-20 p-1"
+                                            value={brandColors.primary}
+                                            onChange={(e) => form.setData('brand_colors', { ...brandColors, primary: e.target.value })}
+                                        />
+                                        <span className="text-xs font-normal text-muted-foreground">Buttons, links and focus outlines.</span>
+                                    </Field>
+                                    <Field label="Accent color" error={errors['brand_colors.accent']}>
+                                        <Input
+                                            type="color"
+                                            className="h-10 w-20 p-1"
+                                            value={brandColors.accent}
+                                            onChange={(e) => form.setData('brand_colors', { ...brandColors, accent: e.target.value })}
+                                        />
+                                        <span className="text-xs font-normal text-muted-foreground">
+                                            Hover and selected states, and secondary buttons.
+                                        </span>
+                                    </Field>
+                                </div>
+                            )}
+                        </div>
                         <div className="flex flex-col gap-4">
                             <div className="flex items-start gap-3">
                                 <Checkbox

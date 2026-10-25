@@ -2,13 +2,15 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Theme;
 use App\Services\VaccIdentity;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
 /**
- * The vACC's details and logo as admins enter them on the settings page.
+ * The vACC's details, logo and theme as admins enter them on the settings page.
  */
 class SiteSettingsRequest extends FormRequest
 {
@@ -58,6 +60,10 @@ class SiteSettingsRequest extends FormRequest
             'hero_gradient' => ['nullable', 'array:from,to'],
             'hero_gradient.from' => ['required_with:hero_gradient', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
             'hero_gradient.to' => ['required_with:hero_gradient', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
+            'theme' => ['sometimes', 'required', Rule::enum(Theme::class)],
+            'brand_colors' => ['nullable', 'array:primary,accent'],
+            'brand_colors.primary' => ['required_if:theme,brand', 'required_with:brand_colors', 'nullable', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
+            'brand_colors.accent' => ['required_if:theme,brand', 'required_with:brand_colors', 'nullable', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
         ];
 
         foreach (app(VaccIdentity::class)->locked() as $field) {
@@ -79,6 +85,9 @@ class SiteSettingsRequest extends FormRequest
             'logo.mimes' => 'Upload a PNG, JPG, WebP or SVG file.',
             'logo.max' => 'The logo can be at most 2 MB.',
             'hero_gradient.*.regex' => 'Pick a color like #1e3a8a.',
+            'brand_colors.*.required_if' => 'Pick a color like #1e3a8a.',
+            'brand_colors.*.required_with' => 'Pick a color like #1e3a8a.',
+            'brand_colors.*.regex' => 'Pick a color like #1e3a8a.',
             'logo.uploaded' => 'The logo couldn’t be uploaded. Try a smaller file (2 MB at most).',
         ];
     }
