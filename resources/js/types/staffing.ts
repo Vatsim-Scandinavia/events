@@ -25,6 +25,13 @@ export type StaffingPosition = {
     frequency: string | null;
 };
 
+// A known position from the Position catalogue, suggested when staff add a position.
+export type CataloguePosition = {
+    callsign: string;
+    name: string | null;
+    frequency: string | null;
+};
+
 export type Shift = {
     id: number;
     // e.g. "16:00–18:00z" or "18:00–20:00 CEST".

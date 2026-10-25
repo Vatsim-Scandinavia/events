@@ -54,6 +54,28 @@ final class ControlCenterApi
     }
 
     /**
+     * Every position Control Center knows: its callsign, name and frequency.
+     *
+     * @return list<array{callsign: string, name: ?string, frequency: ?string}>
+     *
+     * @throws ConnectionFailed
+     */
+    public function positions(): array
+    {
+        return array_map(function (mixed $position) {
+            if (! is_array($position) || ! is_string($position['callsign'] ?? null)) {
+                throw $this->unreadable();
+            }
+
+            return [
+                'callsign' => trim($position['callsign']),
+                'name' => is_string($position['name'] ?? null) ? mb_substr(trim($position['name']), 0, 100) : null,
+                'frequency' => is_string($position['frequency'] ?? null) ? trim($position['frequency']) : null,
+            ];
+        }, $this->get('positions'));
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      * @return list<mixed>
      *

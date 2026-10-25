@@ -1,18 +1,23 @@
+import { usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import { useRef, useState, type FormEvent } from 'react';
+import { useId, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { CALLSIGN, type DraftProps } from './draft';
+import { CALLSIGN, type DraftProps, type StaffingPageProps } from './draft';
 
 // The last row of the timeline: a button that opens inline fields for another position.
 // It stays open after adding, so several positions can be typed in one after another.
+// Positions in the catalogue are suggested as you type, and picking one fills in its frequency.
 export function AddPositionRow({ draft, update, newKey }: DraftProps) {
+    const { catalogue } = usePage<StaffingPageProps>().props;
+    const suggestions = useId();
     const [open, setOpen] = useState(draft.positions.length === 0);
     const [callsign, setCallsign] = useState('');
     const [frequency, setFrequency] = useState('');
     const [error, setError] = useState<string | null>(null);
     const callsignRef = useRef<HTMLInputElement>(null);
+    const filledFrequency = useRef<string | null>(null);
 
     const close = () => {
         setOpen(false);
@@ -68,12 +73,32 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
                     placeholder="Callsign, e.g. EKCH_TWR"
                     className="w-48 font-mono uppercase"
                     value={callsign}
+                    list={catalogue.length > 0 ? suggestions : undefined}
                     onChange={(e) => {
+                        const known = catalogue.find((position) => position.callsign === e.target.value.trim().toUpperCase());
+
                         setCallsign(e.target.value);
                         setError(null);
+
+                        // Fill in a known frequency, but never over one typed by hand.
+                        if (known?.frequency && (!frequency.trim() || frequency === filledFrequency.current)) {
+                            setFrequency(known.frequency);
+                            filledFrequency.current = known.frequency;
+                        }
                     }}
                     aria-invalid={!!error}
                 />
+                {catalogue.length > 0 && (
+                    <datalist id={suggestions}>
+                        {catalogue
+                            .filter((position) => !draft.positions.some((planned) => planned.callsign === position.callsign))
+                            .map((position) => (
+                                <option key={position.callsign} value={position.callsign}>
+                                    {position.name ?? undefined}
+                                </option>
+                            ))}
+                    </datalist>
+                )}
                 <Input
                     aria-label="Frequency (optional)"
                     placeholder="Frequency (optional)"

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staff;
 use App\Enums\StaffingMode;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\EventResource;
+use App\Models\CataloguePosition;
 use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Staffing\StaffingPlan;
@@ -29,6 +30,8 @@ class StaffingController extends Controller
         return Inertia::render('Events/Staffing', [
             'event' => (new EventResource($event))->resolve(),
             ...$staffing->forStaff($event, $occurrence, $request->user()),
+            // Known positions to suggest when adding one; empty unless an Integration fills it.
+            'catalogue' => CataloguePosition::query()->orderBy('callsign')->get(['callsign', 'name', 'frequency']),
         ]);
     }
 
