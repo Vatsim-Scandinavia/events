@@ -1,0 +1,32 @@
+name: Task
+description: For maintainers and contributors. A fully specified piece of work.
+type: Task
+labels:
+  - needs-triage
+body:
+  - type: textarea
+    id: what-to-build
+    attributes:
+      label: What to build
+      description: The behaviour to add or change, in the Hub's own terms (see GLOSSARY.md).
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      value: |
+        - [ ] 
+    validations:
+      required: true
+  - type: textarea
+    id: relations
+    attributes:
+      label: Parent issue or blocked by
+      placeholder: |
+        Part of #
+        Blocked by: #
