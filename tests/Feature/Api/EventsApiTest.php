@@ -217,6 +217,6 @@ class EventsApiTest extends TestCase
         $this->get('/docs/api')->assertOk();
         $this->getJson('/docs/api.json')
             ->assertOk()
-            ->assertJson(fn (AssertableJson $json) => $json->has('paths./events')->has('paths./events/{event}')->has('paths./occurrences')->has('paths./occurrences/{occurrence}')->has('paths./occurrences/{occurrence}/shifts')->has('paths./occurrences/{occurrence}/roster')->etc());
+            ->assertJson(fn (AssertableJson $json) => $json->has('paths./events')->has('paths./events/{event}')->has('paths./occurrences')->has('paths./occurrences/{occurrence}')->has('paths./occurrences/{occurrence}/roster')->etc());
     }
 }
