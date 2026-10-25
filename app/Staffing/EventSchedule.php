@@ -176,6 +176,8 @@ final class EventSchedule
                 $this->move($existing[$date['id']], $date['starts_at'], $date['ends_at']);
             }
         }
+
+        StaffingChanged::dispatch($existing->keys()->merge($event->occurrences()->pluck('id'))->unique()->values()->all());
     }
 
     /**

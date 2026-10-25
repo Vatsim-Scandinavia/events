@@ -68,6 +68,9 @@ final class StaffingPlan
                     $occurrence->publishRoster();
                 }
             }
+
+            // Shifts apply to every date, so all of them may have changed.
+            StaffingChanged::forEvent($event);
         });
     }
 

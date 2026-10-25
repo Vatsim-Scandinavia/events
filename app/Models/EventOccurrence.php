@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\StaffingMode;
+use App\Staffing\StaffingChanged;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -97,6 +98,7 @@ class EventOccurrence extends Model
         }
 
         $this->update(['cancelled_at' => $this->cancelled_at ?? now()]);
+        StaffingChanged::forOccurrence($this);
     }
 
     /**
@@ -113,6 +115,7 @@ class EventOccurrence extends Model
         }
 
         $this->update(['cancelled_at' => null]);
+        StaffingChanged::forOccurrence($this);
     }
 
     public function interestOpensAt(): CarbonImmutable
@@ -166,6 +169,7 @@ class EventOccurrence extends Model
         }
 
         $this->update(['roster_published_at' => $this->roster_published_at ?? now()]);
+        StaffingChanged::forOccurrence($this);
     }
 
     /**
@@ -176,6 +180,7 @@ class EventOccurrence extends Model
         $this->ensureRosterEditable();
 
         $this->update(['roster_published_at' => null]);
+        StaffingChanged::forOccurrence($this);
     }
 
     /**

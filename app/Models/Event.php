@@ -6,6 +6,7 @@ use App\Enums\Permission;
 use App\Enums\RepeatInterval;
 use App\Enums\StaffingMode;
 use App\Services\EventBanners;
+use App\Staffing\StaffingChanged;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -171,6 +172,10 @@ class Event extends Model
 
         $this->forceFill(['published_at' => static::query()->whereKey($this->getKey())->value('published_at')])->syncOriginal();
 
+        if ($published) {
+            StaffingChanged::forEvent($this);
+        }
+
         return $published;
     }
 
@@ -231,11 +236,13 @@ class Event extends Model
         }
 
         $this->update(['cancelled_at' => $this->cancelled_at ?? now()]);
+        StaffingChanged::forEvent($this);
     }
 
     public function restore(): void
     {
         $this->update(['cancelled_at' => null]);
+        StaffingChanged::forEvent($this);
     }
 
     /**
@@ -265,6 +272,7 @@ class Event extends Model
             }
 
             $this->update(['staffing_mode' => $mode]);
+            StaffingChanged::forEvent($this);
         });
     }
 

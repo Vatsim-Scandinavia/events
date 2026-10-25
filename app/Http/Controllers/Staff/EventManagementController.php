@@ -11,6 +11,7 @@ use App\Models\EventType;
 use App\Models\Fir;
 use App\Services\EventBanners;
 use App\Staffing\EventSchedule;
+use App\Staffing\StaffingChanged;
 use Carbon\CarbonImmutable;
 use DateTimeZone;
 use Illuminate\Http\JsonResponse;
@@ -155,7 +156,9 @@ class EventManagementController extends Controller
     {
         Gate::authorize('delete', $event);
 
+        $occurrenceIds = $event->occurrences()->pluck('id')->all();
         $event->delete();
+        StaffingChanged::dispatch($occurrenceIds);
 
         Inertia::flash('success', "{$event->name} was deleted.");
 

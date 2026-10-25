@@ -76,6 +76,88 @@ final class ControlCenterApi
     }
 
     /**
+     * Making bookings needs a key that can edit. An empty booking passes that check and then
+     * fails validation, so nothing is booked.
+     *
+     * @throws ConnectionFailed
+     */
+    public function checkEditScope(): void
+    {
+        $response = $this->request('post', 'bookings/create');
+
+        if ($response->status() === 401 || $response->status() === 403) {
+            throw new ConnectionFailed('The API key can only read. Booking push needs a key that can edit.');
+        }
+
+        if ($response->status() !== 422) {
+            $this->guard($response);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $booking  As BookingPush::payload() makes it.
+     * @return int The booking's id in Control Center.
+     *
+     * @throws ConnectionFailed when it's worth trying again later
+     * @throws BookingRefused
+     */
+    public function createBooking(array $booking): int
+    {
+        $response = $this->request('post', 'bookings/create', $booking);
+
+        if ($response->status() === 404) {
+            throw new BookingRefused("Control Center doesn’t know controller {$booking['cid']}.");
+        }
+
+        $this->guardBooking($response);
+        $id = $response->json('booking.id');
+
+        if (! is_int($id)) {
+            throw $this->unreadable();
+        }
+
+        return $id;
+    }
+
+    /**
+     * Move a booking to new times or another position. Control Center can't hand it to someone
+     * else; delete it and create another for that.
+     *
+     * @param  array<string, mixed>  $booking
+     * @return bool False when it's no longer in Control Center.
+     *
+     * @throws ConnectionFailed
+     * @throws BookingRefused
+     */
+    public function updateBooking(int $id, array $booking): bool
+    {
+        $response = $this->request('patch', "bookings/{$id}", $booking);
+
+        if ($response->status() === 404) {
+            return false;
+        }
+
+        $this->guardBooking($response);
+
+        return true;
+    }
+
+    /**
+     * A booking that's already gone counts as deleted.
+     *
+     * @throws ConnectionFailed
+     * @throws BookingRefused
+     */
+    public function deleteBooking(int $id): void
+    {
+        $response = $this->request('delete', "bookings/{$id}");
+
+        if ($response->status() !== 404) {
+            $this->guardBooking($response);
+        }
+    }
+
+    /**
      * @param  array<string, mixed>  $query
      * @return list<mixed>
      *
@@ -83,16 +165,7 @@ final class ControlCenterApi
      */
     private function get(string $path, array $query = []): array
     {
-        $url = rtrim((string) $this->configuration->get('url'), '/')."/api/v1/{$path}";
-
-        try {
-            $response = Http::withToken((string) $this->configuration->get('token'))
-                ->acceptJson()
-                ->timeout(30)
-                ->get($url, $query);
-        } catch (ConnectionException) {
-            throw new ConnectionFailed('Control Center didn’t answer. Check its URL, or try again later.');
-        }
+        $response = $this->request('get', $path, $query);
 
         $this->guard($response);
         $data = $response->json('data');
@@ -102,6 +175,46 @@ final class ControlCenterApi
         }
 
         return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     *
+     * @throws ConnectionFailed
+     */
+    private function request(string $method, string $path, array $data = []): Response
+    {
+        $url = rtrim((string) $this->configuration->get('url'), '/')."/api/v1/{$path}";
+
+        try {
+            return Http::withToken((string) $this->configuration->get('token'))
+                ->acceptJson()
+                ->timeout(30)
+                ->{$method}($url, $data);
+        } catch (ConnectionException) {
+            throw new ConnectionFailed('Control Center didn’t answer. Check its URL, or try again later.');
+        }
+    }
+
+    /**
+     * Server errors and a refused key are worth trying again; any other refusal says why the
+     * booking can't be made as it is.
+     *
+     * @throws ConnectionFailed
+     * @throws BookingRefused
+     */
+    private function guardBooking(Response $response): void
+    {
+        if ($response->serverError() || in_array($response->status(), [401, 403, 429], true)) {
+            $this->guard($response);
+        }
+
+        if ($response->failed()) {
+            $reason = $response->json('message');
+            $reason = is_string($reason) && $reason !== '' ? $reason : "Control Center turned it down (HTTP {$response->status()}).";
+
+            throw new BookingRefused($reason, retryable: str_starts_with($reason, 'VATSIM API error'));
+        }
     }
 
     private function guard(Response $response): void
