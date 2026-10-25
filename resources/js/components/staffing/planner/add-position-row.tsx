@@ -1,10 +1,11 @@
 import { usePage } from '@inertiajs/react';
 import { Plus } from 'lucide-react';
-import { useId, useRef, useState, type FormEvent } from 'react';
+import { useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { CALLSIGN, type DraftProps, type StaffingPageProps } from './draft';
+import type { CataloguePosition } from '@/types/staffing';
+import { CALLSIGN, type DraftPosition, type DraftProps, type StaffingPageProps } from './draft';
 
 // The last row of the timeline: a button that opens inline fields for another position.
 // It stays open after adding, so several positions can be typed in one after another.
@@ -17,6 +18,7 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
     const [frequency, setFrequency] = useState('');
     const [error, setError] = useState<string | null>(null);
     const callsignRef = useRef<HTMLInputElement>(null);
+    const matches = useMemo(() => suggest(catalogue, callsign, draft.positions), [catalogue, callsign, draft.positions]);
     const filledFrequency = useRef<string | null>(null);
 
     const close = () => {
@@ -90,13 +92,11 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
                 />
                 {catalogue.length > 0 && (
                     <datalist id={suggestions}>
-                        {catalogue
-                            .filter((position) => !draft.positions.some((planned) => planned.callsign === position.callsign))
-                            .map((position) => (
-                                <option key={position.callsign} value={position.callsign}>
-                                    {position.name ?? undefined}
-                                </option>
-                            ))}
+                        {matches.map((position) => (
+                            <option key={position.callsign} value={position.callsign}>
+                                {position.name ?? undefined}
+                            </option>
+                        ))}
                     </datalist>
                 )}
                 <Input
@@ -119,4 +119,25 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
             <FieldError message={error ?? undefined} />
         </form>
     );
+}
+
+// Browsers redraw a datalist on every keystroke, which gets slow with hundreds of positions, so
+// offer only the best few: callsigns starting with what's typed, then other callsign or name
+// matches. Nothing until two characters are typed, or once it's a position already planned.
+const MAX_SUGGESTIONS = 20;
+
+function suggest(catalogue: CataloguePosition[], typed: string, planned: DraftPosition[]): CataloguePosition[] {
+    const query = typed.trim().toUpperCase();
+
+    if (query.length < 2) {
+        return [];
+    }
+
+    const available = catalogue.filter((position) => !planned.some((item) => item.callsign === position.callsign));
+    const starting = available.filter((position) => position.callsign.startsWith(query));
+    const containing = available.filter(
+        (position) => !position.callsign.startsWith(query) && (position.callsign.includes(query) || position.name?.toUpperCase().includes(query)),
+    );
+
+    return [...starting, ...containing].slice(0, MAX_SUGGESTIONS);
 }
