@@ -28,7 +28,15 @@ class SignInTest extends TestCase
         ];
     }
 
-    #[DataProvider('providers')]
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function drivers(): array
+    {
+        return array_map(fn (array $provider) => [$provider[0]], self::providers());
+    }
+
+    #[DataProvider('drivers')]
     public function test_sign_in_sends_you_to_the_configured_provider(string $provider): void
     {
         config(['auth.sign_in_provider' => $provider]);
@@ -74,7 +82,7 @@ class SignInTest extends TestCase
             ->where('auth.signIn.label', "Sign in with {$label}"));
     }
 
-    #[DataProvider('providers')]
+    #[DataProvider('drivers')]
     public function test_first_sign_in_creates_the_user_from_their_vatsim_details(string $provider): void
     {
         config(['auth.sign_in_provider' => $provider]);
@@ -90,7 +98,7 @@ class SignInTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
-    #[DataProvider('providers')]
+    #[DataProvider('drivers')]
     public function test_returning_user_is_updated_and_sent_where_they_were_going(string $provider): void
     {
         config(['auth.sign_in_provider' => $provider]);
