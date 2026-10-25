@@ -1,0 +1,76 @@
+name: Bug report
+description: Something in the Hub isn't working as it should.
+type: Bug
+labels:
+  - needs-triage
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Please don't post security vulnerabilities here; use "Report a security vulnerability" on the previous page instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Describe what you saw, including any error message.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What should have happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we make it happen again?
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where in the Hub
+      options:
+        - Events
+        - Staffing and Rosters
+        - Shift Bookings
+        - Sign-in
+        - Admin and settings
+        - Integrations
+        - API
+        - Other
+  - type: dropdown
+    id: role
+    attributes:
+      label: Your role
+      description: What you were signed in as. Many problems only happen for some roles.
+      options:
+        - Pilot (no role)
+        - Controller
+        - Event Staff
+        - vACC Staff
+        - Administrator
+        - Not signed in
+        - Not sure
+  - type: input
+    id: link
+    attributes:
+      label: Link to the page or event
+      placeholder: https://...
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images here if they help show the problem.
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: e.g. Firefox on Windows, Safari on iPhone

@@ -1,0 +1,16 @@
+name: Question
+description: Ask how something in the Hub works.
+labels:
+  - question
+  - needs-triage
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What you've tried or where you looked
