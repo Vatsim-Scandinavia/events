@@ -1,0 +1,95 @@
+---
+name: run-events
+description: Run, start, serve, screenshot or click through the Event Hub (Laravel + Inertia React) in a headless browser on a fresh seeded database, sign in as any seeded user, and drive the event form, staffing planner, bookings, interest and rosters. Use to confirm a change works in the real app, not just in tests.
+---
+
+# Run the Event Hub
+
+The app is served by PHP's built-in server on `http://127.0.0.1:8123` (or `$PORT`), using a throwaway SQLite database. It is driven by `driver.mjs`, which runs Playwright in headless Chromium. Paths below are relative to the repo root.
+
+Everything the skill installs or writes goes under `~/.cache/run-events/` (or `$RUN_EVENTS_HOME`): Playwright, Chromium (`browsers/`), unpacked system libraries, `dev.sqlite`, `serve.log`, the server's pid file and `shots/`. The one exception is the frontend build: when it's stale, `serve.sh` runs the project's own `npm run build` into `public/build`, which is gitignored. The repo's `package.json`, `.env` and `database/database.sqlite` are never touched.
+
+## Prerequisites (once per machine)
+
+```bash
+.claude/skills/run-events/setup.sh
+```
+
+This installs Playwright 1.49.1 and Chromium (about 150MB) under `~/.cache/run-events`. There is no sudo here, so any `.so` Chromium can't find (on Ubuntu: libnss3, libnspr4, libasound2t64) is fetched with `apt-get download` and unpacked with `dpkg -x` into `~/.cache/run-events/libs`. The driver points Chromium at them itself. PHP 8.5, Composer dependencies (`vendor/`) and `node_modules` must already be installed.
+
+## Serve
+
+```bash
+.claude/skills/run-events/serve.sh        # fresh: new DB, migrate:fresh, db:seed (runs roles:sync), serve
+.claude/skills/run-events/serve.sh keep   # restart on the same DB; needed after any PHP change
+.claude/skills/run-events/serve.sh stop
+PORT=8124 .claude/skills/run-events/serve.sh   # another port; pass the same PORT to driver.mjs
+```
+
+A fresh start takes about 30s. Before serving, the script runs `npm run build` if anything in `resources/`, `vite.config.js`, `package.json` or `package-lock.json` is newer than `public/build`. It also sets `APP_ENV=local`, `AUTH_DEV_LOGIN=true` and `DEBUGBAR_ENABLED=false` for the server only, without editing `.env`. It only ever stops the server it started itself, and refuses to start if something else holds the port. Concurrent runs wait on a lock rather than seeding the same database at once.
+
+## Drive (agent path)
+
+```bash
+node .claude/skills/run-events/driver.mjs shot /events --as "Hub Admin"
+node .claude/skills/run-events/driver.mjs run .claude/skills/run-events/flows/staffing.mjs
+```
+
+- `shot <path>` screenshots one page to `~/.cache/run-events/shots/<slug>.png`.
+- `--out <name>` chooses the file name.
+- `--as` signs in first.
+- After every run the driver prints console errors, page errors and 5xx responses, or `no problems`, and exits 1 if there were any. **Read the screenshot** after a run.
+
+For anything interactive, write a flow file. A flow default-exports `async (app) => {}`, and `app` has:
+
+| | |
+|---|---|
+| `app.page` | Playwright page. It is replaced on every `signIn`, so always read it as `app.page` |
+| `app.go(path)` | Navigate and wait until Inertia settles |
+| `app.signIn(name)` | Fresh browser context, then the dev login as that seeded user |
+| `app.shot(name)` | Full-page screenshot into `shots/` |
+| `app.dragTo(source, dest, {x, y})` | HTML5 drag-and-drop, dropped at a point given as fractions of `dest`'s size |
+| `app.check(label, value, ok)` | Prints `ok`/`FAIL`; a `FAIL` makes the run exit 1 |
+
+`flows/staffing.mjs` is the worked example, and it passes on a fresh database. As Hub Admin it publishes the Draft (event 7), then shortens a shift with Shift+← and saves it. As Tower Controller it books a shift and shows interest. As Hub Admin it drags that controller onto the roster and publishes the roster. Finally, as Tower Controller, it checks the roster appears on the event page. Copy it to start a new flow. Flows that publish or book need `serve.sh` (fresh) first.
+
+**Seeded users** (dev login names): Hub Admin, Event Staff, Copenhagen Event Staff, vACC Director, Tower Controller (S2), Approach Controller (S3), Centre Controller (C1), Test User.
+
+**Seeded events:** 7 events, all published except `/events/7` (Winter Wonderland Fly-in), which stays a Draft.
+- `/events/4`, Copenhagen Fly-in: pre-defined shifts.
+- `/events/2`, Scandinavian Night Ops: open interest. The window opens 21 days before the event, so it is open now.
+- The staffing planner for an event is at `/events/{id}/staffing`.
+
+## Direct invocation
+
+```bash
+DB_DATABASE=$HOME/.cache/run-events/dev.sqlite php artisan tinker --execute 'echo App\Models\EventOccurrence::query()->whereNotNull("roster_published_at")->count(), PHP_EOL;'
+php artisan test --compact     # 271 tests, about 2 minutes on /mnt/c
+```
+
+## Run (human path)
+
+`composer run dev` serves on the port in `.env` with Vite hot reload. Sign in at `/login` once `AUTH_DEV_LOGIN=true` is set in `.env`. This is of no use headless.
+
+## Gotchas
+
+- **The app is slow on `/mnt/c` (WSL).** `php artisan serve` runs without opcache and re-reads the framework from the Windows drive on every request: about 6s per request, and 36s for the first. `serve.sh` runs the same `server.php` with `opcache.enable_cli=1 opcache.validate_timestamps=0`, which brings requests down to about 0.35s. The trade-off is that **PHP edits aren't picked up until `serve.sh keep`.** A rebuilt frontend is picked up straight away.
+- **Sign-in fails silently if you navigate too soon.** The dev login POST is slow on a cold server, and navigating before its redirect lands leaves you browsing as a guest. `signIn` waits for the URL to leave `/login`.
+- **Switching users needs a fresh context.** `/login` is guests-only, so `signIn` opens a new browser context. Locators made before the switch belong to the closed page and fail with "Target page, context or browser has been closed".
+- **The roster board uses HTML5 drag-and-drop.** Playwright's `dragTo` doesn't trigger it, so use `app.dragTo`, which dispatches `dragstart`/`dragover`/`drop` with a real `DataTransfer` and pointer coordinates. The drop time comes from `x`: 0.02 means the start of the timeline.
+- **Rostering needs interest first.** The roster board only lists controllers who have shown interest. Sign in as the controller and do that first.
+- **The planner timeline uses pointer events, not HTML5 drag.** Draw shifts with `page.mouse.down/move/up` along a `[data-timeline-row]`, and use focus plus arrow keys on `[data-timeline-item]`. Its `aria-label` reads like `Open, 16:00–18:00z`, which is useful for assertions. Every seeded row is already full of shifts, so shorten one before drawing a new one, or the drag is refused as overlapping.
+- **A stale `public/hot` breaks every page.** Vite leaves `public/hot` behind when killed, and pages then try to load assets from a dead `:5173`. `serve.sh` removes the file when nothing answers there.
+- **The save bar covers part of full-page screenshots.** The planner's sticky "All changes saved" bar sits over the first timeline rows in `fullPage` shots. It's a screenshot artefact, not a layout bug.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `error while loading shared libraries: libnss3.so` | Rerun `setup.sh`. If you launch Chromium yourself instead of through the driver, add `~/.cache/run-events/libs/root/usr/lib/x86_64-linux-gnu` to `LD_LIBRARY_PATH` |
+| `Host system is missing dependencies to run browsers` from `playwright install` or `browserType.launch` | Playwright's check doesn't see the unpacked libraries; `setup.sh` and `driver.mjs` set `PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=1`. Set it too if you launch Chromium yourself |
+| `port 8123 is in use by something serve.sh didn't start` | Another server (e.g. `php artisan serve`) holds the port; stop it, or use `PORT=8124` for both `serve.sh` and the driver |
+| `page.goto: Timeout 30000ms` on the first request | Server was started without opcache (e.g. `php artisan serve`); use `serve.sh` |
+| `Failed opening required '.../index.php'` from `php -S` | `server.php` resolves `public/` from the working directory; start it from `public/` as `serve.sh` does |
+| Screenshot shows the guest header where you expected a signed-in page | Not signed in (see the sign-in gotcha) |
+| `locator.dispatchEvent: Timeout` on `li[draggable=true]` | No controller has shown interest in that event yet |

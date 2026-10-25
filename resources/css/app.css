@@ -1,64 +1,61 @@
 @import 'tailwindcss';
-
-@import 'tw-animate-css';
-
-@source '../views';
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
 
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
 @theme {
-    --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-        'Noto Color Emoji';
+    --font-sans: 'Roboto', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
 
-    --radius-lg: var(--radius);
-    --radius-md: calc(var(--radius) - 2px);
-    --radius-sm: calc(var(--radius) - 4px);
-
-    --color-background: var(--background);
-    --color-foreground: var(--foreground);
-
-    --color-card: var(--card);
-    --color-card-foreground: var(--card-foreground);
-
-    --color-popover: var(--popover);
-    --color-popover-foreground: var(--popover-foreground);
-
-    --color-primary: var(--primary);
-    --color-primary-foreground: var(--primary-foreground);
-
-    --color-secondary: var(--secondary);
-    --color-secondary-foreground: var(--secondary-foreground);
-
-    --color-muted: var(--muted);
-    --color-muted-foreground: var(--muted-foreground);
-
-    --color-accent: var(--accent);
-    --color-accent-foreground: var(--accent-foreground);
-
-    --color-destructive: var(--destructive);
-    --color-destructive-foreground: var(--destructive-foreground);
-
-    --color-border: var(--border);
-    --color-input: var(--input);
-    --color-ring: var(--ring);
-
-    --color-chart-1: var(--chart-1);
-    --color-chart-2: var(--chart-2);
-    --color-chart-3: var(--chart-3);
-    --color-chart-4: var(--chart-4);
-    --color-chart-5: var(--chart-5);
-
-    --color-sidebar: var(--sidebar);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-border: var(--sidebar-border);
+@theme inline {
+    --font-heading: var(--font-sans);
+    --color-navbar: var(--navbar);
+    --color-primary-icon: var(--primary-icon);
     --color-sidebar-ring: var(--sidebar-ring);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar: var(--sidebar);
+    --color-chart-5: var(--chart-5);
+    --color-chart-4: var(--chart-4);
+    --color-chart-3: var(--chart-3);
+    --color-chart-2: var(--chart-2);
+    --color-chart-1: var(--chart-1);
+    --color-ring: var(--ring);
+    --color-input: var(--input);
+    --color-border: var(--border);
+    --color-destructive: var(--destructive);
+    --color-success: var(--success);
+    --color-warning: var(--warning);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-accent: var(--accent);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-muted: var(--muted);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-secondary: var(--secondary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary: var(--primary);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-popover: var(--popover);
+    --color-card-foreground: var(--card-foreground);
+    --color-card: var(--card);
+    --color-foreground: var(--foreground);
+    --color-background: var(--background);
+    --radius-sm: calc(var(--radius) * 0.6);
+    --radius-md: calc(var(--radius) * 0.8);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) * 1.4);
+    --radius-2xl: calc(var(--radius) * 1.8);
+    --radius-3xl: calc(var(--radius) * 2.2);
+    --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 :root {
@@ -77,15 +74,16 @@
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
     --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
+    --success: oklch(0.508 0.118 165.612);
+    --warning: oklch(0.555 0.163 48.998);
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
+    --ring: oklch(0.708 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
@@ -94,17 +92,25 @@
     --sidebar-accent: oklch(0.97 0 0);
     --sidebar-accent-foreground: oklch(0.205 0 0);
     --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    --sidebar-ring: oklch(0.708 0 0);
+    /* Icons on a Primary tile, like the logo placeholder and the network stats. */
+    --primary-icon: var(--primary-foreground);
+    --navbar: var(--background);
+    --navbar-border: var(--border);
+    /* The backdrop behind the front page's hero. */
+    --hero: radial-gradient(ellipse at top right, color-mix(in oklch, var(--primary) 10%, transparent), transparent 60%);
+    /* The placeholder on an event without a banner. */
+    --banner: linear-gradient(to bottom right, var(--muted), var(--secondary));
 }
 
 .dark {
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
+    --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
+    --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
     --primary-foreground: oklch(0.205 0 0);
     --secondary: oklch(0.269 0 0);
     --secondary-foreground: oklch(0.985 0 0);
@@ -112,201 +118,97 @@
     --muted-foreground: oklch(0.708 0 0);
     --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
+    --destructive: oklch(0.704 0.191 22.216);
+    --success: oklch(0.845 0.143 164.978);
+    --warning: oklch(0.879 0.169 91.605);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
     --sidebar: oklch(0.205 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
     --sidebar-primary-foreground: oklch(0.985 0 0);
     --sidebar-accent: oklch(0.269 0 0);
     --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+}
+
+/*
+ * Themes, chosen by an Administrator (App\Enums\Theme). Each overrides the colors above
+ * through the data-theme attribute on <html>; the Default theme overrides nothing.
+ */
+
+/*
+ * VATSIM Scandinavia, matching the vACC's Control Center: blue-tinted dark grey pages, a darker
+ * navbar, neutral grey cards and steel blue (#2c6285) for buttons, with white text as the
+ * graphical profile asks of buttons
+ * (wiki.vatsim-scandinavia.org/books/graphical-profile/page/profile-guidelines).
+ * Links, focus rings and other accents are Control Center's lighter link blue (#4a9cc5), since
+ * the steel blue is too dark to read as text. Success is Control Center's green, lightened until
+ * it reads as text on the cards. Flat, so no gradients.
+ */
+[data-theme="vatsca"] {
+    --background: #1b2128;
+    --foreground: #f5f5f5;
+    --card: #2a2a2a;
+    --card-foreground: #f5f5f5;
+    --popover: #2a2a2a;
+    --popover-foreground: #f5f5f5;
+    --primary: #4a9cc5;
+    --primary-foreground: #101419;
+    --primary-icon: #ffffff;
+    --secondary: #3a3a3a;
+    --secondary-foreground: #f5f5f5;
+    --muted: #333333;
+    --muted-foreground: #a8acab;
+    --accent: #3a3a3a;
+    --accent-foreground: #f5f5f5;
+    --destructive: #e57373;
+    --success: #5fae93;
+    --warning: #ff9800;
+    --border: #3d3d3d;
+    --input: #3d3d3d;
+    --ring: #4a9cc5;
+    --sidebar: #0f1419;
+    --sidebar-foreground: #f5f5f5;
+    --sidebar-primary: #4a9cc5;
+    --sidebar-primary-foreground: #101419;
+    --sidebar-accent: #3a3a3a;
+    --sidebar-accent-foreground: #f5f5f5;
+    --sidebar-border: #1d232a;
+    --sidebar-ring: #4a9cc5;
+    --navbar: #101419;
+    --navbar-border: #1d232a;
+    --hero: none;
+    --banner: linear-gradient(var(--muted) 0 0);
+}
+
+/*
+ * Filled buttons are Control Center's steel blue with white text; the lighter link blue would
+ * make them too loud.
+ */
+[data-theme="vatsca"] [data-slot="button"][data-variant="default"] {
+    --primary: #2c6285;
+    --primary-foreground: #ffffff;
 }
 
 @layer base {
-    * {
-        @apply border-border;
+  * {
+    @apply border-border outline-ring/50;
     }
-
-    body {
-        @apply bg-background text-foreground;
+  body {
+    @apply bg-background text-foreground;
     }
-}
-
-@layer components {
-    .site-container {
-        width: min(100% - 64px, 1280px);
-        margin-inline: auto;
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
     }
-    .site-header {
-        display: flex;
-        align-items: center;
-        gap: 48px;
-        min-height: 72px;
-    }
-    .site-brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 24px;
-        font-weight: 600;
-        letter-spacing: -0.8px;
-    }
-    .site-account {
-        margin-left: auto;
-    }
-    .landing-hero {
-        display: grid;
-        grid-template-columns: 0.68fr 1fr;
-        gap: 40px;
-        align-items: center;
-        padding-block: 18px 58px;
-    }
-    .landing-hero h1 {
-        font-size: clamp(44px, 5.1vw, 74px);
-        font-weight: 600;
-        line-height: 1;
-        letter-spacing: -3.2px;
-    }
-    .landing-hero p {
-        margin-block: 24px 28px;
-        font-size: 22px;
-        line-height: 1.4;
-        color: var(--muted-foreground);
-    }
-    .landing-hero-image {
-        width: 100%;
-        aspect-ratio: 1.71;
-        object-fit: cover;
-        border-radius: 18px;
-    }
-    .landing-events,
-    .landing-about {
-        scroll-margin-top: 28px;
-    }
-    .events-section-heading {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-    .events-section-heading h2,
-    .landing-about h2 {
-        font-size: 34px;
-        line-height: 1.2;
-        font-weight: 600;
-        letter-spacing: -1px;
-    }
-    .events-section-heading p {
-        color: var(--muted-foreground);
-        font-size: 14px;
-    }
-    .landing-about {
-        padding-block: 60px 42px;
-        text-align: center;
-    }
-    .landing-about p {
-        margin-top: 8px;
-        font-size: 20px;
-        color: var(--muted-foreground);
-    }
-    .site-footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 20px;
-        padding-block: 20px;
-    }
-    .site-footer p {
-        font-size: 12px;
-        color: var(--muted-foreground);
-    }
-    .site-skip-link {
-        position: absolute;
-        left: 16px;
-        top: -100px;
-        padding: 12px 20px;
-        background: var(--background);
-        z-index: 50;
-    }
-    .site-skip-link:focus {
-        top: 12px;
-    }
-    @media (max-width: 900px) {
-        .landing-hero {
-            grid-template-columns: 1fr 1fr;
-            gap: 28px;
-        }
-        .landing-hero p {
-            font-size: 18px;
-        }
-        .landing-hero-image {
-            aspect-ratio: 1.1;
-        }
-    }
-    @media (max-width: 640px) {
-        .site-container {
-            width: calc(100% - 40px);
-        }
-        .site-header {
-            flex-wrap: wrap;
-            gap: 16px;
-            padding-block: 18px;
-        }
-        .site-navigation {
-            order: 3;
-            width: 100%;
-            max-width: none;
-            justify-content: start;
-        }
-        .site-account {
-            max-width: 55%;
-        }
-        .site-account button {
-            max-width: 100%;
-        }
-        .landing-hero {
-            grid-template-columns: 1fr;
-            padding-block: 28px 40px;
-            gap: 32px;
-        }
-        .landing-hero h1 {
-            font-size: 54px;
-            letter-spacing: -2.5px;
-        }
-        .landing-hero-image {
-            aspect-ratio: 1.5;
-        }
-        .events-section-heading {
-            align-items: start;
-        }
-        .events-section-heading h2,
-        .landing-about h2 {
-            font-size: 26px;
-        }
-        .events-section-heading p {
-            font-size: 12px;
-            white-space: nowrap;
-            padding-top: 6px;
-        }
-        .landing-about {
-            padding-block: 44px 32px;
-        }
-        .landing-about p {
-            font-size: 17px;
-        }
-        .site-footer {
-            flex-wrap: wrap;
-        }
+  html {
+    @apply font-sans;
     }
 }
