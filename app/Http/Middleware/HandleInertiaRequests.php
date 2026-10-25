@@ -2,6 +2,11 @@
 
 namespace App\Http\Middleware;
 
+use App\Auth\DevLogin;
+use App\Auth\Roles;
+use App\Enums\Permission;
+use App\Enums\SignInProvider;
+use App\Services\VaccIdentity;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -17,16 +22,6 @@ class HandleInertiaRequests extends Middleware
     protected $rootView = 'app';
 
     /**
-     * Determines the current asset version.
-     *
-     * @see https://inertiajs.com/asset-versioning
-     */
-    public function version(Request $request): ?string
-    {
-        return parent::version($request);
-    }
-
-    /**
      * Define the props that are shared by default.
      *
      * @see https://inertiajs.com/shared-data
@@ -37,11 +32,27 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'vacc' => fn () => app(VaccIdentity::class)->effective(),
             'auth' => [
-                'user' => $request->user(),
+                'user' => fn () => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'cid' => $request->user()->vatsim_cid,
+                    'rating' => $request->user()->rating?->label(),
+                    'roles' => Roles::labelsFor($request->user()),
+                    'isAdministrator' => $request->user()->isAdministrator(),
+                    // Which permissions the user holds, keyed by permission name.
+                    'can' => collect(Permission::cases())
+                        ->mapWithKeys(fn (Permission $permission) => [$permission->value => $request->user()->can($permission->value)]),
+                ] : null,
+                'devLogin' => DevLogin::enabled(),
+                'signIn' => [
+                    'url' => route('auth.redirect', SignInProvider::configured(), absolute: false),
+                    'label' => 'Sign in with '.SignInProvider::configured()->label(),
+                ],
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            // The IANA time zone event times are shown in; UTC (zulu) unless the user picked another.
+            'displayTimezone' => fn () => $request->user()?->displayTimezone() ?? 'UTC',
         ];
     }
 }

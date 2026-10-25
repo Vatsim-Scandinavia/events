@@ -1,8 +1,12 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use App\Integrations\Integrations;
+use Illuminate\Console\Scheduling\Schedule as Scheduler;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+Schedule::command('events:extend-repeats')->daily()->withoutOverlapping();
+Schedule::command('users:sync-vatsim')->daily()->withoutOverlapping();
+// Forgets integration runs older than 90 days.
+Schedule::command('model:prune')->daily();
+
+app(Integrations::class)->schedule(app(Scheduler::class));

@@ -1,0 +1,49 @@
+name: Feature request
+description: Suggest something new or a change to how the Hub works.
+type: Feature
+labels:
+  - needs-triage
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What's hard, slow or missing today? Describe the need before the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: What would you like to happen?
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Who it's for
+      multiple: true
+      options:
+        - Pilots
+        - Controllers
+        - Event Staff
+        - vACC Staff
+        - Administrators
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where in the Hub
+      options:
+        - Events
+        - Staffing and Rosters
+        - Shift Bookings
+        - Sign-in
+        - Admin and settings
+        - Integrations
+        - API
+        - Other
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds
+      description: Anything you do today instead, or other ways this could work.
