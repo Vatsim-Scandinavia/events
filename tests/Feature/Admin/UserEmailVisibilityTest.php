@@ -36,7 +36,10 @@ class UserEmailVisibilityTest extends TestCase
 
         $admin = User::factory()->admin()->create();
         $this->actingAs($admin)->get("/admin/users/{$kim->id}")->assertInertia(fn (Assert $page) => $page->where('user.email', 'kim@example.org'));
-        $this->actingAs($admin)->get('/admin/users?search=Kim')->assertInertia(fn (Assert $page) => $page->where('users.data.0.email', 'kim@example.org'));
+        // Other users' random emails can match "Kim" too, so find Kim's row rather than trust its place.
+        $this->actingAs($admin)->get('/admin/users?search=Kim')->assertInertia(fn (Assert $page) => $page
+            ->where('users.data', fn ($users) => collect($users)->firstWhere('id', $kim->id)['email'] === 'kim@example.org')
+        );
     }
 
     public function test_only_administrators_can_search_by_email(): void
