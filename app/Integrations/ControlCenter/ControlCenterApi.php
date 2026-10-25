@@ -184,7 +184,7 @@ final class ControlCenterApi
      */
     private function request(string $method, string $path, array $data = []): Response
     {
-        $url = rtrim((string) $this->configuration->get('url'), '/')."/api/v1/{$path}";
+        $url = $this->baseUrl()."/api/v1/{$path}";
 
         try {
             return Http::withToken((string) $this->configuration->get('token'))
@@ -194,6 +194,15 @@ final class ControlCenterApi
         } catch (ConnectionException) {
             throw new ConnectionFailed('Control Center didn’t answer. Check its URL, or try again later.');
         }
+    }
+
+    /**
+     * Control Center's own address. Admins often paste its API's, so a trailing /api or /api/v1
+     * is dropped rather than doubled.
+     */
+    private function baseUrl(): string
+    {
+        return (string) preg_replace('#/api(/v1)?$#i', '', rtrim((string) $this->configuration->get('url'), '/'));
     }
 
     /**

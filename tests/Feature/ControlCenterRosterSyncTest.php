@@ -285,6 +285,33 @@ class ControlCenterRosterSyncTest extends TestCase
         $this->assertDatabaseCount('integration_settings', 0);
     }
 
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function urlsWithTheApi(): array
+    {
+        return [
+            'with /api' => ['https://cc.example/api'],
+            'with /api/v1/' => ['https://cc.example/api/v1/'],
+            'as typed by hand' => ['https://cc.example/API/'],
+        ];
+    }
+
+    #[DataProvider('urlsWithTheApi')]
+    public function test_a_url_that_includes_the_api_still_reaches_it(string $url): void
+    {
+        Http::fake([self::USERS_URL => Http::response(['data' => []])]);
+
+        $this->actingAs(User::factory()->admin()->create())->put('/admin/integrations/control-center', [
+            'enabled' => true,
+            'features' => [],
+            'removal_limit' => 25,
+            'settings' => ['url' => $url, 'token' => 'cc-key', 'areas' => 'denmark = EKDK'],
+        ])->assertSessionHasNoErrors();
+
+        Http::assertSent(fn (Request $request) => $request->url() === 'https://cc.example/api/v1/users');
+    }
+
     public function test_the_area_map_must_name_the_hubs_firs(): void
     {
         $this->actingAs(User::factory()->admin()->create())->put('/admin/integrations/control-center', [
