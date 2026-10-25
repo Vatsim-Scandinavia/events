@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Auth\ControllerRole;
+use App\Enums\Theme;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SiteSettingsRequest;
 use App\Services\SiteLogo;
@@ -13,7 +14,7 @@ use Inertia\Response;
 use Throwable;
 
 /**
- * Lets admins set who the installation belongs to: the vACC's details and its logo.
+ * Lets admins set who the installation belongs to: the vACC's details, its logo and its theme.
  *
  * Secrets and keys for other services never appear here; they stay in the environment.
  */
@@ -31,6 +32,8 @@ class SiteSettingsController extends Controller
                 'website' => $effective['website'],
                 'logo' => $effective['logo'],
                 'heroGradient' => $effective['heroGradient'],
+                'theme' => $identity->theme()->value,
+                'brandColors' => $identity->brandColors(),
                 'autoController' => $identity->controllerRoleIsAutomatic(),
             ],
             // The Integration feature handing out the Controller role instead of the hub's rule.
@@ -64,6 +67,11 @@ class SiteSettingsController extends Controller
         }
 
         $identity->saveHeroGradient($request->validated('hero_gradient'));
+
+        if ($request->has('theme')) {
+            $identity->saveTheme($request->enum('theme', Theme::class), $request->validated('brand_colors'));
+        }
+
         $identity->setControllerRoleAutomatic($request->boolean('auto_controller'));
 
         // Who holds the automatic Controller role follows the subdivision and the switch.

@@ -12,6 +12,10 @@ _Avoid_: Site, instance
 Applying across the whole Hub rather than in a single FIR. Every role can be held per FIR except Administrator, which is always hub-wide.
 _Avoid_: Global
 
+**Theme**:
+The colors the whole Hub is shown in, chosen by an Administrator, either Default or Brand.
+_Avoid_: Skin, palette
+
 ## Events
 
 **Event**:

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html class="dark" style="color-scheme: dark" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@php($themeVariables = app(\App\Services\VaccIdentity::class)->themeVariables())
+<html class="dark" style="color-scheme: dark;@foreach ($themeVariables as $name => $value) {{ $name }}: {{ $value }};@endforeach" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1">
