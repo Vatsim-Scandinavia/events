@@ -26,7 +26,8 @@ services:
       - storage:/app/storage
     restart: unless-stopped
 
-  # The daily jobs: extending repeating events and refreshing VATSIM details.
+  # The scheduled jobs: extending repeating events, refreshing VATSIM details and the
+  # Integrations' syncs. Syncs are queued, so the queue worker below runs them.
   scheduler:
     image: ghcr.io/vatsim-scandinavia/events:dev
     env_file: .env
@@ -34,6 +35,24 @@ services:
       # The app container migrates; this one only waits for it.
       RUN_MIGRATIONS: "false"
     command: ["php", "artisan", "schedule:work"]
+    user: www-data
+    volumes:
+      - storage:/app/storage
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  # Runs queued jobs: Integration syncs and pushing bookings to Control Center. It stops after an
+  # hour and Docker starts it again, which keeps memory in check. Jobs set their own retries.
+  queue:
+    image: ghcr.io/vatsim-scandinavia/events:dev
+    env_file: .env
+    environment:
+      RUN_MIGRATIONS: "false"
+    command: ["php", "artisan", "queue:work", "--max-time=3600"]
     user: www-data
     volumes:
       - storage:/app/storage
