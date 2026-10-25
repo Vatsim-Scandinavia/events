@@ -32,7 +32,7 @@ class ControlCenter extends Integration
     public function settings(): array
     {
         return [
-            new Setting('url', 'Control Center URL', 'CONTROL_CENTER_URL', ['string', 'max:255', 'url:https'], description: 'Its address, like https://cc.vatsim-scandinavia.org.'),
+            new Setting('url', 'Control Center URL', 'CONTROL_CENTER_URL', ['string', 'max:255', 'url:https'], description: 'Its address, like https://cc.vatsim-scandinavia.org. Leave out /api; the Hub adds it.'),
             new Setting('token', 'API key', 'CONTROL_CENTER_TOKEN', secret: true, description: 'An API key made in Control Center’s admin settings.'),
             new Setting(
                 'areas',
