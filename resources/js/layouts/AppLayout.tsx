@@ -43,14 +43,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return (
         <ConfirmProvider>
             <div className="flex min-h-screen flex-col bg-background text-foreground">
-                <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
+                <header className="sticky top-0 z-40 border-b bg-navbar/80 backdrop-blur [--border:var(--navbar-border)]">
                     <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
                         <Link href="/" className="flex items-center gap-2 font-semibold">
                             {vacc.logo ? (
                                 // Decorative: the vACC's name is right next to it.
                                 <img src={vacc.logo} alt="" className="size-8 object-contain" />
                             ) : (
-                                <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                                <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-icon">
                                     <Plane className="size-4" />
                                 </span>
                             )}
