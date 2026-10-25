@@ -32,7 +32,7 @@ function PositionChips({ callsigns, visible = 3 }: { callsigns: string[]; visibl
     );
 }
 
-export function RosterCard({ occurrence, controllers, interests, draft, update, newKey }: StaffingPageProps & DraftProps) {
+export function RosterCard({ occurrence, controllers, interests, roster, draft, update, newKey }: StaffingPageProps & DraftProps) {
     const confirm = useConfirm();
     const { durationMinutes } = occurrence;
     const locked = occurrence.rosterArchived;
@@ -78,6 +78,8 @@ export function RosterCard({ occurrence, controllers, interests, draft, update, 
         start: slot.start,
         end: slot.end,
         label: slot.controller.name,
+        // Notes are about the saved entry; once moved or reassigned they may no longer apply.
+        notes: roster.find((entry) => entry.id === slot.id && entry.controller.id === slot.controller.id)?.notes ?? [],
     }));
 
     return (

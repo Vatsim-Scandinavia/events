@@ -9,9 +9,12 @@ use App\Integrations\Syncable;
 use App\Integrations\SyncContext;
 use App\Integrations\SyncResult;
 use App\Models\EventOccurrence;
+use App\Models\EventPosition;
 use App\Models\RosterEntry;
 use App\Models\ShiftBooking;
+use App\Models\User;
 use App\Staffing\StaffingChanged;
+use App\Staffing\StaffingNotes;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Support\Collection;
@@ -26,7 +29,7 @@ use Throwable;
  *
  * Switched off, it sends nothing more and leaves what it sent alone.
  */
-class BookingPush extends Feature implements Syncable
+class BookingPush extends Feature implements StaffingNotes, Syncable
 {
     /** Tagged as an event booking in Control Center. */
     public const int EVENT_TAG = 3;
@@ -109,6 +112,24 @@ class BookingPush extends Feature implements Syncable
             ->map(fn (PushedBooking $booking) => "{$booking->callsign}, {$booking->starts_at->format('D j M H:i')}–{$booking->ends_at->format('H:i')}z"
                 .($booking->cid ? " (CID {$booking->cid})" : '').": not sent. {$booking->reason}")
             ->all();
+    }
+
+    /**
+     * Bookings Control Center turned down, so staff can fix them.
+     */
+    public function staffingNotes(EventOccurrence $occurrence): array
+    {
+        return PushedBooking::query()
+            ->where('event_occurrence_id', $occurrence->id)
+            ->where('status', PushedBooking::NOT_SENT)
+            ->get()
+            ->mapWithKeys(fn (PushedBooking $booking) => ["{$booking->source}:{$booking->source_id}" => ["Not sent to Control Center: {$booking->reason}"]])
+            ->all();
+    }
+
+    public function positionNote(User $controller, EventPosition $position): ?string
+    {
+        return null;
     }
 
     /**

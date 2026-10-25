@@ -19,6 +19,7 @@ export function ShiftsCard({ occurrence, draft, saved, update, newKey }: DraftPr
             end: shift.end,
             label: name ? (unbooking.has(shift.id) ? `Unbooks ${name}` : name) : shift.id ? 'Open' : 'New',
             tone: name ? (unbooking.has(shift.id) ? 'warning' : 'default') : 'muted',
+            notes: unbooking.has(shift.id) ? [] : (shift.booking?.notes ?? []),
         };
     });
 

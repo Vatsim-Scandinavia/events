@@ -4,6 +4,7 @@ namespace App\Integrations;
 
 use App\Auth\ControllerSource;
 use App\Models\IntegrationSetting;
+use App\Staffing\StaffingNotes;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Collection;
 
@@ -59,6 +60,20 @@ final class Integrations
         }
 
         return null;
+    }
+
+    /**
+     * The features switched on that have notes on staffing.
+     *
+     * @return list<StaffingNotes>
+     */
+    public function staffingNotes(): array
+    {
+        return $this->all()
+            ->flatMap(fn (Integration $integration) => collect($integration->features())
+                ->filter(fn (Feature $feature) => $feature instanceof StaffingNotes && $this->isOn($integration, $feature)))
+            ->values()
+            ->all();
     }
 
     public function configuration(Integration $integration): Configuration
