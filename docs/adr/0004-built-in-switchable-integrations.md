@@ -8,6 +8,8 @@ What an Integration syncs in, it owns: its records are read-only in the Hub, ove
 
 The second extension point lets an Integration follow staffing without the core knowing about it. The core announces `StaffingChanged`, naming the dates affected, once a change to bookings, shifts, rosters, dates or cancellations is committed; Integration features listen from `Feature::boot()`, check they're on, and never change the core's records. Control Center's booking push uses it to bring each date's bookings in line, with an hourly sweep for anything announced while it couldn't act. What it sent is kept in its own table, so a deleted booking can still be deleted upstream, and nothing it does can stop the staffing change that caused it.
 
+The third lets an Integration have a say about staffing without enforcing it. The core asks the features switched on for `StaffingNotes`: notes on a date's bookings and roster entries, shown to the event's staff and the controller concerned, and a note on each position for the controller looking at it. Control Center's roster sync uses it to warn when a controller isn't endorsed for a position, as precisely as its API allows, and booking push to show bookings Control Center turned down. A note never blocks booking, interest or rostering; enforcing endorsements would be a decision of its own.
+
 ## Considered Options
 
 - **Integrations as installable Composer packages.** Rejected for now: no other vACC has asked to ship its own, and package discovery is machinery we'd have to keep stable. The contract is kept clean enough to open this up later.

@@ -3,6 +3,7 @@
 namespace App\Staffing;
 
 use App\Enums\StaffingMode;
+use App\Integrations\Integrations;
 use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\EventPosition;
@@ -23,10 +24,12 @@ use Carbon\CarbonImmutable;
  *   vACC Staff.
  * - A roster is visible to everyone once published, and before that to the event's staff
  *   and to vACC Staff (see EventPolicy).
+ * - Notes from Integrations (see StaffingNotes) are for the event's staff, vACC Staff and the
+ *   controller they're about.
  */
 final class StaffingPresenter
 {
-    public function __construct(private DisplayTime $display) {}
+    public function __construct(private DisplayTime $display, private Integrations $integrations) {}
 
     /**
      * Staffing as shown on the public event page.
@@ -38,6 +41,9 @@ final class StaffingPresenter
         // vACC Staff may see what staffing managers see, without changing anything.
         $canSeeAsStaff = (bool) $viewer?->can('viewStaffing', $event);
         $positions = $event->positions()->with('shifts')->get();
+        $notes = $viewer !== null ? $this->notes($occurrence) : [];
+        // A controller hears what they should know before working each position.
+        $noteFor = $viewer?->isEligibleController($event) ? $viewer : null;
 
         $staffing = [
             'mode' => $event->staffing_mode->value,
@@ -56,11 +62,14 @@ final class StaffingPresenter
             StaffingMode::Shifts => [
                 ...$staffing,
                 'bookingOpen' => ! $occurrence->hasStarted() && ! $occurrence->isCancelled(),
-                'positions' => array_values(array_filter($this->positionsWithBookings($positions, $occurrence, $viewer), fn (array $position) => $position['shifts'] !== [])),
+                'positions' => array_values(array_filter(
+                    $this->positionsWithBookings($positions, $occurrence, $viewer, $notes, $canSeeAsStaff, $noteFor),
+                    fn (array $position) => $position['shifts'] !== [],
+                )),
             ],
             StaffingMode::OpenInterest => [
                 ...$staffing,
-                'positions' => $positions->map(fn (EventPosition $position) => $this->position($position))->all(),
+                'positions' => $positions->map(fn (EventPosition $position) => $this->position($position, $noteFor))->all(),
                 'interest' => [
                     'state' => $occurrence->interestWindowState(),
                     'opensAt' => $this->moment($occurrence->interestOpensAt()),
@@ -69,7 +78,7 @@ final class StaffingPresenter
                     'all' => $canSeeAsStaff ? $this->interests($occurrence) : null,
                 ],
                 'rosterPublished' => $occurrence->isRosterPublished(),
-                'roster' => $occurrence->isRosterPublished() || $canSeeAsStaff ? $this->roster($occurrence) : null,
+                'roster' => $occurrence->isRosterPublished() || $canSeeAsStaff ? $this->roster($occurrence, $viewer, $notes, $canSeeAsStaff) : null,
             ],
             default => $staffing,
         };
@@ -83,6 +92,7 @@ final class StaffingPresenter
     public function forStaff(Event $event, EventOccurrence $occurrence, User $viewer): array
     {
         $positions = $event->positions()->with('shifts')->get();
+        $notes = $this->notes($occurrence);
 
         return [
             'settings' => [
@@ -101,9 +111,9 @@ final class StaffingPresenter
                 'startsAt' => $occurrence->starts_at->utc()->toIso8601String(),
                 'durationMinutes' => (int) $occurrence->starts_at->diffInMinutes($occurrence->ends_at),
             ],
-            'positions' => $this->positionsWithBookings($positions, $occurrence, $viewer),
+            'positions' => $this->positionsWithBookings($positions, $occurrence, $viewer, $notes, true),
             'interests' => $this->interests($occurrence),
-            'roster' => $this->roster($occurrence),
+            'roster' => $this->roster($occurrence, $viewer, $notes, true),
             'controllers' => User::query()->controllers($event)->orderBy('name')->get()
                 ->map(fn (User $user) => $this->controller($user))->all(),
         ];
@@ -111,22 +121,23 @@ final class StaffingPresenter
 
     /**
      * @param  iterable<EventPosition>  $positions
+     * @param  array<string, list<string>>  $notes
      * @return list<array<string, mixed>>
      */
-    private function positionsWithBookings(iterable $positions, EventOccurrence $occurrence, ?User $viewer): array
+    private function positionsWithBookings(iterable $positions, EventOccurrence $occurrence, ?User $viewer, array $notes, bool $asStaff, ?User $noteFor = null): array
     {
         $bookings = $occurrence->bookings()->with('user')->get()->keyBy('position_shift_id');
         $result = [];
 
         foreach ($positions as $position) {
             $result[] = [
-                ...$this->position($position),
+                ...$this->position($position, $noteFor),
                 'shifts' => $position->shifts->map(fn (PositionShift $shift) => [
                     'id' => $shift->id,
                     'time' => $this->display->range($shift->startsAtFor($occurrence), $shift->endsAtFor($occurrence)),
                     'startOffset' => $shift->starts_offset,
                     'endOffset' => $shift->ends_offset,
-                    'booking' => $this->booking($bookings->get($shift->id), $occurrence, $viewer),
+                    'booking' => $this->booking($bookings->get($shift->id), $occurrence, $viewer, $notes, $asStaff),
                 ])->all(),
             ];
         }
@@ -135,9 +146,10 @@ final class StaffingPresenter
     }
 
     /**
+     * @param  array<string, list<string>>  $notes
      * @return array<string, mixed>|null
      */
-    private function booking(?ShiftBooking $booking, EventOccurrence $occurrence, ?User $viewer): ?array
+    private function booking(?ShiftBooking $booking, EventOccurrence $occurrence, ?User $viewer, array $notes, bool $asStaff): ?array
     {
         if (! $booking) {
             return null;
@@ -150,19 +162,43 @@ final class StaffingPresenter
             'controller' => $this->controller($booking->user),
             'isMine' => $isMine,
             'canCancel' => ($isMine && ! $occurrence->hasStarted()) || ($viewer?->can('manageStaffing', $occurrence->event) && ! $occurrence->hasEnded()),
+            'notes' => $asStaff || $isMine ? $notes["shift_booking:{$booking->id}"] ?? [] : [],
         ];
     }
 
     /**
+     * @param  ?User  $noteFor  The controller to tell what they should know before working it.
      * @return array<string, mixed>
      */
-    private function position(EventPosition $position): array
+    private function position(EventPosition $position, ?User $noteFor = null): array
     {
         return [
             'id' => $position->id,
             'callsign' => $position->callsign,
             'frequency' => $position->frequency,
+            'note' => $noteFor ? $this->positionNote($noteFor, $position) : null,
         ];
+    }
+
+    /**
+     * What Integrations have to say about the date's bookings and roster entries.
+     *
+     * @return array<string, list<string>>
+     */
+    private function notes(EventOccurrence $occurrence): array
+    {
+        return array_merge_recursive(...array_map(fn (StaffingNotes $source) => $source->staffingNotes($occurrence), $this->integrations->staffingNotes()) ?: [[]]);
+    }
+
+    private function positionNote(User $controller, EventPosition $position): ?string
+    {
+        foreach ($this->integrations->staffingNotes() as $source) {
+            if ($note = $source->positionNote($controller, $position)) {
+                return $note;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -206,9 +242,10 @@ final class StaffingPresenter
     }
 
     /**
+     * @param  array<string, list<string>>  $notes
      * @return list<array<string, mixed>>
      */
-    private function roster(EventOccurrence $occurrence): array
+    private function roster(EventOccurrence $occurrence, ?User $viewer, array $notes, bool $asStaff): array
     {
         return $occurrence->rosterEntries()->with(['position', 'user'])->get()
             ->map(fn (RosterEntry $entry) => [
@@ -219,6 +256,7 @@ final class StaffingPresenter
                 'time' => $this->display->range($entry->starts_at, $entry->ends_at),
                 'startOffset' => (int) $occurrence->starts_at->diffInMinutes($entry->starts_at),
                 'endOffset' => (int) $occurrence->starts_at->diffInMinutes($entry->ends_at),
+                'notes' => $asStaff || $entry->user_id === $viewer?->id ? $notes["roster_entry:{$entry->id}"] ?? [] : [],
             ])->all();
     }
 

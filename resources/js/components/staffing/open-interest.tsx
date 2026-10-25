@@ -2,6 +2,7 @@ import { router, useForm, usePage } from '@inertiajs/react';
 import { CalendarClock, EyeOff, ListChecks, Plus, Users, X } from 'lucide-react';
 import type { FormEvent } from 'react';
 import SignInPrompt from '@/components/staffing/sign-in-prompt';
+import { NotesIcon, PositionNote } from '@/components/staffing/staffing-notes';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Field, FieldError } from '@/components/ui/field';
@@ -173,8 +174,11 @@ function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number;
                                 checked={form.data.positions.includes(position.id)}
                                 onChange={() => toggle(position.id)}
                             />
-                            <span className="font-mono">{position.callsign}</span>
-                            <span className="ml-auto font-mono text-xs text-muted-foreground">{position.frequency}</span>
+                            <span className="flex flex-col">
+                                <span className="font-mono">{position.callsign}</span>
+                                <PositionNote note={position.note} />
+                            </span>
+                            <span className="ml-auto self-start font-mono text-xs text-muted-foreground">{position.frequency}</span>
                         </Label>
                     ))}
                 </div>
@@ -353,6 +357,7 @@ function RosterTable({ entries }: { entries: RosterEntry[] }) {
                             <td className="px-4 py-2.5">
                                 {entry.controller.name}
                                 {entry.controller.cid && <span className="ml-1.5 text-xs text-muted-foreground">{entry.controller.cid}</span>}
+                                <NotesIcon notes={entry.notes} className="ml-1.5" />
                             </td>
                             <td className="px-4 py-2.5 text-right font-mono whitespace-nowrap tabular-nums">{entry.time}</td>
                         </tr>

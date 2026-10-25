@@ -10,10 +10,15 @@ use App\Integrations\Integrations;
 use App\Integrations\Syncable;
 use App\Integrations\SyncContext;
 use App\Integrations\SyncResult;
+use App\Models\EventOccurrence;
+use App\Models\EventPosition;
 use App\Models\Fir;
 use App\Models\Role;
 use App\Models\RoleAssignment;
+use App\Models\RosterEntry;
+use App\Models\ShiftBooking;
 use App\Models\User;
+use App\Staffing\StaffingNotes;
 use Illuminate\Console\Scheduling\Event;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -27,7 +32,7 @@ use Illuminate\Support\Str;
  * are never touched. Until its first successful sync it changes nothing, so switching it on
  * never takes roles away before the roster is known.
  */
-class RosterSync extends Feature implements ControllerSource, Syncable
+class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syncable
 {
     public function key(): string
     {
@@ -107,14 +112,56 @@ class RosterSync extends Feature implements ControllerSource, Syncable
             return;
         }
 
-        $areas = AreaMap::parse(app(Integrations::class)->configuration(app(ControlCenter::class))->get('areas'));
+        $this->apply($this->plan($this->areas(), $user));
+    }
 
-        $this->apply($this->plan($areas, $user));
+    /**
+     * Warnings on the date's bookings and roster entries for controllers the roster doesn't
+     * cover for their position (see Coverage).
+     */
+    public function staffingNotes(EventOccurrence $occurrence): array
+    {
+        if (! Member::query()->exists()) {
+            return [];
+        }
+
+        $event = $occurrence->event;
+        $assignments = collect([
+            ...$occurrence->bookings()->with('shift.position', 'user')->get()
+                ->map(fn (ShiftBooking $booking) => ["shift_booking:{$booking->id}", $booking->user, $booking->shift->position->callsign]),
+            ...$occurrence->rosterEntries()->with('position', 'user')->get()
+                ->map(fn (RosterEntry $entry) => ["roster_entry:{$entry->id}", $entry->user, $entry->position->callsign]),
+        ]);
+        $members = Member::query()->whereIn('cid', $assignments->map(fn (array $assignment) => $assignment[1]->vatsim_cid)->filter())->get()->keyBy('cid');
+        $coverage = new Coverage($this->areas());
+        $notes = [];
+
+        foreach ($assignments as [$key, $user, $callsign]) {
+            if ($problem = $coverage->problem($members->get($user->vatsim_cid), $callsign, $event->fir->icao)) {
+                $notes[$key] = [$problem];
+            }
+        }
+
+        return $notes;
+    }
+
+    public function positionNote(User $controller, EventPosition $position): ?string
+    {
+        if ($controller->vatsim_cid === null || ! Member::query()->exists()) {
+            return null;
+        }
+
+        return (new Coverage($this->areas()))->problem(Member::query()->find($controller->vatsim_cid), $position->callsign, $position->event->fir->icao);
     }
 
     public function switchedOff(): void
     {
         Member::query()->delete();
+    }
+
+    private function areas(): AreaMap
+    {
+        return AreaMap::parse(app(Integrations::class)->configuration(app(ControlCenter::class))->get('areas'));
     }
 
     /**

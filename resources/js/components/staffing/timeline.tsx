@@ -1,4 +1,4 @@
-import { Lock, Plus, Trash2, X } from 'lucide-react';
+import { Lock, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
 import {
     useEffect,
     useId,
@@ -31,6 +31,8 @@ export type TimelineItem = {
     locked?: boolean;
     lockedReason?: string;
     tone?: 'default' | 'muted' | 'warning';
+    // Warnings from Integrations, shown with an icon and read out with the item.
+    notes?: string[];
 };
 
 type Props = {
@@ -423,7 +425,8 @@ function Block({
 }): ReactNode {
     const time = useSpanLabel(startsAt).span(item.start, item.end);
     const editable = !readOnly && !item.locked;
-    const label = item.locked ? `${item.label}, ${time}. ${item.lockedReason ?? ''}` : `${item.label}, ${time}`;
+    const notes = item.notes?.length ? ` ${item.notes.join(' ')}` : '';
+    const label = (item.locked ? `${item.label}, ${time}. ${item.lockedReason ?? ''}` : `${item.label}, ${time}`) + notes;
 
     return (
         <div
@@ -457,6 +460,7 @@ function Block({
             <span className="flex min-w-0 flex-1 flex-col px-2 leading-tight">
                 <span className="flex items-center gap-1 truncate font-medium">
                     {item.locked && <Lock className="size-3 shrink-0" />}
+                    {item.notes?.length ? <TriangleAlert className="size-3 shrink-0 text-warning" aria-hidden /> : null}
                     <span className="truncate">{item.label}</span>
                 </span>
                 <span className="truncate font-mono text-[11px] text-muted-foreground tabular-nums">{time}</span>

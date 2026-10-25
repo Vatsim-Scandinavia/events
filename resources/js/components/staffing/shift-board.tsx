@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { useConfirm } from '@/components/confirm-dialog';
 import SignInPrompt from '@/components/staffing/sign-in-prompt';
+import { NotesIcon, PositionNote } from '@/components/staffing/staffing-notes';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { EventStaffing, PositionWithShifts, Shift } from '@/types/staffing';
@@ -88,6 +89,7 @@ function PositionCell({ position, rows }: { position: PositionWithShifts; rows: 
         <th scope="rowgroup" rowSpan={rows} className="px-4 py-2 text-left align-top font-normal">
             <span className="block font-mono font-medium">{position.callsign}</span>
             {position.frequency && <span className="block font-mono text-xs text-muted-foreground tabular-nums">{position.frequency}</span>}
+            <PositionNote note={position.note} />
         </th>
     );
 }
@@ -120,6 +122,7 @@ function ShiftStatus({ shift, callsign, occurrenceId, canBook }: { shift: Shift;
                         <span className="ml-1 text-xs text-muted-foreground">{shift.booking.controller.cid}</span>
                     )}
                 </span>
+                <NotesIcon notes={shift.booking.notes} />
                 {shift.booking.canCancel && (
                     <Button size="xs" variant="ghost" onClick={cancel}>
                         Cancel

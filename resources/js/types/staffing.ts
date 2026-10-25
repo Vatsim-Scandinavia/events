@@ -23,6 +23,8 @@ export type StaffingPosition = {
     id: number;
     callsign: string;
     frequency: string | null;
+    // What the signed-in controller should know before working it, e.g. a missing endorsement.
+    note: string | null;
 };
 
 // A known position from the Position catalogue, suggested when staff add a position.
@@ -44,6 +46,8 @@ export type Shift = {
         controller: Controller;
         isMine: boolean;
         canCancel: boolean;
+        // From Integrations, for staff and the controller booked; never a blocker.
+        notes: string[];
     } | null;
 };
 
@@ -78,6 +82,8 @@ export type RosterEntry = {
     // Minutes from the start of the occurrence.
     startOffset: number;
     endOffset: number;
+    // From Integrations, for staff and the controller rostered; never a blocker.
+    notes: string[];
 };
 
 export type InterestWindowState = 'upcoming' | 'open' | 'closed';
