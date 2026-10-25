@@ -78,6 +78,12 @@ _Avoid_: Roster provider, role sync
 What someone with no role is; not a role itself.
 _Avoid_: Guest, member
 
+## Sign-in
+
+**Sign-in provider**:
+Where people sign in and get their VATSIM CID vouched for: VATSIM Connect, or VATSIM Scandinavia's Handover, which stands in for it. One per install, chosen when it's deployed. Handover the system has nothing to do with automatic roles being handed over to admins when a Controller source is switched off.
+_Avoid_: Auth provider, SSO, login method
+
 ## Integrations
 
 **Integration**:

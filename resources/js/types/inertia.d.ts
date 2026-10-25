@@ -43,6 +43,8 @@ declare module '@inertiajs/core' {
             auth: {
                 user: AuthUser | null;
                 devLogin: boolean;
+                // The configured sign-in provider's path and button text.
+                signIn: { url: string; label: string };
             };
             // IANA time zone event times are shown in, 'UTC' (zulu) by default.
             displayTimezone: string;

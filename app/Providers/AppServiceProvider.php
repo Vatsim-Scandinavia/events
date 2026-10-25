@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Auth\HandoverProvider;
 use App\Auth\VatsimConnectProvider;
 use App\Enums\Permission;
 use App\Integrations\Integrations;
@@ -57,6 +58,8 @@ class AppServiceProvider extends ServiceProvider
 
         Socialite::extend('vatsim', fn () => Socialite::buildProvider(VatsimConnectProvider::class, config('services.vatsim'))
             ->setBaseUrl(config('services.vatsim.base_url')));
+        Socialite::extend('handover', fn () => Socialite::buildProvider(HandoverProvider::class, config('services.handover'))
+            ->setBaseUrl(config('services.handover.base_url')));
 
         Inertia::handleExceptionsUsing(function (ExceptionResponse $response) {
             $status = $response->statusCode();

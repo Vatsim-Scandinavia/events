@@ -84,8 +84,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
                                         </Button>
                                     )}
                                     <Button size="sm" asChild>
-                                        {/* A full page visit: VATSIM Connect is on another origin. */}
-                                        <a href={signInUrl(url)}>Sign in with VATSIM</a>
+                                        {/* A full page visit: the sign-in provider is on another origin. */}
+                                        <a href={signInUrl(auth.signIn.url, url)}>{auth.signIn.label}</a>
                                     </Button>
                                 </>
                             )}
