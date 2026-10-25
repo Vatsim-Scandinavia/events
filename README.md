@@ -108,14 +108,16 @@ Backend code lives in `app/`, with staffing rules in `app/Staffing`. Pages are i
 
 ## Deploying
 
-The hub ships as a Docker image, published as `ghcr.io/vatsim-scandinavia/events:dev` on every push to `dev`. [compose.yaml](compose.yaml) runs it with a scheduler and one storage volume for uploads, logs and SQLite; its comments cover the settings. Starting the container migrates the database, creates the built-in roles (`php artisan roles:sync`) and caches the configuration.
+The hub ships as a Docker image, published as `ghcr.io/vatsim-scandinavia/events:dev` on every push to `dev`. [compose.yaml](compose.yaml) runs it with a scheduler, a queue worker and one storage volume for uploads, logs and SQLite; its comments cover the settings. Starting the container migrates the database, creates the built-in roles (`php artisan roles:sync`) and caches the configuration.
 
-**Background jobs.** Two jobs run daily through Laravel's scheduler (`php artisan schedule:work` in the Compose setup, or `php artisan schedule:run` every minute from cron):
+**Background jobs.** These run through Laravel's scheduler (`php artisan schedule:work` in the Compose setup, or `php artisan schedule:run` every minute from cron):
 
-- `events:extend-repeats` adds new dates to events that repeat indefinitely.
-- `users:sync-vatsim` keeps the automatic Controller role up to date between sign-ins. While that role is switched on, it refreshes the rating and subdivision of everyone it could affect (people in the subdivision, or holding the automatic role) from the VATSIM API. Everyone else is refreshed when they sign in. Set `VATSIM_SYNC=false` where people sign in with sandbox accounts, which the live API doesn't know.
+- `events:extend-repeats` (daily) adds new dates to events that repeat indefinitely.
+- `users:sync-vatsim` (daily) keeps the automatic Controller role up to date between sign-ins. While that role is switched on, it refreshes the rating and subdivision of everyone it could affect (people in the subdivision, or holding the automatic role) from the VATSIM API. Everyone else is refreshed when they sign in. Set `VATSIM_SYNC=false` where people sign in with sandbox accounts, which the live API doesn't know.
+- `model:prune` (daily) forgets Integration sync runs older than 90 days.
+- The syncs of Integrations switched on under Admin → Integrations, such as Control Center's roster (hourly), positions (daily) and booking push (hourly sweep).
 
-No queue worker is needed: nothing is queued.
+**Queue worker.** Integration syncs, "Sync now" and pushing bookings to Control Center are queued, so something must run `php artisan queue:work`. Without a worker they wait in the `jobs` table and never run. The Compose setup has a `queue` service for this. It runs `queue:work --max-time=3600`, so it stops after an hour and Docker starts it again. Run it as a long-lived process rather than from cron: jobs then run within seconds, and retries after Control Center outages keep their delays. If cron is all you have, `php artisan queue:work --stop-when-empty --max-time=50` every minute works, with up to a minute's delay. The image's code is loaded when the worker starts, so restart it (or replace its container) after deploying a new image.
 
 **Discord.** Set `DISCORD_EVENTS_WEBHOOK` to a channel webhook to announce each event once, when it's published. Leave it empty to announce nothing.
 
@@ -128,5 +130,5 @@ No queue worker is needed: nothing is queued.
 For people to try the hub out, `ghcr.io/vatsim-scandinavia/events:playground` (built with `--target playground`) is the same app with sample events and dev sign-in, so anyone can sign in as Hub Admin, Event Staff, the sample controllers or a plain member without a VATSIM account.
 
 - **Each start resets it to the sample data.** Restart the container for a clean slate. With `RESET_PLAYGROUND=false` it keeps what people did, and only seeds on its first start.
-- **Run it with [compose.yaml](compose.yaml)**, with both `image:` lines changed to `:playground`. It needs an `APP_KEY`, an `https://` `APP_URL` and `SESSION_SECURE_COOKIE=true`. Leave `APP_ENV`, `APP_DEBUG` and `AUTH_DEV_LOGIN` out of its `.env`: the image sets them, and dev sign-in only works with `APP_ENV=local`. Leave out `DISCORD_EVENTS_WEBHOOK` too, or test events get announced.
+- **Run it with [compose.yaml](compose.yaml)**, with every `image:` line changed to `:playground`, the queue worker's included. It needs an `APP_KEY`, an `https://` `APP_URL` and `SESSION_SECURE_COOKIE=true`. Leave `APP_ENV`, `APP_DEBUG` and `AUTH_DEV_LOGIN` out of its `.env`: the image sets them, and dev sign-in only works with `APP_ENV=local`. Leave out `DISCORD_EVENTS_WEBHOOK` too, or test events get announced.
 - **Anyone who reaches it can sign in as an Administrator,** and it doesn't refuse other hosts, so put a password in front of it at the reverse proxy. Never give it real data.
