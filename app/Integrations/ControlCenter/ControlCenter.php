@@ -26,7 +26,7 @@ class ControlCenter extends Integration
 
     public function description(): string
     {
-        return 'Your vACC’s training system: who is an active controller, and where.';
+        return 'Your vACC’s training system: who is an active controller and where, and the positions they control.';
     }
 
     public function settings(): array
@@ -51,7 +51,7 @@ class ControlCenter extends Integration
 
     public function features(): array
     {
-        return [new RosterSync];
+        return [new RosterSync, new PositionSync];
     }
 
     public function testConnection(Configuration $configuration): void

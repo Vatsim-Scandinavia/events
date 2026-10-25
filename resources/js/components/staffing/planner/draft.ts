@@ -1,6 +1,15 @@
 import type { useConfirm } from '@/components/confirm-dialog';
 import type { HubEvent } from '@/types/event';
-import type { Controller, PositionWithShifts, RosterEntry, Shift, StaffingMode, StaffInterest, StaffOccurrence } from '@/types/staffing';
+import type {
+    CataloguePosition,
+    Controller,
+    PositionWithShifts,
+    RosterEntry,
+    Shift,
+    StaffingMode,
+    StaffInterest,
+    StaffOccurrence,
+} from '@/types/staffing';
 
 export type StaffingPageProps = {
     event: HubEvent;
@@ -10,6 +19,8 @@ export type StaffingPageProps = {
     interests: StaffInterest[];
     roster: RosterEntry[];
     controllers: Controller[];
+    // Known positions to suggest when adding one; empty unless an Integration fills it.
+    catalogue: CataloguePosition[];
 };
 
 /*
