@@ -28,4 +28,10 @@ abstract class Feature
     {
         return [];
     }
+
+    /**
+     * Called when an admin switches it off, or its Integration, so it can forget what it kept
+     * for doing its job. Whatever it gave stays: a Controller source's roles become manual.
+     */
+    public function switchedOff(): void {}
 }

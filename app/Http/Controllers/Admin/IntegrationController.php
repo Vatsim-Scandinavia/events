@@ -77,6 +77,7 @@ class IntegrationController extends Controller
                     'description' => $setting->description,
                     'secret' => $setting->secret,
                     'required' => $setting->required,
+                    'multiline' => $setting->multiline,
                     'value' => $setting->secret ? null : $configuration->get($setting->key),
                     'isSet' => filled($configuration->get($setting->key)),
                     'lockedBy' => $locked[$setting->key] ?? null,
@@ -123,6 +124,12 @@ class IntegrationController extends Controller
         $previousSource = $controllerRole->source();
 
         $integrations->save($integration, $validated['settings'], $validated['enabled'], $validated['features'], $validated['removal_limit']);
+
+        foreach ($integration->features() as $feature) {
+            if (in_array($feature->key(), $wasOn, true) && ! $integrations->isOn($integration, $feature)) {
+                $feature->switchedOff();
+            }
+        }
 
         // A Controller source switched off hands its roles to admins; the hub's rule then takes over again.
         $source = $controllerRole->source();

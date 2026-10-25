@@ -1,5 +1,7 @@
 <?php
 
+use App\Integrations\ControlCenter\ControlCenter;
+
 return [
 
     /*
@@ -12,7 +14,9 @@ return [
     |
     */
 
-    'registered' => [],
+    'registered' => [
+        ControlCenter::class,
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -25,6 +29,12 @@ return [
     |
     */
 
-    'settings' => [],
+    'settings' => [
+        'control-center' => [
+            'url' => env('CONTROL_CENTER_URL'),
+            'token' => env('CONTROL_CENTER_TOKEN'),
+            'areas' => env('CONTROL_CENTER_AREAS'),
+        ],
+    ],
 
 ];
