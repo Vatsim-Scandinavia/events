@@ -4,7 +4,9 @@ The Hub talks to the vACC's other systems (its training system's controller rost
 
 The Hub works fully with every Integration switched off. An Integration only adds to the core, or takes over a job through an extension point the core offers; the first is the Controller source, the single thing that decides who automatically holds the Controller role. With an Integration's roster sync in charge, the hub's own S1-and-subdivision rule steps aside, and the Integration grants the Controller role per FIR (ADR 0001) from where the training system says a member is active or holds a visiting endorsement.
 
-What an Integration syncs in, it owns: its role grants carry it as their source and its records are read-only in the Hub, overwritten on the next sync. Manual grants live alongside and are never touched. A sync that fails, partly or wholly, changes nothing; one that would remove more than a set share of its grants, or that no longer sees an area mapped to a FIR, is held until an Administrator approves it. Switching an Integration off hands its role grants to admins as manual ones, so nobody loses access without someone deciding so.
+What an Integration syncs in, it owns: its records are read-only in the Hub, overwritten on the next sync. Automatic Controller roles belong to whichever Controller source is in charge, whoever gave them, so a new source's first sync replaces what the previous one gave; the removal limit holds that run for an Administrator's approval. Manual grants live alongside and are never touched. A sync that fails, partly or wholly, changes nothing; one that would remove more than a set share of its grants, or that no longer sees an area mapped to a FIR, is held until an Administrator approves it. Switching a Controller source off hands the automatic roles to admins as manual ones, so nobody loses access without someone deciding so, and the hub's own rule takes over again. Integrations are Hub configuration, so only Administrators manage them (ADR 0001).
+
+The second extension point lets an Integration follow staffing without the core knowing about it. The core announces `StaffingChanged`, naming the dates affected, once a change to bookings, shifts, rosters, dates or cancellations is committed; Integration features listen from `Feature::boot()`, check they're on, and never change the core's records. Control Center's booking push uses it to bring each date's bookings in line, with an hourly sweep for anything announced while it couldn't act. What it sent is kept in its own table, so a deleted booking can still be deleted upstream, and nothing it does can stop the staffing change that caused it.
 
 ## Considered Options
 
@@ -12,6 +14,7 @@ What an Integration syncs in, it owns: its role grants carry it as their source 
 - **One switch per feature, with the external system picked inside it.** Rejected: credentials, rate limits, outages and health belong to the external system, so that is where they live; features within it are still switched separately.
 - **Letting several sources grant the Controller role at once.** Rejected: when two sources disagree about removing someone, neither can tell whether it may. One source in charge keeps removal unambiguous.
 - **Removing every grant an Integration made when it's switched off.** Rejected: it would lock controllers out in the middle of a season because an admin flipped a switch.
+- **Following staffing through model events alone.** Rejected: the staffing planner saves shifts and rosters with bulk queries, which fire none, so changes would only reach the external system at the next sweep.
 
 ## Consequences
 

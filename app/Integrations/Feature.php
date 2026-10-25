@@ -34,4 +34,22 @@ abstract class Feature
      * for doing its job. Whatever it gave stays: a Controller source's roles become manual.
      */
     public function switchedOff(): void {}
+
+    /**
+     * Called once as the app boots, whether or not it's on, to listen for what the core
+     * announces (such as App\Staffing\StaffingChanged). Listeners must check it's on first,
+     * and never change the core's records.
+     */
+    public function boot(): void {}
+
+    /**
+     * Things it couldn't do that admins should look at, one line each, shown on the
+     * Integrations page.
+     *
+     * @return list<string>
+     */
+    public function needsAttention(): array
+    {
+        return [];
+    }
 }

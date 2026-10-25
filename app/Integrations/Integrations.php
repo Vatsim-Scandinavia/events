@@ -207,6 +207,18 @@ final class Integrations
     }
 
     /**
+     * Let every feature start listening to the core.
+     */
+    public function boot(): void
+    {
+        foreach ($this->all() as $integration) {
+            foreach ($integration->features() as $feature) {
+                $feature->boot();
+            }
+        }
+    }
+
+    /**
      * Schedule every sync, each running only while its feature is on.
      */
     public function schedule(Schedule $schedule): void

@@ -51,11 +51,16 @@ class ControlCenter extends Integration
 
     public function features(): array
     {
-        return [new RosterSync, new PositionSync];
+        return [new RosterSync, new PositionSync, new BookingPush];
     }
 
     public function testConnection(Configuration $configuration): void
     {
-        (new ControlCenterApi($configuration))->checkKey();
+        $api = new ControlCenterApi($configuration);
+        $api->checkKey();
+
+        if ($configuration->hasFeature('bookings')) {
+            $api->checkEditScope();
+        }
     }
 }

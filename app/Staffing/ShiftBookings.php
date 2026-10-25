@@ -88,11 +88,14 @@ final class ShiftBookings
             }
 
             try {
-                return ShiftBooking::create([
+                $booking = ShiftBooking::create([
                     'position_shift_id' => $shift->id,
                     'event_occurrence_id' => $occurrence->id,
                     'user_id' => $user->id,
                 ]);
+                StaffingChanged::forOccurrence($occurrence);
+
+                return $booking;
             } catch (UniqueConstraintViolationException) {
                 // Someone booked it between the check above and this insert.
                 $this->alreadyBooked();
@@ -124,5 +127,6 @@ final class ShiftBookings
         }
 
         $booking->delete();
+        StaffingChanged::forOccurrence($occurrence);
     }
 }

@@ -90,6 +90,7 @@ class IntegrationController extends Controller
                     'on' => $integrations->isOn($integration, $feature),
                     'syncs' => $feature instanceof Syncable,
                     'controllerSource' => $feature instanceof ControllerSource,
+                    'needsAttention' => $integrations->isOn($integration, $feature) ? $feature->needsAttention() : [],
                 ]),
             ],
             'runs' => IntegrationRun::query()

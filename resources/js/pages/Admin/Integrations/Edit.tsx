@@ -43,6 +43,8 @@ type EditableIntegration = {
         on: boolean;
         syncs: boolean;
         controllerSource: boolean;
+        // Things it couldn't do, for admins to look at; only while it's on.
+        needsAttention: string[];
     }[];
 };
 
@@ -242,6 +244,29 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                         </CardFooter>
                     </Card>
                 </form>
+
+                {integration.features.some((feature) => feature.needsAttention.length > 0) && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Needs attention</CardTitle>
+                            <CardDescription>What {integration.name} couldn’t do. Fix it here or upstream, and it’s tried again.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col gap-4">
+                            {integration.features
+                                .filter((feature) => feature.needsAttention.length > 0)
+                                .map((feature) => (
+                                    <div key={feature.key} className="flex flex-col gap-1.5 text-sm">
+                                        <span className="font-medium">{feature.name}</span>
+                                        <ul className="list-disc pl-5 text-muted-foreground">
+                                            {feature.needsAttention.map((item) => (
+                                                <li key={item}>{item}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ))}
+                        </CardContent>
+                    </Card>
+                )}
 
                 {integration.syncs && (
                     <Card>

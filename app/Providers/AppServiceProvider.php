@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Auth\VatsimConnectProvider;
 use App\Enums\Permission;
+use App\Integrations\Integrations;
 use App\Models\Fir;
 use App\Models\User;
 use App\Services\DisplayTime;
@@ -51,6 +52,8 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('sign-in', fn (Request $request) => Limit::perMinute(10)->by((string) $request->ip()));
         // The public API has no sign-in, so it's limited per address.
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by((string) $request->ip()));
+
+        app(Integrations::class)->boot();
 
         Socialite::extend('vatsim', fn () => Socialite::buildProvider(VatsimConnectProvider::class, config('services.vatsim'))
             ->setBaseUrl(config('services.vatsim.base_url')));
