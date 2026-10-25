@@ -1,6 +1,7 @@
 <?php
 
 use App\Auth\DevLogin;
+use App\Enums\SignInProvider;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -22,7 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // And requests for any host but APP_URL's are refused (Laravel skips this locally and in tests).
         $middleware->trustHosts(at: fn () => ['^'.preg_quote((string) parse_url((string) config('app.url'), PHP_URL_HOST)).'$'], subdomains: false);
 
-        $middleware->redirectGuestsTo(fn () => DevLogin::enabled() ? route('login') : route('auth.vatsim'));
+        $middleware->redirectGuestsTo(fn () => DevLogin::enabled() ? route('login') : route('auth.redirect', SignInProvider::configured()));
 
         $middleware->web(append: [
             SecurityHeaders::class,

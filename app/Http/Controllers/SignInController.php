@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Auth\ControllerRole;
 use App\Enums\ControllerRating;
+use App\Enums\SignInProvider;
 use App\Models\User;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\RedirectResponse;
@@ -16,41 +17,45 @@ use Laravel\Socialite\Two\InvalidStateException;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
- * Sign-in with VATSIM Connect: send people to VATSIM, then sign them in as the CID it vouches for.
+ * Sign-in through the configured sign-in provider: send people there, then sign them in as the CID it vouches for.
  */
-class VatsimConnectController extends Controller
+class SignInController extends Controller
 {
     /**
-     * Inertia visits bounced here by the auth middleware get a full page visit, since VATSIM is another origin.
+     * Inertia visits bounced here by the auth middleware get a full page visit, since the provider is another origin.
      *
      * A sign-in link can pass the page it was on as `return`, so people land back there afterwards.
      */
-    public function redirect(Request $request): SymfonyResponse
+    public function redirect(Request $request, SignInProvider $provider): SymfonyResponse
     {
+        $this->ensureConfigured($provider);
+
         $returnTo = $request->query('return');
 
         if (is_string($returnTo) && $this->isLocalPath($returnTo)) {
             redirect()->setIntendedUrl(url($returnTo));
         }
 
-        return Inertia::location(Socialite::driver('vatsim')->redirect()->getTargetUrl());
+        return Inertia::location(Socialite::driver($provider->value)->redirect()->getTargetUrl());
     }
 
-    public function callback(Request $request, ControllerRole $controllerRole): RedirectResponse
+    public function callback(Request $request, SignInProvider $provider, ControllerRole $controllerRole): RedirectResponse
     {
-        // VATSIM sends people back with an error when they decline to share their details.
+        $this->ensureConfigured($provider);
+
+        // The provider sends people back with an error when they decline to share their details.
         if ($request->has('error')) {
-            return $this->failed('Sign-in was cancelled on VATSIM.');
+            return $this->failed("Sign-in was cancelled on {$provider->label()}.");
         }
 
         try {
-            $vatsimUser = Socialite::driver('vatsim')->user();
+            $vatsimUser = Socialite::driver($provider->value)->user();
         } catch (InvalidStateException|GuzzleException) {
-            return $this->failed('Sign-in with VATSIM failed. Please try again.');
+            return $this->failed("Sign-in with {$provider->label()} failed. Please try again.");
         }
 
         if (blank($vatsimUser->getId())) {
-            return $this->failed('VATSIM did not share your CID. Please allow access to your VATSIM details.');
+            return $this->failed("{$provider->label()} did not share your CID. Please allow access to your VATSIM details.");
         }
 
         $user = User::query()->firstOrNew(['vatsim_cid' => (int) $vatsimUser->getId()]);
@@ -74,6 +79,11 @@ class VatsimConnectController extends Controller
         $request->session()->regenerate();
 
         return redirect()->intended('/');
+    }
+
+    private function ensureConfigured(SignInProvider $provider): void
+    {
+        abort_unless($provider === SignInProvider::configured(), 404);
     }
 
     /**

@@ -10,10 +10,22 @@ return [
     |--------------------------------------------------------------------------
     |
     | This option defines the default authentication "guard". Sign-in is
-    | through VATSIM Connect only, so there are no passwords, password
+    | through VATSIM Connect or Handover only, so there are no passwords, password
     | resets or password confirmation.
     |
     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sign-in Provider
+    |--------------------------------------------------------------------------
+    |
+    | Where people sign in: "vatsim" for VATSIM Connect, or "handover" for
+    | VATSIM Scandinavia's Handover. Each is set up in config/services.php.
+    |
+    */
+
+    'sign_in_provider' => env('AUTH_PROVIDER', 'vatsim'),
 
     /*
     |--------------------------------------------------------------------------

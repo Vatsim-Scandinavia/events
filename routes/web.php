@@ -13,13 +13,13 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShiftBookingController;
+use App\Http\Controllers\SignInController;
 use App\Http\Controllers\Staff\EventCancellationController;
 use App\Http\Controllers\Staff\EventManagementController;
 use App\Http\Controllers\Staff\EventPublicationController;
 use App\Http\Controllers\Staff\RosterController;
 use App\Http\Controllers\Staff\StaffingController;
 use App\Http\Controllers\StaffingInterestController;
-use App\Http\Controllers\VatsimConnectController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -28,8 +28,9 @@ Route::get('/events/{event}', [EventController::class, 'show'])->whereNumber('ev
 
 Route::middleware('guest')->group(function () {
     Route::middleware('throttle:sign-in')->group(function () {
-        Route::get('/auth/vatsim', [VatsimConnectController::class, 'redirect'])->name('auth.vatsim');
-        Route::get('/auth/vatsim/callback', [VatsimConnectController::class, 'callback'])->name('auth.vatsim.callback');
+        // Only the configured sign-in provider answers; the others return 404.
+        Route::get('/auth/{provider}', [SignInController::class, 'redirect'])->name('auth.redirect');
+        Route::get('/auth/{provider}/callback', [SignInController::class, 'callback'])->name('auth.callback');
     });
 
     // Development sign-in as any user; returns 404 unless auth.dev_login is on.

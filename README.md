@@ -68,6 +68,20 @@ This installs dependencies, creates `.env` from `.env.example`, generates the ap
 
    The client must be allowed the `full_name`, `vatsim_details` and `email` scopes. People are matched by CID, and their name, email, rating and subdivision are refreshed each time they sign in.
 
+   VATSIM Scandinavia can sign in through [Handover](https://github.com/Vatsim-Scandinavia/handover) instead. Ask for a Handover OAuth client with the redirect URL `APP_URL/auth/handover/callback`, and add:
+
+   ```env
+   AUTH_PROVIDER=handover
+   HANDOVER_CLIENT_ID=your-client-id
+   HANDOVER_SECRET=your-client-secret
+   # Optional: defaults to /auth/handover/callback on APP_URL.
+   HANDOVER_REDIRECT=
+   # Optional: defaults to https://handover.vatsim-scandinavia.org.
+   HANDOVER_BASE_URL=
+   ```
+
+   Handover vouches for the same CIDs, so existing accounts carry over when you switch. Ratings and subdivisions are still refreshed from the VATSIM API each day.
+
    To skip VATSIM Connect, turn on development sign-in instead. It only works with `APP_ENV=local`:
 
    ```env
