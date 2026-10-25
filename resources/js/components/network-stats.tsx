@@ -107,7 +107,7 @@ function StatTile({ icon: Icon, label, value }: { icon: LucideIcon; label: strin
     return (
         <Card>
             <CardContent className="flex items-center gap-4">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-icon">
                     <Icon className="size-5" />
                 </span>
                 <div>

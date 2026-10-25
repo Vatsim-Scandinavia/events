@@ -31,12 +31,11 @@ class SiteSettingsController extends Controller
                 'subdivision' => $effective['subdivision'],
                 'website' => $effective['website'],
                 'logo' => $effective['logo'],
-                'heroGradient' => $effective['heroGradient'],
                 'theme' => $identity->theme()->value,
-                'brandColors' => $identity->brandColors(),
                 'autoController' => $identity->controllerRoleIsAutomatic(),
             ],
             // The Integration feature handing out the Controller role instead of the hub's rule.
+            'themes' => collect(Theme::cases())->map(fn (Theme $theme) => ['value' => $theme->value, 'label' => $theme->label()]),
             'controllerSource' => $controllerRole->source()?->controllerSourceName(),
             // Each locked detail and the environment variable it is set by.
             'locked' => collect($identity->locked())->mapWithKeys(fn (string $field) => [$field => VaccIdentity::FIELDS[$field]]),
@@ -66,10 +65,8 @@ class SiteSettingsController extends Controller
             $logos->delete($previous);
         }
 
-        $identity->saveHeroGradient($request->validated('hero_gradient'));
-
         if ($request->has('theme')) {
-            $identity->saveTheme($request->enum('theme', Theme::class), $request->validated('brand_colors'));
+            $identity->saveTheme($request->enum('theme', Theme::class));
         }
 
         $identity->setControllerRoleAutomatic($request->boolean('auto_controller'));

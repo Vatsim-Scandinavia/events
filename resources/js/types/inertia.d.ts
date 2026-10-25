@@ -16,11 +16,7 @@ export type Vacc = {
     website: string | null;
     // Public URL of the uploaded logo, null when none is set.
     logo: string | null;
-    // Hex colors behind the front page's hero, null for the default look.
-    heroGradient: HeroGradient | null;
 };
-
-export type HeroGradient = { from: string; to: string };
 
 // Mirrors App\Enums\Permission.
 export type PermissionName = 'manage-events' | 'manage-staffing' | 'view-events' | 'book-positions' | 'manage-users';

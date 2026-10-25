@@ -57,13 +57,7 @@ class SiteSettingsRequest extends FormRequest
             'website' => ['nullable', 'string', 'max:255', 'url:https'],
             'logo' => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:2048'],
             'remove_logo' => ['sometimes', 'boolean'],
-            'hero_gradient' => ['nullable', 'array:from,to'],
-            'hero_gradient.from' => ['required_with:hero_gradient', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
-            'hero_gradient.to' => ['required_with:hero_gradient', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
             'theme' => ['sometimes', 'required', Rule::enum(Theme::class)],
-            'brand_colors' => ['nullable', 'array:primary,accent'],
-            'brand_colors.primary' => ['required_if:theme,brand', 'required_with:brand_colors', 'nullable', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
-            'brand_colors.accent' => ['required_if:theme,brand', 'required_with:brand_colors', 'nullable', 'string', 'regex:/^#[0-9a-f]{6}$/i'],
         ];
 
         foreach (app(VaccIdentity::class)->locked() as $field) {
@@ -84,10 +78,6 @@ class SiteSettingsRequest extends FormRequest
             'subdivision.regex' => 'Use the subdivision’s code from VATSIM, like SCA.',
             'logo.mimes' => 'Upload a PNG, JPG, WebP or SVG file.',
             'logo.max' => 'The logo can be at most 2 MB.',
-            'hero_gradient.*.regex' => 'Pick a color like #1e3a8a.',
-            'brand_colors.*.required_if' => 'Pick a color like #1e3a8a.',
-            'brand_colors.*.required_with' => 'Pick a color like #1e3a8a.',
-            'brand_colors.*.regex' => 'Pick a color like #1e3a8a.',
             'logo.uploaded' => 'The logo couldn’t be uploaded. Try a smaller file (2 MB at most).',
         ];
     }

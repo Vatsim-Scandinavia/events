@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout';
-import { cn } from '@/lib/utils';
 import type { HubEvent } from '@/types/event';
 
 type HomeProps = {
@@ -17,7 +16,6 @@ type HomeProps = {
 
 export default function Home({ upcomingEvents, networkStats }: HomeProps) {
     const { vacc } = usePage().props;
-    const { heroGradient } = vacc;
     const [nextEvent] = upcomingEvents;
 
     return (
@@ -25,22 +23,7 @@ export default function Home({ upcomingEvents, networkStats }: HomeProps) {
             <Head title="Home" />
 
             <section className="relative overflow-hidden border-b bg-muted/40">
-                <div
-                    aria-hidden="true"
-                    className={cn(
-                        'pointer-events-none absolute inset-0',
-                        !heroGradient &&
-                            'bg-[radial-gradient(ellipse_at_top_right,color-mix(in_oklch,var(--color-primary)_10%,transparent),transparent_60%)]',
-                    )}
-                    // Mixed with transparent so the hero text stays readable in light and dark themes.
-                    style={
-                        heroGradient
-                            ? {
-                                  backgroundImage: `linear-gradient(135deg, color-mix(in oklch, ${heroGradient.from} 35%, transparent), color-mix(in oklch, ${heroGradient.to} 35%, transparent))`,
-                              }
-                            : undefined
-                    }
-                />
+                <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-(image:--hero)" />
                 <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 md:py-24 lg:grid-cols-[1fr_400px]">
                     <div className="flex flex-col items-start gap-6">
                         <Badge variant="secondary">

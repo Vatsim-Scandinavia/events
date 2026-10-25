@@ -45,10 +45,7 @@ export function EventBanner({ event, label, className }: { event: HubEvent; labe
                     className="size-full object-cover transition-transform duration-300 motion-safe:group-hover/card:scale-105"
                 />
             ) : (
-                <div
-                    aria-hidden="true"
-                    className="flex size-full items-center justify-center bg-linear-to-br from-muted to-secondary text-muted-foreground"
-                >
+                <div aria-hidden="true" className="flex size-full items-center justify-center bg-(image:--banner) text-muted-foreground">
                     <Plane className="size-10 opacity-40 transition-all duration-300 group-hover/card:opacity-70 motion-safe:group-hover/card:translate-x-1 motion-safe:group-hover/card:-translate-y-1" />
                 </div>
             )}

@@ -13,7 +13,7 @@ Applying across the whole Hub rather than in a single FIR. Every role can be hel
 _Avoid_: Global
 
 **Theme**:
-The colors the whole Hub is shown in, chosen by an Administrator, either Default or Brand.
+The colors the whole Hub is shown in, chosen by an Administrator, either Default or VATSIM Scandinavia.
 _Avoid_: Skin, palette
 
 ## Events
