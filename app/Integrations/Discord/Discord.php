@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Http;
 
 /**
  * The vACC's Discord server, posted to through channel webhooks only, with no bot user (see
- * ADR 0005). Discord shows what happens on the Hub; nothing is booked from it.
+ * ADR 0005). Discord shows what happens on the Hub; nothing is booked from it. Webhooks must
+ * match WEBHOOK_PATTERN and redirects are never followed, so a webhook only ever reaches Discord.
  */
 class Discord extends Integration
 {
@@ -72,7 +73,7 @@ class Discord extends Integration
         }
 
         try {
-            $response = Http::acceptJson()->timeout(10)->get((string) $webhook);
+            $response = Http::acceptJson()->withoutRedirecting()->timeout(10)->get((string) $webhook);
         } catch (ConnectionException) {
             throw new ConnectionFailed('Discord didn’t answer. Try again later.');
         }

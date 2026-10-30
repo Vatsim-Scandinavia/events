@@ -58,7 +58,7 @@ class EventAnnouncements extends Feature
         }
 
         try {
-            Http::timeout(5)->post($webhook, [
+            Http::withoutRedirecting()->timeout(5)->post($webhook, [
                 'embeds' => [$this->embed($event)],
                 // Event names are typed by staff, so never let them ping anyone.
                 'allowed_mentions' => ['parse' => []],
