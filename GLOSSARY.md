@@ -27,7 +27,7 @@ An Event not yet visible to pilots and controllers; only staff who can view or m
 _Avoid_: Unpublished, hidden
 
 **Publish**:
-To make a Draft Event visible to everyone and announce it on Discord. Rosters are also published, per Occurrence.
+To make a Draft Event visible to everyone. Rosters are also published, per Occurrence.
 _Avoid_: Release, go live
 
 **Occurrence**:
@@ -105,3 +105,17 @@ _Avoid_: Capability, sub-integration
 **Position catalogue**:
 The Hub-wide list of known controller positions that staff pick from when adding positions to an Event.
 _Avoid_: Position list, position registry
+
+## Discord
+
+**Event announcement**:
+The one-off Discord post, in the Hub-wide events channel, telling everyone an Event has been published.
+_Avoid_: Notification, publish message
+
+**Roster channel**:
+The Discord channel an Event's staffing is shown in, one per Event, such as #vectors-to-copenhagen.
+_Avoid_: Event channel, booking channel
+
+**Roster message**:
+The single message in an Event's Roster channel that always shows the Roster of its next upcoming Occurrence that isn't cancelled, moving on to the next date once one ends.
+_Avoid_: Booking message, roster post
