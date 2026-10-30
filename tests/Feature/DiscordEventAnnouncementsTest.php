@@ -3,9 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\RepeatInterval;
+use App\Integrations\Discord\Discord;
+use App\Integrations\Integrations;
 use App\Models\Event;
 use App\Models\EventType;
 use App\Models\Fir;
+use App\Models\IntegrationSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -15,7 +18,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Tests\TestCase;
 
-class DiscordAnnouncementTest extends TestCase
+class DiscordEventAnnouncementsTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -30,11 +33,24 @@ class DiscordAnnouncementTest extends TestCase
         parent::setUp();
 
         $this->travelTo(Carbon::parse('2026-11-01 12:00', 'UTC'));
-        config(['services.discord.events_webhook' => self::WEBHOOK]);
+        config(['integrations.settings.discord' => []]);
+        $this->switchOn();
         Http::preventStrayRequests();
 
         $this->copenhagen = Fir::factory()->create(['icao' => 'EKDK', 'name' => 'Copenhagen']);
         $this->staff = User::factory()->staff($this->copenhagen)->create();
+    }
+
+    /**
+     * @param  list<string>  $features
+     */
+    private function switchOn(bool $enabled = true, array $features = ['announcements']): void
+    {
+        IntegrationSetting::query()->updateOrCreate(['key' => 'discord'], [
+            'enabled' => $enabled,
+            'features' => $features,
+            'settings' => ['events_webhook' => self::WEBHOOK],
+        ]);
     }
 
     private function weeklyDraft(): Event
@@ -86,16 +102,35 @@ class DiscordAnnouncementTest extends TestCase
         Http::assertSent(fn (Request $request) => str_ends_with($request['embeds'][0]['image']['url'], 'banners/tuesday.png'));
     }
 
-    public function test_without_a_webhook_nothing_is_posted(): void
+    public function test_nothing_is_posted_while_announcements_or_discord_are_off(): void
     {
-        config(['services.discord.events_webhook' => null]);
         Http::fake();
-        $event = $this->weeklyDraft();
+        $this->switchOn(features: []);
+        $featureOff = $this->weeklyDraft();
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}/publish")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->post("/events/{$featureOff->id}/publish")->assertSessionHasNoErrors();
+
+        $this->switchOn(enabled: false);
+        $integrationOff = $this->weeklyDraft();
+
+        $this->actingAs($this->staff)->post("/events/{$integrationOff->id}/publish")->assertSessionHasNoErrors();
 
         Http::assertNothingSent();
-        $this->assertFalse($event->fresh()->isDraft());
+        $this->assertFalse($featureOff->fresh()->isDraft());
+        $this->assertFalse($integrationOff->fresh()->isDraft());
+    }
+
+    public function test_the_webhook_set_in_the_environment_is_used(): void
+    {
+        $locked = 'https://discord.com/api/webhooks/456/from-env';
+        config(['integrations.settings.discord' => ['events_webhook' => $locked]]);
+        Http::fake([$locked => Http::response(null, 204)]);
+        $event = $this->weeklyDraft();
+
+        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+
+        Http::assertSentCount(1);
+        Http::assertSent(fn (Request $request) => $request->url() === $locked);
     }
 
     public function test_a_failing_webhook_never_blocks_publishing(): void
@@ -144,9 +179,9 @@ class DiscordAnnouncementTest extends TestCase
         Http::assertSent(fn (Request $request) => collect($request['embeds'][0]['fields'])->pluck('value', 'name')['Dates (UTC)'] === 'Tue 10 Nov 2026, 22:00–Wed 11 Nov 02:00z');
     }
 
-    public function test_nothing_is_posted_on_create_edit_cancel_or_delete(): void
+    public function test_only_publishing_posts_not_create_edit_cancel_or_delete(): void
     {
-        Http::fake();
+        Http::fake([self::WEBHOOK => Http::response(null, 204)]);
         $payload = [
             'fir_id' => $this->copenhagen->id,
             'name' => 'Copenhagen Fly-in',
@@ -166,6 +201,60 @@ class DiscordAnnouncementTest extends TestCase
         $this->actingAs($this->staff)->post("/events/{$event->id}/cancel")->assertSessionHasNoErrors();
         $this->actingAs($this->staff)->delete("/events/{$event->id}")->assertSessionHasNoErrors();
 
-        Http::assertNothingSent();
+        // Only the announcement from publishing it.
+        Http::assertSentCount(1);
+    }
+
+    public function test_an_admin_can_switch_announcements_on_once_discord_knows_the_webhook(): void
+    {
+        IntegrationSetting::query()->delete();
+        $admin = User::factory()->admin()->create();
+        $webhook = 'https://discord.com/api/webhooks/789/new-token';
+        Http::fake([$webhook => Http::response(['id' => '789', 'channel_id' => '1001'])]);
+
+        $this->actingAs($admin)->put('/admin/integrations/discord', [
+            'enabled' => true,
+            'features' => ['announcements'],
+            'settings' => ['events_webhook' => $webhook],
+        ])->assertSessionHasNoErrors();
+
+        $integrations = app(Integrations::class);
+        $discord = app(Discord::class);
+        $this->assertTrue($integrations->isOn($discord, $discord->feature('announcements')));
+        $this->assertSame($webhook, $integrations->configuration($discord)->get('events_webhook'));
+        Http::assertSent(fn (Request $request) => $request->method() === 'GET' && $request->url() === $webhook);
+    }
+
+    public function test_announcements_stay_off_without_a_webhook_discord_knows(): void
+    {
+        IntegrationSetting::query()->delete();
+        $admin = User::factory()->admin()->create();
+        $deleted = 'https://discord.com/api/webhooks/789/deleted';
+        Http::fake([$deleted => Http::response(['message' => 'Unknown Webhook'], 404)]);
+        $payload = ['enabled' => true, 'features' => ['announcements']];
+
+        $this->actingAs($admin)->put('/admin/integrations/discord', [...$payload, 'settings' => ['events_webhook' => '']])
+            ->assertSessionHasErrors(['enabled' => 'Couldn’t connect, so it stays off: Enter the events channel webhook first.']);
+        $this->actingAs($admin)->put('/admin/integrations/discord', [...$payload, 'settings' => ['events_webhook' => 'https://example.com/hook']])
+            ->assertSessionHasErrors('settings.events_webhook');
+        $this->actingAs($admin)->put('/admin/integrations/discord', [...$payload, 'settings' => ['events_webhook' => $deleted]])
+            ->assertSessionHasErrors(['enabled' => 'Couldn’t connect, so it stays off: Discord doesn’t know the events channel webhook. It may have been deleted; copy a new one.']);
+
+        $this->assertDatabaseCount('integration_settings', 0);
+    }
+
+    public function test_upgrading_switches_announcements_on_where_the_webhook_was_set_in_the_environment(): void
+    {
+        $migration = require database_path('migrations/2026_10_30_184405_switch_on_discord_announcements_where_the_webhook_is_set.php');
+        IntegrationSetting::query()->delete();
+
+        $migration->up();
+        $this->assertDatabaseCount('integration_settings', 0);
+
+        config(['integrations.settings.discord' => ['events_webhook' => self::WEBHOOK]]);
+        $migration->up();
+
+        $discord = app(Discord::class);
+        $this->assertTrue(app(Integrations::class)->isOn($discord, $discord->feature('announcements')));
     }
 }

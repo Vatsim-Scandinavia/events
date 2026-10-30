@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\Permission;
 use App\Enums\RepeatInterval;
 use App\Enums\StaffingMode;
+use App\Events\EventPublished;
 use App\Services\EventBanners;
 use App\Staffing\StaffingChanged;
 use Database\Factories\EventFactory;
@@ -174,6 +175,7 @@ class Event extends Model
 
         if ($published) {
             StaffingChanged::forEvent($this);
+            EventPublished::dispatch($this);
         }
 
         return $published;
