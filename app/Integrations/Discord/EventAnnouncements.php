@@ -1,38 +1,64 @@
 <?php
 
-namespace App\Services;
+namespace App\Integrations\Discord;
 
+use App\Events\EventPublished;
+use App\Integrations\Feature;
+use App\Integrations\Integrations;
 use App\Models\Event;
 use App\Models\EventOccurrence;
+use App\Services\EventBanners;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Event as Events;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Announces published Events on Discord, through one webhook for the whole hub. Discord being
- * down or slow never stops staff publishing: failures are logged and skipped.
+ * Announces each Event in the Hub-wide events channel once, when it's first published.
+ * Discord being down or slow never stops staff publishing: failures are logged and skipped.
  */
-final class DiscordAnnouncements
+class EventAnnouncements extends Feature
 {
     /** How many upcoming dates to list before "and N more". */
     private const MAX_DATES = 5;
 
-    public function __construct(private EventBanners $banners) {}
-
-    /**
-     * Posts the event once, when it's published. Does nothing without a webhook.
-     */
-    public function eventPublished(Event $event): void
+    public function key(): string
     {
-        $webhook = config('services.discord.events_webhook');
+        return 'announcements';
+    }
+
+    public function name(): string
+    {
+        return 'Event announcements';
+    }
+
+    public function description(): string
+    {
+        return 'Posts each event in the events channel once, when it’s published.';
+    }
+
+    public function boot(): void
+    {
+        Events::listen(EventPublished::class, function (EventPublished $published) {
+            if (! $this->isOn()) {
+                return;
+            }
+
+            $this->announce($published->event);
+        });
+    }
+
+    private function announce(Event $event): void
+    {
+        $webhook = (string) app(Integrations::class)->configuration(app(Discord::class))->get('events_webhook');
 
         if (blank($webhook)) {
             return;
         }
 
         try {
-            Http::timeout(5)->post($webhook, [
+            Http::withoutRedirecting()->timeout(5)->post($webhook, [
                 'embeds' => [$this->embed($event)],
                 // Event names are typed by staff, so never let them ping anyone.
                 'allowed_mentions' => ['parse' => []],
@@ -60,7 +86,7 @@ final class DiscordAnnouncements
             ])),
         ];
 
-        if ($banner = $this->banners->url($event->banner_path)) {
+        if ($banner = app(EventBanners::class)->url($event->banner_path)) {
             $embed['image'] = ['url' => $banner];
         }
 
@@ -88,5 +114,10 @@ final class DiscordAnnouncements
         }
 
         return $lines->implode("\n") ?: 'No upcoming dates.';
+    }
+
+    private function isOn(): bool
+    {
+        return app(Integrations::class)->isOn(app(Discord::class), $this);
     }
 }

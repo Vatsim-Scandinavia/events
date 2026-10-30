@@ -7,7 +7,7 @@ return [
     | Third Party Services
     |--------------------------------------------------------------------------
     |
-    | Credentials for VATSIM Connect, Handover, the VATSIM API and Discord.
+    | Credentials for VATSIM Connect, Handover and the VATSIM API.
     |
     */
 
@@ -30,12 +30,6 @@ return [
         'client_secret' => env('HANDOVER_SECRET'),
         'redirect' => env('HANDOVER_REDIRECT') ?: rtrim((string) env('APP_URL', 'http://localhost'), '/').'/auth/handover/callback',
         'base_url' => env('HANDOVER_BASE_URL') ?: 'https://handover.vatsim-scandinavia.org',
-    ],
-
-    'discord' => [
-        // A channel webhook (Server Settings → Integrations → Webhooks). Published events are
-        // announced there; leave empty to announce nothing.
-        'events_webhook' => env('DISCORD_EVENTS_WEBHOOK'),
     ],
 
 ];

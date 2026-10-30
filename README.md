@@ -7,7 +7,7 @@ The words used here and in the app (Occurrence, Shift Booking, Staffing Interest
 ## Features
 
 - **Events** with banners, airports, suggested routes, a slot link and a briefing link. Events can repeat weekly, every other week or monthly, and single dates (Occurrences) or whole events can be cancelled and restored.
-- **Drafts and publishing**: a new event starts as a Draft, seen only by staff who can view or manage events in its FIR. Publishing it shows it to everyone and announces it once on Discord, if a webhook is set. If Discord can't be reached, that's logged and the announcement isn't retried.
+- **Drafts and publishing**: a new event starts as a Draft, seen only by staff who can view or manage events in its FIR. Publishing it shows it to everyone and, with the Discord Integration's Event announcements switched on, announces it once in the events channel. If Discord can't be reached, that's logged and the announcement isn't retried.
 - **Two ways to staff an event**, chosen per event:
   - *Pre-defined shifts*: staff lay out shifts per position on a timeline, and controllers make Shift Bookings first come, first served.
   - *Open interest*: controllers show Staffing Interest in the positions they want, with their availability, and staff build and publish a roster of Roster Entries from that.
@@ -53,7 +53,7 @@ This installs dependencies, creates `.env` from `.env.example`, generates the ap
 
    FIRs are added under **Admin → FIRs**. For the Scandinavian FIRs on a fresh database, run `php artisan db:seed --class=FirSeeder`.
 
-   Keys and secrets for VATSIM, Discord and other services are only ever set in `.env`.
+   Keys and secrets for VATSIM sign-in are only ever set in `.env`. Integrations, such as Control Center and Discord, are set up under **Admin → Integrations**, or locked from `.env`.
 
 2. Set up sign-in with [VATSIM Connect](https://auth.vatsim.net). Create an OAuth client there, or in the sandbox at `https://auth-dev.vatsim.net`, with the redirect URL `APP_URL/auth/vatsim/callback` (for example `http://127.0.0.1:8000/auth/vatsim/callback`), and add its details:
 
@@ -133,7 +133,7 @@ The hub ships as a Docker image, published as `ghcr.io/vatsim-scandinavia/events
 
 **Queue worker.** Integration syncs, "Sync now" and pushing bookings to Control Center are queued, so something must run `php artisan queue:work`. Without a worker they wait in the `jobs` table and never run. The Compose setup has a `queue` service for this. It runs `queue:work --max-time=3600`, so it stops after an hour and Docker starts it again. Run it as a long-lived process rather than from cron: jobs then run within seconds, and retries after Control Center outages keep their delays. If cron is all you have, `php artisan queue:work --stop-when-empty --max-time=50` every minute works, with up to a minute's delay. The image's code is loaded when the worker starts, so restart it (or replace its container) after deploying a new image.
 
-**Discord.** Set `DISCORD_EVENTS_WEBHOOK` to a channel webhook to announce each event once, when it's published. Leave it empty to announce nothing.
+**Discord.** Event announcements are a feature of the Discord Integration, switched on under Admin → Integrations with the webhook of the channel to announce in. Setting `DISCORD_EVENTS_WEBHOOK` locks that webhook. Installs that already had it set are switched on when they upgrade, so they keep announcing.
 
 **Settings.** On a public server set at least `APP_ENV=production` (or `staging`), `APP_DEBUG=false`, an `https://` `APP_URL`, `LOG_STACK=daily`, `LOG_LEVEL=warning`, `SESSION_SECURE_COOKIE=true` and `SESSION_ENCRYPT=true`. Put the hub behind a reverse proxy that handles HTTPS and name it in `TRUSTED_PROXIES`. Requests for any host but `APP_URL`'s are refused. `.env.example` lists all of these.
 

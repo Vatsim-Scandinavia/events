@@ -1,6 +1,7 @@
 <?php
 
 use App\Integrations\ControlCenter\ControlCenter;
+use App\Integrations\Discord\Discord;
 
 return [
 
@@ -16,6 +17,7 @@ return [
 
     'registered' => [
         ControlCenter::class,
+        Discord::class,
     ],
 
     /*
@@ -34,6 +36,9 @@ return [
             'url' => env('CONTROL_CENTER_URL'),
             'token' => env('CONTROL_CENTER_TOKEN'),
             'areas' => env('CONTROL_CENTER_AREAS'),
+        ],
+        'discord' => [
+            'events_webhook' => env('DISCORD_EVENTS_WEBHOOK'),
         ],
     ],
 
