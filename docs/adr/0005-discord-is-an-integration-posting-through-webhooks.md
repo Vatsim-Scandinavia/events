@@ -2,7 +2,7 @@
 
 The legacy system took Shift Bookings through a Discord bot calling an API. The Hub takes them only on its own pages: there is no endpoint that books on a controller's behalf, and the public API stays read-only (ADR 0003). Discord becomes a place to see staffing, not to change it.
 
-Discord is an Integration (ADR 0004) with two Integration features. **Event announcements** posts an Event announcement to one Hub-wide events channel the first time an Event is published; it replaces the announcement the core used to make itself. **Roster messages** keeps one Roster message in each Event's Roster channel: it shows the Roster of the next upcoming Occurrence that isn't cancelled, and is edited in place as staffing changes and, once that date ends, to show the next one. Both post through channel webhooks only, with no bot user: a webhook can post, edit and delete its own messages, which is all this needs, and the Hub keeps the ID of each message it posted.
+Discord is an Integration (ADR 0004) with two Integration features. **Event announcements** posts an Event announcement to one Hub-wide events channel the first time an Event is published; it replaces the announcement the core used to make itself. **Roster messages** keeps one Roster message in each Event's Roster channel: it shows the Roster of the next upcoming Occurrence that isn't cancelled, and is edited in place as staffing changes and, once that date ends, to show the next one. Both post through channel webhooks only, with no bot user: a webhook can post, edit and delete its own messages, which is all this needs, and the Hub keeps the ID of each message it posted. A Roster message never shows more than the public Event page does: nothing for a Draft, and for an Event staffed through Staffing Interest only a roster that has been published.
 
 This needs two new extension points. **`EventPublished`** is announced by the core once a Draft is first published, so announcing an Event is no longer core code. **Event fields** let an Integration feature add fields to the Event form; the core renders them without knowing what they are, and the feature keeps the values in its own tables. Roster messages uses it for the Event's webhook, set by anyone who can manage the Event, since a Roster channel is a detail of the Event rather than Hub configuration.
 
@@ -17,9 +17,11 @@ This needs two new extension points. **`EventPublished`** is announced by the co
 
 ## Consequences
 
-A webhook URL is a secret: anyone holding it can post to the channel. It is stored encrypted, checked when saved, and never shown again; the form shows the channel it posts to.
+A webhook URL is a secret: anyone holding it can post to the channel. It is stored encrypted, checked when saved, and never shown again; the form shows the channel it posts to. Because Event Staff paste per-Event webhooks, only Discord webhook URLs are accepted and redirects are never followed, so a webhook can't make the Hub call anywhere but Discord.
 
-Discord being down, slow or rate-limited never stops a booking, a roster change or publishing. Edits are queued per Event and coalesced, and a sweep catches anything missed, the same as Control Center's booking push. If the message has been deleted in Discord, or the webhook replaced, the Hub posts a new one.
+An Event announcement is best-effort, as the core's was: if Discord can't be reached when the Event is published, that's logged and it isn't retried. A Roster message has no such gap, because it's brought in line from current staffing every time.
+
+Discord being down, slow or rate-limited never stops a booking, a roster change or publishing. Edits are queued per Event and coalesced, run one at a time per Event, and render staffing as it is when they run, so an older edit can never land after a newer one; a sweep catches anything missed, the same as Control Center's booking push. If the message has been deleted in Discord, the Hub posts a new one. If the webhook is replaced, the old message is deleted through the old webhook first, so the channel never shows two.
 
 Controllers appear by name and CID in plain text and nobody is mentioned, because the Hub doesn't know anyone's Discord account. Linking accounts would be a decision of its own.
 

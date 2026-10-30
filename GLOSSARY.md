@@ -117,5 +117,5 @@ The Discord channel an Event's staffing is shown in, one per Event, such as #vec
 _Avoid_: Event channel, booking channel
 
 **Roster message**:
-The single message in an Event's Roster channel that always shows the Roster of its next upcoming Occurrence, moving on to the next date once one ends.
+The single message in an Event's Roster channel that always shows the Roster of its next upcoming Occurrence that isn't cancelled, moving on to the next date once one ends.
 _Avoid_: Booking message, roster post
