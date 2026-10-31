@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
  * message is brought in line (UpdateRosterMessage); a sweep every few minutes moves messages on
  * once their date ends and catches anything missed.
  *
- * Switched off, it forgets every Event's webhook and leaves the messages as they were.
+ * Switched off, it deletes the messages and forgets every Event's webhook.
  */
 class RosterMessages extends Feature implements EventFields
 {
@@ -82,7 +82,7 @@ class RosterMessages extends Feature implements EventFields
 
     public function eventFields(?Event $event): array
     {
-        $message = $event ? RosterMessage::query()->where('event_id', $event->id)->first() : null;
+        $message = $event ? RosterMessage::query()->where('event_id', $event->id)->whereNotNull('webhook')->first() : null;
 
         return [new EventField(
             self::FIELD,
@@ -90,48 +90,41 @@ class RosterMessages extends Feature implements EventFields
             ['string', 'max:255', 'regex:'.Discord::WEBHOOK_PATTERN],
             secret: true,
             description: 'A webhook on this event’s own Discord channel (Edit Channel → Integrations → Webhooks → Copy Webhook URL). A message there shows the next date’s roster, kept up to date.',
-            status: $message ? 'Posts as '.($message->webhook_name ?? 'a webhook')." in channel {$message->channel_id}" : null,
+            status: match (true) {
+                $message === null => null,
+                $message->channel_id === null => 'Saved, but not checked yet: Discord couldn’t be reached. The message is posted once it can be.',
+                default => 'Posts as '.($message->webhook_name ?? 'a webhook')." in channel {$message->channel_id}",
+            },
         )];
     }
 
+    /**
+     * Only says which webhook is wanted; UpdateRosterMessage deletes a replaced one's message
+     * and posts through the new one. A webhook Discord doesn't know is turned down, but one
+     * that can't be checked while Discord is down is kept, and the post tells where it goes.
+     */
     public function saveEventFields(Event $event, array $values, array $removed): void
     {
         $message = RosterMessage::query()->where('event_id', $event->id)->first();
         $webhook = $values[self::FIELD] ?? null;
 
-        if ($webhook === null && ! in_array(self::FIELD, $removed, true)) {
-            UpdateRosterMessage::soon($event->id);
-
-            return;
+        if ($webhook === null && in_array(self::FIELD, $removed, true)) {
+            $message?->update(['webhook' => null, 'channel_id' => null, 'webhook_name' => null]);
         }
 
-        if ($webhook !== null) {
+        if ($webhook !== null && $message?->webhook !== $webhook) {
             try {
                 $channel = (new Webhook($webhook))->check();
-            } catch (ConnectionFailed|WebhookRefused $exception) {
-                throw ValidationException::withMessages(['integration_fields.'.self::FIELD => $exception->getMessage()]);
+            } catch (WebhookRefused $refused) {
+                throw ValidationException::withMessages(['integration_fields.'.self::FIELD => $refused->getMessage()]);
+            } catch (ConnectionFailed) {
+                $channel = ['channel_id' => null, 'name' => null];
             }
-        }
 
-        // Replaced or removed: the old message goes, so the channel never shows two.
-        if ($message?->message_id !== null && $message->webhook !== $webhook) {
-            DeleteRosterMessage::dispatch($message->webhook, $message->message_id)->afterCommit();
-        }
-
-        if ($webhook === null) {
-            $message?->delete();
-
-            return;
-        }
-
-        if ($message?->webhook !== $webhook) {
             RosterMessage::query()->updateOrCreate(['event_id' => $event->id], [
                 'webhook' => $webhook,
                 'channel_id' => $channel['channel_id'],
                 'webhook_name' => $channel['name'],
-                'message_id' => null,
-                'rendered_hash' => null,
-                'failure' => null,
             ]);
         }
 
@@ -139,10 +132,14 @@ class RosterMessages extends Feature implements EventFields
     }
 
     /**
-     * Webhooks are kept for this feature's sake only; the messages stay as they were.
+     * Messages that would no longer be kept up to date are deleted, and the webhooks forgotten.
      */
     public function switchedOff(): void
     {
+        foreach (RosterMessage::query()->whereNotNull('message_id')->get() as $message) {
+            DeleteRosterMessage::dispatch((string) $message->posted_webhook, (string) $message->message_id)->afterCommit();
+        }
+
         RosterMessage::query()->delete();
     }
 

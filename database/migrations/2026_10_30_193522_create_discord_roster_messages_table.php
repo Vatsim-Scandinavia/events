@@ -7,18 +7,19 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations. Each Event's Roster channel webhook and the Roster message posted
-     * through it. Kept without a foreign key, so a record outlives a deleted Event long enough
-     * to delete its message in Discord too.
+     * Run the migrations. Each Event's Roster channel webhook, and the Roster message posted
+     * through whichever webhook it was posted with. Kept without a foreign key, so a record
+     * outlives a deleted Event, or a removed webhook, until its message is deleted in Discord.
      */
     public function up(): void
     {
         Schema::create('discord_roster_messages', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('event_id')->unique();
-            $table->text('webhook');
-            $table->string('channel_id', 32);
+            $table->text('webhook')->nullable();
+            $table->string('channel_id', 32)->nullable();
             $table->string('webhook_name', 100)->nullable();
+            $table->text('posted_webhook')->nullable();
             $table->string('message_id', 32)->nullable();
             $table->string('rendered_hash', 64)->nullable();
             $table->text('failure')->nullable();

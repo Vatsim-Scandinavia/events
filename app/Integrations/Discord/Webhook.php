@@ -44,12 +44,12 @@ final readonly class Webhook
 
     /**
      * @param  array<string, mixed>  $message
-     * @return string the new message's id
+     * @return array{id: string, channel_id: ?string, name: ?string} the new message, with where it was posted and as whom
      *
      * @throws ConnectionFailed
      * @throws WebhookRefused
      */
-    public function post(array $message): string
+    public function post(array $message): array
     {
         $response = $this->send(fn (PendingRequest $http) => $http->post("{$this->url}?wait=true", $message));
         $id = $response->json('id');
@@ -58,7 +58,11 @@ final readonly class Webhook
             throw new ConnectionFailed('Discord’s answer couldn’t be read. Try again later.');
         }
 
-        return $id;
+        return [
+            'id' => $id,
+            'channel_id' => is_string($response->json('channel_id')) ? $response->json('channel_id') : null,
+            'name' => is_string($response->json('author.username')) ? $response->json('author.username') : null,
+        ];
     }
 
     /**

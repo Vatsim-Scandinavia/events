@@ -8,8 +8,9 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
 /**
- * Deletes a Roster message through the webhook it was posted with, after that webhook was
- * replaced or removed on its Event. Encrypted on the queue, as it carries the webhook.
+ * Deletes a Roster message through the webhook it was posted with, once Roster messages are
+ * switched off and nothing keeps it up to date. Encrypted on the queue, as it carries the
+ * webhook.
  */
 class DeleteRosterMessage implements ShouldBeEncrypted, ShouldQueue
 {

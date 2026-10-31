@@ -12,6 +12,8 @@ use App\Models\Fir;
 use App\Models\IntegrationSetting;
 use App\Models\PositionShift;
 use App\Models\User;
+use Closure;
+use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Carbon;
@@ -41,6 +43,9 @@ class DiscordRosterMessagesTest extends TestCase
     private bool $discordDown = false;
 
     private int $nextMessageId = 900;
+
+    /** Runs while Discord takes a post, before it answers. */
+    private ?Closure $whilePosting = null;
 
     private Fir $copenhagen;
 
@@ -78,7 +83,7 @@ class DiscordRosterMessagesTest extends TestCase
             return match (true) {
                 $messageId !== null && in_array($messageId, $this->deletedInDiscord, true) => Http::response(['message' => 'Unknown Message', 'code' => 10008], 404),
                 $request->method() === 'GET' => Http::response(['id' => $path[0], 'channel_id' => "channel-{$path[0]}", 'name' => 'Event Hub']),
-                $request->method() === 'POST' => Http::response(['id' => (string) $this->nextMessageId++]),
+                $request->method() === 'POST' => $this->posted($path[0]),
                 $request->method() === 'DELETE' => Http::response(null, 204),
                 default => Http::response(['id' => $messageId]),
             };
@@ -101,7 +106,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->assertSame('Copenhagen Tuesday', $embed['title']);
         $this->assertSame(url("/events/{$event->id}"), $embed['url']);
         $this->assertSame(
-            "**Tue 10 Nov 2026, 16:00–20:00z**\n\n**EKCH_TWR**\n`16:00–18:00z` *open*\n`18:00–20:00z` *open*\n\n[Book on the Hub](".url("/events/{$event->id}").')',
+            "**Tue 10 Nov 2026, 16:00–20:00z**\n\n**EKCH\\_TWR**\n`16:00–18:00z` *open*\n`18:00–20:00z` *open*\n\n[Book on the Hub](".url("/events/{$event->id}").')',
             $embed['description'],
         );
 
@@ -176,7 +181,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->assertStringNotContainsString('Kim', $this->lastDescription());
 
         $plan(true);
-        $this->assertStringContainsString("**EKCH_TWR**\n`16:00–18:00z` Kim Berg (1000001)", $this->lastDescription());
+        $this->assertStringContainsString("**EKCH\\_TWR**\n`16:00–18:00z` Kim Berg (1000001)", $this->lastDescription());
 
         $this->actingAs($this->staff)->delete("/occurrences/{$occurrence->id}/roster/publish")->assertSessionHasNoErrors();
         $this->assertStringContainsString('Roster not published yet.', $this->lastDescription());
@@ -242,7 +247,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
 
         $this->saveEvent($event, [RosterMessages::FIELD => self::OTHER_WEBHOOK]);
-        $this->assertEqualsCanonicalizing(['GET 456', 'DELETE 123 messages/900', 'POST 456'], array_slice($this->methods(), 2));
+        $this->assertSame(['GET 456', 'DELETE 123 messages/900', 'POST 456'], array_slice($this->methods(), 2));
         $this->assertSame('channel-456', RosterMessage::query()->value('channel_id'));
 
         // Saving again without touching it keeps it.
@@ -267,6 +272,62 @@ class DiscordRosterMessagesTest extends TestCase
         $this->assertSame(0, RosterMessage::query()->count());
         // The rest of the save was rolled back with it.
         $this->assertSame('Copenhagen Tuesday', $event->fresh()->name);
+        // And the webhook isn't kept in the session for the form to show again.
+        $this->assertSame('Renamed', session()->getOldInput('name'));
+        $this->assertNull(session()->getOldInput('integration_fields'));
+    }
+
+    public function test_a_webhook_set_while_discord_is_down_is_kept_and_posted_once_it_is_back(): void
+    {
+        [$event] = $this->shiftEvent();
+        $this->discordDown = true;
+
+        $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
+
+        $this->assertNull(RosterMessage::query()->value('channel_id'));
+        $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page
+            ->where('integrationFields.0.status', 'Saved, but not checked yet: Discord couldn’t be reached. The message is posted once it can be.'));
+
+        $this->discordDown = false;
+        app(RosterMessages::class)->sweep();
+
+        $this->assertSame('POST 123', $this->lastCall());
+        $this->assertSame('channel-123', RosterMessage::query()->value('channel_id'));
+        $this->assertSame('Event Hub', RosterMessage::query()->value('webhook_name'));
+    }
+
+    public function test_a_webhook_replaced_while_its_message_is_being_posted_still_leaves_one_message(): void
+    {
+        [$event] = $this->shiftEvent();
+        $this->whilePosting = function () {
+            $this->whilePosting = null;
+            RosterMessage::query()->sole()->update(['webhook' => self::OTHER_WEBHOOK, 'channel_id' => 'channel-456']);
+        };
+
+        $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
+        app(RosterMessages::class)->sweep();
+
+        $this->assertSame(['GET 123', 'POST 123', 'DELETE 123 messages/900', 'POST 456'], $this->methods());
+        $this->assertSame('901', RosterMessage::query()->value('message_id'));
+        $this->assertSame(self::OTHER_WEBHOOK, RosterMessage::query()->sole()->posted_webhook);
+    }
+
+    public function test_a_removed_webhooks_message_is_still_deleted_once_discord_is_back(): void
+    {
+        [$event] = $this->shiftEvent();
+        $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
+        $this->discordDown = true;
+
+        $this->saveEvent($event, [], removed: [RosterMessages::FIELD]);
+
+        $this->assertSame(['Copenhagen Tuesday: roster message not updated. Discord couldn’t take it (HTTP 503). Try again later.'], app(RosterMessages::class)->needsAttention());
+        $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page->where('integrationFields.0.status', null));
+
+        $this->discordDown = false;
+        app(RosterMessages::class)->sweep();
+
+        $this->assertSame('DELETE 123 messages/900', $this->lastCall());
+        $this->assertSame(0, RosterMessage::query()->count());
     }
 
     public function test_discord_being_down_never_stops_a_booking_and_needs_attention(): void
@@ -306,7 +367,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->assertContains(['name' => 'Roster channel', 'value' => '<#channel-123>', 'inline' => false], $announcement['embeds'][0]['fields']);
     }
 
-    public function test_the_field_is_gone_while_roster_messages_are_off_and_switching_off_forgets_webhooks(): void
+    public function test_the_field_is_gone_while_roster_messages_are_off_and_switching_off_deletes_the_messages(): void
     {
         [$event] = $this->shiftEvent();
         $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
@@ -317,6 +378,7 @@ class DiscordRosterMessagesTest extends TestCase
             'settings' => ['events_webhook' => 'https://discord.com/api/webhooks/777/events'],
         ])->assertSessionHasNoErrors();
 
+        $this->assertSame('DELETE 123 messages/900', $this->lastCall());
         $this->assertSame(0, RosterMessage::query()->count());
         $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page->where('integrationFields', []));
     }
@@ -396,6 +458,22 @@ class DiscordRosterMessagesTest extends TestCase
             'enabled' => true,
             'features' => $features,
             'settings' => $settings,
+        ]);
+    }
+
+    /**
+     * Discord's answer to a post: the message, with where it went and as whom.
+     */
+    private function posted(string $webhookId): PromiseInterface
+    {
+        if ($this->whilePosting) {
+            ($this->whilePosting)();
+        }
+
+        return Http::response([
+            'id' => (string) $this->nextMessageId++,
+            'channel_id' => "channel-{$webhookId}",
+            'author' => ['username' => 'Event Hub'],
         ]);
     }
 

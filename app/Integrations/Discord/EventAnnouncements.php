@@ -101,7 +101,7 @@ class EventAnnouncements extends Feature
      */
     private function rosterChannel(Event $event): ?array
     {
-        $channelId = RosterMessage::query()->where('event_id', $event->id)->value('channel_id');
+        $channelId = RosterMessage::query()->where('event_id', $event->id)->whereNotNull('webhook')->value('channel_id');
 
         return $channelId ? ['name' => 'Roster channel', 'value' => "<#{$channelId}>", 'inline' => false] : null;
     }

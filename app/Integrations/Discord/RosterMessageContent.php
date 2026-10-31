@@ -27,8 +27,11 @@ final class RosterMessageContent
     public static function for(Event $event): array
     {
         $url = url("/events/{$event->id}");
-        $occurrence = $event->isCancelled() ? null : $event->occurrences()->orderBy('starts_at')->get()
-            ->first(fn (EventOccurrence $occurrence) => ! $occurrence->hasEnded() && ! $occurrence->isCancelled());
+        $occurrence = $event->isCancelled() ? null : $event->occurrences()
+            ->whereNull('cancelled_at')
+            ->where('ends_at', '>', now())
+            ->orderBy('starts_at')
+            ->first();
 
         $description = match (true) {
             $event->isCancelled() => 'Event cancelled.',
@@ -129,7 +132,7 @@ final class RosterMessageContent
         $text = '';
 
         foreach ($positions as $callsign => $lines) {
-            $heading = ($text === '' ? '' : "\n")."**{$callsign}**\n";
+            $heading = ($text === '' ? '' : "\n").'**'.self::plain($callsign)."**\n";
 
             foreach ($lines as $index => $line) {
                 $addition = ($index === 0 ? $heading : '').$line."\n";
@@ -148,7 +151,7 @@ final class RosterMessageContent
     }
 
     /**
-     * Names are shown as typed, not as Discord markdown.
+     * Names and callsigns are shown as typed, not as Discord markdown, so none can make a link.
      */
     private static function plain(?string $text): string
     {
