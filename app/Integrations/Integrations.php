@@ -3,6 +3,7 @@
 namespace App\Integrations;
 
 use App\Auth\ControllerSource;
+use App\Events\EventFields;
 use App\Models\IntegrationSetting;
 use App\Staffing\StaffingNotes;
 use Illuminate\Console\Scheduling\Schedule;
@@ -72,6 +73,20 @@ final class Integrations
         return $this->all()
             ->flatMap(fn (Integration $integration) => collect($integration->features())
                 ->filter(fn (Feature $feature) => $feature instanceof StaffingNotes && $this->isOn($integration, $feature)))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * The features switched on that add fields to the Event form.
+     *
+     * @return list<EventFields>
+     */
+    public function eventFields(): array
+    {
+        return $this->all()
+            ->flatMap(fn (Integration $integration) => collect($integration->features())
+                ->filter(fn (Feature $feature) => $feature instanceof EventFields && $this->isOn($integration, $feature)))
             ->values()
             ->all();
     }
@@ -234,12 +249,15 @@ final class Integrations
     }
 
     /**
-     * Schedule every sync, each running only while its feature is on.
+     * Schedule every sync, each running only while its feature is on, and whatever else
+     * features do on a schedule.
      */
     public function schedule(Schedule $schedule): void
     {
         foreach ($this->all() as $integration) {
             foreach ($integration->features() as $feature) {
+                $feature->scheduled($schedule);
+
                 if (! $feature instanceof Syncable) {
                     continue;
                 }

@@ -6,13 +6,11 @@ use App\Integrations\Configuration;
 use App\Integrations\ConnectionFailed;
 use App\Integrations\Integration;
 use App\Integrations\Setting;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Support\Facades\Http;
 
 /**
  * The vACC's Discord server, posted to through channel webhooks only, with no bot user (see
  * ADR 0005). Discord shows what happens on the Hub; nothing is booked from it. Webhooks must
- * match WEBHOOK_PATTERN and redirects are never followed, so a webhook only ever reaches Discord.
+ * match WEBHOOK_PATTERN and are only called through Webhook, so they only ever reach Discord.
  */
 class Discord extends Integration
 {
@@ -31,7 +29,7 @@ class Discord extends Integration
 
     public function description(): string
     {
-        return 'Your vACC’s Discord server: published events are announced in its events channel.';
+        return 'Your vACC’s Discord server: published events are announced in its events channel, and each event’s roster is kept up to date in its own channel.';
     }
 
     public function settings(): array
@@ -51,7 +49,7 @@ class Discord extends Integration
 
     public function features(): array
     {
-        return [new EventAnnouncements];
+        return [new EventAnnouncements, new RosterMessages];
     }
 
     public function testConnection(Configuration $configuration): void
@@ -73,17 +71,9 @@ class Discord extends Integration
         }
 
         try {
-            $response = Http::acceptJson()->withoutRedirecting()->timeout(10)->get((string) $webhook);
-        } catch (ConnectionException) {
-            throw new ConnectionFailed('Discord didn’t answer. Try again later.');
-        }
-
-        if ($response->notFound() || $response->unauthorized()) {
+            (new Webhook((string) $webhook))->check();
+        } catch (WebhookRefused) {
             throw new ConnectionFailed("Discord doesn’t know the {$channel} webhook. It may have been deleted; copy a new one.");
-        }
-
-        if (! $response->successful() || ! is_string($response->json('channel_id'))) {
-            throw new ConnectionFailed("Discord couldn’t check the {$channel} webhook (HTTP {$response->status()}). Try again later.");
         }
     }
 }

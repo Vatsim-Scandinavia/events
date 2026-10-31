@@ -2,6 +2,8 @@
 
 namespace App\Integrations;
 
+use Illuminate\Console\Scheduling\Schedule;
+
 /**
  * One job an Integration can do, switched on separately, such as syncing the controller
  * roster. A feature that pulls data on a schedule also implements Syncable; one that decides
@@ -41,6 +43,12 @@ abstract class Feature
      * and never change the core's records.
      */
     public function boot(): void {}
+
+    /**
+     * Called as the scheduler is set up, for work it does on its own schedule that isn't a
+     * sync (see Syncable), so isn't recorded as a run. Tasks must check it's on first.
+     */
+    public function scheduled(Schedule $schedule): void {}
 
     /**
      * Things it couldn't do that admins should look at, one line each, shown on the

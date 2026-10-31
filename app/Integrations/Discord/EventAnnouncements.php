@@ -83,6 +83,7 @@ class EventAnnouncements extends Feature
             'fields' => array_values(array_filter([
                 $event->fir ? ['name' => 'FIR', 'value' => "{$event->fir->name} ({$event->fir->icao})", 'inline' => true] : null,
                 ['name' => 'Dates (UTC)', 'value' => $this->dates($event), 'inline' => false],
+                $this->rosterChannel($event),
             ])),
         ];
 
@@ -91,6 +92,18 @@ class EventAnnouncements extends Feature
         }
 
         return $embed;
+    }
+
+    /**
+     * Where to follow the Event's staffing, when it has a Roster channel.
+     *
+     * @return ?array{name: string, value: string, inline: bool}
+     */
+    private function rosterChannel(Event $event): ?array
+    {
+        $channelId = RosterMessage::query()->where('event_id', $event->id)->value('channel_id');
+
+        return $channelId ? ['name' => 'Roster channel', 'value' => "<#{$channelId}>", 'inline' => false] : null;
     }
 
     /**

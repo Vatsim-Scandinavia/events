@@ -4,7 +4,8 @@ import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useConfirm } from '@/components/confirm-dialog';
 import { Cancellation } from '@/components/events/cancellation';
 import { DetailsCard } from '@/components/events/details-card';
-import type { EventFormData, RouteRow } from '@/components/events/event-form';
+import type { EventFormData, IntegrationField, RouteRow } from '@/components/events/event-form';
+import { IntegrationFieldsCard } from '@/components/events/integration-fields-card';
 import { RoutesCard } from '@/components/events/routes-card';
 import { describeStaffing, removedDates, useSchedulePreview } from '@/components/events/schedule';
 import { ScheduleCard } from '@/components/events/schedule-card';
@@ -23,9 +24,10 @@ type EventFormProps = {
     firs: (Fir & { id: number })[];
     // Every IANA time zone, e.g. "Europe/Copenhagen".
     timezones: string[];
+    integrationFields: IntegrationField[];
 };
 
-export default function EventForm({ event, types, firs, timezones }: EventFormProps) {
+export default function EventForm({ event, types, firs, timezones, integrationFields }: EventFormProps) {
     const confirm = useConfirm();
     const nextKey = useRef(-1);
     const newKey = () => nextKey.current--;
@@ -54,6 +56,8 @@ export default function EventForm({ event, types, firs, timezones }: EventFormPr
         repeat_ends: event?.repeatUntil ? 'until' : event?.repeatCount ? 'count' : 'never',
         repeat_count: event?.repeatCount ?? 4,
         repeat_until: event?.repeatUntil ?? addDays(startDefault, 8 * 7),
+        integration_fields: {},
+        remove_integration_fields: [],
     });
 
     const { data, errors } = form;
@@ -185,6 +189,8 @@ export default function EventForm({ event, types, firs, timezones }: EventFormPr
                 </Card>
 
                 <RoutesCard form={form} newKey={newKey} />
+
+                <IntegrationFieldsCard form={form} fields={integrationFields} />
 
                 {event && <Cancellation event={event} />}
 
