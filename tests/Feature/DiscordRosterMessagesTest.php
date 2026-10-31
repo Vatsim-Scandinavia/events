@@ -263,7 +263,13 @@ class DiscordRosterMessagesTest extends TestCase
     {
         [$event] = $this->shiftEvent();
 
-        $this->saveEvent($event, [RosterMessages::FIELD => 'http://169.254.169.254/latest/meta-data'], errors: ['integration_fields.'.RosterMessages::FIELD]);
+        $this->saveEvent($event, [RosterMessages::FIELD => 'http://169.254.169.254/latest/meta-data'], errors: [
+            'integration_fields.'.RosterMessages::FIELD => 'Paste a webhook URL copied from Discord, starting with https://discord.com/api/webhooks/.',
+        ]);
+        // Rules without a message of their own name the field by its label.
+        $this->saveEvent($event, [RosterMessages::FIELD => 'https://discord.com/api/webhooks/123/'.str_repeat('a', 255)], errors: [
+            'integration_fields.'.RosterMessages::FIELD => 'The Roster channel webhook field must not be greater than 255 characters.',
+        ]);
         $this->assertSame([], $this->calls);
 
         $this->saveEvent($event, [RosterMessages::FIELD => 'https://discord.com/api/webhooks/789/deleted'], errors: [
