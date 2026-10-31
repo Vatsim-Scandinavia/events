@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Staff;
 
+use App\Events\EventField;
+use App\Events\EventFields;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EventRequest;
 use App\Http\Requests\EventScheduleRequest;
+use App\Integrations\Integrations;
 use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\EventType;
@@ -16,6 +19,7 @@ use Carbon\CarbonImmutable;
 use DateTimeZone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -27,22 +31,23 @@ use Throwable;
  */
 class EventManagementController extends Controller
 {
-    public function create(): Response
+    public function create(Integrations $integrations): Response
     {
         return Inertia::render('Events/Form', [
             'event' => null,
             'types' => $this->types(),
             'firs' => $this->firs(),
             'timezones' => DateTimeZone::listIdentifiers(),
+            'integrationFields' => $this->integrationFields($integrations, null),
         ]);
     }
 
-    public function store(EventRequest $request, EventSchedule $schedule, EventBanners $banners): RedirectResponse
+    public function store(EventRequest $request, EventSchedule $schedule, EventBanners $banners, Integrations $integrations): RedirectResponse
     {
         $dates = $request->plan($schedule, null);
         $banner = $request->hasFile('banner') ? $banners->store($request->file('banner')) : null;
 
-        $event = $this->discardingBannerOnFailure($banners, $banner, fn () => DB::transaction(function () use ($request, $dates, $banner) {
+        $event = $this->discardingBannerOnFailure($banners, $banner, fn () => DB::transaction(function () use ($request, $dates, $banner, $integrations) {
             // Creating the event adds its first date; the repeats follow.
             $event = Event::create([
                 ...$request->details(),
@@ -56,6 +61,8 @@ class EventManagementController extends Controller
                 'ends_at' => $date['ends_at'],
             ]));
 
+            $this->saveIntegrationFields($request, $event, $integrations);
+
             return $event;
         }));
 
@@ -64,7 +71,7 @@ class EventManagementController extends Controller
         return redirect("/events/{$event->id}");
     }
 
-    public function edit(Event $event, EventBanners $banners): Response
+    public function edit(Event $event, EventBanners $banners, Integrations $integrations): Response
     {
         Gate::authorize('update', $event);
 
@@ -108,10 +115,11 @@ class EventManagementController extends Controller
             'types' => $this->types(),
             'firs' => $this->firs(),
             'timezones' => DateTimeZone::listIdentifiers(),
+            'integrationFields' => $this->integrationFields($integrations, $event),
         ]);
     }
 
-    public function update(EventRequest $request, Event $event, EventSchedule $schedule, EventBanners $banners): RedirectResponse
+    public function update(EventRequest $request, Event $event, EventSchedule $schedule, EventBanners $banners, Integrations $integrations): RedirectResponse
     {
         $dates = $request->plan($schedule, $event);
         $previous = $event->banner_path;
@@ -123,9 +131,10 @@ class EventManagementController extends Controller
 
         $uploaded = $request->hasFile('banner') ? $banner : null;
 
-        $this->discardingBannerOnFailure($banners, $uploaded, fn () => DB::transaction(function () use ($request, $event, $schedule, $dates, $banner) {
+        $this->discardingBannerOnFailure($banners, $uploaded, fn () => DB::transaction(function () use ($request, $event, $schedule, $dates, $banner, $integrations) {
             $event->update([...$request->details(), ...$request->repeatRule(), ...$request->firstSpan(), 'banner_path' => $banner]);
             $schedule->save($event, $dates);
+            $this->saveIntegrationFields($request, $event, $integrations);
         }));
 
         if ($banner !== $previous) {
@@ -182,6 +191,35 @@ class EventManagementController extends Controller
 
             throw $e;
         }
+    }
+
+    /**
+     * Hand each Integration feature the values of its own fields on the form.
+     */
+    private function saveIntegrationFields(EventRequest $request, Event $event, Integrations $integrations): void
+    {
+        $values = array_filter((array) $request->validated('integration_fields', []), fn (mixed $value) => filled($value));
+        $removed = (array) $request->validated('remove_integration_fields', []);
+
+        foreach ($integrations->eventFields() as $feature) {
+            $keys = collect($feature->eventFields($event))->map(fn (EventField $field) => $field->key)->all();
+
+            $feature->saveEventFields($event, Arr::only($values, $keys), array_values(array_intersect($removed, $keys)));
+        }
+    }
+
+    /**
+     * The fields Integration features add to the form, as the page shows them.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function integrationFields(Integrations $integrations, ?Event $event): array
+    {
+        return collect($integrations->eventFields())
+            ->flatMap(fn (EventFields $feature) => $feature->eventFields($event))
+            ->map(fn (EventField $field) => $field->toArray())
+            ->values()
+            ->all();
     }
 
     /**

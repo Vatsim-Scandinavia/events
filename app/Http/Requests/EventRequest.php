@@ -2,8 +2,13 @@
 
 namespace App\Http\Requests;
 
+use App\Events\EventField;
+use App\Events\EventFields;
+use App\Integrations\Integrations;
+use App\Models\Event;
 use App\Models\Fir;
 use Closure;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -68,7 +73,24 @@ class EventRequest extends EventScheduleRequest
             'remove_banner' => ['sometimes', 'boolean'],
             'booking_url' => ['nullable', 'url:https,http', 'max:255'],
             'briefing_url' => ['nullable', 'url:https,http', 'max:255'],
+            'integration_fields' => ['sometimes', 'array'],
+            ...$this->integrationFields()->mapWithKeys(fn (EventField $field) => ["integration_fields.{$field->key}" => ['nullable', ...$field->rules]])->all(),
+            'remove_integration_fields' => ['sometimes', 'array'],
+            'remove_integration_fields.*' => ['string', Rule::in($this->integrationFields()->pluck('key'))],
         ];
+    }
+
+    /**
+     * The fields Integration features add to the form (see App\Events\EventFields).
+     *
+     * @return Collection<int, EventField>
+     */
+    private function integrationFields(): Collection
+    {
+        $event = $this->route('event');
+
+        return collect(app(Integrations::class)->eventFields())
+            ->flatMap(fn (EventFields $feature) => $feature->eventFields($event instanceof Event ? $event : null));
     }
 
     /**
