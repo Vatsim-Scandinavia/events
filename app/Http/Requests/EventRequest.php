@@ -114,7 +114,19 @@ class EventRequest extends EventScheduleRequest
             'banner.uploaded' => 'The banner couldn’t be uploaded. Try a smaller image (8 MB at most).',
             'banner.dimensions' => 'The banner should be at least 600 pixels wide.',
             '*_url.url' => 'Enter a full link starting with https://.',
+            ...$this->integrationFields()->flatMap(fn (EventField $field) => collect($field->messages)
+                ->mapWithKeys(fn (string $message, string $rule) => ["integration_fields.{$field->key}.{$rule}" => $message]))->all(),
         ];
+    }
+
+    /**
+     * Integration fields go by their labels in messages, not their keys.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return $this->integrationFields()->mapWithKeys(fn (EventField $field) => ["integration_fields.{$field->key}" => $field->label])->all();
     }
 
     /**

@@ -14,6 +14,7 @@ final readonly class EventField
      * @param  ?string  $value  What it's set to now; never sent for a secret.
      * @param  ?string  $status  For a secret that is set, what staff see in its place, e.g. which
      *                           channel it posts to.
+     * @param  array<string, string>  $messages  What to say when a rule fails, by rule name.
      */
     public function __construct(
         public string $key,
@@ -23,6 +24,7 @@ final readonly class EventField
         public ?string $description = null,
         public ?string $value = null,
         public ?string $status = null,
+        public array $messages = [],
     ) {}
 
     /**

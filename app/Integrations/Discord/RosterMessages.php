@@ -95,6 +95,7 @@ class RosterMessages extends Feature implements EventFields
                 $message->channel_id === null => 'Saved, but not checked yet: Discord couldn’t be reached. The message is posted once it can be.',
                 default => 'Posts as '.($message->webhook_name ?? 'a webhook')." in channel {$message->channel_id}",
             },
+            messages: ['regex' => 'Paste a webhook URL copied from Discord, starting with https://discord.com/api/webhooks/.'],
         )];
     }
 
