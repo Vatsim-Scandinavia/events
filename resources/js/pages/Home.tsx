@@ -1,5 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, CalendarDays, Clock, ExternalLink, Headset } from 'lucide-react';
+import { ArrowRight, CalendarDays, Clock, ExternalLink } from 'lucide-react';
 import type { ReactNode } from 'react';
 import EventCard, { AirportBadges, EventBanner } from '@/components/event-card';
 import NetworkStats, { type NetworkStatsData } from '@/components/network-stats';
@@ -26,10 +26,6 @@ export default function Home({ upcomingEvents, networkStats }: HomeProps) {
                 <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-(image:--hero)" />
                 <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 md:py-24 lg:grid-cols-[1fr_400px]">
                     <div className="flex flex-col items-start gap-6">
-                        <Badge variant="secondary">
-                            <Headset />
-                            {vacc.division ? `${vacc.division} · ` : ''}Pilots and controllers
-                        </Badge>
                         <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
                             Fly and control with {vacc.name}.
                         </h1>
