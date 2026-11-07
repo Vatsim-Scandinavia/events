@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\Event;
 use App\Models\Fir;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -89,6 +90,40 @@ class FirManagementTest extends TestCase
             ->assertRedirect('/admin/firs');
 
         $this->assertModelMissing($fir);
+    }
+
+    public function test_deleting_a_fir_ends_the_roles_held_in_it_and_no_others(): void
+    {
+        $fir = Fir::factory()->create();
+        $heldInTheFir = User::factory()->staff($fir)->create();
+        $heldAcrossTheHub = User::factory()->staff()->create();
+        $heldInAnotherFir = User::factory()->staff(Fir::factory()->create())->create();
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->delete("/admin/firs/{$fir->id}")
+            ->assertRedirect('/admin/firs');
+
+        $this->assertModelMissing($fir);
+        $this->assertSame(0, $heldInTheFir->roleAssignments()->count());
+        $this->assertSame(1, $heldAcrossTheHub->roleAssignments()->count());
+        $this->assertSame(1, $heldInAnotherFir->roleAssignments()->count());
+    }
+
+    public function test_a_fir_the_database_will_not_delete_keeps_its_roles(): void
+    {
+        $fir = Fir::factory()->create();
+        Event::factory()->for($fir)->create();
+        $staff = User::factory()->staff($fir)->create();
+
+        try {
+            $fir->delete();
+            $this->fail('A FIR that runs events was deleted.');
+        } catch (QueryException) {
+            // The events table restricts deleting the FIR.
+        }
+
+        $this->assertModelExists($fir);
+        $this->assertSame(1, $staff->roleAssignments()->count());
     }
 
     public function test_a_fir_that_runs_events_cannot_be_deleted(): void
