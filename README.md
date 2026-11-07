@@ -33,7 +33,7 @@ Every role except Administrator can be held across the hub or in a single FIR, w
 
 ## Stack
 
-Laravel 13 (PHP 8.3+) with Inertia v3, React 19, TypeScript, Tailwind CSS 4 and shadcn/ui. Roles and their permissions are the app's own; see [ADR 0002](docs/adr/0002-own-roles-instead-of-spatie-permission.md). SQLite works out of the box; MySQL and PostgreSQL work too.
+Laravel 13 (PHP 8.3+) with Inertia v3, React 19, TypeScript, Tailwind CSS 4 and shadcn/ui. Roles and their permissions are the app's own; see [ADR 0002](docs/adr/0002-own-roles-instead-of-spatie-permission.md). SQLite works out of the box; MySQL 8.4 and PostgreSQL 18 work too, and CI runs the tests on all three.
 
 ## Getting started
 
