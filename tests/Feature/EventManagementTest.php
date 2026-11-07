@@ -173,7 +173,6 @@ class EventManagementTest extends TestCase
         $event = Event::sole();
 
         $this->assertSame(['EKCH', 'EKBI'], $event->airports);
-        // Equals, not same: MySQL keeps a JSON object's keys in its own order.
         $this->assertEquals([['from' => 'EKBI', 'to' => 'EKCH', 'route' => 'TUDLO DCT', 'mandatory' => false]], $event->routes);
         $this->assertSame('2026-11-10 22:00', $event->starts_at->format('Y-m-d H:i'));
         $this->assertSame(3, $event->repeat_count);

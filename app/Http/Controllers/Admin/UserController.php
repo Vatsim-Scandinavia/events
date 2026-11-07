@@ -20,6 +20,10 @@ use Inertia\Response;
  */
 class UserController extends Controller
 {
+    /**
+     * Searching ignores case on every database. PostgreSQL's like doesn't, and won't compare the
+     * numeric CID with text, so it uses ilike and a cast instead.
+     */
     public function index(Request $request): Response
     {
         $search = trim((string) $request->query('search', ''));
@@ -27,7 +31,6 @@ class UserController extends Controller
         $role = $request->integer('role') ?: null;
         $fir = $request->integer('fir') ?: null;
 
-        // PostgreSQL's like is case-sensitive and won't compare a number with text.
         $postgres = User::query()->getConnection()->getDriverName() === 'pgsql';
         $like = $postgres ? 'ilike' : 'like';
         $cid = $postgres ? 'vatsim_cid::text' : 'vatsim_cid';

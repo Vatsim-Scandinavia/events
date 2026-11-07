@@ -10,6 +10,9 @@ return new class extends Migration
      * Run the migrations. A unique index treats every null as different, so fir_key stands in
      * for fir_id with 0 for across the Hub, letting the database refuse a second copy of the
      * same role in the same place.
+     *
+     * Deleting a FIR is restricted, not cascaded: MySQL refuses a cascade on the column a stored
+     * column is generated from. Fir removes its role assignments itself.
      */
     public function up(): void
     {
@@ -17,7 +20,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('role_id')->constrained()->cascadeOnDelete();
-            // MySQL refuses a cascade here, because fir_key is generated from this column. Fir removes these itself.
             $table->foreignId('fir_id')->nullable()->constrained()->restrictOnDelete();
             $table->unsignedBigInteger('fir_key')->storedAs('coalesce(fir_id, 0)');
             $table->string('source', 10)->default('manual');
