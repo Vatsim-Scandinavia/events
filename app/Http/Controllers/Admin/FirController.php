@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Fir;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -76,7 +77,7 @@ class FirController extends Controller
             ]);
         }
 
-        $fir->delete();
+        DB::transaction(fn () => $fir->delete());
 
         Inertia::flash('success', "{$fir->icao} {$fir->name} was deleted.");
 

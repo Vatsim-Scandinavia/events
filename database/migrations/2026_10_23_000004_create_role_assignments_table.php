@@ -17,7 +17,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('role_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('fir_id')->nullable()->constrained()->cascadeOnDelete();
+            // MySQL refuses a cascade here, because fir_key is generated from this column. Fir removes these itself.
+            $table->foreignId('fir_id')->nullable()->constrained()->restrictOnDelete();
             $table->unsignedBigInteger('fir_key')->storedAs('coalesce(fir_id, 0)');
             $table->string('source', 10)->default('manual');
             $table->timestamps();

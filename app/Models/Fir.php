@@ -24,10 +24,12 @@ class Fir extends Model
     protected $fillable = ['icao', 'name'];
 
     /**
-     * The site lists the FIRs everywhere, so changing one refreshes that list.
+     * The site lists the FIRs everywhere, so changing one refreshes that list. Roles held in a FIR
+     * end with it.
      */
     protected static function booted(): void
     {
+        static::deleting(fn (Fir $fir) => $fir->roleAssignments()->delete());
         static::saved(fn () => Cache::forget(VaccIdentity::FIRS_CACHE_KEY));
         static::deleted(fn () => Cache::forget(VaccIdentity::FIRS_CACHE_KEY));
     }
@@ -38,5 +40,13 @@ class Fir extends Model
     public function events(): HasMany
     {
         return $this->hasMany(Event::class);
+    }
+
+    /**
+     * @return HasMany<RoleAssignment, $this>
+     */
+    public function roleAssignments(): HasMany
+    {
+        return $this->hasMany(RoleAssignment::class);
     }
 }

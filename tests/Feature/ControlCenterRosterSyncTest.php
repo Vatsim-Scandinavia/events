@@ -109,7 +109,8 @@ class ControlCenterRosterSyncTest extends TestCase
         $this->sync();
 
         $this->assertSame([], $this->automaticFirs($student));
-        $this->assertSame($endorsements, array_filter(Member::query()->find(1000001)->endorsements));
+        // Equals, not same: MySQL keeps a JSON object's keys in its own order.
+        $this->assertEquals($endorsements, array_filter(Member::query()->find(1000001)->endorsements));
     }
 
     public function test_someone_who_never_signed_in_gets_controller_when_they_first_do(): void

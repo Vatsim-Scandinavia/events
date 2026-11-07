@@ -91,6 +91,23 @@ class FirManagementTest extends TestCase
         $this->assertModelMissing($fir);
     }
 
+    public function test_deleting_a_fir_ends_the_roles_held_in_it_and_no_others(): void
+    {
+        $fir = Fir::factory()->create();
+        $heldInTheFir = User::factory()->staff($fir)->create();
+        $heldAcrossTheHub = User::factory()->staff()->create();
+        $heldInAnotherFir = User::factory()->staff(Fir::factory()->create())->create();
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->delete("/admin/firs/{$fir->id}")
+            ->assertRedirect('/admin/firs');
+
+        $this->assertModelMissing($fir);
+        $this->assertSame(0, $heldInTheFir->roleAssignments()->count());
+        $this->assertSame(1, $heldAcrossTheHub->roleAssignments()->count());
+        $this->assertSame(1, $heldInAnotherFir->roleAssignments()->count());
+    }
+
     public function test_a_fir_that_runs_events_cannot_be_deleted(): void
     {
         $fir = Fir::factory()->create(['icao' => 'EKDK']);
