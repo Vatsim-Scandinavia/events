@@ -37,6 +37,17 @@ class Fir extends Model
     }
 
     /**
+     * Deletes the FIR and the roles held in it together, so a FIR the database won't let go of
+     * (one still running events) keeps its roles too.
+     *
+     * @return bool|null
+     */
+    public function delete()
+    {
+        return DB::transaction(fn () => parent::delete());
+    }
+
+    /**
      * @return HasMany<Event, $this>
      */
     public function events(): HasMany
