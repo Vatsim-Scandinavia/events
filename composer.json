@@ -4,7 +4,7 @@
     "type": "project",
     "description": "Event hub for a VATSIM vACC: events, controller shift booking, staffing interest and rosters.",
     "keywords": ["vatsim", "events", "atc", "laravel"],
-    "license": "MIT",
+    "license": "GPL-3.0-only",
     "require": {
         "php": "^8.3",
         "ext-gd": "*",

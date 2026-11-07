@@ -147,3 +147,7 @@ For people to try the hub out, `ghcr.io/vatsim-scandinavia/events:playground` (b
 - **Each start resets it to the sample data.** Restart the container for a clean slate. With `RESET_PLAYGROUND=false` it keeps what people did, and only seeds on its first start.
 - **Run it with [compose.yaml](compose.yaml)**, with every `image:` line changed to `:playground`, the queue worker's included. It needs an `APP_KEY`, an `https://` `APP_URL` and `SESSION_SECURE_COOKIE=true`. Leave `APP_ENV`, `APP_DEBUG` and `AUTH_DEV_LOGIN` out of its `.env`: the image sets them, and dev sign-in only works with `APP_ENV=local`. Leave out `DISCORD_EVENTS_WEBHOOK` too, or test events get announced.
 - **Anyone who reaches it can sign in as an Administrator,** and it doesn't refuse other hosts, so put a password in front of it at the reverse proxy. Never give it real data.
+
+## License
+
+The hub is free software under the [GNU General Public License v3.0](LICENSE).
