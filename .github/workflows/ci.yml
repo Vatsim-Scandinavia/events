@@ -4,7 +4,9 @@ on:
   push:
     branches: [dev]
   pull_request:
-    branches: [dev]
+    branches: [dev, master]
+  # The release workflow runs all of this before publishing a version.
+  workflow_call:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -264,7 +266,8 @@ jobs:
   # Its own job, so pull request builds never hold registry write access.
   publish:
     name: Publish image
-    if: github.event_name == 'push'
+    # Only pushes to dev. Releases publish their own tags from release.yml.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     needs: [checks, databases, image]
     runs-on: ubuntu-latest
     permissions:

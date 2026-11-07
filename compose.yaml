@@ -1,4 +1,6 @@
 # Runs the hub from the image CI publishes (or builds it here with `docker compose build`).
+# That's the newest v2 release unless HUB_VERSION in .env names another image tag: v2.0.0 to pin
+# a release, dev for the latest from the dev branch, or playground.
 #
 # Put the settings in a .env next to this file, starting from .env.example. For a server set at
 # least APP_KEY, APP_URL, APP_ENV, APP_DEBUG=false and the VATSIM Connect client, plus
@@ -15,7 +17,7 @@
 
 services:
   app:
-    image: ghcr.io/vatsim-scandinavia/events:dev
+    image: ghcr.io/vatsim-scandinavia/events:${HUB_VERSION:-v2}
     build: .
     env_file: .env
     ports:
@@ -29,7 +31,7 @@ services:
   # The scheduled jobs: extending repeating events, refreshing VATSIM details and the
   # Integrations' syncs. Syncs are queued, so the queue worker below runs them.
   scheduler:
-    image: ghcr.io/vatsim-scandinavia/events:dev
+    image: ghcr.io/vatsim-scandinavia/events:${HUB_VERSION:-v2}
     env_file: .env
     environment:
       # The app container migrates; this one only waits for it.
@@ -48,7 +50,7 @@ services:
   # Runs queued jobs: Integration syncs and pushing bookings to Control Center. It stops after an
   # hour and Docker starts it again, which keeps memory in check. Jobs set their own retries.
   queue:
-    image: ghcr.io/vatsim-scandinavia/events:dev
+    image: ghcr.io/vatsim-scandinavia/events:${HUB_VERSION:-v2}
     env_file: .env
     environment:
       RUN_MIGRATIONS: "false"

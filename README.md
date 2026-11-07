@@ -119,11 +119,11 @@ php artisan users:make-admin <vatsim-cid>
 | Type-check TypeScript | `npm run typecheck` |
 | Build the frontend | `npm run build` |
 
-Backend code lives in `app/`, with staffing rules in `app/Staffing`. Pages are in `resources/js/pages`, shared components in `resources/js/components`. CI runs the tests, type check, lint and formatting on every push and pull request to `dev`.
+Backend code lives in `app/`, with staffing rules in `app/Staffing`. Pages are in `resources/js/pages`, shared components in `resources/js/components`. CI runs the tests, type check, lint and formatting on every push to `dev` and every pull request to `dev` or `master`.
 
 ## Deploying
 
-The hub ships as a Docker image, published as `ghcr.io/vatsim-scandinavia/events:dev` on every push to `dev`. [compose.yaml](compose.yaml) runs it with a scheduler, a queue worker and one storage volume for uploads, logs and SQLite; its comments cover the settings. Starting the container migrates the database, creates the built-in roles (`php artisan roles:sync`) and caches the configuration.
+The hub ships as a Docker image. Each release is published as `ghcr.io/vatsim-scandinavia/events:v2.0.0`, and `:v2.0` and `:v2` follow the newest release of their line; every push to `dev` publishes `:dev`. [compose.yaml](compose.yaml) runs `:v2` unless `HUB_VERSION` in `.env` names another tag, such as `v2.0.0` to pin a release or `dev`. It runs the image with a scheduler, a queue worker and one storage volume for uploads, logs and SQLite; its comments cover the settings. Starting the container migrates the database, creates the built-in roles (`php artisan roles:sync`) and caches the configuration.
 
 **Background jobs.** These run through Laravel's scheduler (`php artisan schedule:work` in the Compose setup, or `php artisan schedule:run` every minute from cron):
 
@@ -140,12 +140,22 @@ The hub ships as a Docker image, published as `ghcr.io/vatsim-scandinavia/events
 
 **First Administrator.** Sign in once through VATSIM, then run `php artisan users:make-admin <vatsim-cid>` (with Compose: `docker compose exec app php artisan users:make-admin <vatsim-cid>`).
 
+### Releasing
+
+Versions follow [semantic versioning](https://semver.org): a breaking change, such as an upgrade that needs more than pulling the new image, bumps the major version.
+
+1. Merge `dev` into `master` through a pull request, which runs CI.
+2. Tag `master` and push the tag, e.g. `git tag v2.1.0 origin/master && git push origin v2.1.0`.
+3. The Release workflow runs CI again, publishes the image and drafts a GitHub release with notes generated from the merged pull requests. Edit the notes, calling out anything breaking, and publish it.
+
+A tag with a suffix, such as `v2.1.0-rc.1`, is a pre-release: it can be tagged on any branch, for trying out on a staging server, and is only published under its own tag.
+
 ### Playground
 
 For people to try the hub out, `ghcr.io/vatsim-scandinavia/events:playground` (built with `--target playground`) is the same app with sample events and dev sign-in, so anyone can sign in as Hub Admin, Event Staff, the sample controllers or a plain member without a VATSIM account.
 
 - **Each start resets it to the sample data.** Restart the container for a clean slate. With `RESET_PLAYGROUND=false` it keeps what people did, and only seeds on its first start.
-- **Run it with [compose.yaml](compose.yaml)**, with every `image:` line changed to `:playground`, the queue worker's included. It needs an `APP_KEY`, an `https://` `APP_URL` and `SESSION_SECURE_COOKIE=true`. Leave `APP_ENV`, `APP_DEBUG` and `AUTH_DEV_LOGIN` out of its `.env`: the image sets them, and dev sign-in only works with `APP_ENV=local`. Leave out `DISCORD_EVENTS_WEBHOOK` too, or test events get announced.
+- **Run it with [compose.yaml](compose.yaml)**, with `HUB_VERSION=playground` in its `.env`. It needs an `APP_KEY`, an `https://` `APP_URL` and `SESSION_SECURE_COOKIE=true`. Leave `APP_ENV`, `APP_DEBUG` and `AUTH_DEV_LOGIN` out of its `.env`: the image sets them, and dev sign-in only works with `APP_ENV=local`. Leave out `DISCORD_EVENTS_WEBHOOK` too, or test events get announced.
 - **Anyone who reaches it can sign in as an Administrator,** and it doesn't refuse other hosts, so put a password in front of it at the reverse proxy. Never give it real data.
 
 ## License
