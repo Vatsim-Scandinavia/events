@@ -64,6 +64,11 @@ class UserManagementTest extends TestCase
             ->where('users.data.0.roles', ['Event Staff'])
         );
 
+        $this->actingAs($admin)->get('/admin/users?search=sam staff')->assertInertia(fn (Assert $page) => $page
+            ->has('users.data', 1)
+            ->where('users.data.0.name', 'Sam Staff')
+        );
+
         $staffRole = Role::findByName(Roles::EVENT_STAFF)->id;
         $this->actingAs($admin)->get("/admin/users?role={$staffRole}")->assertInertia(fn (Assert $page) => $page
             ->has('users.data', 1)

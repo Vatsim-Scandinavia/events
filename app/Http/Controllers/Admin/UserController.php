@@ -27,13 +27,18 @@ class UserController extends Controller
         $role = $request->integer('role') ?: null;
         $fir = $request->integer('fir') ?: null;
 
+        // PostgreSQL's like is case-sensitive and won't compare a number with text.
+        $postgres = User::query()->getConnection()->getDriverName() === 'pgsql';
+        $like = $postgres ? 'ilike' : 'like';
+        $cid = $postgres ? 'vatsim_cid::text' : 'vatsim_cid';
+
         $users = User::query()
             ->with('roleAssignments.role', 'roleAssignments.fir')
             ->when($search !== '', fn ($query) => $query->where(fn ($query) => $query
-                ->whereRaw("name like ? escape '!'", ['%'.$this->literal($search).'%'])
+                ->whereRaw("name {$like} ? escape '!'", ['%'.$this->literal($search).'%'])
                 // Only those who can see email addresses can search by them.
-                ->when($showEmail, fn ($query) => $query->orWhereRaw("email like ? escape '!'", ['%'.$this->literal($search).'%']))
-                ->orWhereRaw("vatsim_cid like ? escape '!'", [$this->literal($search).'%'])))
+                ->when($showEmail, fn ($query) => $query->orWhereRaw("email {$like} ? escape '!'", ['%'.$this->literal($search).'%']))
+                ->orWhereRaw("{$cid} like ? escape '!'", [$this->literal($search).'%'])))
             // Both filters have to match the same assignment: Event Staff *in* EKDK.
             ->when($role || $fir, fn ($query) => $query->whereHas('roleAssignments', fn (Builder $query) => $query
                 ->when($role, fn ($query) => $query->where('role_id', $role))
