@@ -36,36 +36,45 @@ final class LinkPreview
 
     /**
      * The preview of an event's page. Without a Summary it says when and where the event
-     * next is, in UTC, and without a banner it shows the vACC's logo.
+     * next is, in UTC, and without a banner it shows the vACC's logo, unless that's an SVG,
+     * which sites that unfurl links don't show.
      *
      * @return array{siteName: string, title: string, description: string, url: string, image: string|null, card: string}
      */
     public function event(Event $event): array
     {
+        $next = $event->currentOccurrence();
         $banner = $this->banners->url($event->banner_path);
-        $logo = $this->identity->effective()['logo'];
+        $logo = $this->identity->logo();
+        $image = $banner ?? ($logo !== null && $logo['type'] !== 'image/svg+xml' ? $this->identity->effective()['logo'] : null);
+        // The next date is only a cancelled one once every date left is cancelled.
+        $cancelled = $event->isCancelled() || $next?->isCancelled();
 
         return [
             ...$this->site(route('events.show', $event)),
-            'title' => ($event->isCancelled() ? 'Cancelled: ' : '').$event->name,
-            'description' => $event->summary ?? $this->when($event),
-            'image' => ($banner ?? $logo) !== null ? url($banner ?? $logo) : null,
+            'title' => ($cancelled ? 'Cancelled: ' : '').$event->name,
+            'description' => $event->summary ?? $this->nextDateAndPlace($event),
+            'image' => $image !== null ? url($image) : null,
             'card' => $banner !== null ? 'summary_large_image' : 'summary',
         ];
     }
 
     /**
-     * e.g. "Tue 17 Nov 2026 · 10:00–22:00z · KJFK, EGLL".
+     * e.g. "Tue 17 Nov 2026 · 10:00–22:00z · KJFK, EGLL", or with the end's date too when it's
+     * another day: "Tue 17 Nov 2026 · 22:00z–Wed 18 Nov 02:00z · EKCH".
      */
-    private function when(Event $event): string
+    private function nextDateAndPlace(Event $event): string
     {
         $next = $event->currentOccurrence() ?? $event;
         $startsAt = $next->starts_at->utc();
         $endsAt = $next->ends_at->utc();
+        $times = $startsAt->isSameDay($endsAt)
+            ? $startsAt->format('H:i').'–'.$endsAt->format('H:i').'z'
+            : $startsAt->format('H:i').'z–'.$endsAt->format('D j M H:i').'z';
 
         return implode(' · ', array_filter([
             $startsAt->format('D j M Y'),
-            $startsAt->format('H:i').'–'.$endsAt->format('H:i').'z',
+            $times,
             implode(', ', $event->airports ?? []),
         ]));
     }
