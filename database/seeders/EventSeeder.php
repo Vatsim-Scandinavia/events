@@ -50,7 +50,9 @@ class EventSeeder extends Seeder
             ]);
 
             foreach ($positions as $sort => $position) {
-                $event->positions()->create([...$position, 'sort' => $sort]);
+                isset($position['section'])
+                    ? $event->sections()->create(['label' => $position['section'], 'sort' => $sort])
+                    : $event->positions()->create([...$position, 'sort' => $sort]);
             }
 
             if ($name !== 'Winter Wonderland Fly-in') {
@@ -117,11 +119,15 @@ class EventSeeder extends Seeder
                     ['from' => 'EFHK', 'to' => 'ESSA', 'route' => 'RENTA M854 ELPUX'],
                 ],
                 'positions' => [
+                    ['section' => 'Copenhagen'],
                     ['callsign' => 'EKCH_TWR', 'frequency' => '118.105'],
                     ['callsign' => 'EKCH_APP', 'frequency' => '119.805'],
                     ['callsign' => 'EKDK_CTR', 'frequency' => '136.485'],
+                    ['section' => 'Stockholm'],
                     ['callsign' => 'ESSA_TWR', 'frequency' => '118.505'],
+                    ['section' => 'Oslo'],
                     ['callsign' => 'ENGM_TWR', 'frequency' => '118.305'],
+                    ['section' => 'Helsinki'],
                     ['callsign' => 'EFHK_APP', 'frequency' => '119.105'],
                 ],
             ],

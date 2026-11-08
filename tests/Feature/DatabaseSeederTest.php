@@ -18,5 +18,12 @@ class DatabaseSeederTest extends TestCase
         $this->assertTrue(User::query()->where('name', 'Hub Admin')->firstOrFail()->isAdministrator());
         $this->assertSame(6, Event::query()->published()->count());
         $this->assertSame(['Winter Wonderland Fly-in'], Event::query()->whereNull('published_at')->pluck('name')->all());
+
+        $nightOps = Event::query()->where('name', 'Scandinavian Night Ops')->firstOrFail();
+        $sections = $nightOps->sectionsFor($positions = $nightOps->positions()->get());
+        $this->assertSame(
+            ['Copenhagen', 'Copenhagen', 'Copenhagen', 'Stockholm', 'Oslo', 'Helsinki'],
+            $positions->map(fn ($position) => $sections[$position->id]?->label)->all(),
+        );
     }
 }

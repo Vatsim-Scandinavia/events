@@ -19,6 +19,8 @@ export type TimelineRow = {
     label: string;
     detail?: string | null;
     highlighted?: boolean;
+    // Makes the row a Section heading: named in place, and holding no items.
+    section?: { name: string; isNew: boolean; onRename: (name: string) => void };
 };
 
 export type TimelineItem = {
@@ -200,7 +202,8 @@ export default function Timeline({
         }
 
         const length = item.end - item.start;
-        const rowIndex = rows.findIndex((row) => row.id === item.rowId);
+        const itemRows = rows.filter((row) => !row.section);
+        const rowIndex = itemRows.findIndex((row) => row.id === item.rowId);
         let { rowId, start, end } = item;
 
         switch (event.key) {
@@ -219,7 +222,7 @@ export default function Timeline({
             }
             case 'ArrowUp':
             case 'ArrowDown': {
-                const target = rows[rowIndex + (event.key === 'ArrowUp' ? -1 : 1)];
+                const target = itemRows[rowIndex + (event.key === 'ArrowUp' ? -1 : 1)];
 
                 if (!allowRowChange || !target) {
                     return;
@@ -322,6 +325,84 @@ export default function Timeline({
                     </div>
 
                     {rows.map((row, index) => {
+                        const handle = reorderable && (
+                            <span
+                                draggable
+                                title={`Drag to move ${row.label}`}
+                                className="absolute inset-y-0 left-0 flex w-4 cursor-grab flex-col items-center justify-center text-muted-foreground"
+                                onDragStart={(event) => {
+                                    event.dataTransfer.setData(ROW_DRAG, String(row.id));
+                                    event.dataTransfer.effectAllowed = 'move';
+                                }}
+                                onDragEnd={() => setRowDrop(null)}
+                            >
+                                <MoveRowButton row={row} direction="up" disabled={index === 0} onMove={moveRow} focusRef={refocusButton} />
+                                <GripVertical aria-hidden="true" className="size-3.5 shrink-0 opacity-60" />
+                                <MoveRowButton
+                                    row={row}
+                                    direction="down"
+                                    disabled={index === rows.length - 1}
+                                    onMove={moveRow}
+                                    focusRef={refocusButton}
+                                />
+                            </span>
+                        );
+                        const dropLine = rowDrop !== null && (rowDrop === index || (rowDrop === rows.length && index === rows.length - 1)) && (
+                            <span
+                                aria-hidden="true"
+                                className={cn(
+                                    'pointer-events-none absolute inset-x-0 z-10 h-0.5 bg-primary',
+                                    rowDrop === index ? '-top-px' : '-bottom-px',
+                                )}
+                            />
+                        );
+
+                        if (row.section) {
+                            return (
+                                <div
+                                    key={row.id}
+                                    className="relative flex border-b bg-muted/40 last:border-b-0"
+                                    onDragOver={(event) => rowDragOver(event, index)}
+                                    onDrop={(event) => rowDropped(event, index)}
+                                >
+                                    {dropLine}
+                                    <div
+                                        className={cn(
+                                            'group/label relative flex min-h-11 flex-1 items-center gap-2 py-1.5 pr-8',
+                                            reorderable && 'pl-5',
+                                        )}
+                                    >
+                                        {handle}
+                                        {readOnly ? (
+                                            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                                {row.section.name}
+                                            </span>
+                                        ) : (
+                                            <input
+                                                aria-label="Section name"
+                                                placeholder="Section name (optional)"
+                                                maxLength={40}
+                                                autoFocus={row.section.isNew && row.section.name === ''}
+                                                value={row.section.name}
+                                                onChange={(event) => row.section!.onRename(event.target.value)}
+                                                className="h-7 w-72 max-w-full rounded-md bg-transparent px-2 text-xs font-semibold tracking-wide uppercase ring-1 ring-transparent outline-none placeholder:font-normal placeholder:tracking-normal placeholder:normal-case hover:ring-foreground/15 focus-visible:ring-ring"
+                                            />
+                                        )}
+                                        {!readOnly && onRemoveRow && (
+                                            <button
+                                                type="button"
+                                                aria-label={`Remove ${row.label}`}
+                                                className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-1 text-muted-foreground opacity-0 group-focus-within/label:opacity-100 group-hover/label:opacity-100 hover:bg-foreground/10 hover:text-foreground"
+                                                onClick={() => onRemoveRow(row.id)}
+                                            >
+                                                <Trash2 className="size-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        }
+
                         const rowItems = items.filter((item) => item.rowId === row.id);
                         const ghost = drag && drag.rowId === row.id && drag.end > drag.start ? drag : null;
                         const ghostClashes = ghost && clashes(items, row.id, ghost.start, ghost.end, ghost.item?.id);
@@ -333,15 +414,7 @@ export default function Timeline({
                                 onDragOver={(event) => rowDragOver(event, index)}
                                 onDrop={(event) => rowDropped(event, index)}
                             >
-                                {rowDrop !== null && (rowDrop === index || (rowDrop === rows.length && index === rows.length - 1)) && (
-                                    <span
-                                        aria-hidden="true"
-                                        className={cn(
-                                            'pointer-events-none absolute inset-x-0 z-10 h-0.5 bg-primary',
-                                            rowDrop === index ? '-top-px' : '-bottom-px',
-                                        )}
-                                    />
-                                )}
+                                {dropLine}
                                 <div
                                     className={cn(
                                         'group/label relative flex shrink-0 flex-col justify-center py-2',
@@ -351,34 +424,7 @@ export default function Timeline({
                                         row.highlighted && 'text-primary',
                                     )}
                                 >
-                                    {reorderable && (
-                                        <span
-                                            draggable
-                                            title={`Drag to move ${row.label}`}
-                                            className="absolute inset-y-0 left-0 flex w-4 cursor-grab flex-col items-center justify-center text-muted-foreground"
-                                            onDragStart={(event) => {
-                                                event.dataTransfer.setData(ROW_DRAG, String(row.id));
-                                                event.dataTransfer.effectAllowed = 'move';
-                                            }}
-                                            onDragEnd={() => setRowDrop(null)}
-                                        >
-                                            <MoveRowButton
-                                                row={row}
-                                                direction="up"
-                                                disabled={index === 0}
-                                                onMove={moveRow}
-                                                focusRef={refocusButton}
-                                            />
-                                            <GripVertical aria-hidden="true" className="size-3.5 shrink-0 opacity-60" />
-                                            <MoveRowButton
-                                                row={row}
-                                                direction="down"
-                                                disabled={index === rows.length - 1}
-                                                onMove={moveRow}
-                                                focusRef={refocusButton}
-                                            />
-                                        </span>
-                                    )}
+                                    {handle}
                                     <span className="truncate font-mono text-sm font-medium">{row.label}</span>
                                     {row.detail && <span className="truncate font-mono text-xs text-muted-foreground">{row.detail}</span>}
                                     {!readOnly && (onCreate || onRemoveRow) && (

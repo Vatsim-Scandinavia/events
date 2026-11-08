@@ -6,6 +6,7 @@ use App\Enums\StaffingMode;
 use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\EventPosition;
+use App\Models\EventSection;
 use App\Models\PositionShift;
 use App\Models\RosterEntry;
 use App\Models\User;
@@ -76,8 +77,11 @@ final class RosterMessageContent
         }
 
         $link = $event->staffing_mode === StaffingMode::Shifts ? "[Book on the Hub]({$url})" : "[See the roster on the Hub]({$url})";
+        $eventPositions = $event->positions()->get();
+        $sectionsByPosition = $event->sectionsFor($eventPositions);
+        $sectionsByCallsign = $eventPositions->mapWithKeys(fn (EventPosition $position) => [$position->callsign => $sectionsByPosition[$position->id]])->all();
 
-        return self::fit($positions, $link, $url, $maxLength);
+        return self::fit($positions, $sectionsByCallsign, $link, $url, $maxLength);
     }
 
     /**
@@ -121,18 +125,30 @@ final class RosterMessageContent
 
     /**
      * Positions with their lines, cut short with a link to the Hub when it's too long for Discord.
+     * A Section's label goes above its first position shown; one without a label is a rule.
      *
      * @param  Collection<string, list<string>>  $positions
+     * @param  array<string, EventSection|null>  $sections  by callsign
      * @param  int  $maxLength  What's left of Discord's limit after the date.
      */
-    private static function fit(Collection $positions, string $link, string $url, int $maxLength): string
+    private static function fit(Collection $positions, array $sections, string $link, string $url, int $maxLength): string
     {
         $total = $positions->sum(fn (array $lines) => count($lines));
         $shown = 0;
         $text = '';
+        $currentSection = null;
 
         foreach ($positions as $callsign => $lines) {
-            $heading = ($text === '' ? '' : "\n").'**'.self::plain($callsign)."**\n";
+            $section = $sections[$callsign] ?? null;
+            $heading = ($text === '' ? '' : "\n");
+
+            // A rule at the very top would separate nothing, so it's left out.
+            if ($section !== null && $section->id !== $currentSection?->id && ($section->label !== null || $text !== '')) {
+                $heading .= ($section->label !== null ? '__**'.self::plain($section->label).'**__' : '───────────')."\n";
+            }
+
+            $currentSection = $section;
+            $heading .= '**'.self::plain($callsign)."**\n";
 
             foreach ($lines as $index => $line) {
                 $addition = ($index === 0 ? $heading : '').$line."\n";

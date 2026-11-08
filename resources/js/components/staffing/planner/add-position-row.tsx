@@ -1,24 +1,26 @@
 import { usePage } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Plus, SeparatorHorizontal } from 'lucide-react';
 import { useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { FieldError } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import type { CataloguePosition } from '@/types/staffing';
-import { CALLSIGN, type DraftPosition, type DraftProps, type StaffingPageProps } from './draft';
+import { CALLSIGN, positionsOf, type DraftPosition, type DraftProps, type StaffingPageProps } from './draft';
 
 // The last row of the timeline: a button that opens inline fields for another position.
 // It stays open after adding, so several positions can be typed in one after another.
 // Positions in the catalogue are suggested as you type, and picking one fills in its frequency.
+// A Section is added at the bottom too, to be named in place and moved where it belongs.
 export function AddPositionRow({ draft, update, newKey }: DraftProps) {
     const { catalogue } = usePage<StaffingPageProps>().props;
     const suggestions = useId();
-    const [open, setOpen] = useState(draft.positions.length === 0);
+    const positions = positionsOf(draft);
+    const [open, setOpen] = useState(positions.length === 0);
     const [callsign, setCallsign] = useState('');
     const [frequency, setFrequency] = useState('');
     const [error, setError] = useState<string | null>(null);
     const callsignRef = useRef<HTMLInputElement>(null);
-    const matches = useMemo(() => suggest(catalogue, callsign, draft.positions), [catalogue, callsign, draft.positions]);
+    const matches = useMemo(() => suggest(catalogue, callsign, positionsOf(draft)), [catalogue, callsign, draft]);
     const filledFrequency = useRef<string | null>(null);
 
     const close = () => {
@@ -36,7 +38,7 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
             return setError('Use a callsign like EKCH_TWR.');
         }
 
-        if (draft.positions.some((position) => position.callsign === value)) {
+        if (positions.some((position) => position.callsign === value)) {
             return setError(`${value} is already on the timeline. A position can have as many shifts as you need.`);
         }
 
@@ -46,7 +48,7 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
 
         update((current) => ({
             ...current,
-            positions: [...current.positions, { key: newKey(), callsign: value, frequency: frequency.trim() || null }],
+            rows: [...current.rows, { kind: 'position', key: newKey(), callsign: value, frequency: frequency.trim() || null }],
         }));
         setCallsign('');
         setFrequency('');
@@ -54,13 +56,23 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
         callsignRef.current?.focus();
     };
 
+    const addSection = () => update((current) => ({ ...current, rows: [...current.rows, { kind: 'section', key: newKey(), id: null, label: '' }] }));
+
+    const addSectionButton = (
+        <Button type="button" variant="ghost" size="sm" onClick={addSection}>
+            <SeparatorHorizontal />
+            Add section
+        </Button>
+    );
+
     if (!open) {
         return (
-            <div className="py-1.5">
+            <div className="flex gap-1 py-1.5">
                 <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
                     <Plus />
                     Add position
                 </Button>
+                {addSectionButton}
             </div>
         );
     }
@@ -110,11 +122,12 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
                     <Plus />
                     Add
                 </Button>
-                {draft.positions.length > 0 && (
+                {positions.length > 0 && (
                     <Button type="button" size="sm" variant="ghost" onClick={close}>
                         Done
                     </Button>
                 )}
+                {addSectionButton}
             </div>
             <FieldError message={error ?? undefined} />
         </form>

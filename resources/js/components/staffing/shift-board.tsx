@@ -1,5 +1,7 @@
 import { router } from '@inertiajs/react';
+import { Fragment } from 'react';
 import { useConfirm } from '@/components/confirm-dialog';
+import { SectionTableRow, withSectionHeadings } from '@/components/staffing/sections';
 import SignInPrompt from '@/components/staffing/sign-in-prompt';
 import { NotesIcon, PositionNote } from '@/components/staffing/staffing-notes';
 import { Button } from '@/components/ui/button';
@@ -54,30 +56,37 @@ function ShiftTable({ positions, occurrenceId, canBook }: { positions: PositionW
                         </th>
                     </tr>
                 </thead>
-                {positions.map((position) => (
-                    // The server only sends positions that have shifts.
-                    <tbody key={position.id} className="border-b last:border-b-0 [&>tr+tr]:border-t [&>tr+tr]:border-dashed">
-                        {position.shifts.map((shift, index) => (
-                            // Style the shift's own cells, not the callsign cell that spans the position's
-                            // rows. Shifts taken by someone else read as disabled; the rest highlight on
-                            // hover or focus so the Book button is easy to match.
-                            <tr
-                                key={shift.id}
-                                className={cn(
-                                    '[&>td]:transition-colors',
-                                    shift.booking && !shift.booking.isMine
-                                        ? '[&>td]:bg-muted/50 [&>td]:text-muted-foreground'
-                                        : 'has-[td_:focus-visible]:[&>td]:bg-muted/60 has-[td:hover]:[&>td]:bg-muted/60',
-                                )}
-                            >
-                                {index === 0 && <PositionCell position={position} rows={position.shifts.length} />}
-                                <td className="px-4 py-2 font-mono whitespace-nowrap tabular-nums">{shift.time}</td>
-                                <td className="px-4 py-1.5 text-right">
-                                    <ShiftStatus shift={shift} callsign={position.callsign} occurrenceId={occurrenceId} canBook={canBook} />
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
+                {withSectionHeadings(positions).map(({ item: position, heading }) => (
+                    <Fragment key={position.id}>
+                        {heading && (
+                            <tbody className="border-b">
+                                <SectionTableRow section={heading} columns={3} />
+                            </tbody>
+                        )}
+                        {/* The server only sends positions that have shifts. */}
+                        <tbody className="border-b last:border-b-0 [&>tr+tr]:border-t [&>tr+tr]:border-dashed">
+                            {position.shifts.map((shift, index) => (
+                                // Style the shift's own cells, not the callsign cell that spans the position's
+                                // rows. Shifts taken by someone else read as disabled; the rest highlight on
+                                // hover or focus so the Book button is easy to match.
+                                <tr
+                                    key={shift.id}
+                                    className={cn(
+                                        '[&>td]:transition-colors',
+                                        shift.booking && !shift.booking.isMine
+                                            ? '[&>td]:bg-muted/50 [&>td]:text-muted-foreground'
+                                            : 'has-[td_:focus-visible]:[&>td]:bg-muted/60 has-[td:hover]:[&>td]:bg-muted/60',
+                                    )}
+                                >
+                                    {index === 0 && <PositionCell position={position} rows={position.shifts.length} />}
+                                    <td className="px-4 py-2 font-mono whitespace-nowrap tabular-nums">{shift.time}</td>
+                                    <td className="px-4 py-1.5 text-right">
+                                        <ShiftStatus shift={shift} callsign={position.callsign} occurrenceId={occurrenceId} canBook={canBook} />
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Fragment>
                 ))}
             </table>
         </div>

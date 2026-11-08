@@ -17,8 +17,9 @@ use Illuminate\Validation\ValidationException;
  * either their shifts or the occurrence's roster. Nothing changes until staff press
  * save, so controllers never see (or book) a half-finished plan.
  *
- * The plan describes the full desired state. Positions are identified by a key: the id
- * of an existing position, or a negative number for one added in this plan. Shifts and
+ * The plan describes the full desired state. Its positions list holds positions and Sections
+ * in the order shown, and that order is saved. Positions are identified by a key: the id of
+ * an existing position, or a negative number for one added in this plan. Sections, shifts and
  * roster entries carry their id when they already exist; anything left out is removed.
  * Times are minutes from the start of the event (shifts) or occurrence (roster).
  */
@@ -30,7 +31,7 @@ final class StaffingPlan
 
     /**
      * @param  array{
-     *     positions: list<array{key: int, callsign: string, frequency?: string|null}>,
+     *     positions: list<array{kind?: string, key?: int, callsign?: string, frequency?: string|null, id?: int|null, label?: string|null}>,
      *     shifts?: list<array{id?: int|null, position: int, start: int, end: int}>,
      *     roster?: list<array{id?: int|null, position: int, user_id: int, start: int, end: int}>,
      *     publish?: bool,
@@ -44,8 +45,8 @@ final class StaffingPlan
             $this->fail('Choose how controllers staff this event before adding positions.');
         }
 
-        $positions = $this->positions($event, $plan['positions']);
-        $callsigns = $positions->pluck('callsign', 'key');
+        $rows = $this->positionsAndSections($event, $plan['positions']);
+        $callsigns = $rows->where('kind', 'position')->pluck('callsign', 'key');
 
         $shifts = $event->staffing_mode === StaffingMode::Shifts
             ? $this->shifts($event, $plan['shifts'] ?? [], $callsigns)
@@ -54,8 +55,14 @@ final class StaffingPlan
         $editRoster = $event->staffing_mode === StaffingMode::OpenInterest && ! $occurrence->isRosterArchived();
         $roster = $editRoster ? $this->roster($occurrence, $plan['roster'] ?? [], $callsigns) : null;
 
-        DB::transaction(function () use ($event, $occurrence, $positions, $shifts, $roster, $plan) {
-            $ids = $this->savePositions($event, $positions);
+        DB::transaction(function () use ($event, $occurrence, $rows, $shifts, $roster, $plan) {
+            // Saves for one event, and switching its staffing mode, take turns, so neither can
+            // undo the other halfway through. The plan was checked against the mode it has now.
+            if (Event::query()->lockForUpdate()->findOrFail($event->id)->staffing_mode !== $event->staffing_mode) {
+                $this->fail('How controllers staff this event was just changed. Reload the page and try again.');
+            }
+
+            $ids = $this->savePositionsAndSections($event, $rows);
 
             if ($shifts !== null) {
                 $this->saveShifts($event, $shifts, $ids);
@@ -75,15 +82,26 @@ final class StaffingPlan
     }
 
     /**
-     * @param  list<array{key: int, callsign: string, frequency?: string|null}>  $planned
-     * @return Collection<int, array{key: int, callsign: string, frequency: string|null}>
+     * @param  list<array{kind?: string, key?: int, callsign?: string, frequency?: string|null, id?: int|null, label?: string|null}>  $planned
+     * @return Collection<int, array{kind: 'position', key: int, callsign: string, frequency: string|null}|array{kind: 'section', id: int|null, label: string|null}>
      */
-    private function positions(Event $event, array $planned): Collection
+    private function positionsAndSections(Event $event, array $planned): Collection
     {
         $existing = $event->positions()->pluck('id');
+        $existingSections = $event->sections()->pluck('id');
         $seen = [];
 
-        return collect($planned)->map(function (array $position) use ($existing, &$seen) {
+        return collect($planned)->map(function (array $position) use ($existing, $existingSections, &$seen) {
+            if (($position['kind'] ?? 'position') === 'section') {
+                $id = $position['id'] ?? null;
+
+                if ($id !== null && ! $existingSections->contains($id)) {
+                    $this->fail('A section was removed by someone else. Reload the page and try again.');
+                }
+
+                return ['kind' => 'section', 'id' => $id, 'label' => filled($position['label'] ?? null) ? trim($position['label']) : null];
+            }
+
             $callsign = strtoupper(trim($position['callsign']));
             $frequency = filled($position['frequency'] ?? null) ? trim($position['frequency']) : null;
 
@@ -105,7 +123,7 @@ final class StaffingPlan
 
             $seen[$callsign] = true;
 
-            return ['key' => $position['key'], 'callsign' => $callsign, 'frequency' => $frequency];
+            return ['kind' => 'position', 'key' => $position['key'], 'callsign' => $callsign, 'frequency' => $frequency];
         });
     }
 
@@ -185,17 +203,31 @@ final class StaffingPlan
     }
 
     /**
-     * @param  Collection<int, array{key: int, callsign: string, frequency: string|null}>  $positions
+     * Saves the positions and Sections, numbered in the order they were planned.
+     *
+     * @param  Collection<int, array{kind: 'position', key: int, callsign: string, frequency: string|null}|array{kind: 'section', id: int|null, label: string|null}>  $rows
      * @return array<int, int> position ids by plan key
      */
-    private function savePositions(Event $event, Collection $positions): array
+    private function savePositionsAndSections(Event $event, Collection $rows): array
     {
+        $positions = $rows->where('kind', 'position');
+        $sections = $rows->where('kind', 'section');
+
         // Removing a position takes its shifts, bookings, interest picks and roster entries with it.
         $event->positions()->whereNotIn('id', $positions->pluck('key')->filter(fn (int $key) => $key > 0))->delete();
+        $event->sections()->whereNotIn('id', $sections->pluck('id')->filter())->delete();
+
+        foreach ($sections as $sort => $section) {
+            $attributes = ['label' => $section['label'], 'sort' => $sort];
+
+            $section['id'] !== null
+                ? $event->sections()->findOrFail($section['id'])->update($attributes)
+                : $event->sections()->create($attributes);
+        }
 
         $ids = [];
 
-        foreach ($positions->values() as $sort => $position) {
+        foreach ($positions as $sort => $position) {
             $attributes = ['callsign' => $position['callsign'], 'frequency' => $position['frequency'], 'sort' => $sort];
 
             $ids[$position['key']] = $position['key'] > 0

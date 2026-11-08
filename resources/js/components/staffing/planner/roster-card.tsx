@@ -11,7 +11,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { cn } from '@/lib/utils';
 import type { Controller, StaffInterest } from '@/types/staffing';
 import { AddPositionRow } from './add-position-row';
-import { movePosition, removePosition, type DraftProps, type StaffingPageProps } from './draft';
+import { moveRow, removeRow, timelineRows, type DraftProps, type StaffingPageProps } from './draft';
 
 type Candidate = Controller & { interest: StaffInterest | null };
 
@@ -190,18 +190,13 @@ export function RosterCard({ occurrence, controllers, interests, roster, draft, 
                     duration={durationMinutes}
                     readOnly={locked}
                     allowRowChange
-                    rows={draft.positions.map((position) => ({
-                        id: position.key,
-                        label: position.callsign,
-                        detail: position.frequency,
-                        highlighted: dragging?.interest?.positionIds.includes(position.key) ?? false,
-                    }))}
+                    rows={timelineRows({ draft, update, newKey }, (key) => dragging?.interest?.positionIds.includes(key) ?? false)}
                     items={items}
                     highlight={dragging?.interest?.windows.map((item) => ({ start: item.fromOffset, end: item.untilOffset })) ?? null}
                     emptyHint={locked ? undefined : 'Drop a controller here'}
                     onExternalDrop={assign}
-                    onRemoveRow={(key) => removePosition({ draft, update, newKey }, key, confirm)}
-                    onMoveRow={(key, toIndex) => movePosition({ draft, update, newKey }, key, toIndex)}
+                    onRemoveRow={(key) => removeRow({ draft, update, newKey }, key, confirm)}
+                    onMoveRow={(key, toIndex) => moveRow({ draft, update, newKey }, key, toIndex)}
                     footer={locked ? undefined : <AddPositionRow draft={draft} update={update} newKey={newKey} />}
                     onChange={(item, position, start, end) =>
                         update((current) => ({

@@ -1,6 +1,7 @@
 import { router, useForm, usePage } from '@inertiajs/react';
 import { CalendarClock, EyeOff, ListChecks, Plus, Users, X } from 'lucide-react';
-import type { FormEvent } from 'react';
+import { Fragment, type FormEvent } from 'react';
+import { SectionTableRow, withSectionHeadings } from '@/components/staffing/sections';
 import SignInPrompt from '@/components/staffing/sign-in-prompt';
 import { NotesIcon, PositionNote } from '@/components/staffing/staffing-notes';
 import { Badge } from '@/components/ui/badge';
@@ -163,23 +164,30 @@ function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number;
             <fieldset className="flex flex-col gap-2">
                 <legend className="mb-2 text-sm font-medium">Positions you would prefer to control</legend>
                 <div className="grid gap-2 sm:grid-cols-2">
-                    {positions.map((position) => (
-                        <Label
-                            key={position.id}
-                            className="cursor-pointer rounded-lg px-3 py-2.5 font-normal ring-1 ring-foreground/10 has-checked:bg-primary/10 has-checked:ring-primary/50"
-                        >
-                            <input
-                                type="checkbox"
-                                className="size-4 accent-primary"
-                                checked={form.data.positions.includes(position.id)}
-                                onChange={() => toggle(position.id)}
-                            />
-                            <span className="flex flex-col">
-                                <span className="font-mono">{position.callsign}</span>
-                                <PositionNote note={position.note} />
-                            </span>
-                            <span className="ml-auto self-start font-mono text-xs text-muted-foreground">{position.frequency}</span>
-                        </Label>
+                    {withSectionHeadings(positions).map(({ item: position, heading }) => (
+                        <Fragment key={position.id}>
+                            {heading &&
+                                (heading.label === null ? (
+                                    <hr className="col-span-full my-1" />
+                                ) : (
+                                    <p className="col-span-full mt-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                                        {heading.label}
+                                    </p>
+                                ))}
+                            <Label className="cursor-pointer rounded-lg px-3 py-2.5 font-normal ring-1 ring-foreground/10 has-checked:bg-primary/10 has-checked:ring-primary/50">
+                                <input
+                                    type="checkbox"
+                                    className="size-4 accent-primary"
+                                    checked={form.data.positions.includes(position.id)}
+                                    onChange={() => toggle(position.id)}
+                                />
+                                <span className="flex flex-col">
+                                    <span className="font-mono">{position.callsign}</span>
+                                    <PositionNote note={position.note} />
+                                </span>
+                                <span className="ml-auto self-start font-mono text-xs text-muted-foreground">{position.frequency}</span>
+                            </Label>
+                        </Fragment>
                     ))}
                 </div>
                 <FieldError message={form.errors.positions} />
@@ -351,16 +359,19 @@ function RosterTable({ entries }: { entries: RosterEntry[] }) {
                     </tr>
                 </thead>
                 <tbody className="divide-y">
-                    {entries.map((entry) => (
-                        <tr key={entry.id}>
-                            <td className="px-4 py-2.5 font-mono">{entry.callsign}</td>
-                            <td className="px-4 py-2.5">
-                                {entry.controller.name}
-                                {entry.controller.cid && <span className="ml-1.5 text-xs text-muted-foreground">{entry.controller.cid}</span>}
-                                <NotesIcon notes={entry.notes} className="ml-1.5" />
-                            </td>
-                            <td className="px-4 py-2.5 text-right font-mono whitespace-nowrap tabular-nums">{entry.time}</td>
-                        </tr>
+                    {withSectionHeadings(entries).map(({ item: entry, heading }) => (
+                        <Fragment key={entry.id}>
+                            {heading && <SectionTableRow section={heading} columns={3} />}
+                            <tr>
+                                <td className="px-4 py-2.5 font-mono">{entry.callsign}</td>
+                                <td className="px-4 py-2.5">
+                                    {entry.controller.name}
+                                    {entry.controller.cid && <span className="ml-1.5 text-xs text-muted-foreground">{entry.controller.cid}</span>}
+                                    <NotesIcon notes={entry.notes} className="ml-1.5" />
+                                </td>
+                                <td className="px-4 py-2.5 text-right font-mono whitespace-nowrap tabular-nums">{entry.time}</td>
+                            </tr>
+                        </Fragment>
                     ))}
                 </tbody>
             </table>

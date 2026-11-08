@@ -30,7 +30,7 @@ const switching: Record<StaffingMode, string> = {
 };
 
 // What switching away from the current mode will clear, or null when there's nothing to lose.
-function clearedBySwitching({ settings, positions, interests, roster }: StaffingPageProps, to: StaffingMode): string | null {
+function clearedBySwitching({ settings, positions, sections, interests, roster }: StaffingPageProps, to: StaffingMode): string | null {
     const lost: string[] = [];
     const shifts = positions.flatMap((position) => position.shifts);
     const bookings = shifts.filter((shift) => shift.booking).length;
@@ -53,6 +53,10 @@ function clearedBySwitching({ settings, positions, interests, roster }: Staffing
 
     if (to === 'none' && positions.length > 0) {
         lost.push(`all ${plural(positions.length, 'position')}`);
+    }
+
+    if (to === 'none' && sections.length > 0) {
+        lost.push(`all ${plural(sections.length, 'section')}`);
     }
 
     return lost.length > 0 ? new Intl.ListFormat('en-GB').format(lost) : null;

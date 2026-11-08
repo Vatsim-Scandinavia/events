@@ -50,12 +50,12 @@ Staffing.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>;
 
 function Planner(props: StaffingPageProps) {
     const { event, settings, occurrence } = props;
-    const saved = useMemo(() => draftFrom(props), [props.positions, props.roster]); // eslint-disable-line react-hooks/exhaustive-deps
+    const nextKey = useRef(-1);
+    const newKey = () => nextKey.current--;
+    const saved = useMemo(() => draftFrom(props, newKey), [props.positions, props.sections, props.roster]); // eslint-disable-line react-hooks/exhaustive-deps
     const [draft, setDraft] = useState(saved);
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
-    const nextKey = useRef(-1);
-    const newKey = () => nextKey.current--;
 
     // Start again from what's saved whenever the page reloads with fresh data (e.g. after saving).
     useEffect(() => setDraft(saved), [saved]);
@@ -64,7 +64,7 @@ function Planner(props: StaffingPageProps) {
     const dirty = useMemo(() => {
         const comparable = (value: Draft) =>
             JSON.stringify({
-                positions: value.positions,
+                rows: value.rows,
                 shifts: mode === 'shifts' ? value.shifts.map(({ booking, ...shift }) => shift) : [],
                 roster: mode === 'open_interest' ? value.roster.map(({ controller, ...slot }) => ({ ...slot, user: controller.id })) : [],
             });
@@ -91,7 +91,12 @@ function Planner(props: StaffingPageProps) {
             `/events/${event.id}/staffing/plan`,
             {
                 occurrence_id: occurrence.id,
-                positions: draft.positions,
+                // Positions and Sections, in the order shown.
+                positions: draft.rows.map((row) =>
+                    row.kind === 'section'
+                        ? { kind: 'section', id: row.id, label: row.label }
+                        : { kind: 'position', key: row.key, callsign: row.callsign, frequency: row.frequency },
+                ),
                 ...(mode === 'shifts' && {
                     shifts: draft.shifts.map(({ id, position, start, end }) => ({ id, position, start, end })),
                 }),

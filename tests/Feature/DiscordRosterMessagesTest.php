@@ -8,6 +8,7 @@ use App\Integrations\Discord\RosterMessages;
 use App\Integrations\Discord\UpdateRosterMessage;
 use App\Models\Event;
 use App\Models\EventPosition;
+use App\Models\EventSection;
 use App\Models\Fir;
 use App\Models\IntegrationSetting;
 use App\Models\PositionShift;
@@ -403,6 +404,25 @@ class DiscordRosterMessagesTest extends TestCase
         $description = $this->lastDescription();
         $this->assertLessThanOrEqual(4096, mb_strlen($description));
         $this->assertMatchesRegularExpression('/…and \d+ more\. \[See the Hub\]\('.preg_quote(url("/events/{$event->id}"), '/').'\)$/', $description);
+    }
+
+    public function test_sections_head_their_positions_and_one_without_a_label_is_a_rule(): void
+    {
+        [$event] = $this->shiftEvent();
+        $event->positions()->sole()->update(['sort' => 1]);
+        EventSection::factory()->for($event)->create(['label' => 'Kastrup', 'sort' => 0]);
+        EventSection::factory()->for($event)->create(['label' => null, 'sort' => 2]);
+        $event->positions()->create(['callsign' => 'EKCH_APP', 'sort' => 3])->shifts()->create(['starts_offset' => 0, 'ends_offset' => 240]);
+        // A Section with nothing under it on this date isn't shown.
+        EventSection::factory()->for($event)->create(['label' => 'Billund', 'sort' => 4]);
+        $event->positions()->create(['callsign' => 'EKBI_TWR', 'sort' => 5]);
+
+        $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
+
+        $this->assertSame(
+            "**Tue 10 Nov 2026, 16:00–20:00z**\n\n__**Kastrup**__\n**EKCH\\_TWR**\n`16:00–18:00z` *open*\n`18:00–20:00z` *open*\n\n───────────\n**EKCH\\_APP**\n`16:00–20:00z` *open*\n\n[Book on the Hub](".url("/events/{$event->id}").')',
+            $this->lastDescription(),
+        );
     }
 
     /**
