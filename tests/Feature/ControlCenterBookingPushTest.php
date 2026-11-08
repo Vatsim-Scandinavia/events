@@ -79,7 +79,7 @@ class ControlCenterBookingPushTest extends TestCase
             'end_at' => '18:00',
             'position' => 'EKCH_TWR',
             'tag' => 3,
-            'source' => 'EVENTHUB',
+            'source' => 'DISCORD',
         ]]], $this->calls);
         $this->assertSame(500, PushedBooking::query()->sole()->upstream_id);
 

@@ -34,7 +34,11 @@ class BookingPush extends Feature implements StaffingNotes, Syncable
     /** Tagged as an event booking in Control Center. */
     public const int EVENT_TAG = 3;
 
-    public const string SOURCE = 'EVENTHUB';
+    /**
+     * Control Center only takes CC, VATBOOK or DISCORD, and only DISCORD bookings are locked
+     * against editing there. Until it takes a source of the Hub's own, ours go as DISCORD.
+     */
+    public const string SOURCE = 'DISCORD';
 
     public function key(): string
     {
