@@ -1,5 +1,5 @@
 import { Link, router, usePage } from '@inertiajs/react';
-import { ChevronDown, CircleAlert, CircleCheck, CircleUser, LogOut, Menu, Plane, Settings, X } from 'lucide-react';
+import { ChevronDown, CircleAlert, CircleCheck, CircleUser, LogOut, Menu, Plane, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ConfirmProvider } from '@/components/confirm-dialog';
 import { Button } from '@/components/ui/button';
@@ -134,12 +134,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
     );
 }
 
-// Who is signed in, with their settings and sign-out tucked behind their name.
+// Who is signed in, as VATSIM knows them, with their profile and sign-out tucked behind their name.
+// Roles are on the profile page: listed here they crowded the header for people with many.
 function UserMenu({ user }: { user: AuthUser }) {
-    // Members without a role are the hub's audience: pilots.
-    // "Pilot" when they hold no role; roles held in one FIR read like "Event Staff · EKDK".
-    const role = user.roles.join(', ');
-    const details = [user.cid, user.rating].filter(Boolean).join(' · ');
+    const standing = [user.rating, user.subdivision].filter(Boolean).join(' · ');
+    const details = [user.cid, user.rating, user.subdivision].filter(Boolean).join(' · ');
 
     return (
         <DropdownMenu modal={false}>
@@ -148,7 +147,7 @@ function UserMenu({ user }: { user: AuthUser }) {
                     <CircleUser className="size-5 sm:hidden" />
                     <span className="hidden flex-col text-right text-sm leading-tight font-normal sm:flex">
                         {user.name}
-                        <span className="text-xs text-muted-foreground">{role}</span>
+                        {standing && <span className="text-xs text-muted-foreground tabular-nums">{standing}</span>}
                     </span>
                     <ChevronDown className="hidden text-muted-foreground sm:block" />
                 </Button>
@@ -156,14 +155,13 @@ function UserMenu({ user }: { user: AuthUser }) {
             <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel className="flex flex-col gap-0.5 font-normal">
                     <span className="text-sm font-medium text-foreground">{user.name}</span>
-                    <span>{role}</span>
                     {details && <span className="tabular-nums">{details}</span>}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                    <Link href="/settings">
-                        <Settings />
-                        Settings
+                    <Link href="/profile">
+                        <CircleUser />
+                        Profile
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

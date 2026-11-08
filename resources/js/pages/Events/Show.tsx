@@ -167,7 +167,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                         <p className="text-xs">
                             All times are in {describeTimezone(displayTimezone)}.{' '}
                             {auth.user && (
-                                <Link href="/settings" className="underline underline-offset-2 hover:text-foreground">
+                                <Link href="/profile" className="underline underline-offset-2 hover:text-foreground">
                                     Change
                                 </Link>
                             )}

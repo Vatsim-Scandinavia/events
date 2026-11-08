@@ -64,7 +64,7 @@ class DevLoginTest extends TestCase
         $this->post("/login/{$staff->id}")->assertRedirect('/');
         $this->assertAuthenticatedAs($staff);
 
-        $this->get('/')->assertInertia(fn (Assert $page) => $page->where('auth.user.roles', ['Event Staff'])->where('auth.user.can.manage-staffing', true)->where('auth.user.can.manage-users', false));
+        $this->get('/')->assertInertia(fn (Assert $page) => $page->where('auth.user.name', 'Staff Member')->where('auth.user.can.manage-staffing', true)->where('auth.user.can.manage-users', false));
 
         $this->post('/logout')->assertRedirect('/');
         $this->assertGuest();
