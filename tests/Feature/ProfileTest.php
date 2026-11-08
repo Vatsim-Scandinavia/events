@@ -75,9 +75,10 @@ class ProfileTest extends TestCase
         );
     }
 
-    public function test_the_old_settings_address_leads_to_the_profile(): void
+    public function test_the_old_settings_address_leads_to_the_profile_without_losing_a_save(): void
     {
-        $this->actingAs(User::factory()->create())->get('/settings')->assertStatus(301)->assertRedirect('/profile');
+        $this->actingAs(User::factory()->create())->get('/settings')->assertStatus(307)->assertRedirect('/profile');
+        $this->put('/settings', ['timezone' => 'Europe/Copenhagen'])->assertStatus(307)->assertRedirect('/profile');
     }
 
     public function test_a_user_can_pick_a_time_zone(): void

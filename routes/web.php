@@ -43,7 +43,9 @@ Route::middleware(['auth', 'throttle:signed-in'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::permanentRedirect('/settings', '/profile');
+    // Temporary (307), so a save from a page opened before the move keeps its method and data,
+    // and browsers don't cache it past a rollback.
+    Route::redirect('/settings', '/profile', 307);
 
     Route::post('/occurrences/{occurrence}/shifts/{shift}/booking', [ShiftBookingController::class, 'store'])->name('bookings.store');
     Route::delete('/bookings/{booking}', [ShiftBookingController::class, 'destroy'])->name('bookings.destroy');
