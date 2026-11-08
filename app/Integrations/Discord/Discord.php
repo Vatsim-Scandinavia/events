@@ -17,6 +17,15 @@ class Discord extends Integration
     /** What a channel webhook's URL looks like, on either of Discord's domains. */
     public const string WEBHOOK_PATTERN = '#^https://(?:(?:ptb|canary)\.)?discord(?:app)?\.com/api/webhooks/\d+/[\w-]+$#';
 
+    /**
+     * Text shown as typed, not as Discord markdown, so nothing staff or controllers write can
+     * format the message or make a link.
+     */
+    public static function plain(?string $text): string
+    {
+        return (string) preg_replace('/([\\\\*_`~|>\[\]()#-])/', '\\\\$1', (string) $text);
+    }
+
     public function key(): string
     {
         return 'discord';

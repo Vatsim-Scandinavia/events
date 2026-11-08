@@ -120,7 +120,7 @@ final class RosterMessageContent
     {
         $span = $startsAt->utc()->format('H:i').'–'.$endsAt->utc()->format('H:i').'z';
 
-        return $controller ? "`{$span}` ".self::plain($controller->name)." ({$controller->vatsim_cid})" : "`{$span}` *open*";
+        return $controller ? "`{$span}` ".Discord::plain($controller->name)." ({$controller->vatsim_cid})" : "`{$span}` *open*";
     }
 
     /**
@@ -144,11 +144,11 @@ final class RosterMessageContent
 
             // A rule at the very top would separate nothing, so it's left out.
             if ($section !== null && $section->id !== $currentSection?->id && ($section->label !== null || $text !== '')) {
-                $heading .= ($section->label !== null ? '__**'.self::plain($section->label).'**__' : '───────────')."\n";
+                $heading .= ($section->label !== null ? '__**'.Discord::plain($section->label).'**__' : '───────────')."\n";
             }
 
             $currentSection = $section;
-            $heading .= '**'.self::plain($callsign)."**\n";
+            $heading .= '**'.Discord::plain($callsign)."**\n";
 
             foreach ($lines as $index => $line) {
                 $addition = ($index === 0 ? $heading : '').$line."\n";
@@ -164,13 +164,5 @@ final class RosterMessageContent
         }
 
         return $text."\n".$link;
-    }
-
-    /**
-     * Names and callsigns are shown as typed, not as Discord markdown, so none can make a link.
-     */
-    private static function plain(?string $text): string
-    {
-        return (string) preg_replace('/([\\\\*_`~|>\[\]()#-])/', '\\\\$1', (string) $text);
     }
 }

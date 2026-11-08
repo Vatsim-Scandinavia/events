@@ -95,6 +95,7 @@ class EventSeeder extends Seeder
     {
         return [
             'Cross the Pond Eastbound' => [
+                'summary' => 'The biggest crossing of the year: hundreds of pilots fly New York to London under full ATC coverage on both sides of the Atlantic.',
                 'description' => "The biggest crossing of the year. Hundreds of pilots fly from New York to London under full ATC coverage on both sides of the Atlantic.\n\nSlots are required for departures from KJFK. Make sure you have your oceanic clearance before reaching your entry fix.\n\nOceanic clearances are issued by Gander Oceanic. Request yours at least 30 minutes before your entry point, stating your entry fix, estimated time over it, requested flight level and Mach number. Expect to be cleared on the track assigned in your booking.\n\nOn arrival into London, expect holding at BIGGIN, BOVINGDON, LAMBOURNE or OCKHAM depending on your routing. Keep your speed up until told otherwise and have the arrival charts ready before top of descent.\n\nPlease connect with your booked callsign and departure slot. Pilots without a slot may still fly but should expect delays on the ground.",
                 'routes' => [
                     ['from' => 'KJFK', 'to' => 'EGLL', 'route' => 'MERIT HFD PUT BOS SSM 53N050W 54N040W 54N030W 54N020W DOGAL NEVRI OLAPO'],
@@ -111,6 +112,7 @@ class EventSeeder extends Seeder
                 'briefing_url' => 'https://ctp.vatsim.net',
             ],
             'Scandinavian Night Ops' => [
+                'summary' => 'An evening tour of the Nordic capitals, with approach and tower staffed at every field.',
                 'description' => "An evening tour of the Nordic capitals with approach and tower staffed at every field. Fly a single leg or link them all together.\n\nExpect busy frequencies during the first hour and plan for winter conditions.",
                 'routes' => [
                     ['from' => 'EKCH', 'to' => 'ESSA', 'route' => 'SIMEG T317 ARS'],
@@ -132,6 +134,7 @@ class EventSeeder extends Seeder
                 ],
             ],
             'Copenhagen Fly-in' => [
+                'summary' => 'Full ground-to-centre coverage at Copenhagen Kastrup. Bring any aircraft and fly any route in.',
                 'description' => "Full ground-to-centre coverage at Copenhagen Kastrup. Bring any aircraft, fly any route in, and enjoy a fully staffed EKCH.\n\nPlease file your flight plan before calling for clearance.",
                 'routes' => [
                     ['from' => 'EKBI', 'to' => 'EKCH', 'route' => 'TUDLO'],

@@ -30,6 +30,7 @@ class EventResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'summary' => $this->summary,
             'type' => $this->eventType?->name ?? EventType::FALLBACK,
             'airports' => $this->airports,
             'fir' => ['icao' => $this->fir->icao, 'name' => $this->fir->name],

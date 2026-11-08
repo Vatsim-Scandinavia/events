@@ -85,10 +85,22 @@ class DiscordEventAnnouncementsTest extends TestCase
                 && $request['allowed_mentions'] === ['parse' => []]
                 && $embed['title'] === 'Copenhagen Tuesday @everyone'
                 && $embed['url'] === url("/events/{$event->id}")
+                && ! array_key_exists('description', $embed)
                 && $fields['FIR'] === 'Copenhagen (EKDK)'
                 // The cancelled date is left out.
                 && $fields['Dates (UTC)'] === "Tue 10 Nov 2026, 18:00–21:00z\nTue 17 Nov 2026, 18:00–21:00z";
         });
+    }
+
+    public function test_the_summary_is_the_embeds_description_shown_as_typed(): void
+    {
+        Http::fake([self::WEBHOOK => Http::response(null, 204)]);
+        $event = $this->weeklyDraft();
+        $event->update(['summary' => 'Bring *any* aircraft to [EKCH](https://example.com)']);
+
+        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+
+        Http::assertSent(fn (Request $request) => $request['embeds'][0]['description'] === 'Bring \\*any\\* aircraft to \\[EKCH\\]\\(https://example.com\\)');
     }
 
     public function test_the_banner_is_shown_when_the_event_has_one(): void

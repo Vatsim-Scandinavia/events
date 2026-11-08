@@ -105,6 +105,27 @@ class EventManagementTest extends TestCase
         );
     }
 
+    public function test_staff_can_give_an_event_a_summary_as_one_line_of_plain_text(): void
+    {
+        $this->actingAs($this->staff)->post('/events', $this->payload(['summary' => "  Fly in to\n\n Kastrup,   any aircraft.  "]))->assertSessionHasNoErrors();
+        $event = Event::query()->sole();
+
+        $this->assertSame('Fly in to Kastrup, any aircraft.', $event->summary);
+        $this->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page->where('event.summary', 'Fly in to Kastrup, any aircraft.'));
+        $this->get('/events')->assertInertia(fn (Assert $page) => $page->where('events.0.summary', 'Fly in to Kastrup, any aircraft.'));
+
+        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => str_repeat('a', 201)]))->assertSessionHasErrors('summary');
+        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => ['not', 'text']]))->assertSessionHasErrors('summary');
+        $this->assertSame('Fly in to Kastrup, any aircraft.', $event->fresh()->summary);
+
+        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => " \n "]))->assertSessionHasNoErrors();
+        $this->assertNull($event->fresh()->summary);
+
+        // Characters are counted, not bytes, so 200 of them fit even when they're emoji.
+        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => str_repeat('✈️', 100)]))->assertSessionHasNoErrors();
+        $this->assertSame(200, mb_strlen($event->fresh()->summary));
+    }
+
     public function test_staff_can_mark_suggested_routes_as_mandatory(): void
     {
         $this->actingAs($this->staff)->post('/events', $this->payload(['routes' => [

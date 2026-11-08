@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { BannerInput } from '@/components/events/banner-input';
 import { DescriptionInput } from '@/components/events/description-input';
 import type { EventForm } from '@/components/events/event-form';
@@ -5,9 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import type { Fir } from '@/types/inertia';
 
-// The event's name, FIR, type, airports, description and banner.
+// The event's name, FIR, type, airports, Summary, description and banner.
 export function DetailsCard({
     form,
     firs,
@@ -82,6 +85,7 @@ export function DetailsCard({
                         />
                     </Field>
                 </div>
+                <SummaryInput value={data.summary} error={errors.summary} onChange={(summary) => form.setData('summary', summary)} />
                 <DescriptionInput
                     value={data.description}
                     error={errors.description}
@@ -98,5 +102,35 @@ export function DetailsCard({
                 />
             </CardContent>
         </Card>
+    );
+}
+
+const SUMMARY_LIMIT = 200;
+
+// One line of plain text for where the description won't fit. The server collapses line breaks.
+function SummaryInput({ value, error, onChange }: { value: string; error?: string; onChange: (summary: string) => void }) {
+    const hintId = useId();
+    // Counted as it will be saved, in characters like the server, so an emoji counts once.
+    const length = [...value.trim().replace(/\s+/g, ' ')].length;
+    const over = length > SUMMARY_LIMIT;
+
+    return (
+        <Field label="Summary (optional)" error={error}>
+            <Textarea
+                rows={2}
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="A sentence or two saying what the event is"
+                aria-invalid={!!error || over}
+                aria-describedby={hintId}
+                className="field-sizing-fixed min-h-0 resize-none"
+            />
+            <span id={hintId} className="flex justify-between gap-4 text-xs font-normal text-muted-foreground">
+                <span>Shown in the Discord announcement, on the events list and to other sites through the API.</span>
+                <span className={cn('shrink-0 tabular-nums', over && 'text-destructive')} aria-live="polite">
+                    {length}/{SUMMARY_LIMIT}
+                </span>
+            </span>
+        </Field>
     );
 }

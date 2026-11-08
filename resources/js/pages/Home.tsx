@@ -108,6 +108,7 @@ function NextEventCard({ event }: { event: HubEvent }) {
                 <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Next event</p>
                 <CardTitle className="text-xl">{event.name}</CardTitle>
                 <AirportBadges airports={event.airports} />
+                {event.summary && <p className="line-clamp-2 text-sm text-muted-foreground">{event.summary}</p>}
             </CardHeader>
             <CardContent className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-2">

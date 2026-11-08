@@ -87,6 +87,7 @@ class EventManagementController extends Controller
                 'name' => $event->name,
                 'typeId' => $event->event_type_id,
                 'description' => $event->description,
+                'summary' => $event->summary,
                 'airports' => $event->airports,
                 'routes' => $event->routes ?? [],
                 'bannerUrl' => $banners->url($event->banner_path),

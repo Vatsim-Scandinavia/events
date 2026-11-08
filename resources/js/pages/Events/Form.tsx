@@ -41,6 +41,7 @@ export default function EventForm({ event, types, firs, timezones, integrationFi
         name: event?.name ?? '',
         event_type_id: event?.typeId ?? '',
         description: event?.description ?? '',
+        summary: event?.summary ?? '',
         airports: event?.airports.join(' ') ?? '',
         routes: (event?.routes ?? []).map((route): RouteRow => ({ ...route, key: newKey() })),
         banner: null,
