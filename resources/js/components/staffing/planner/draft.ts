@@ -89,6 +89,17 @@ export async function removePosition({ draft, update }: DraftProps, key: number,
     }));
 }
 
+// Moves a position to a new place in the draft's list, which is the order saved for the event.
+export function movePosition({ update }: DraftProps, key: number, toIndex: number) {
+    update((current) => {
+        const moving = current.positions.find((item) => item.key === key)!;
+        const positions = current.positions.filter((item) => item.key !== key);
+        positions.splice(Math.max(0, Math.min(toIndex, positions.length)), 0, moving);
+
+        return { ...current, positions };
+    });
+}
+
 // Booked shifts that saving the draft would unbook: moved away from where they were booked, or removed.
 export function unbookedBy(draft: Draft, saved: Draft): { shift: DraftShift; callsign: string }[] {
     return saved.shifts

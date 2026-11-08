@@ -1,4 +1,4 @@
-import { Lock, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, GripVertical, Lock, Plus, Trash2, TriangleAlert, X } from 'lucide-react';
 import {
     useEffect,
     useId,
@@ -57,7 +57,14 @@ type Props = {
     onRemoveRow?: (rowId: number) => void;
     // Rendered under the last row, e.g. a way to add another row.
     footer?: ReactNode;
+    // Moves a row to a new place in the list: shown as a drag handle and up and down buttons on each row's label.
+    onMoveRow?: (rowId: number, toIndex: number) => void;
 };
+
+// The drag data type for a row being reordered, so it isn't mistaken for something dropped onto a row.
+const ROW_DRAG = 'application/x-timeline-row';
+
+const isRowDrag = (event: DragEvent) => event.dataTransfer.types.includes(ROW_DRAG);
 
 // Labels a span of minutes from the start in the viewer's time zone, e.g. "18:00–20:00 CEST".
 function useSpanLabel(startsAt: string) {
@@ -92,6 +99,7 @@ export default function Timeline({
     emptyHint,
     onRemoveRow,
     footer,
+    onMoveRow,
 }: Props) {
     const { clock, span: spanLabel, suffix } = useSpanLabel(startsAt);
     const [dropTarget, setDropTarget] = useState<{
@@ -110,6 +118,60 @@ export default function Timeline({
         onReject: setRejected,
     });
     const hintId = useId();
+    const reorderable = !!onMoveRow && !readOnly;
+    // Wider labels make room for the reorder handle without cutting callsigns short.
+    const labelWidth = reorderable ? 'w-40' : 'w-32';
+    // Where a dragged row would land: the index it would be inserted before.
+    const [rowDrop, setRowDrop] = useState<number | null>(null);
+    // Moving a row moves its buttons in the page, which can drop focus, so the button pressed
+    // takes it back, or the other one when the row has reached the top or bottom.
+    const refocusMove = useRef<string | null>(null);
+    const refocusButton = (element: HTMLButtonElement | null, rowId: number, direction: 'up' | 'down') => {
+        if (element && refocusMove.current === `${rowId}:${direction}`) {
+            refocusMove.current = null;
+            element.focus();
+        }
+    };
+
+    const moveRow = (rowId: number, direction: 'up' | 'down') => {
+        const to = rows.findIndex((row) => row.id === rowId) + (direction === 'up' ? -1 : 1);
+        const focus = to === 0 ? 'down' : to === rows.length - 1 ? 'up' : direction;
+        refocusMove.current = `${rowId}:${focus}`;
+        onMoveRow?.(rowId, to);
+    };
+
+    // A row dragged over the top half of another lands before it, over the bottom half after it.
+    const insertionIndex = (event: DragEvent, index: number) => {
+        const box = event.currentTarget.getBoundingClientRect();
+
+        return event.clientY > box.top + box.height / 2 ? index + 1 : index;
+    };
+
+    const rowDragOver = (event: DragEvent, index: number) => {
+        if (!reorderable || !isRowDrag(event)) {
+            return;
+        }
+
+        event.preventDefault();
+        setRowDrop(insertionIndex(event, index));
+    };
+
+    const rowDropped = (event: DragEvent, index: number) => {
+        if (!reorderable || !isRowDrag(event)) {
+            return;
+        }
+
+        event.preventDefault();
+        setRowDrop(null);
+        const rowId = Number(event.dataTransfer.getData(ROW_DRAG));
+        const from = rows.findIndex((row) => row.id === rowId);
+        const before = insertionIndex(event, index);
+        const to = before > from ? before - 1 : before;
+
+        if (from !== -1 && to !== from) {
+            onMoveRow?.(rowId, to);
+        }
+    };
 
     useEffect(() => {
         if (!rejected) {
@@ -217,7 +279,7 @@ export default function Timeline({
     };
 
     const external = (event: DragEvent, rowId: number) => {
-        if (!onExternalDrop || readOnly) {
+        if (!onExternalDrop || readOnly || isRowDrag(event)) {
             return;
         }
 
@@ -244,7 +306,7 @@ export default function Timeline({
             <div className="overflow-x-auto">
                 <div className={cn('min-w-[640px] select-none', drag && 'cursor-grabbing')}>
                     <div className="flex border-b pb-1.5">
-                        <div className="w-32 shrink-0" />
+                        <div className={cn(labelWidth, 'shrink-0')} />
                         <div ref={trackRef} className="relative h-5 flex-1">
                             {ticks.map((minute) => (
                                 <span
@@ -259,20 +321,64 @@ export default function Timeline({
                         </div>
                     </div>
 
-                    {rows.map((row) => {
+                    {rows.map((row, index) => {
                         const rowItems = items.filter((item) => item.rowId === row.id);
                         const ghost = drag && drag.rowId === row.id && drag.end > drag.start ? drag : null;
                         const ghostClashes = ghost && clashes(items, row.id, ghost.start, ghost.end, ghost.item?.id);
 
                         return (
-                            <div key={row.id} className="flex border-b last:border-b-0">
+                            <div
+                                key={row.id}
+                                className="relative flex border-b last:border-b-0"
+                                onDragOver={(event) => rowDragOver(event, index)}
+                                onDrop={(event) => rowDropped(event, index)}
+                            >
+                                {rowDrop !== null && (rowDrop === index || (rowDrop === rows.length && index === rows.length - 1)) && (
+                                    <span
+                                        aria-hidden="true"
+                                        className={cn(
+                                            'pointer-events-none absolute inset-x-0 z-10 h-0.5 bg-primary',
+                                            rowDrop === index ? '-top-px' : '-bottom-px',
+                                        )}
+                                    />
+                                )}
                                 <div
                                     className={cn(
-                                        'group/label relative flex w-32 shrink-0 flex-col justify-center py-2',
+                                        'group/label relative flex shrink-0 flex-col justify-center py-2',
+                                        labelWidth,
                                         onCreate && onRemoveRow && !readOnly ? 'pr-14' : 'pr-7',
+                                        reorderable && 'pl-5',
                                         row.highlighted && 'text-primary',
                                     )}
                                 >
+                                    {reorderable && (
+                                        <span
+                                            draggable
+                                            title={`Drag to move ${row.label}`}
+                                            className="absolute inset-y-0 left-0 flex w-4 cursor-grab flex-col items-center justify-center text-muted-foreground"
+                                            onDragStart={(event) => {
+                                                event.dataTransfer.setData(ROW_DRAG, String(row.id));
+                                                event.dataTransfer.effectAllowed = 'move';
+                                            }}
+                                            onDragEnd={() => setRowDrop(null)}
+                                        >
+                                            <MoveRowButton
+                                                row={row}
+                                                direction="up"
+                                                disabled={index === 0}
+                                                onMove={moveRow}
+                                                focusRef={refocusButton}
+                                            />
+                                            <GripVertical aria-hidden="true" className="size-3.5 shrink-0 opacity-60" />
+                                            <MoveRowButton
+                                                row={row}
+                                                direction="down"
+                                                disabled={index === rows.length - 1}
+                                                onMove={moveRow}
+                                                focusRef={refocusButton}
+                                            />
+                                        </span>
+                                    )}
                                     <span className="truncate font-mono text-sm font-medium">{row.label}</span>
                                     {row.detail && <span className="truncate font-mono text-xs text-muted-foreground">{row.detail}</span>}
                                     {!readOnly && (onCreate || onRemoveRow) && (
@@ -313,7 +419,7 @@ export default function Timeline({
                                     onDragOver={(event) => external(event, row.id)}
                                     onDragLeave={() => setDropTarget(null)}
                                     onDrop={(event) => {
-                                        if (onExternalDrop && !readOnly) {
+                                        if (onExternalDrop && !readOnly && !isRowDrag(event)) {
                                             event.preventDefault();
                                             setDropTarget(null);
                                             onExternalDrop(row.id, minuteAt(event.clientX), event.dataTransfer.getData('text/plain'));
@@ -397,6 +503,36 @@ export default function Timeline({
                 </p>
             )}
         </div>
+    );
+}
+
+function MoveRowButton({
+    row,
+    direction,
+    disabled,
+    onMove,
+    focusRef,
+}: {
+    row: TimelineRow;
+    direction: 'up' | 'down';
+    disabled: boolean;
+    onMove: (rowId: number, direction: 'up' | 'down') => void;
+    focusRef: (element: HTMLButtonElement | null, rowId: number, direction: 'up' | 'down') => void;
+}) {
+    const Icon = direction === 'up' ? ChevronUp : ChevronDown;
+
+    return (
+        // Shown on hover, and always reachable with the keyboard.
+        <button
+            type="button"
+            aria-label={`Move ${row.label} ${direction}`}
+            ref={(element) => focusRef(element, row.id, direction)}
+            disabled={disabled}
+            className="rounded opacity-0 group-focus-within/label:opacity-100 group-hover/label:opacity-100 hover:bg-foreground/10 hover:text-foreground disabled:invisible"
+            onClick={() => onMove(row.id, direction)}
+        >
+            <Icon className="size-3.5" />
+        </button>
     );
 }
 
