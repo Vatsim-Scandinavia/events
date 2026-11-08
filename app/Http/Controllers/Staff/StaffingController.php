@@ -69,9 +69,13 @@ class StaffingController extends Controller
         $validated = $request->validate([
             'occurrence_id' => ['required', 'integer'],
             'positions' => ['present', 'array'],
-            'positions.*.key' => ['required', 'integer', 'distinct'],
-            'positions.*.callsign' => ['required', 'string', 'max:20'],
-            'positions.*.frequency' => ['nullable', 'string', 'max:10'],
+            // Positions and Sections, in the order shown.
+            'positions.*.kind' => ['sometimes', Rule::in(['position', 'section'])],
+            'positions.*.key' => ['exclude_if:positions.*.kind,section', 'required', 'integer', 'distinct'],
+            'positions.*.callsign' => ['exclude_if:positions.*.kind,section', 'required', 'string', 'max:20'],
+            'positions.*.frequency' => ['exclude_if:positions.*.kind,section', 'nullable', 'string', 'max:10'],
+            'positions.*.id' => ['exclude_unless:positions.*.kind,section', 'nullable', 'integer'],
+            'positions.*.label' => ['exclude_unless:positions.*.kind,section', 'nullable', 'string', 'max:40'],
             'shifts' => ['sometimes', 'array'],
             'shifts.*.id' => ['nullable', 'integer'],
             'shifts.*.position' => ['required', 'integer'],
@@ -84,6 +88,8 @@ class StaffingController extends Controller
             'roster.*.start' => ['required', 'integer'],
             'roster.*.end' => ['required', 'integer'],
             'publish' => ['sometimes', 'boolean'],
+        ], [
+            'positions.*.label.max' => 'Keep section names to 40 characters.',
         ]);
 
         $occurrence = $event->occurrences()->findOrFail($validated['occurrence_id']);

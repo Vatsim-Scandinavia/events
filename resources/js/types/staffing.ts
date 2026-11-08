@@ -19,10 +19,20 @@ export type Occurrence = {
     cancelled: boolean;
 };
 
+// A labelled break in an Event's list of positions, grouping the positions below it.
+export type PositionSection = {
+    id: number;
+    label: string | null;
+};
+
 export type StaffingPosition = {
     id: number;
     callsign: string;
     frequency: string | null;
+    // Shared with Sections, which interleave with positions in the order staff set.
+    sort: number;
+    // The Section it falls under; null above the first one.
+    section: PositionSection | null;
     // What the signed-in controller should know before working it, e.g. a missing endorsement.
     note: string | null;
 };
@@ -77,6 +87,7 @@ export type RosterEntry = {
     id: number;
     positionId: number;
     callsign: string;
+    section: PositionSection | null;
     controller: Controller;
     time: string;
     // Minutes from the start of the occurrence.

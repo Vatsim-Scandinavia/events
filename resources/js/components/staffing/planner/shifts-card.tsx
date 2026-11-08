@@ -3,7 +3,7 @@ import Timeline, { type TimelineItem } from '@/components/staffing/timeline';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { StaffOccurrence } from '@/types/staffing';
 import { AddPositionRow } from './add-position-row';
-import { movePosition, removePosition, unbookedBy, type Draft, type DraftProps, type DraftShift } from './draft';
+import { moveRow, removeRow, timelineRows, unbookedBy, type Draft, type DraftProps, type DraftShift } from './draft';
 
 export function ShiftsCard({ occurrence, draft, saved, update, newKey }: DraftProps & { occurrence: StaffOccurrence; saved: Draft }) {
     const confirm = useConfirm();
@@ -80,11 +80,11 @@ export function ShiftsCard({ occurrence, draft, saved, update, newKey }: DraftPr
                     noun="shift"
                     startsAt={occurrence.startsAt}
                     duration={occurrence.durationMinutes}
-                    rows={draft.positions.map((position) => ({ id: position.key, label: position.callsign, detail: position.frequency }))}
+                    rows={timelineRows({ draft, update, newKey })}
                     items={items}
                     emptyHint="Click or drag here to add a shift"
-                    onRemoveRow={(key) => removePosition({ draft, update, newKey }, key, confirm)}
-                    onMoveRow={(key, toIndex) => movePosition({ draft, update, newKey }, key, toIndex)}
+                    onRemoveRow={(key) => removeRow({ draft, update, newKey }, key, confirm)}
+                    onMoveRow={(key, toIndex) => moveRow({ draft, update, newKey }, key, toIndex)}
                     footer={<AddPositionRow draft={draft} update={update} newKey={newKey} />}
                     onCreate={(position, start, end) =>
                         update((current) => ({

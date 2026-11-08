@@ -129,6 +129,33 @@ class Event extends Model
     }
 
     /**
+     * @return HasMany<EventSection, $this>
+     */
+    public function sections(): HasMany
+    {
+        return $this->hasMany(EventSection::class)->orderBy('sort')->orderBy('id');
+    }
+
+    /**
+     * The Section each position falls under: the last one sorted before it, or null for
+     * positions above the first Section.
+     *
+     * @param  iterable<EventPosition>  $positions
+     * @return array<int, EventSection|null> keyed by position id
+     */
+    public function sectionsFor(iterable $positions): array
+    {
+        $sections = $this->sections;
+        $result = [];
+
+        foreach ($positions as $position) {
+            $result[$position->id] = $sections->last(fn (EventSection $section) => $section->sort < $position->sort);
+        }
+
+        return $result;
+    }
+
+    /**
      * @return HasMany<EventOccurrence, $this>
      */
     public function occurrences(): HasMany
@@ -253,7 +280,7 @@ class Event extends Model
      *
      * - Shifts and their bookings.
      * - Interest and rosters for dates that haven't ended (rosters of past dates stay as a record).
-     * - Positions too, when staffing is switched off.
+     * - Positions and Sections too, when staffing is switched off.
      */
     public function switchStaffingMode(StaffingMode $mode): void
     {
@@ -271,6 +298,7 @@ class Event extends Model
 
             if ($mode === StaffingMode::None) {
                 $this->positions()->delete();
+                $this->sections()->delete();
             }
 
             $this->update(['staffing_mode' => $mode]);

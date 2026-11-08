@@ -4,6 +4,7 @@ namespace Tests\Feature\Staffing;
 
 use App\Enums\StaffingMode;
 use App\Models\Event;
+use App\Models\EventSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -136,9 +137,12 @@ class StaffingSetupTest extends TestCase
         $tower = $this->event->positions()->create(['callsign' => 'EKCH_TWR']);
         $tower->shifts()->create(['starts_offset' => 0, 'ends_offset' => 120]);
 
+        $section = EventSection::factory()->for($this->event)->create();
+
         $this->switchMode('none')->assertSessionHasNoErrors();
 
         $this->assertModelMissing($tower);
+        $this->assertModelMissing($section);
         $this->assertSame(StaffingMode::None, $this->event->fresh()->staffing_mode);
     }
 
@@ -182,6 +186,66 @@ class StaffingSetupTest extends TestCase
 
         $this->assertSame([$approach->id, $tower->id], $this->event->positions()->pluck('id')->all());
         $this->assertModelExists($shift);
+    }
+
+    public function test_sections_are_saved_between_positions_in_the_order_planned(): void
+    {
+        $this->event->update(['staffing_mode' => StaffingMode::Shifts]);
+
+        $this->savePlan(['positions' => [
+            ['kind' => 'section', 'id' => null, 'label' => '  Kastrup  '],
+            ['kind' => 'position', 'key' => -1, 'callsign' => 'EKCH_TWR'],
+            ['kind' => 'section', 'id' => null, 'label' => ''],
+            ['kind' => 'position', 'key' => -2, 'callsign' => 'EKCH_APP'],
+        ]])->assertSessionHasNoErrors();
+
+        [$kastrup, $blank] = $this->event->sections()->get()->all();
+        $this->assertSame(['Kastrup', null], [$kastrup->label, $blank->label]);
+        $sections = $this->event->sectionsFor($positions = $this->event->positions()->get());
+        $this->assertSame([$kastrup->id, $blank->id], $positions->map(fn ($position) => $sections[$position->id]->id)->all());
+
+        // Renaming one Section and leaving the other out keeps the positions.
+        $this->savePlan(['positions' => [
+            ['kind' => 'section', 'id' => $kastrup->id, 'label' => 'Copenhagen'],
+            ['kind' => 'position', 'key' => $positions[0]->id, 'callsign' => 'EKCH_TWR'],
+            ['kind' => 'position', 'key' => $positions[1]->id, 'callsign' => 'EKCH_APP'],
+        ]])->assertSessionHasNoErrors();
+
+        $this->assertSame('Copenhagen', $kastrup->fresh()->label);
+        $this->assertModelMissing($blank);
+        $this->assertSame(2, $this->event->positions()->count());
+    }
+
+    public function test_section_labels_are_kept_short_and_sections_of_other_events_are_refused(): void
+    {
+        $this->event->update(['staffing_mode' => StaffingMode::Shifts]);
+
+        $this->savePlan(['positions' => [['kind' => 'section', 'label' => str_repeat('a', 41)]]])
+            ->assertSessionHasErrors(['positions.0.label' => 'Keep section names to 40 characters.']);
+        $this->savePlan(['positions' => [['kind' => 'section', 'id' => EventSection::factory()->create()->id, 'label' => 'Kastrup']]])
+            ->assertSessionHasErrors('plan');
+
+        $this->assertSame(0, $this->event->sections()->count());
+    }
+
+    public function test_the_event_page_shows_each_position_under_its_section_and_the_roster_in_position_order(): void
+    {
+        $this->event->update(['staffing_mode' => StaffingMode::OpenInterest]);
+        $section = EventSection::factory()->for($this->event)->create(['label' => 'Approach', 'sort' => 1]);
+        $tower = $this->event->positions()->create(['callsign' => 'EKCH_TWR', 'sort' => 0]);
+        $approach = $this->event->positions()->create(['callsign' => 'EKCH_APP', 'sort' => 2]);
+        $occurrence = $this->event->occurrences()->sole();
+        $occurrence->update(['roster_published_at' => now()]);
+        // The approach entry starts first, but the tower comes first in the order staff set.
+        $occurrence->rosterEntries()->create(['event_position_id' => $approach->id, 'user_id' => User::factory()->controller()->create()->id, 'starts_at' => $occurrence->starts_at, 'ends_at' => $occurrence->ends_at]);
+        $occurrence->rosterEntries()->create(['event_position_id' => $tower->id, 'user_id' => User::factory()->controller()->create()->id, 'starts_at' => $occurrence->starts_at->addHour(), 'ends_at' => $occurrence->ends_at]);
+
+        $this->actingAsGuest();
+        $this->get("/events/{$this->event->id}")->assertInertia(fn (Assert $page) => $page
+            ->where('staffing.positions.0.section', null)
+            ->where('staffing.positions.1.section', ['id' => $section->id, 'label' => 'Approach'])
+            ->where('staffing.roster.0.callsign', 'EKCH_TWR')
+            ->where('staffing.roster.1.section.label', 'Approach'));
     }
 
     public function test_nothing_is_saved_when_any_part_of_the_plan_breaks_a_rule(): void

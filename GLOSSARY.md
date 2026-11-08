@@ -56,6 +56,10 @@ _Avoid_: Interest window
 Who works which position, and when, on an Occurrence: its shifts, booked or open, for an Event staffed through shifts, which are always public; or its Roster Entries for an Event staffed through Staffing Interest, once published.
 _Avoid_: Line-up, schedule
 
+**Section**:
+A labelled break in an Event's list of positions, grouping the positions below it until the next Section. One without a label is a plain divider.
+_Avoid_: Separator, divider, group
+
 **Roster Entry**:
 A controller placed on a position for a span of time in an Occurrence's roster.
 _Avoid_: Roster slot, slot
