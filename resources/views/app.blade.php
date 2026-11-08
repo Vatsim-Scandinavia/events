@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        @include('partials.link-preview')
         @php($favicon = app(\App\Services\VaccIdentity::class)->favicon())
         <link rel="icon" href="{{ $favicon['icon'] }}" type="{{ $favicon['type'] }}">
         @if ($favicon['touch'])
