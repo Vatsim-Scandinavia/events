@@ -69,7 +69,6 @@ class StaffingController extends Controller
         $validated = $request->validate([
             'occurrence_id' => ['required', 'integer'],
             'positions' => ['present', 'array'],
-            // Positions and Sections, in the order shown.
             'positions.*.kind' => ['sometimes', Rule::in(['position', 'section'])],
             'positions.*.key' => ['exclude_if:positions.*.kind,section', 'required', 'integer', 'distinct'],
             'positions.*.callsign' => ['exclude_if:positions.*.kind,section', 'required', 'string', 'max:20'],

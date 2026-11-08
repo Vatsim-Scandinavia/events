@@ -289,6 +289,8 @@ class Event extends Model
         }
 
         DB::transaction(function () use ($mode) {
+            // Takes turns with saving the staffing plan (see StaffingPlan::save).
+            static::query()->lockForUpdate()->findOrFail($this->id);
             PositionShift::query()->whereIn('event_position_id', $this->positions()->select('id'))->delete();
 
             $upcoming = $this->occurrences()->where('ends_at', '>', now())->pluck('id');

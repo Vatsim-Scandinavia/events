@@ -77,10 +77,11 @@ final class RosterMessageContent
         }
 
         $link = $event->staffing_mode === StaffingMode::Shifts ? "[Book on the Hub]({$url})" : "[See the roster on the Hub]({$url})";
-        $all = $event->positions()->get();
-        $sections = collect($event->sectionsFor($all))->mapWithKeys(fn (?EventSection $section, int $id) => [$all->find($id)->callsign => $section])->all();
+        $eventPositions = $event->positions()->get();
+        $sectionsByPosition = $event->sectionsFor($eventPositions);
+        $sectionsByCallsign = $eventPositions->mapWithKeys(fn (EventPosition $position) => [$position->callsign => $sectionsByPosition[$position->id]])->all();
 
-        return self::fit($positions, $sections, $link, $url, $maxLength);
+        return self::fit($positions, $sectionsByCallsign, $link, $url, $maxLength);
     }
 
     /**

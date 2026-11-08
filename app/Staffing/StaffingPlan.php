@@ -45,8 +45,8 @@ final class StaffingPlan
             $this->fail('Choose how controllers staff this event before adding positions.');
         }
 
-        $items = $this->items($event, $plan['positions']);
-        $callsigns = $items->where('kind', 'position')->pluck('callsign', 'key');
+        $rows = $this->positionsAndSections($event, $plan['positions']);
+        $callsigns = $rows->where('kind', 'position')->pluck('callsign', 'key');
 
         $shifts = $event->staffing_mode === StaffingMode::Shifts
             ? $this->shifts($event, $plan['shifts'] ?? [], $callsigns)
@@ -55,8 +55,14 @@ final class StaffingPlan
         $editRoster = $event->staffing_mode === StaffingMode::OpenInterest && ! $occurrence->isRosterArchived();
         $roster = $editRoster ? $this->roster($occurrence, $plan['roster'] ?? [], $callsigns) : null;
 
-        DB::transaction(function () use ($event, $occurrence, $items, $shifts, $roster, $plan) {
-            $ids = $this->savePositions($event, $items);
+        DB::transaction(function () use ($event, $occurrence, $rows, $shifts, $roster, $plan) {
+            // Saves for one event, and switching its staffing mode, take turns, so neither can
+            // undo the other halfway through. The plan was checked against the mode it has now.
+            if (Event::query()->lockForUpdate()->findOrFail($event->id)->staffing_mode !== $event->staffing_mode) {
+                $this->fail('How controllers staff this event was just changed. Reload the page and try again.');
+            }
+
+            $ids = $this->savePositionsAndSections($event, $rows);
 
             if ($shifts !== null) {
                 $this->saveShifts($event, $shifts, $ids);
@@ -79,7 +85,7 @@ final class StaffingPlan
      * @param  list<array{kind?: string, key?: int, callsign?: string, frequency?: string|null, id?: int|null, label?: string|null}>  $planned
      * @return Collection<int, array{kind: 'position', key: int, callsign: string, frequency: string|null}|array{kind: 'section', id: int|null, label: string|null}>
      */
-    private function items(Event $event, array $planned): Collection
+    private function positionsAndSections(Event $event, array $planned): Collection
     {
         $existing = $event->positions()->pluck('id');
         $existingSections = $event->sections()->pluck('id');
@@ -199,13 +205,13 @@ final class StaffingPlan
     /**
      * Saves the positions and Sections, numbered in the order they were planned.
      *
-     * @param  Collection<int, array{kind: 'position', key: int, callsign: string, frequency: string|null}|array{kind: 'section', id: int|null, label: string|null}>  $items
+     * @param  Collection<int, array{kind: 'position', key: int, callsign: string, frequency: string|null}|array{kind: 'section', id: int|null, label: string|null}>  $rows
      * @return array<int, int> position ids by plan key
      */
-    private function savePositions(Event $event, Collection $items): array
+    private function savePositionsAndSections(Event $event, Collection $rows): array
     {
-        $positions = $items->where('kind', 'position');
-        $sections = $items->where('kind', 'section');
+        $positions = $rows->where('kind', 'position');
+        $sections = $rows->where('kind', 'section');
 
         // Removing a position takes its shifts, bookings, interest picks and roster entries with it.
         $event->positions()->whereNotIn('id', $positions->pluck('key')->filter(fn (int $key) => $key > 0))->delete();

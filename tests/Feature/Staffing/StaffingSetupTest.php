@@ -6,8 +6,10 @@ use App\Enums\StaffingMode;
 use App\Models\Event;
 use App\Models\EventSection;
 use App\Models\User;
+use App\Staffing\StaffingPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -214,6 +216,25 @@ class StaffingSetupTest extends TestCase
         $this->assertSame('Copenhagen', $kastrup->fresh()->label);
         $this->assertModelMissing($blank);
         $this->assertSame(2, $this->event->positions()->count());
+    }
+
+    public function test_a_plan_checked_against_a_staffing_mode_that_has_since_changed_is_refused(): void
+    {
+        $this->event->update(['staffing_mode' => StaffingMode::Shifts]);
+        $checkedAgainst = $this->event->fresh();
+        $this->switchMode('none')->assertSessionHasNoErrors();
+
+        try {
+            app(StaffingPlan::class)->save($checkedAgainst, $this->event->occurrences()->sole(), [
+                'positions' => [['kind' => 'section', 'id' => null, 'label' => 'Kastrup'], ['key' => -1, 'callsign' => 'EKCH_TWR']],
+            ]);
+            $this->fail('The plan was saved.');
+        } catch (ValidationException $exception) {
+            $this->assertStringContainsString('just changed', $exception->errors()['plan'][0]);
+        }
+
+        $this->assertSame(0, $this->event->positions()->count());
+        $this->assertSame(0, $this->event->sections()->count());
     }
 
     public function test_section_labels_are_kept_short_and_sections_of_other_events_are_refused(): void
