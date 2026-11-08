@@ -161,7 +161,7 @@ function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number;
             </div>
 
             <fieldset className="flex flex-col gap-2">
-                <legend className="mb-2 text-sm font-medium">Positions you'd like to control</legend>
+                <legend className="mb-2 text-sm font-medium">Positions you would prefer to control</legend>
                 <div className="grid gap-2 sm:grid-cols-2">
                     {positions.map((position) => (
                         <Label
