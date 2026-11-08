@@ -168,6 +168,22 @@ class StaffingSetupTest extends TestCase
         $this->assertSame('118.105', $tower->frequency);
     }
 
+    public function test_positions_are_reordered_in_place_keeping_their_shifts(): void
+    {
+        $this->event->update(['staffing_mode' => StaffingMode::Shifts]);
+        $tower = $this->event->positions()->create(['callsign' => 'EKCH_TWR', 'sort' => 0]);
+        $approach = $this->event->positions()->create(['callsign' => 'EKCH_APP', 'sort' => 1]);
+        $shift = $tower->shifts()->create(['starts_offset' => 0, 'ends_offset' => 120]);
+
+        $this->savePlan([
+            'positions' => [['key' => $approach->id, 'callsign' => 'EKCH_APP'], ['key' => $tower->id, 'callsign' => 'EKCH_TWR']],
+            'shifts' => [['id' => $shift->id, 'position' => $tower->id, 'start' => 0, 'end' => 120]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame([$approach->id, $tower->id], $this->event->positions()->pluck('id')->all());
+        $this->assertModelExists($shift);
+    }
+
     public function test_nothing_is_saved_when_any_part_of_the_plan_breaks_a_rule(): void
     {
         $this->event->update(['staffing_mode' => StaffingMode::Shifts]);

@@ -74,7 +74,13 @@ function Planner(props: StaffingPageProps) {
 
     useUnsavedChangesGuard(dirty && !saving);
 
+    // Edits wait until a save finishes: its response resets the draft to what was saved, which
+    // would quietly drop anything changed in the meantime.
     const update = (change: (draft: Draft) => Draft) => {
+        if (saving) {
+            return;
+        }
+
         setError(null);
         setDraft(change);
     };

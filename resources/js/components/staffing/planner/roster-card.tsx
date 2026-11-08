@@ -11,7 +11,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { cn } from '@/lib/utils';
 import type { Controller, StaffInterest } from '@/types/staffing';
 import { AddPositionRow } from './add-position-row';
-import { removePosition, type DraftProps, type StaffingPageProps } from './draft';
+import { movePosition, removePosition, type DraftProps, type StaffingPageProps } from './draft';
 
 type Candidate = Controller & { interest: StaffInterest | null };
 
@@ -201,6 +201,7 @@ export function RosterCard({ occurrence, controllers, interests, roster, draft, 
                     emptyHint={locked ? undefined : 'Drop a controller here'}
                     onExternalDrop={assign}
                     onRemoveRow={(key) => removePosition({ draft, update, newKey }, key, confirm)}
+                    onMoveRow={(key, toIndex) => movePosition({ draft, update, newKey }, key, toIndex)}
                     footer={locked ? undefined : <AddPositionRow draft={draft} update={update} newKey={newKey} />}
                     onChange={(item, position, start, end) =>
                         update((current) => ({
