@@ -1,15 +1,20 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LocateFixed } from 'lucide-react';
-import { useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
+import { Fragment, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
 import { TimezoneSelect } from '@/components/timezone-select';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import AppLayout from '@/layouts/AppLayout';
 import { clockIn, describeTimezone } from '@/lib/time';
 
-// Mirrors App\Http\Controllers\SettingsController@edit.
-type SettingsProps = {
+// Mirrors App\Http\Controllers\ProfileController@edit.
+type ProfileProps = {
+    // As VATSIM knows them; read-only here.
+    details: { name: string; cid: number | null; rating: string | null; subdivision: string | null };
+    // Across the Hub first, then each FIR. Empty for a Pilot.
+    roleGroups: { scope: string; roles: { name: string; automatic: boolean }[] }[];
     settings: {
         timezone: string;
     };
@@ -34,7 +39,7 @@ const useTodayAtSixZulu = () =>
         () => null,
     );
 
-export default function Settings({ settings, timezones }: SettingsProps) {
+export default function Profile({ details, roleGroups, settings, timezones }: ProfileProps) {
     const form = useForm({ timezone: settings.timezone });
     const browserTimezone = useBrowserTimezone();
     const sample = useTodayAtSixZulu();
@@ -42,18 +47,21 @@ export default function Settings({ settings, timezones }: SettingsProps) {
 
     const submit = (e: FormEvent) => {
         e.preventDefault();
-        form.put('/settings', { preserveScroll: true });
+        form.put('/profile', { preserveScroll: true });
     };
 
     return (
         <>
-            <Head title="Settings" />
+            <Head title="Profile" />
 
             <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
                 <div className="flex flex-col gap-1">
-                    <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-                    <p className="text-muted-foreground">Choose how the Event Hub works for you.</p>
+                    <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
+                    <p className="text-muted-foreground">Who you are on the Event Hub, and how it works for you.</p>
                 </div>
+
+                <DetailsCard details={details} />
+                <RolesCard roleGroups={roleGroups} />
 
                 <form onSubmit={submit}>
                     <Card>
@@ -109,4 +117,71 @@ export default function Settings({ settings, timezones }: SettingsProps) {
     );
 }
 
-Settings.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>;
+Profile.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>;
+
+function DetailsCard({ details }: { details: ProfileProps['details'] }) {
+    const rows: [string, ReactNode][] = [
+        ['Name', details.name],
+        ['CID', details.cid ?? '–'],
+        ['Rating', details.rating ?? '–'],
+        ['Subdivision', details.subdivision ?? 'None'],
+    ];
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Your details</CardTitle>
+                <CardDescription>These come from VATSIM and are kept up to date from there.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-2 text-sm">
+                    {rows.map(([label, value]) => (
+                        <Fragment key={label}>
+                            <dt className="text-muted-foreground">{label}</dt>
+                            <dd className="tabular-nums">{value}</dd>
+                        </Fragment>
+                    ))}
+                </dl>
+            </CardContent>
+        </Card>
+    );
+}
+
+function RolesCard({ roleGroups }: { roleGroups: ProfileProps['roleGroups'] }) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Your roles</CardTitle>
+                <CardDescription>What you can do on the Event Hub, and where.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {roleGroups.length === 0 ? (
+                    <p className="text-sm">You’re a Pilot: you can see events and staffing, and book once you’re a Controller.</p>
+                ) : (
+                    <dl className="flex flex-col gap-4 text-sm">
+                        {roleGroups.map((group) => (
+                            <div key={group.scope} className="flex flex-col gap-1.5">
+                                <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{group.scope}</dt>
+                                <dd className="flex flex-wrap gap-1.5">
+                                    {group.roles.map((role) => (
+                                        <Badge key={role.name} variant="secondary">
+                                            {role.name}
+                                            {role.automatic && (
+                                                <span
+                                                    className="font-normal text-muted-foreground"
+                                                    title="Given automatically, from your VATSIM rating and subdivision or an Integration"
+                                                >
+                                                    · Automatic
+                                                </span>
+                                            )}
+                                        </Badge>
+                                    ))}
+                                </dd>
+                            </div>
+                        ))}
+                    </dl>
+                )}
+            </CardContent>
+        </Card>
+    );
+}

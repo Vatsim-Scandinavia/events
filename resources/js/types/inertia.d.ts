@@ -26,8 +26,10 @@ export type AuthUser = {
     id: number;
     name: string;
     cid: number | null;
+    // e.g. "S2", or "OBS" for most pilots.
     rating: string | null;
-    roles: string[];
+    // The VATSIM subdivision code, e.g. "SCA"; null outside any subdivision.
+    subdivision: string | null;
     isAdministrator: boolean;
     can: Record<PermissionName, boolean>;
 };

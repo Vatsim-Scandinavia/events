@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use App\Auth\DevLogin;
-use App\Auth\Roles;
 use App\Enums\Permission;
 use App\Enums\SignInProvider;
 use App\Services\VaccIdentity;
@@ -39,7 +38,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $request->user()->name,
                     'cid' => $request->user()->vatsim_cid,
                     'rating' => $request->user()->rating?->label(),
-                    'roles' => Roles::labelsFor($request->user()),
+                    'subdivision' => $request->user()->subdivision,
                     'isAdministrator' => $request->user()->isAdministrator(),
                     // Which permissions the user holds, keyed by permission name.
                     'can' => collect(Permission::cases())

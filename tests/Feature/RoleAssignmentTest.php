@@ -71,14 +71,12 @@ class RoleAssignmentTest extends TestCase
 
     public function test_people_without_a_role_are_shown_as_pilots(): void
     {
-        $this->actingAs(User::factory()->create())->get('/')->assertInertia(fn (Assert $page) => $page
-            ->where('auth.user.roles', [Roles::PILOT])
-        );
+        $this->assertSame([Roles::PILOT], Roles::labelsFor(User::factory()->create())->all());
 
         $staff = User::factory()->staff(Fir::factory()->create(['icao' => 'EKDK']))->vaccStaff()->create();
+        $this->assertSame(['Event Staff · EKDK', 'vACC Staff'], Roles::labelsFor($staff)->all());
 
         $this->actingAs($staff)->get('/')->assertInertia(fn (Assert $page) => $page
-            ->where('auth.user.roles', ['Event Staff · EKDK', 'vACC Staff'])
             ->where('auth.user.can.manage-events', true)
             ->where('auth.user.can.view-events', true)
             ->where('auth.user.can.manage-users', false)
