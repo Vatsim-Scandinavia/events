@@ -115,10 +115,15 @@ class EventManagementTest extends TestCase
         $this->get('/events')->assertInertia(fn (Assert $page) => $page->where('events.0.summary', 'Fly in to Kastrup, any aircraft.'));
 
         $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => str_repeat('a', 201)]))->assertSessionHasErrors('summary');
+        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => ['not', 'text']]))->assertSessionHasErrors('summary');
         $this->assertSame('Fly in to Kastrup, any aircraft.', $event->fresh()->summary);
 
         $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => " \n "]))->assertSessionHasNoErrors();
         $this->assertNull($event->fresh()->summary);
+
+        // Characters are counted, not bytes, so 200 of them fit even when they're emoji.
+        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => str_repeat('✈️', 100)]))->assertSessionHasNoErrors();
+        $this->assertSame(200, mb_strlen($event->fresh()->summary));
     }
 
     public function test_staff_can_mark_suggested_routes_as_mandatory(): void

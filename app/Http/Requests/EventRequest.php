@@ -26,7 +26,8 @@ class EventRequest extends EventScheduleRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
-            'summary' => preg_replace('/\s+/u', ' ', trim((string) $this->input('summary'))) ?: null,
+            // Anything but text is left as sent, for the rules to refuse.
+            'summary' => is_string($summary = $this->input('summary')) ? (preg_replace('/\s+/u', ' ', trim($summary)) ?: null) : $summary,
             'airports' => collect($this->input('airports', []))
                 ->map(fn ($code) => strtoupper(trim((string) $code)))
                 ->filter()

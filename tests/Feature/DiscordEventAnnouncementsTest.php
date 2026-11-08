@@ -85,7 +85,7 @@ class DiscordEventAnnouncementsTest extends TestCase
                 && $request['allowed_mentions'] === ['parse' => []]
                 && $embed['title'] === 'Copenhagen Tuesday @everyone'
                 && $embed['url'] === url("/events/{$event->id}")
-                && ! isset($embed['description'])
+                && ! array_key_exists('description', $embed)
                 && $fields['FIR'] === 'Copenhagen (EKDK)'
                 // The cancelled date is left out.
                 && $fields['Dates (UTC)'] === "Tue 10 Nov 2026, 18:00–21:00z\nTue 17 Nov 2026, 18:00–21:00z";

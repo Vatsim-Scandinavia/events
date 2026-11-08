@@ -110,8 +110,8 @@ const SUMMARY_LIMIT = 200;
 // One line of plain text for where the description won't fit. The server collapses line breaks.
 function SummaryInput({ value, error, onChange }: { value: string; error?: string; onChange: (summary: string) => void }) {
     const hintId = useId();
-    // Counted as it will be saved.
-    const length = value.trim().replace(/\s+/g, ' ').length;
+    // Counted as it will be saved, in characters like the server, so an emoji counts once.
+    const length = [...value.trim().replace(/\s+/g, ' ')].length;
     const over = length > SUMMARY_LIMIT;
 
     return (
