@@ -48,6 +48,7 @@ class EventsApiTest extends TestCase
             ->withShifts()
             ->create([
                 'name' => 'Copenhagen Calling',
+                'summary' => 'Tower and approach at Kastrup every Friday.',
                 'airports' => ['EKCH'],
                 'routes' => [['from' => 'EKCH', 'to' => 'ESSA', 'route' => 'SIMEG']],
                 'starts_at' => Carbon::parse('2026-07-18 18:00', 'UTC'),
@@ -65,6 +66,7 @@ class EventsApiTest extends TestCase
                 ->has('data.0', fn (AssertableJson $json) => $json
                     ->where('id', $event->id)
                     ->where('name', 'Copenhagen Calling')
+                    ->where('summary', 'Tower and approach at Kastrup every Friday.')
                     ->where('url', route('events.show', $event))
                     ->where('type', ['name' => 'Friday Night Ops'])
                     ->where('fir', ['icao' => 'EKDK', 'name' => 'Copenhagen'])
@@ -165,13 +167,14 @@ class EventsApiTest extends TestCase
 
     public function test_an_event_shows_its_description_and_positions(): void
     {
-        $event = Event::factory()->withShifts()->create(['description' => "Come fly **Copenhagen**.\n\n<script>alert(1)</script>"]);
+        $event = Event::factory()->withShifts()->create(['description' => "Come fly **Copenhagen**.\n\n<script>alert(1)</script>", 'summary' => null]);
         $position = $event->positions()->create(['callsign' => 'EKCH_TWR', 'frequency' => '118.105']);
         $shift = $position->shifts()->create(['starts_offset' => 0, 'ends_offset' => 90]);
 
         $this->getJson("/api/v1/events/{$event->id}")
             ->assertOk()
             ->assertJsonPath('data.id', $event->id)
+            ->assertJsonPath('data.summary', null)
             ->assertJsonPath('data.description', "Come fly **Copenhagen**.\n\n<script>alert(1)</script>")
             ->assertJsonPath('data.descriptionHtml', fn (string $html) => str_contains($html, '<strong>Copenhagen</strong>') && ! str_contains($html, '<script>'))
             ->assertJsonPath('data.positions', [[

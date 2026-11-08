@@ -26,6 +26,8 @@ class EventResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            /** A sentence or two saying what the event is, as plain text, or null when staff haven't written one. */
+            'summary' => $this->summary,
             /** The event's page in the Hub. */
             'url' => route('events.show', $this->resource),
             'type' => ['name' => $this->eventType?->name ?? EventType::FALLBACK],

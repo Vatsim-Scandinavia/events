@@ -80,6 +80,7 @@ class EventAnnouncements extends Feature
         $embed = [
             'title' => $event->name,
             'url' => url("/events/{$event->id}"),
+            'description' => $event->summary !== null ? Discord::plain($event->summary) : null,
             'fields' => array_values(array_filter([
                 $event->fir ? ['name' => 'FIR', 'value' => "{$event->fir->name} ({$event->fir->icao})", 'inline' => true] : null,
                 ['name' => 'Dates (UTC)', 'value' => $this->dates($event), 'inline' => false],
@@ -91,7 +92,7 @@ class EventAnnouncements extends Feature
             $embed['image'] = ['url' => $banner];
         }
 
-        return $embed;
+        return array_filter($embed, fn (mixed $value) => $value !== null);
     }
 
     /**

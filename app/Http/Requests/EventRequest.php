@@ -21,10 +21,12 @@ class EventRequest extends EventScheduleRequest
     /**
      * Airports are entered as ICAO codes in any case and spacing. Routes may be missing
      * altogether when the form is sent as multipart (with a banner) and there are none.
+     * The Summary is one line of plain text, so its line breaks and spacing are collapsed.
      */
     protected function prepareForValidation(): void
     {
         $this->merge([
+            'summary' => preg_replace('/\s+/u', ' ', trim((string) $this->input('summary'))) ?: null,
             'airports' => collect($this->input('airports', []))
                 ->map(fn ($code) => strtoupper(trim((string) $code)))
                 ->filter()
@@ -62,6 +64,7 @@ class EventRequest extends EventScheduleRequest
             'name' => ['required', 'string', 'max:120'],
             'event_type_id' => ['nullable', 'integer', Rule::exists('event_types', 'id')],
             'description' => ['nullable', 'string', 'max:5000'],
+            'summary' => ['nullable', 'string', 'max:200'],
             'airports' => ['required', 'array', 'min:1', 'max:12'],
             'airports.*' => ['string', 'regex:/^[A-Z0-9]{4}$/'],
             'routes' => ['present', 'array', 'max:20'],
@@ -137,7 +140,7 @@ class EventRequest extends EventScheduleRequest
     public function details(): array
     {
         return [
-            ...$this->safe()->only(['fir_id', 'name', 'event_type_id', 'description', 'airports', 'booking_url', 'briefing_url']),
+            ...$this->safe()->only(['fir_id', 'name', 'event_type_id', 'description', 'summary', 'airports', 'booking_url', 'briefing_url']),
             'routes' => $this->validated('routes') ?: null,
         ];
     }

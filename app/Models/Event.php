@@ -31,6 +31,7 @@ class Event extends Model
         'name',
         'event_type_id',
         'description',
+        'summary',
         'airports',
         'routes',
         'starts_at',

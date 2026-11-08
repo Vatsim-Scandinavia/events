@@ -22,6 +22,10 @@ _Avoid_: Skin, palette
 Something the vACC organises on the network, run by one FIR, taking place on one or more Occurrences.
 _Avoid_: Calendar entry
 
+**Summary**:
+A sentence or two saying what an Event is, as plain text, shown where the full description won't fit: the Event announcement, the events list and the public API.
+_Avoid_: Short description, teaser, excerpt
+
 **Draft**:
 An Event not yet visible to pilots and controllers; only staff who can view or manage events see it.
 _Avoid_: Unpublished, hidden

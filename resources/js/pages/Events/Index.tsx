@@ -117,6 +117,7 @@ function EventRow({ event }: { event: HubEvent }) {
                     <div className="md:hidden">
                         <AirportBadges airports={event.airports} />
                     </div>
+                    {event.summary && <span className="line-clamp-2 max-w-prose text-sm text-muted-foreground">{event.summary}</span>}
                 </div>
             </td>
             <td className="hidden px-4 py-3 align-middle md:table-cell">

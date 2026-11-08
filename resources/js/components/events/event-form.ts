@@ -12,6 +12,7 @@ export type EventFormData = {
     name: string;
     event_type_id: number | '';
     description: string;
+    summary: string;
     airports: string;
     routes: RouteRow[];
     banner: File | null;

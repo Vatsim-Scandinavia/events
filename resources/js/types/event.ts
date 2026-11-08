@@ -6,6 +6,8 @@ import type { Fir } from '@/types/inertia';
 export type HubEvent = {
     id: number;
     name: string;
+    // A sentence or two of plain text saying what the event is.
+    summary: string | null;
     type: string;
     airports: string[];
     // The FIR that runs the event.
@@ -70,6 +72,7 @@ export type EditableEvent = {
     // The zone startsAt, endsAt and the dates are given in, e.g. "Europe/Copenhagen".
     timezone: string;
     description: string | null;
+    summary: string | null;
     airports: string[];
     routes: EventRoute[];
     bannerUrl: string | null;

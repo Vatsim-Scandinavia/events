@@ -15,6 +15,7 @@ export default function EventCard({ event }: { event: HubEvent }) {
             <CardHeader>
                 <CardTitle className="text-lg">{event.name}</CardTitle>
                 <AirportBadges airports={event.airports} />
+                {event.summary && <p className="line-clamp-2 text-sm text-muted-foreground">{event.summary}</p>}
             </CardHeader>
             <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
                 <span className="flex items-center gap-2">
@@ -26,7 +27,8 @@ export default function EventCard({ event }: { event: HubEvent }) {
                     {event.time}
                 </span>
             </CardContent>
-            <CardFooter>
+            {/* Pinned to the bottom, so cards in a row line up with or without a Summary. */}
+            <CardFooter className="mt-auto">
                 <Button variant="outline" className="w-full" asChild>
                     <Link href={`/events/${event.id}`}>View details</Link>
                 </Button>
