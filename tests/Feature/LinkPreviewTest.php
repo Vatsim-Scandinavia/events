@@ -34,7 +34,7 @@ class LinkPreviewTest extends TestCase
             'banner_path' => 'banners/calling.webp',
         ]);
 
-        $this->get("/events/{$event->id}")->assertOk()
+        $this->get("/events/{$event->getRouteKey()}")->assertOk()
             ->assertSee('<meta property="og:title" content="Copenhagen &quot;Calling&quot; &amp; Co">', false)
             ->assertSee('<meta property="og:description" content="Tower and approach at Kastrup.">', false)
             ->assertSee('<meta property="og:url" content="'.route('events.show', $event).'">', false)
@@ -55,7 +55,7 @@ class LinkPreviewTest extends TestCase
             'cancelled_at' => now(),
         ]);
 
-        $this->get("/events/{$event->id}")->assertOk()
+        $this->get("/events/{$event->getRouteKey()}")->assertOk()
             ->assertSee('<meta property="og:title" content="Cancelled: Cross the Pond">', false)
             ->assertSee('<meta name="description" content="Tue 17 Nov 2026 · 10:00–22:00z · KJFK, EGLL">', false)
             ->assertDontSee('og:image', false)
@@ -74,7 +74,7 @@ class LinkPreviewTest extends TestCase
         ]);
         $event->occurrences()->update(['cancelled_at' => now()]);
 
-        $this->get("/events/{$event->id}")->assertOk()
+        $this->get("/events/{$event->getRouteKey()}")->assertOk()
             ->assertSee('<meta property="og:title" content="Cancelled: Night Owls">', false)
             ->assertSee('<meta name="description" content="Tue 17 Nov 2026 · 22:00z–Wed 18 Nov 02:00z · EKCH">', false);
     }
@@ -84,11 +84,11 @@ class LinkPreviewTest extends TestCase
         app(VaccIdentity::class)->saveLogo(['logo' => 'logos/logo.svg', 'icon' => 'logos/logo.svg', 'touch' => null, 'type' => 'image/svg+xml']);
         $event = Event::factory()->create(['banner_path' => null]);
 
-        $this->get("/events/{$event->id}")->assertOk()->assertDontSee('og:image', false);
+        $this->get("/events/{$event->getRouteKey()}")->assertOk()->assertDontSee('og:image', false);
 
         app(VaccIdentity::class)->saveLogo(['logo' => 'logos/logo.png', 'icon' => 'logos/icon.png', 'touch' => 'logos/touch.png', 'type' => 'image/png']);
 
-        $this->get("/events/{$event->id}")->assertSee('<meta property="og:image" content="'.Storage::disk('public')->url('logos/logo.png').'">', false);
+        $this->get("/events/{$event->getRouteKey()}")->assertSee('<meta property="og:image" content="'.Storage::disk('public')->url('logos/logo.png').'">', false);
     }
 
     public function test_a_draft_reveals_nothing_to_someone_who_cannot_see_it(): void
