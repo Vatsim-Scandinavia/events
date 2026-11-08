@@ -56,7 +56,7 @@ class FirScopedEventAccessTest extends TestCase
         $occurrence = $event->occurrences()->sole();
 
         $this->actingAs($staff)
-            ->{$method}(str_replace(['{event}', '{occurrence}'], [$event->id, $occurrence->id], $uri))
+            ->{$method}(str_replace(['{event}', '{occurrence}'], [$event->getRouteKey(), $occurrence->id], $uri))
             ->assertForbidden();
 
         $this->assertModelExists($event);
@@ -68,7 +68,7 @@ class FirScopedEventAccessTest extends TestCase
         $staff = User::factory()->staff(Fir::factory()->create(['icao' => 'EKDK']))->create();
         $draft = Event::factory()->draft()->create(['fir_id' => Fir::factory()->create(['icao' => 'ESAA'])->id]);
 
-        $this->actingAs($staff)->post("/events/{$draft->id}/publish")->assertForbidden();
+        $this->actingAs($staff)->post("/events/{$draft->getRouteKey()}/publish")->assertForbidden();
 
         $this->assertTrue($draft->fresh()->isDraft());
     }
@@ -80,15 +80,15 @@ class FirScopedEventAccessTest extends TestCase
         $own = Event::factory()->create(['fir_id' => $ekdk->id]);
         $other = Event::factory()->create(['fir_id' => Fir::factory()->create()->id]);
 
-        $this->actingAs($staff)->get("/events/{$own->id}")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($staff)->get("/events/{$own->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('canEdit', true)
             ->where('staffing.canManage', true)
         );
-        $this->actingAs($staff)->get("/events/{$other->id}")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($staff)->get("/events/{$other->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('canEdit', false)
             ->where('staffing.canManage', false)
         );
-        $this->actingAs($staff)->get("/events/{$own->id}/edit")->assertOk();
+        $this->actingAs($staff)->get("/events/{$own->getRouteKey()}/edit")->assertOk();
     }
 
     public function test_staff_can_only_add_events_to_firs_they_manage(): void
@@ -117,12 +117,12 @@ class FirScopedEventAccessTest extends TestCase
         $event = Event::factory()->create(['fir_id' => $ekdk->id]);
 
         $this->actingAs(User::factory()->staff($ekdk)->create())
-            ->put("/events/{$event->id}", $this->payload($esaa))
+            ->put("/events/{$event->getRouteKey()}", $this->payload($esaa))
             ->assertSessionHasErrors(['fir_id' => 'You can only add events to FIRs you manage.']);
         $this->assertTrue($event->fresh()->fir->is($ekdk));
 
         $this->actingAs(User::factory()->staff()->create())
-            ->put("/events/{$event->id}", $this->payload($esaa))
+            ->put("/events/{$event->getRouteKey()}", $this->payload($esaa))
             ->assertSessionHasNoErrors();
         $this->assertTrue($event->fresh()->fir->is($esaa));
     }
@@ -169,7 +169,7 @@ class FirScopedEventAccessTest extends TestCase
         User::factory()->rated()->withRole(Roles::CONTROLLER, Fir::factory()->create())->create(['name' => 'Stockholm Controller']);
 
         $this->actingAs(User::factory()->staff()->create())
-            ->get("/events/{$event->id}/staffing")
+            ->get("/events/{$event->getRouteKey()}/staffing")
             ->assertInertia(fn (Assert $page) => $page
                 ->where('controllers', fn ($controllers) => collect($controllers)->pluck('name')->all() === ['Copenhagen Controller', 'Hub Controller']));
     }

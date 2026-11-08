@@ -29,6 +29,8 @@ class EventResource extends JsonResource
 
         return [
             'id' => $this->id,
+            // How links name the event, e.g. "42-copenhagen-fly-in".
+            'key' => $this->getRouteKey(),
             'name' => $this->name,
             'summary' => $this->summary,
             'type' => $this->eventType?->name ?? EventType::FALLBACK,

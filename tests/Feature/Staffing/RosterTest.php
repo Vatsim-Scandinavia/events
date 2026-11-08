@@ -53,7 +53,7 @@ class RosterTest extends TestCase
      */
     private function saveRoster(array $slots, bool $publish = false, ?User $as = null)
     {
-        return $this->actingAs($as ?? $this->staff)->put("/events/{$this->event->id}/staffing/plan", [
+        return $this->actingAs($as ?? $this->staff)->put("/events/{$this->event->getRouteKey()}/staffing/plan", [
             'occurrence_id' => $this->occurrence->id,
             'positions' => [
                 ['key' => $this->tower->id, 'callsign' => 'ESSA_TWR'],
@@ -116,17 +116,17 @@ class RosterTest extends TestCase
     {
         $this->saveRoster([[$this->controller, $this->tower, 0, 120]]);
 
-        $this->actingAs($this->controller)->get("/events/{$this->event->id}")
+        $this->actingAs($this->controller)->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page
                 ->where('staffing.rosterPublished', false)
                 ->where('staffing.roster', null)
             );
 
-        $this->actingAs($this->staff)->get("/events/{$this->event->id}")
+        $this->actingAs($this->staff)->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page->has('staffing.roster', 1));
 
         // vACC Staff see it too, but can't change it.
-        $this->actingAs(User::factory()->vaccStaff()->create())->get("/events/{$this->event->id}")
+        $this->actingAs(User::factory()->vaccStaff()->create())->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page
                 ->has('staffing.roster', 1)
                 ->where('staffing.canManage', false)
@@ -135,7 +135,7 @@ class RosterTest extends TestCase
         $this->saveRoster([[$this->controller, $this->tower, 0, 120, RosterEntry::sole()->id]], publish: true)->assertSessionHasNoErrors();
         $this->actingAsGuest();
 
-        $this->get("/events/{$this->event->id}")
+        $this->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page
                 ->where('staffing.rosterPublished', true)
                 ->where('staffing.roster.0.callsign', 'ESSA_TWR')
@@ -172,7 +172,7 @@ class RosterTest extends TestCase
         $this->actingAs($this->staff)->delete("/occurrences/{$this->occurrence->id}/roster/publish")->assertSessionHasErrors('roster');
 
         // It stays on the event page as a record of who controlled.
-        $this->get("/events/{$this->event->id}")
+        $this->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page->has('staffing.roster', 1));
     }
 }

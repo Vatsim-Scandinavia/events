@@ -5,6 +5,8 @@ import type { Fir } from '@/types/inertia';
 // viewer's time zone, UTC (zulu) unless they picked another.
 export type HubEvent = {
     id: number;
+    // How links name the event, e.g. "42-copenhagen-fly-in".
+    key: string;
     name: string;
     // A sentence or two of plain text saying what the event is.
     summary: string | null;
@@ -66,6 +68,8 @@ export type EditableDate = {
 
 export type EditableEvent = {
     id: number;
+    // How links name the event, e.g. "42-copenhagen-fly-in".
+    key: string;
     firId: number;
     name: string;
     typeId: number | null;

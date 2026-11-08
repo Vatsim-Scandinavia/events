@@ -25,7 +25,7 @@ class EventDetailsPageTest extends TestCase
         ]);
         $event->positions()->create(['callsign' => 'EKCH_TWR', 'frequency' => '118.105']);
 
-        $this->get("/events/{$event->id}")
+        $this->get("/events/{$event->getRouteKey()}")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Events/Show')
@@ -49,7 +49,7 @@ class EventDetailsPageTest extends TestCase
             'description' => "Bring **charts**\nand fuel.\n\n- [Book](https://example.com) [Bad](javascript:alert(1))\n\n<script>alert(1)</script><img src=x onerror=alert(1)>\n\n![Airport map](https://example.com/map.png)",
         ]);
 
-        $this->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page
+        $this->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('event.description', function (string $html) {
                 $this->assertStringContainsString("<p>Bring <strong>charts</strong><br>\nand fuel.</p>", $html);
                 $this->assertStringContainsString('<a href="https://example.com">Book</a>', $html);
@@ -73,14 +73,14 @@ class EventDetailsPageTest extends TestCase
         ]);
 
         $this->actingAs(User::factory()->withTimezone('Europe/Copenhagen')->create())
-            ->get("/events/{$event->id}")
+            ->get("/events/{$event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page
                 ->where('event.time', '18:00–21:30 CEST')
                 ->where('event.zuluTime', '16:00–19:30z')
             );
 
         $this->actingAs(User::factory()->create())
-            ->get("/events/{$event->id}")
+            ->get("/events/{$event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page->where('event.time', '16:00–19:30z'));
     }
 
@@ -88,7 +88,7 @@ class EventDetailsPageTest extends TestCase
     {
         $event = Event::factory()->past()->create();
 
-        $this->get("/events/{$event->id}")
+        $this->get("/events/{$event->getRouteKey()}")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('event.hasEnded', true)

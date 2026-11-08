@@ -101,7 +101,7 @@ class OpenInterestTest extends TestCase
         $this->showInterest($controller, ['windows' => [['from' => '19:00', 'until' => '22:00']]])->assertSessionHasNoErrors();
 
         $this->assertSame([['2026-11-20 18:00', '2026-11-20 21:00']], $this->windowsOf(StaffingInterest::sole()));
-        $this->actingAs($controller)->get("/events/{$this->event->id}")
+        $this->actingAs($controller)->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page->where('staffing.interest.mine.windows.0.from', '19:00'));
     }
 
@@ -186,7 +186,7 @@ class OpenInterestTest extends TestCase
         $this->showInterest($controller);
 
         // The controller sees their own interest on the event page.
-        $this->actingAs($controller)->get("/events/{$this->event->id}")
+        $this->actingAs($controller)->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page
                 ->where('staffing.interest.state', 'open')
                 ->where('staffing.interest.mine.windows.0.from', '18:00')
@@ -194,18 +194,18 @@ class OpenInterestTest extends TestCase
             );
 
         // Another controller and a guest see nothing of it.
-        $this->actingAs(User::factory()->controller()->create())->get("/events/{$this->event->id}")
+        $this->actingAs(User::factory()->controller()->create())->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page->where('staffing.interest.mine', null)->where('staffing.interest.all', null));
         $this->actingAsGuest();
-        $guestPage = $this->get("/events/{$this->event->id}");
+        $guestPage = $this->get("/events/{$this->event->getRouteKey()}");
         $guestPage->assertInertia(fn (Assert $page) => $page->where('auth.user', null)->where('staffing.interest.mine', null));
         $this->assertStringNotContainsString('Interested Controller', $guestPage->getContent());
 
         // Other controllers can't open the staff page that lists it.
-        $this->actingAs(User::factory()->controller()->create())->get("/events/{$this->event->id}/staffing")->assertForbidden();
+        $this->actingAs(User::factory()->controller()->create())->get("/events/{$this->event->getRouteKey()}/staffing")->assertForbidden();
 
         // Event Staff see everyone's interest.
-        $this->actingAs(User::factory()->staff()->create())->get("/events/{$this->event->id}/staffing")
+        $this->actingAs(User::factory()->staff()->create())->get("/events/{$this->event->getRouteKey()}/staffing")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Events/Staffing')
@@ -216,12 +216,12 @@ class OpenInterestTest extends TestCase
 
         // vACC Staff see everyone's interest on the event page, without the staff page.
         $vaccStaff = User::factory()->vaccStaff()->create();
-        $this->actingAs($vaccStaff)->get("/events/{$this->event->id}")
+        $this->actingAs($vaccStaff)->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page
                 ->has('staffing.interest.all', 1)
                 ->where('staffing.interest.all.0.controller.name', 'Interested Controller')
                 ->where('staffing.interest.all.0.callsigns', ['ESSA_TWR', 'ESSA_APP'])
             );
-        $this->actingAs($vaccStaff)->get("/events/{$this->event->id}/staffing")->assertForbidden();
+        $this->actingAs($vaccStaff)->get("/events/{$this->event->getRouteKey()}/staffing")->assertForbidden();
     }
 }

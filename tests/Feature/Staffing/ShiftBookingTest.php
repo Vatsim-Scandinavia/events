@@ -127,7 +127,7 @@ class ShiftBookingTest extends TestCase
     public function test_shift_times_are_shown_in_the_viewers_time_zone(): void
     {
         $this->actingAs(User::factory()->withTimezone('Europe/Copenhagen')->create())
-            ->get("/events/{$this->event->id}")
+            ->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page
                 ->where('staffing.occurrence.time', '17:00–21:00 CET')
                 ->where('staffing.positions.0.shifts.0.time', '17:00–19:00 CET')
@@ -238,7 +238,7 @@ class ShiftBookingTest extends TestCase
         $controller = User::factory()->controller()->create(['name' => 'Jane Controller', 'vatsim_cid' => 1234567]);
         ShiftBooking::create(['position_shift_id' => $this->towerEarly->id, 'event_occurrence_id' => $this->occurrence->id, 'user_id' => $controller->id]);
 
-        $this->get("/events/{$this->event->id}")
+        $this->get("/events/{$this->event->getRouteKey()}")
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('staffing.mode', 'shifts')

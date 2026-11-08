@@ -21,6 +21,6 @@ class EventPublicationController extends Controller
 
         Inertia::flash('success', "{$event->name} is published.");
 
-        return redirect("/events/{$event->id}");
+        return redirect()->route('events.show', $event);
     }
 }

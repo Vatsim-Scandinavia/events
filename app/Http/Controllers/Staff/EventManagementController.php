@@ -68,7 +68,7 @@ class EventManagementController extends Controller
 
         Inertia::flash('success', 'Draft created. Publish it when it’s ready for everyone to see.');
 
-        return redirect("/events/{$event->id}");
+        return redirect()->route('events.show', $event);
     }
 
     public function edit(Event $event, EventBanners $banners, Integrations $integrations): Response
@@ -83,6 +83,7 @@ class EventManagementController extends Controller
         return Inertia::render('Events/Form', [
             'event' => [
                 'id' => $event->id,
+                'key' => $event->getRouteKey(),
                 'firId' => $event->fir_id,
                 'name' => $event->name,
                 'typeId' => $event->event_type_id,
@@ -144,7 +145,7 @@ class EventManagementController extends Controller
 
         Inertia::flash('success', 'Event saved.');
 
-        return redirect("/events/{$event->id}");
+        return redirect()->route('events.show', $event);
     }
 
     /**

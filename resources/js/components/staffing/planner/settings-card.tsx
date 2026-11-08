@@ -87,7 +87,7 @@ export function SettingsCard(props: StaffingPageProps) {
             return;
         }
 
-        form.put(`/events/${event.id}/staffing`, { preserveScroll: true });
+        form.put(`/events/${event.key}/staffing`, { preserveScroll: true });
     };
 
     return (

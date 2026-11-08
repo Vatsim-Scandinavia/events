@@ -51,8 +51,8 @@ class EventCancellationTest extends TestCase
 
     public function test_only_staff_can_cancel(): void
     {
-        $this->post("/events/{$this->event->id}/cancel")->assertRedirect('/auth/vatsim');
-        $this->actingAs(User::factory()->controller()->create())->post("/events/{$this->event->id}/cancel")->assertForbidden();
+        $this->post("/events/{$this->event->getRouteKey()}/cancel")->assertRedirect('/auth/vatsim');
+        $this->actingAs(User::factory()->controller()->create())->post("/events/{$this->event->getRouteKey()}/cancel")->assertForbidden();
         $this->actingAs(User::factory()->controller()->create())->post("/occurrences/{$this->first->id}/cancel")->assertForbidden();
 
         $this->assertNull($this->event->fresh()->cancelled_at);
@@ -65,7 +65,7 @@ class EventCancellationTest extends TestCase
         $this->assertTrue($this->first->fresh()->isCancelled());
         $this->assertTrue($this->event->fresh()->currentOccurrence()->is($this->second));
 
-        $this->get("/events/{$this->event->id}")->assertInertia(fn (Assert $page) => $page
+        $this->get("/events/{$this->event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('staffing.occurrence.id', $this->second->id)
             ->where('staffing.occurrences.0.cancelled', true)
             ->where('event.cancelled', false)
@@ -89,10 +89,10 @@ class EventCancellationTest extends TestCase
 
     public function test_a_cancelled_event_leaves_the_list_but_keeps_its_page(): void
     {
-        $this->actingAs($this->staff)->post("/events/{$this->event->id}/cancel")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->post("/events/{$this->event->getRouteKey()}/cancel")->assertSessionHasNoErrors();
 
         $this->get('/events')->assertInertia(fn (Assert $page) => $page->has('events', 0));
-        $this->get("/events/{$this->event->id}")->assertOk()->assertInertia(fn (Assert $page) => $page
+        $this->get("/events/{$this->event->getRouteKey()}")->assertOk()->assertInertia(fn (Assert $page) => $page
             ->where('event.cancelled', true)
             ->where('staffing.occurrence.cancelled', true)
         );
@@ -105,12 +105,12 @@ class EventCancellationTest extends TestCase
         ShiftBooking::create(['position_shift_id' => $shift->id, 'event_occurrence_id' => $this->first->id, 'user_id' => $controller->id]);
 
         $this->actingAs($this->staff)->post("/occurrences/{$this->first->id}/cancel");
-        $this->actingAs($this->staff)->post("/events/{$this->event->id}/cancel");
+        $this->actingAs($this->staff)->post("/events/{$this->event->getRouteKey()}/cancel");
 
         // A date can't come back while the whole event is cancelled.
         $this->actingAs($this->staff)->delete("/occurrences/{$this->first->id}/cancel")->assertSessionHasErrors('cancel');
 
-        $this->actingAs($this->staff)->delete("/events/{$this->event->id}/cancel")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->delete("/events/{$this->event->getRouteKey()}/cancel")->assertSessionHasNoErrors();
         $this->assertFalse($this->second->fresh()->isCancelled());
         // The date cancelled on its own stays cancelled until it is restored too.
         $this->assertTrue($this->first->fresh()->isCancelled());
@@ -132,7 +132,7 @@ class EventCancellationTest extends TestCase
     {
         $this->travelTo(Carbon::parse('2026-11-18 00:00', 'UTC'));
 
-        $this->actingAs($this->staff)->post("/events/{$this->event->id}/cancel")->assertSessionHasErrors('cancel');
+        $this->actingAs($this->staff)->post("/events/{$this->event->getRouteKey()}/cancel")->assertSessionHasErrors('cancel');
     }
 
     public function test_editing_the_schedule_does_not_move_a_cancelled_date(): void
@@ -141,7 +141,7 @@ class EventCancellationTest extends TestCase
         $this->second->update(['cancelled_at' => now()]);
 
         // Moving the series a day later: the cancelled date is dropped, not moved.
-        $this->actingAs($this->staff)->put("/events/{$this->event->id}", [
+        $this->actingAs($this->staff)->put("/events/{$this->event->getRouteKey()}", [
             'fir_id' => $this->event->fir_id,
             'name' => $this->event->name,
             'airports' => $this->event->airports,

@@ -64,7 +64,7 @@ class EventDraftTest extends TestCase
             $this->get('/events')->assertInertia(fn (Assert $page) => $page
                 ->where('events', fn ($events) => collect($events)->pluck('name')->all() === ['Public Fly-in'])
             );
-            $this->get("/events/{$draft->id}")->assertNotFound();
+            $this->get("/events/{$draft->getRouteKey()}")->assertNotFound();
         }
 
         $canSee = [
@@ -79,7 +79,7 @@ class EventDraftTest extends TestCase
                 ->where('events', fn ($events) => collect($events)->pluck('name')->sort()->values()->all() === ['Public Fly-in', 'Secret Fly-in'])
                 ->where('events', fn ($events) => collect($events)->firstWhere('name', 'Secret Fly-in')['draft'] === true)
             );
-            $this->actingAs($user)->get("/events/{$draft->id}")->assertOk()->assertInertia(fn (Assert $page) => $page
+            $this->actingAs($user)->get("/events/{$draft->getRouteKey()}")->assertOk()->assertInertia(fn (Assert $page) => $page
                 ->where('event.draft', true)
             );
         }
@@ -90,19 +90,19 @@ class EventDraftTest extends TestCase
         $draft = Event::factory()->draft()->for($this->copenhagen)->create();
         $staff = User::factory()->staff($this->copenhagen)->create();
 
-        $this->actingAs($staff)->get("/events/{$draft->id}")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($staff)->get("/events/{$draft->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('event.draft', true)
             ->where('canEdit', true)
         );
 
         $this->travelTo(now()->startOfMinute());
-        $this->actingAs($staff)->post("/events/{$draft->id}/publish")->assertRedirect("/events/{$draft->id}");
+        $this->actingAs($staff)->post("/events/{$draft->getRouteKey()}/publish")->assertRedirect("/events/{$draft->getRouteKey()}");
 
         $this->assertTrue($draft->fresh()->published_at->equalTo(now()));
         $this->assertFalse($draft->fresh()->isDraft());
 
         auth()->logout();
-        $this->get("/events/{$draft->id}")->assertOk()->assertInertia(fn (Assert $page) => $page->where('event.draft', false));
+        $this->get("/events/{$draft->getRouteKey()}")->assertOk()->assertInertia(fn (Assert $page) => $page->where('event.draft', false));
     }
 
     public function test_publishing_again_keeps_when_it_was_first_published(): void
@@ -110,7 +110,7 @@ class EventDraftTest extends TestCase
         $event = Event::factory()->for($this->copenhagen)->create(['published_at' => now()->subDay()]);
         $firstPublished = $event->published_at;
 
-        $this->actingAs(User::factory()->staff($this->copenhagen)->create())->post("/events/{$event->id}/publish");
+        $this->actingAs(User::factory()->staff($this->copenhagen)->create())->post("/events/{$event->getRouteKey()}/publish");
 
         $this->assertTrue($event->fresh()->published_at->equalTo($firstPublished));
     }
@@ -138,9 +138,9 @@ class EventDraftTest extends TestCase
     {
         $draft = Event::factory()->draft()->for($this->copenhagen)->create();
 
-        $this->post("/events/{$draft->id}/publish")->assertRedirect('/auth/vatsim');
-        $this->actingAs(User::factory()->vaccStaff($this->copenhagen)->create())->post("/events/{$draft->id}/publish")->assertForbidden();
-        $this->actingAs(User::factory()->staff($this->sweden)->create())->post("/events/{$draft->id}/publish")->assertForbidden();
+        $this->post("/events/{$draft->getRouteKey()}/publish")->assertRedirect('/auth/vatsim');
+        $this->actingAs(User::factory()->vaccStaff($this->copenhagen)->create())->post("/events/{$draft->getRouteKey()}/publish")->assertForbidden();
+        $this->actingAs(User::factory()->staff($this->sweden)->create())->post("/events/{$draft->getRouteKey()}/publish")->assertForbidden();
 
         $this->assertTrue($draft->fresh()->isDraft());
     }

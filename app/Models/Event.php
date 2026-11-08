@@ -16,12 +16,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class Event extends Model
 {
     /** @use HasFactory<EventFactory> */
     use HasFactory;
+
+    /** How long a slug may get before it's cut at a word break. */
+    private const int SLUG_LENGTH = 60;
 
     /**
      * @var list<string>
@@ -99,6 +103,50 @@ class Event extends Model
         });
 
         static::deleted(fn (Event $event) => app(EventBanners::class)->delete($event->banner_path));
+    }
+
+    /**
+     * Readable links, e.g. /events/42-copenhagen-fly-in. The ID finds the event; the slug,
+     * from its current name, is for people and search engines, so renaming moves the link.
+     */
+    public function getRouteKey(): string
+    {
+        return rtrim("{$this->id}-{$this->slug()}", '-');
+    }
+
+    /**
+     * Finds the event by the ID at the start of the link, whatever follows it, so links from
+     * before a rename and plain IDs keep working (see RedirectToCurrentEventUrl).
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveRouteBinding($value, $field = null): ?self
+    {
+        if ($field !== null) {
+            return parent::resolveRouteBinding($value, $field);
+        }
+
+        return preg_match('/^(\d+)(?:-|$)/', (string) $value, $match) === 1
+            ? $this->whereKey((int) $match[1])->first()
+            : null;
+    }
+
+    /**
+     * The name as a URL slug, cut at a word break to stay short. Empty when the name has no
+     * letters or digits a URL can carry.
+     */
+    public function slug(): string
+    {
+        $slug = Str::slug($this->name);
+
+        if (strlen($slug) <= self::SLUG_LENGTH) {
+            return $slug;
+        }
+
+        $cut = substr($slug, 0, self::SLUG_LENGTH + 1);
+
+        return str_contains($cut, '-') ? Str::beforeLast($cut, '-') : substr($slug, 0, self::SLUG_LENGTH);
     }
 
     /**
