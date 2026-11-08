@@ -45,7 +45,7 @@ class StaffingNotesTest extends TestCase
 
         $this->book($controller, $event, $shift);
 
-        $this->actingAs($controller)->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($controller)->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('staffing.positions.0.note', null)
             ->where('staffing.positions.0.shifts.0.booking.notes', [])
         );
@@ -58,22 +58,22 @@ class StaffingNotesTest extends TestCase
         $this->switchOn(['roster']);
         $note = 'Rated S1 in Control Center; EKCH_TWR needs S2.';
 
-        $this->actingAs($controller)->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.note', $note));
+        $this->actingAs($controller)->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.note', $note));
 
         $this->book($controller, $event, $shift);
         $this->assertSame(1, $event->occurrences()->sole()->bookings()->count());
 
-        $this->actingAs($controller)->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.shifts.0.booking.notes', [$note]));
-        $this->actingAs(User::factory()->staff()->create())->get("/events/{$event->id}/staffing")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($controller)->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.shifts.0.booking.notes', [$note]));
+        $this->actingAs(User::factory()->staff()->create())->get("/events/{$event->getRouteKey()}/staffing")->assertInertia(fn (Assert $page) => $page
             ->where('positions.0.shifts.0.booking.notes', [$note])
         );
 
         // Other controllers and guests don't see it.
-        $this->actingAs(User::factory()->controller()->create())->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs(User::factory()->controller()->create())->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('staffing.positions.0.shifts.0.booking.notes', [])
         );
         auth()->logout();
-        $this->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page
+        $this->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('staffing.positions.0.note', null)
             ->where('staffing.positions.0.shifts.0.booking.notes', [])
         );
@@ -87,7 +87,7 @@ class StaffingNotesTest extends TestCase
 
         $this->book($student, $event, $shift);
 
-        $this->actingAs($student)->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($student)->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('staffing.positions.0.note', null)
             ->where('staffing.positions.0.shifts.0.booking.notes', [])
         );
@@ -100,8 +100,8 @@ class StaffingNotesTest extends TestCase
         $visitor = $this->controller(1000001, 'C1', endorsements: ['visiting' => [['rating' => 'S3', 'areas' => ['Norway']]]]);
         $this->switchOn(['roster']);
 
-        $this->actingAs($visitor)->get("/events/{$norwegian->id}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.note', null));
-        $this->actingAs($visitor)->get("/events/{$danish->id}")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($visitor)->get("/events/{$norwegian->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.note', null));
+        $this->actingAs($visitor)->get("/events/{$danish->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('staffing.positions.0.note', 'Not active in EKDK in Control Center, and no visiting endorsement for it.')
         );
     }
@@ -112,7 +112,7 @@ class StaffingNotesTest extends TestCase
         $controller = $this->controller(1000001, 'OBS');
         $this->switchOn(['roster']);
 
-        $this->actingAs($controller)->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.note', null));
+        $this->actingAs($controller)->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.note', null));
     }
 
     public function test_rostering_an_uncovered_controller_works_and_warns_on_the_roster(): void
@@ -127,13 +127,13 @@ class StaffingNotesTest extends TestCase
         $staff = User::factory()->staff()->create();
         $this->switchOn(['roster']);
 
-        $this->actingAs($staff)->put("/events/{$event->id}/staffing/plan", [
+        $this->actingAs($staff)->put("/events/{$event->getRouteKey()}/staffing/plan", [
             'occurrence_id' => $event->occurrences()->sole()->id,
             'positions' => [['key' => $centre->id, 'callsign' => 'EKDK_CTR']],
             'roster' => [['position' => $centre->id, 'user_id' => $controller->id, 'start' => 0, 'end' => 120]],
         ])->assertSessionHasNoErrors();
 
-        $this->actingAs($staff)->get("/events/{$event->id}/staffing")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($staff)->get("/events/{$event->getRouteKey()}/staffing")->assertInertia(fn (Assert $page) => $page
             ->where('roster.0.notes', ['Rated S3 in Control Center; EKDK_CTR needs C1.'])
         );
     }
@@ -156,7 +156,7 @@ class StaffingNotesTest extends TestCase
         ]);
         $this->switchOn(['bookings']);
 
-        $this->actingAs(User::factory()->staff()->create())->get("/events/{$event->id}/staffing")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs(User::factory()->staff()->create())->get("/events/{$event->getRouteKey()}/staffing")->assertInertia(fn (Assert $page) => $page
             ->where('positions.0.shifts.0.booking.notes', ['Not sent to Control Center: Booking overlaps with existing booking'])
         );
     }

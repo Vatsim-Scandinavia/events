@@ -79,7 +79,7 @@ class EventAnnouncements extends Feature
     {
         $embed = [
             'title' => $event->name,
-            'url' => url("/events/{$event->id}"),
+            'url' => route('events.show', $event),
             'description' => $event->summary !== null ? Discord::plain($event->summary) : null,
             'fields' => array_values(array_filter([
                 $event->fir ? ['name' => 'FIR', 'value' => "{$event->fir->name} ({$event->fir->icao})", 'inline' => true] : null,

@@ -68,13 +68,13 @@ class EventManagementTest extends TestCase
 
         $this->get('/events/create')->assertRedirect('/auth/vatsim');
         $this->actingAs(User::factory()->create())->get('/events/create')->assertForbidden();
-        $this->actingAs(User::factory()->create())->delete("/events/{$event->id}")->assertForbidden();
+        $this->actingAs(User::factory()->create())->delete("/events/{$event->getRouteKey()}")->assertForbidden();
 
         $this->actingAs($this->staff)->get('/events/create')->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('Events/Form')
             ->where('event', null)
         );
-        $this->actingAs($this->staff)->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page->where('canEdit', true));
+        $this->actingAs($this->staff)->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('canEdit', true));
     }
 
     public function test_staff_choose_the_fir_that_runs_an_event(): void
@@ -93,14 +93,14 @@ class EventManagementTest extends TestCase
         $event = Event::query()->sole();
         $this->assertTrue($event->fir->is($copenhagen));
 
-        $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($this->staff)->get("/events/{$event->getRouteKey()}/edit")->assertInertia(fn (Assert $page) => $page
             ->where('event.firId', $copenhagen->id)
         );
 
-        $this->actingAs($this->staff)->put("/events/{$event->id}", $this->payload(['fir_id' => $sweden->id]))->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", $this->payload(['fir_id' => $sweden->id]))->assertSessionHasNoErrors();
         $this->assertTrue($event->fresh()->fir->is($sweden));
 
-        $this->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page
+        $this->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('event.fir', ['icao' => 'ESAA', 'name' => 'Sweden'])
         );
     }
@@ -111,18 +111,18 @@ class EventManagementTest extends TestCase
         $event = Event::query()->sole();
 
         $this->assertSame('Fly in to Kastrup, any aircraft.', $event->summary);
-        $this->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page->where('event.summary', 'Fly in to Kastrup, any aircraft.'));
+        $this->get("/events/{$event->getRouteKey()}/edit")->assertInertia(fn (Assert $page) => $page->where('event.summary', 'Fly in to Kastrup, any aircraft.'));
         $this->get('/events')->assertInertia(fn (Assert $page) => $page->where('events.0.summary', 'Fly in to Kastrup, any aircraft.'));
 
-        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => str_repeat('a', 201)]))->assertSessionHasErrors('summary');
-        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => ['not', 'text']]))->assertSessionHasErrors('summary');
+        $this->put("/events/{$event->getRouteKey()}", $this->payload(['fir_id' => $event->fir_id, 'summary' => str_repeat('a', 201)]))->assertSessionHasErrors('summary');
+        $this->put("/events/{$event->getRouteKey()}", $this->payload(['fir_id' => $event->fir_id, 'summary' => ['not', 'text']]))->assertSessionHasErrors('summary');
         $this->assertSame('Fly in to Kastrup, any aircraft.', $event->fresh()->summary);
 
-        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => " \n "]))->assertSessionHasNoErrors();
+        $this->put("/events/{$event->getRouteKey()}", $this->payload(['fir_id' => $event->fir_id, 'summary' => " \n "]))->assertSessionHasNoErrors();
         $this->assertNull($event->fresh()->summary);
 
         // Characters are counted, not bytes, so 200 of them fit even when they're emoji.
-        $this->put("/events/{$event->id}", $this->payload(['fir_id' => $event->fir_id, 'summary' => str_repeat('✈️', 100)]))->assertSessionHasNoErrors();
+        $this->put("/events/{$event->getRouteKey()}", $this->payload(['fir_id' => $event->fir_id, 'summary' => str_repeat('✈️', 100)]))->assertSessionHasNoErrors();
         $this->assertSame(200, mb_strlen($event->fresh()->summary));
     }
 
@@ -137,7 +137,7 @@ class EventManagementTest extends TestCase
         $event = Event::query()->sole();
         $this->assertSame([true, false, false], array_column($event->routes, 'mandatory'));
 
-        $this->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page
+        $this->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('event.routes.0.mandatory', true)
             ->where('event.routes.1.mandatory', false)
         );
@@ -156,10 +156,10 @@ class EventManagementTest extends TestCase
 
         $this->actingAs($this->staff)->post('/events', $this->payload(['event_type_id' => $flyIn->id]))->assertSessionHasNoErrors();
         $event = Event::query()->sole();
-        $this->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page->where('event.type', 'Fly-in'));
+        $this->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('event.type', 'Fly-in'));
 
-        $this->actingAs($this->staff)->put("/events/{$event->id}", $this->payload(['event_type_id' => '']))->assertSessionHasNoErrors();
-        $this->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page->where('event.type', 'General'));
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", $this->payload(['event_type_id' => '']))->assertSessionHasNoErrors();
+        $this->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('event.type', 'General'));
     }
 
     /**
@@ -202,7 +202,7 @@ class EventManagementTest extends TestCase
             $this->dates($event),
         );
 
-        $this->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page->where('event.repeats', 'Every week on Tuesday'));
+        $this->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('event.repeats', 'Every week on Tuesday'));
     }
 
     public function test_monthly_events_keep_their_weekday(): void
@@ -286,7 +286,7 @@ class EventManagementTest extends TestCase
 
         // A day later and one date fewer: the first two dates move, the third is left out.
         $this->actingAs($this->staff)
-            ->postJson("/events/{$event->id}/schedule", ['starts_at' => '2026-11-11 18:00', 'ends_at' => '2026-11-11 22:00', 'repeats' => 'weekly', 'repeat_ends' => 'count', 'repeat_count' => 2])
+            ->postJson("/events/{$event->getRouteKey()}/schedule", ['starts_at' => '2026-11-11 18:00', 'ends_at' => '2026-11-11 22:00', 'repeats' => 'weekly', 'repeat_ends' => 'count', 'repeat_count' => 2])
             ->assertOk()
             ->assertExactJson([
                 'dates' => [['date' => '2026-11-11', 'id' => $first], ['date' => '2026-11-18', 'id' => $second]],
@@ -331,7 +331,7 @@ class EventManagementTest extends TestCase
         $interest = $occurrence->interests()->create(['user_id' => $controller->id]);
         $interest->windows()->create(['starts_at' => Carbon::parse('2026-11-10 18:00', 'UTC'), 'ends_at' => Carbon::parse('2026-11-10 22:00', 'UTC')]);
 
-        $this->actingAs($this->staff)->put("/events/{$event->id}", $this->payload([
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", $this->payload([
             'starts_at' => '2026-11-12 17:00',
             'ends_at' => '2026-11-12 20:30',
         ]))->assertSessionHasNoErrors();
@@ -356,7 +356,7 @@ class EventManagementTest extends TestCase
         $occurrence = $event->occurrences()->sole();
         $event->positions()->create(['callsign' => 'EKCH_TWR'])->shifts()->create(['starts_offset' => 120, 'ends_offset' => 240]);
 
-        $this->actingAs($this->staff)->put("/events/{$event->id}", $this->payload([
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", $this->payload([
             'starts_at' => '2026-11-10 18:00',
             'ends_at' => '2026-11-10 21:00',
         ]))->assertSessionHasErrors('ends_at');
@@ -381,7 +381,7 @@ class EventManagementTest extends TestCase
         $booking = $shift->bookings()->create(['event_occurrence_id' => $fourth->id, 'user_id' => User::factory()->create()->id]);
 
         // Every 2 weeks from the same first date, an hour later: 24 Oct, 7 Nov, 21 Nov, 5 Dec.
-        $this->actingAs($this->staff)->put("/events/{$event->id}", $this->payload([
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", $this->payload([
             'starts_at' => '2026-10-24 19:00',
             'ends_at' => '2026-10-24 22:00',
             'repeats' => 'biweekly',
@@ -401,7 +401,7 @@ class EventManagementTest extends TestCase
         $this->assertModelExists($second);
 
         // Ending sooner removes the upcoming dates that are no longer in the schedule.
-        $this->actingAs($this->staff)->put("/events/{$event->id}", $this->payload([
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", $this->payload([
             'starts_at' => '2026-10-24 19:00',
             'ends_at' => '2026-10-24 22:00',
             'repeats' => 'biweekly',
@@ -462,7 +462,7 @@ class EventManagementTest extends TestCase
         $this->assertSame('Europe/Copenhagen', $event->timezone);
         $this->assertSame(['2027-03-20 18:00–21:00', '2027-03-27 18:00–21:00', '2027-04-03 17:00–20:00'], $this->dates($event));
 
-        $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($this->staff)->get("/events/{$event->getRouteKey()}/edit")->assertInertia(fn (Assert $page) => $page
             ->where('event.timezone', 'Europe/Copenhagen')
             ->where('event.startsAt', '2027-03-20 19:00')
             ->where('event.dates.2.date', '2027-04-03')
@@ -471,7 +471,7 @@ class EventManagementTest extends TestCase
 
         // Saving it unchanged keeps every date where it is.
         $ids = $event->occurrences()->pluck('id')->all();
-        $this->actingAs($this->staff)->put("/events/{$event->id}", $this->payload($schedule))->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", $this->payload($schedule))->assertSessionHasNoErrors();
         $this->assertSame($ids, $event->occurrences()->pluck('id')->all());
         $this->assertSame(['2027-03-20 18:00–21:00', '2027-03-27 18:00–21:00', '2027-04-03 17:00–20:00'], $this->dates($event));
     }
@@ -490,7 +490,7 @@ class EventManagementTest extends TestCase
 
         $event = Event::sole();
         $this->assertSame(['2026-11-13 23:30–02:00', '2026-11-20 23:30–02:00'], $this->dates($event));
-        $this->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page->where('event.repeats', 'Every week on Saturday'));
+        $this->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('event.repeats', 'Every week on Saturday'));
     }
 
     public function test_repeating_with_no_end_tops_up_dates_at_the_same_local_time(): void
@@ -543,7 +543,7 @@ class EventManagementTest extends TestCase
         $shift = $event->positions()->create(['callsign' => 'EKCH_TWR'])->shifts()->create(['starts_offset' => 0, 'ends_offset' => 60]);
         $booking = $shift->bookings()->create(['event_occurrence_id' => $occurrence->id, 'user_id' => User::factory()->create()->id]);
 
-        $this->actingAs($this->staff)->delete("/events/{$event->id}")->assertRedirect('/events');
+        $this->actingAs($this->staff)->delete("/events/{$event->getRouteKey()}")->assertRedirect('/events');
 
         $this->assertModelMissing($event);
         $this->assertModelMissing($occurrence);
@@ -576,7 +576,7 @@ class EventManagementTest extends TestCase
         $event = Event::sole();
         $first = $event->banner_path;
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}", $this->payload([
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}", $this->payload([
             '_method' => 'put',
             'banner' => UploadedFile::fake()->image('second.gif', 900, 300),
         ]))->assertSessionHasNoErrors();
@@ -586,10 +586,10 @@ class EventManagementTest extends TestCase
         Storage::disk('public')->assertMissing($first);
 
         // Saving without a new file keeps the banner.
-        $this->actingAs($this->staff)->put("/events/{$event->id}", $this->payload())->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", $this->payload())->assertSessionHasNoErrors();
         $this->assertSame($second, $event->fresh()->banner_path);
 
-        $this->actingAs($this->staff)->put("/events/{$event->id}", $this->payload(['remove_banner' => true]))->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", $this->payload(['remove_banner' => true]))->assertSessionHasNoErrors();
         $this->assertNull($event->fresh()->banner_path);
         Storage::disk('public')->assertMissing($second);
     }
@@ -605,7 +605,7 @@ class EventManagementTest extends TestCase
         $this->actingAs($this->staff)->post('/events', $this->payload(['banner' => UploadedFile::fake()->image('banner.png', 1200, 400)]));
         $event = Event::sole();
 
-        $this->actingAs($this->staff)->delete("/events/{$event->id}");
+        $this->actingAs($this->staff)->delete("/events/{$event->getRouteKey()}");
 
         Storage::disk('public')->assertMissing($event->banner_path);
     }

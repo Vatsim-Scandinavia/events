@@ -87,7 +87,7 @@ class DraftStaffingTest extends TestCase
         $this->assertNull($occurrence->fresh()->roster_published_at);
 
         // The planner knows, so it doesn't offer to publish.
-        $this->actingAs(User::factory()->staff()->create())->get("/events/{$draft->id}/staffing")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs(User::factory()->staff()->create())->get("/events/{$draft->getRouteKey()}/staffing")->assertInertia(fn (Assert $page) => $page
             ->where('occurrence.eventDraft', true)
         );
     }
@@ -97,8 +97,8 @@ class DraftStaffingTest extends TestCase
         $draft = Event::factory()->draft()->create();
         $staff = User::factory()->staff()->create();
 
-        $this->actingAs($staff)->get("/events/{$draft->id}/staffing")->assertOk();
-        $this->actingAs($staff)->put("/events/{$draft->id}/staffing", [
+        $this->actingAs($staff)->get("/events/{$draft->getRouteKey()}/staffing")->assertOk();
+        $this->actingAs($staff)->put("/events/{$draft->getRouteKey()}/staffing", [
             'mode' => 'shifts',
             'interest_opens_hours' => 336,
             'interest_closes_hours' => 48,
@@ -107,7 +107,7 @@ class DraftStaffingTest extends TestCase
         $this->assertSame(StaffingMode::Shifts, $draft->fresh()->staffing_mode);
 
         // The event page tells them controllers can't staff it yet.
-        $this->actingAs($staff)->get("/events/{$draft->id}")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($staff)->get("/events/{$draft->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('staffing.draft', true)
             ->where('staffing.mode', 'shifts')
         );

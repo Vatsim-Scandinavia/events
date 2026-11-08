@@ -101,7 +101,7 @@ class ControlCenterBookingPushTest extends TestCase
         $kim = User::factory()->controller()->create(['vatsim_cid' => 1000001]);
         $sam = User::factory()->controller()->create(['vatsim_cid' => 1000002]);
         $staff = User::factory()->staff()->create();
-        $plan = fn (array $roster, bool $publish = false) => $this->actingAs($staff)->put("/events/{$event->id}/staffing/plan", [
+        $plan = fn (array $roster, bool $publish = false) => $this->actingAs($staff)->put("/events/{$event->getRouteKey()}/staffing/plan", [
             'occurrence_id' => $occurrence->id,
             'positions' => [['key' => $tower->id, 'callsign' => 'EKCH_TWR']],
             'roster' => $roster,
@@ -151,7 +151,7 @@ class ControlCenterBookingPushTest extends TestCase
         $this->assertSame(['PATCH bookings/500', '11/11/2026'], [$this->calls[1][0], $this->calls[1][1]['date']]);
 
         $staff = User::factory()->staff()->create();
-        $planShift = fn (string $callsign, int $start, int $end) => $this->actingAs($staff)->put("/events/{$event->id}/staffing/plan", [
+        $planShift = fn (string $callsign, int $start, int $end) => $this->actingAs($staff)->put("/events/{$event->getRouteKey()}/staffing/plan", [
             'occurrence_id' => $occurrence->id,
             'positions' => [['key' => $shift->event_position_id, 'callsign' => $callsign]],
             'shifts' => [['id' => $shift->id, 'position' => $shift->event_position_id, 'start' => $start, 'end' => $end]],
@@ -177,7 +177,7 @@ class ControlCenterBookingPushTest extends TestCase
         [$event, $shift] = $this->shiftEvent();
         $this->book($event->occurrences()->sole(), $shift);
 
-        $this->actingAs(User::factory()->admin()->create())->delete("/events/{$event->id}")->assertRedirect('/events');
+        $this->actingAs(User::factory()->admin()->create())->delete("/events/{$event->getRouteKey()}")->assertRedirect('/events');
 
         $this->assertSame('DELETE bookings/500', $this->calls[1][0]);
         $this->assertSame(0, PushedBooking::query()->count());

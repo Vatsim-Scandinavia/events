@@ -126,7 +126,7 @@ function EventRow({ event }: { event: HubEvent }) {
             <td className="hidden px-4 py-3 align-middle whitespace-nowrap text-muted-foreground tabular-nums sm:table-cell">{event.time}</td>
             <td className="px-4 py-3 text-right align-middle">
                 <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/events/${event.id}`} aria-label={`View details for ${event.name}`}>
+                    <Link href={`/events/${event.key}`} aria-label={`View details for ${event.name}`}>
                         <span className="hidden lg:inline">Details</span>
                         <ChevronRight />
                     </Link>

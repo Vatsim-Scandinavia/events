@@ -48,7 +48,7 @@ export const removedDates = (event: EditableEvent, preview: SchedulePreview) => 
 export function useSchedulePreview(event: EditableEvent | null, input: ScheduleInput) {
     const http = useHttp<Record<string, never>, SchedulePreview>({});
     const pending = useRef<{ key: string; result: Promise<PreviewResult> } | null>(null);
-    const url = event ? `/events/${event.id}/schedule` : '/events/schedule';
+    const url = event ? `/events/${event.key}/schedule` : '/events/schedule';
     const key = JSON.stringify(input);
 
     http.transform(() => input);

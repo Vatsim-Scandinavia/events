@@ -73,8 +73,8 @@ class DiscordEventAnnouncementsTest extends TestCase
             ['starts_at' => '2026-11-24 18:00', 'ends_at' => '2026-11-24 21:00', 'cancelled_at' => now()],
         ]);
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}/publish")->assertSessionHasNoErrors();
-        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/publish")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/publish");
 
         Http::assertSentCount(1);
         Http::assertSent(function (Request $request) use ($event) {
@@ -84,7 +84,7 @@ class DiscordEventAnnouncementsTest extends TestCase
             return $request->url() === self::WEBHOOK
                 && $request['allowed_mentions'] === ['parse' => []]
                 && $embed['title'] === 'Copenhagen Tuesday @everyone'
-                && $embed['url'] === url("/events/{$event->id}")
+                && $embed['url'] === url("/events/{$event->getRouteKey()}")
                 && ! array_key_exists('description', $embed)
                 && $fields['FIR'] === 'Copenhagen (EKDK)'
                 // The cancelled date is left out.
@@ -98,7 +98,7 @@ class DiscordEventAnnouncementsTest extends TestCase
         $event = $this->weeklyDraft();
         $event->update(['summary' => 'Bring *any* aircraft to [EKCH](https://example.com)']);
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/publish");
 
         Http::assertSent(fn (Request $request) => $request['embeds'][0]['description'] === 'Bring \\*any\\* aircraft to \\[EKCH\\]\\(https://example.com\\)');
     }
@@ -109,7 +109,7 @@ class DiscordEventAnnouncementsTest extends TestCase
         $event = $this->weeklyDraft();
         $event->update(['banner_path' => 'banners/tuesday.png']);
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/publish");
 
         Http::assertSent(fn (Request $request) => str_ends_with($request['embeds'][0]['image']['url'], 'banners/tuesday.png'));
     }
@@ -120,12 +120,12 @@ class DiscordEventAnnouncementsTest extends TestCase
         $this->switchOn(features: []);
         $featureOff = $this->weeklyDraft();
 
-        $this->actingAs($this->staff)->post("/events/{$featureOff->id}/publish")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->post("/events/{$featureOff->getRouteKey()}/publish")->assertSessionHasNoErrors();
 
         $this->switchOn(enabled: false);
         $integrationOff = $this->weeklyDraft();
 
-        $this->actingAs($this->staff)->post("/events/{$integrationOff->id}/publish")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->post("/events/{$integrationOff->getRouteKey()}/publish")->assertSessionHasNoErrors();
 
         Http::assertNothingSent();
         $this->assertFalse($featureOff->fresh()->isDraft());
@@ -139,7 +139,7 @@ class DiscordEventAnnouncementsTest extends TestCase
         Http::fake([$locked => Http::response(null, 204)]);
         $event = $this->weeklyDraft();
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/publish");
 
         Http::assertSentCount(1);
         Http::assertSent(fn (Request $request) => $request->url() === $locked);
@@ -151,15 +151,15 @@ class DiscordEventAnnouncementsTest extends TestCase
         Http::fake([self::WEBHOOK => Http::response('Bad gateway', 502)]);
         $failing = $this->weeklyDraft();
 
-        $this->actingAs($this->staff)->post("/events/{$failing->id}/publish")
-            ->assertRedirect("/events/{$failing->id}")
+        $this->actingAs($this->staff)->post("/events/{$failing->getRouteKey()}/publish")
+            ->assertRedirect("/events/{$failing->getRouteKey()}")
             ->assertSessionHasNoErrors();
         $this->assertFalse($failing->fresh()->isDraft());
 
         Http::fake([self::WEBHOOK => fn () => throw new ConnectionException('Timed out')]);
         $timingOut = Event::factory()->draft()->for($this->copenhagen)->create();
 
-        $this->actingAs($this->staff)->post("/events/{$timingOut->id}/publish")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->post("/events/{$timingOut->getRouteKey()}/publish")->assertSessionHasNoErrors();
         $this->assertFalse($timingOut->fresh()->isDraft());
 
         Log::shouldHaveReceived('warning')->twice()->withArgs(fn (string $message) => $message === 'Could not announce the event on Discord.');
@@ -172,7 +172,7 @@ class DiscordEventAnnouncementsTest extends TestCase
         Http::fake([self::WEBHOOK => fn () => throw new ConnectionException('cURL error 28: Operation timed out for '.self::WEBHOOK)]);
         $event = $this->weeklyDraft();
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/publish");
 
         Log::shouldHaveReceived('warning')->once()->withArgs(fn (string $message, array $context) => ! str_contains(json_encode($context), 'secret')
             && str_contains($context['exception'], 'Operation timed out for [webhook]'));
@@ -186,7 +186,7 @@ class DiscordEventAnnouncementsTest extends TestCase
             'ends_at' => Carbon::parse('2026-11-11 02:00', 'UTC'),
         ]);
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}/publish");
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/publish");
 
         Http::assertSent(fn (Request $request) => collect($request['embeds'][0]['fields'])->pluck('value', 'name')['Dates (UTC)'] === 'Tue 10 Nov 2026, 22:00–Wed 11 Nov 02:00z');
     }
@@ -209,9 +209,9 @@ class DiscordEventAnnouncementsTest extends TestCase
         $event = Event::query()->sole();
         $event->publish();
 
-        $this->actingAs($this->staff)->put("/events/{$event->id}", [...$payload, 'name' => 'Copenhagen Fly-in II'])->assertSessionHasNoErrors();
-        $this->actingAs($this->staff)->post("/events/{$event->id}/cancel")->assertSessionHasNoErrors();
-        $this->actingAs($this->staff)->delete("/events/{$event->id}")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", [...$payload, 'name' => 'Copenhagen Fly-in II'])->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/cancel")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->delete("/events/{$event->getRouteKey()}")->assertSessionHasNoErrors();
 
         // Only the announcement from publishing it.
         Http::assertSentCount(1);

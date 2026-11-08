@@ -122,7 +122,7 @@ function NextEventCard({ event }: { event: HubEvent }) {
             </CardContent>
             <CardFooter>
                 <Button className="w-full" asChild>
-                    <Link href={`/events/${event.id}`}>View details</Link>
+                    <Link href={`/events/${event.key}`}>View details</Link>
                 </Button>
             </CardFooter>
         </Card>

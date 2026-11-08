@@ -31,7 +31,7 @@ export function Cancellation({ event }: { event: EditableEvent }) {
         });
 
         if (confirmed) {
-            router.post(`/events/${event.id}/cancel`, {}, { preserveScroll: true });
+            router.post(`/events/${event.key}/cancel`, {}, { preserveScroll: true });
         }
     };
 
@@ -101,7 +101,7 @@ export function Cancellation({ event }: { event: EditableEvent }) {
                         type="button"
                         variant="outline"
                         className="self-start"
-                        onClick={() => router.delete(`/events/${event.id}/cancel`, { preserveScroll: true })}
+                        onClick={() => router.delete(`/events/${event.key}/cancel`, { preserveScroll: true })}
                     >
                         <RotateCcw />
                         Restore {noun}

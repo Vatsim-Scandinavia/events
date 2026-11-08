@@ -95,7 +95,7 @@ class DiscordRosterMessagesTest extends TestCase
     {
         [$event] = $this->shiftEvent();
 
-        $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($this->staff)->get("/events/{$event->getRouteKey()}/edit")->assertInertia(fn (Assert $page) => $page
             ->where('integrationFields.0.key', RosterMessages::FIELD)
             ->where('integrationFields.0.status', null));
 
@@ -105,9 +105,9 @@ class DiscordRosterMessagesTest extends TestCase
         $this->assertSame(['parse' => []], $this->calls[1][1]['allowed_mentions']);
         $embed = $this->calls[1][1]['embeds'][0];
         $this->assertSame('Copenhagen Tuesday', $embed['title']);
-        $this->assertSame(url("/events/{$event->id}"), $embed['url']);
+        $this->assertSame(url("/events/{$event->getRouteKey()}"), $embed['url']);
         $this->assertSame(
-            "**Tue 10 Nov 2026, 16:00–20:00z**\n\n**EKCH\\_TWR**\n`16:00–18:00z` *open*\n`18:00–20:00z` *open*\n\n[Book on the Hub](".url("/events/{$event->id}").')',
+            "**Tue 10 Nov 2026, 16:00–20:00z**\n\n**EKCH\\_TWR**\n`16:00–18:00z` *open*\n`18:00–20:00z` *open*\n\n[Book on the Hub](".url("/events/{$event->getRouteKey()}").')',
             $embed['description'],
         );
 
@@ -117,7 +117,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->assertStringNotContainsString('roster-secret', (string) DB::table('discord_roster_messages')->value('webhook'));
 
         // The webhook is never sent back; the page shows where it posts instead.
-        $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($this->staff)->get("/events/{$event->getRouteKey()}/edit")->assertInertia(fn (Assert $page) => $page
             ->where('integrationFields.0.value', null)
             ->where('integrationFields.0.status', 'Posts as Event Hub in channel channel-123'));
     }
@@ -170,7 +170,7 @@ class DiscordRosterMessagesTest extends TestCase
         $tower = $event->positions()->create(['callsign' => 'EKCH_TWR']);
         $kim = User::factory()->controller()->create(['name' => 'Kim Berg', 'vatsim_cid' => 1000001]);
         $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
-        $plan = fn (bool $publish) => $this->actingAs($this->staff)->put("/events/{$event->id}/staffing/plan", [
+        $plan = fn (bool $publish) => $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}/staffing/plan", [
             'occurrence_id' => $occurrence->id,
             'positions' => [['key' => $tower->id, 'callsign' => 'EKCH_TWR']],
             'roster' => [['id' => $occurrence->rosterEntries()->value('id'), 'position' => $tower->id, 'user_id' => $kim->id, 'start' => 0, 'end' => 120]],
@@ -218,13 +218,13 @@ class DiscordRosterMessagesTest extends TestCase
         [$event] = $this->shiftEvent();
         $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}/cancel")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/cancel")->assertSessionHasNoErrors();
         $this->assertSame('Event cancelled.', $this->lastDescription());
 
-        $this->actingAs($this->staff)->delete("/events/{$event->id}/cancel")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->delete("/events/{$event->getRouteKey()}/cancel")->assertSessionHasNoErrors();
         $this->assertStringStartsWith('**Tue 10 Nov 2026', $this->lastDescription());
 
-        $this->actingAs($this->staff)->delete("/events/{$event->id}")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->delete("/events/{$event->getRouteKey()}")->assertSessionHasNoErrors();
         $this->assertSame('DELETE 123 messages/900', $this->lastCall());
         $this->assertSame(0, RosterMessage::query()->count());
     }
@@ -292,7 +292,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
 
         $this->assertNull(RosterMessage::query()->value('channel_id'));
-        $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page
+        $this->actingAs($this->staff)->get("/events/{$event->getRouteKey()}/edit")->assertInertia(fn (Assert $page) => $page
             ->where('integrationFields.0.status', 'Saved, but not checked yet: Discord couldn’t be reached. The message is posted once it can be.'));
 
         $this->discordDown = false;
@@ -328,7 +328,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->saveEvent($event, [], removed: [RosterMessages::FIELD]);
 
         $this->assertSame(['Copenhagen Tuesday: roster message not updated. Discord couldn’t take it (HTTP 503). Try again later.'], app(RosterMessages::class)->needsAttention());
-        $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page->where('integrationFields.0.status', null));
+        $this->actingAs($this->staff)->get("/events/{$event->getRouteKey()}/edit")->assertInertia(fn (Assert $page) => $page->where('integrationFields.0.status', null));
 
         $this->discordDown = false;
         app(RosterMessages::class)->sweep();
@@ -367,7 +367,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
         $this->assertSame(['GET 123'], $this->methods());
 
-        $this->actingAs($this->staff)->post("/events/{$event->id}/publish")->assertSessionHasNoErrors();
+        $this->actingAs($this->staff)->post("/events/{$event->getRouteKey()}/publish")->assertSessionHasNoErrors();
         $this->assertEqualsCanonicalizing(['GET 123', 'POST 777', 'POST 123'], $this->methods());
 
         $announcement = collect($this->calls)->first(fn (array $call) => $call[0] === 'POST 777')[1];
@@ -387,7 +387,7 @@ class DiscordRosterMessagesTest extends TestCase
 
         $this->assertSame('DELETE 123 messages/900', $this->lastCall());
         $this->assertSame(0, RosterMessage::query()->count());
-        $this->actingAs($this->staff)->get("/events/{$event->id}/edit")->assertInertia(fn (Assert $page) => $page->where('integrationFields', []));
+        $this->actingAs($this->staff)->get("/events/{$event->getRouteKey()}/edit")->assertInertia(fn (Assert $page) => $page->where('integrationFields', []));
     }
 
     public function test_a_long_roster_is_cut_short_with_a_link_to_the_hub(): void
@@ -403,7 +403,7 @@ class DiscordRosterMessagesTest extends TestCase
 
         $description = $this->lastDescription();
         $this->assertLessThanOrEqual(4096, mb_strlen($description));
-        $this->assertMatchesRegularExpression('/…and \d+ more\. \[See the Hub\]\('.preg_quote(url("/events/{$event->id}"), '/').'\)$/', $description);
+        $this->assertMatchesRegularExpression('/…and \d+ more\. \[See the Hub\]\('.preg_quote(url("/events/{$event->getRouteKey()}"), '/').'\)$/', $description);
     }
 
     public function test_sections_head_their_positions_and_one_without_a_label_is_a_rule(): void
@@ -420,7 +420,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
 
         $this->assertSame(
-            "**Tue 10 Nov 2026, 16:00–20:00z**\n\n__**Kastrup**__\n**EKCH\\_TWR**\n`16:00–18:00z` *open*\n`18:00–20:00z` *open*\n\n───────────\n**EKCH\\_APP**\n`16:00–20:00z` *open*\n\n[Book on the Hub](".url("/events/{$event->id}").')',
+            "**Tue 10 Nov 2026, 16:00–20:00z**\n\n__**Kastrup**__\n**EKCH\\_TWR**\n`16:00–18:00z` *open*\n`18:00–20:00z` *open*\n\n───────────\n**EKCH\\_APP**\n`16:00–20:00z` *open*\n\n[Book on the Hub](".url("/events/{$event->getRouteKey()}").')',
             $this->lastDescription(),
         );
     }
@@ -456,7 +456,7 @@ class DiscordRosterMessagesTest extends TestCase
     private function saveEvent(Event $event, array $fields, array $removed = [], array $errors = []): void
     {
         $event->refresh();
-        $response = $this->actingAs($this->staff)->put("/events/{$event->id}", [
+        $response = $this->actingAs($this->staff)->put("/events/{$event->getRouteKey()}", [
             'fir_id' => $event->fir_id,
             'name' => $errors ? 'Renamed' : $event->name,
             'airports' => $event->airports,

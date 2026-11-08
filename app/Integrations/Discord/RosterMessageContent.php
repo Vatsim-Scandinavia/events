@@ -27,7 +27,7 @@ final class RosterMessageContent
      */
     public static function for(Event $event): array
     {
-        $url = url("/events/{$event->id}");
+        $url = route('events.show', $event);
         $occurrence = $event->isCancelled() ? null : $event->occurrences()
             ->whereNull('cancelled_at')
             ->where('ends_at', '>', now())

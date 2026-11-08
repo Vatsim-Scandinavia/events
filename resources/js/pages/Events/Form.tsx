@@ -114,9 +114,9 @@ export default function EventForm({ event, types, firs, timezones, integrationFi
             // Files can only be sent as multipart, which Laravel reads on POST, so the PUT is spoofed.
             if (data.banner) {
                 form.transform((values) => ({ ...payload(values), _method: 'put' }));
-                form.post(`/events/${event.id}`, { preserveScroll: true });
+                form.post(`/events/${event.key}`, { preserveScroll: true });
             } else {
-                form.put(`/events/${event.id}`, { preserveScroll: true });
+                form.put(`/events/${event.key}`, { preserveScroll: true });
             }
         } else {
             form.post('/events', { preserveScroll: true });
@@ -137,7 +137,7 @@ export default function EventForm({ event, types, firs, timezones, integrationFi
         });
 
         if (confirmed) {
-            router.delete(`/events/${event.id}`);
+            router.delete(`/events/${event.key}`);
         }
     };
 
@@ -148,7 +148,7 @@ export default function EventForm({ event, types, firs, timezones, integrationFi
             <form onSubmit={submit} className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
                 <div className="flex flex-col gap-3">
                     <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
-                        <Link href={event ? `/events/${event.id}` : '/events'}>
+                        <Link href={event ? `/events/${event.key}` : '/events'}>
                             <ArrowLeft />
                             {event ? 'Back to event' : 'All events'}
                         </Link>
@@ -200,7 +200,7 @@ export default function EventForm({ event, types, firs, timezones, integrationFi
                         {event ? 'Save changes' : 'Create event'}
                     </Button>
                     <Button variant="ghost" asChild>
-                        <Link href={event ? `/events/${event.id}` : '/events'}>Cancel</Link>
+                        <Link href={event ? `/events/${event.key}` : '/events'}>Cancel</Link>
                     </Button>
                     {event && (
                         <Button type="button" variant="destructive" className="sm:ml-auto" onClick={destroy}>

@@ -20,7 +20,7 @@ export default function Staffing(props: StaffingPageProps) {
             <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6">
                 <div className="flex flex-col gap-3">
                     <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
-                        <Link href={`/events/${event.id}`}>
+                        <Link href={`/events/${event.key}`}>
                             <ArrowLeft />
                             Back to event
                         </Link>
@@ -88,7 +88,7 @@ function Planner(props: StaffingPageProps) {
     const save = (publish = false) => {
         setSaving(true);
         router.put(
-            `/events/${event.id}/staffing/plan`,
+            `/events/${event.key}/staffing/plan`,
             {
                 occurrence_id: occurrence.id,
                 // Positions and Sections, in the order shown.

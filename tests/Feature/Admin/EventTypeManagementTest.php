@@ -51,6 +51,6 @@ class EventTypeManagementTest extends TestCase
 
         $this->assertModelMissing($type);
         $this->assertNull($event->fresh()->event_type_id);
-        $this->get("/events/{$event->id}")->assertInertia(fn (Assert $page) => $page->where('event.type', 'General'));
+        $this->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('event.type', 'General'));
     }
 }

@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import type { EventStaffing } from '@/types/staffing';
 
 type Props = {
-    eventId: number;
+    // How links name the event, e.g. "42-copenhagen-fly-in".
+    eventKey: string;
     staffing: Exclude<EventStaffing, { mode: 'none' }>;
 };
 
@@ -14,7 +15,7 @@ type Props = {
  * The controller-facing half of staffing on the event page: book shifts, or show
  * interest and see the published roster.
  */
-export default function EventStaffing({ eventId, staffing }: Props) {
+export default function EventStaffing({ eventKey, staffing }: Props) {
     return (
         <section aria-labelledby="staffing" className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -26,7 +27,7 @@ export default function EventStaffing({ eventId, staffing }: Props) {
                 </h2>
                 {staffing.canManage && (
                     <Button variant="outline" size="sm" asChild>
-                        <Link href={`/events/${eventId}/staffing?occurrence=${staffing.occurrence.id}`}>Manage staffing</Link>
+                        <Link href={`/events/${eventKey}/staffing?occurrence=${staffing.occurrence.id}`}>Manage staffing</Link>
                     </Button>
                 )}
             </div>

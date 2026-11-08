@@ -45,7 +45,7 @@ class StaffingSetupTest extends TestCase
 
     public function test_staff_can_choose_the_staffing_mode_and_interest_window(): void
     {
-        $this->actingAs($this->staff)->put("/events/{$this->event->id}/staffing", [
+        $this->actingAs($this->staff)->put("/events/{$this->event->getRouteKey()}/staffing", [
             'mode' => 'open_interest',
             'interest_opens_hours' => 240,
             'interest_closes_hours' => 24,
@@ -59,7 +59,7 @@ class StaffingSetupTest extends TestCase
 
     public function test_the_interest_window_must_close_after_it_opens(): void
     {
-        $this->actingAs($this->staff)->put("/events/{$this->event->id}/staffing", [
+        $this->actingAs($this->staff)->put("/events/{$this->event->getRouteKey()}/staffing", [
             'mode' => 'open_interest',
             'interest_opens_hours' => 24,
             'interest_closes_hours' => 48,
@@ -73,7 +73,7 @@ class StaffingSetupTest extends TestCase
      */
     private function savePlan(array $plan, ?User $as = null)
     {
-        return $this->actingAs($as ?? $this->staff)->put("/events/{$this->event->id}/staffing/plan", [
+        return $this->actingAs($as ?? $this->staff)->put("/events/{$this->event->getRouteKey()}/staffing/plan", [
             'occurrence_id' => $this->event->occurrences()->sole()->id,
             ...$plan,
         ]);
@@ -81,7 +81,7 @@ class StaffingSetupTest extends TestCase
 
     private function switchMode(string $mode)
     {
-        return $this->actingAs($this->staff)->put("/events/{$this->event->id}/staffing", [
+        return $this->actingAs($this->staff)->put("/events/{$this->event->getRouteKey()}/staffing", [
             'mode' => $mode,
             'interest_opens_hours' => 336,
             'interest_closes_hours' => 48,
@@ -262,7 +262,7 @@ class StaffingSetupTest extends TestCase
         $occurrence->rosterEntries()->create(['event_position_id' => $tower->id, 'user_id' => User::factory()->controller()->create()->id, 'starts_at' => $occurrence->starts_at->addHour(), 'ends_at' => $occurrence->ends_at]);
 
         $this->actingAsGuest();
-        $this->get("/events/{$this->event->id}")->assertInertia(fn (Assert $page) => $page
+        $this->get("/events/{$this->event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('staffing.positions.0.section', null)
             ->where('staffing.positions.1.section', ['id' => $section->id, 'label' => 'Approach'])
             ->where('staffing.roster.0.callsign', 'EKCH_TWR')
@@ -394,10 +394,10 @@ class StaffingSetupTest extends TestCase
         $position = $this->event->positions()->sole();
 
         $this->actingAsGuest();
-        $this->get("/events/{$this->event->id}")->assertInertia(fn (Assert $page) => $page->has('staffing.positions', 0));
+        $this->get("/events/{$this->event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->has('staffing.positions', 0));
 
         $position->shifts()->create(['starts_offset' => 0, 'ends_offset' => 120]);
-        $this->get("/events/{$this->event->id}")->assertInertia(fn (Assert $page) => $page->has('staffing.positions', 1));
+        $this->get("/events/{$this->event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->has('staffing.positions', 1));
     }
 
     public function test_only_event_staff_can_set_up_staffing(): void
@@ -405,8 +405,8 @@ class StaffingSetupTest extends TestCase
         $controller = User::factory()->controller()->create();
         $this->event->update(['staffing_mode' => StaffingMode::Shifts]);
 
-        $this->actingAs($controller)->get("/events/{$this->event->id}/staffing")->assertForbidden();
-        $this->actingAs($controller)->put("/events/{$this->event->id}/staffing", ['mode' => 'shifts'])->assertForbidden();
+        $this->actingAs($controller)->get("/events/{$this->event->getRouteKey()}/staffing")->assertForbidden();
+        $this->actingAs($controller)->put("/events/{$this->event->getRouteKey()}/staffing", ['mode' => 'shifts'])->assertForbidden();
         $this->savePlan(['positions' => [['key' => -1, 'callsign' => 'EKCH_APP']]], $controller)->assertForbidden();
 
         $this->assertSame(0, $this->event->positions()->count());

@@ -20,11 +20,16 @@ use App\Http\Controllers\Staff\EventPublicationController;
 use App\Http\Controllers\Staff\RosterController;
 use App\Http\Controllers\Staff\StaffingController;
 use App\Http\Controllers\StaffingInterestController;
+use App\Http\Middleware\RedirectToCurrentEventUrl;
 use Illuminate\Support\Facades\Route;
+
+// Events are linked by ID and slug, e.g. 42-copenhagen-fly-in (see Event::getRouteKey). Starting
+// with digits also keeps /events/create and /events/schedule from being read as events.
+Route::pattern('event', '[0-9]+(?:-[a-z0-9-]*)?');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/events', [EventController::class, 'index'])->name('events.index');
-Route::get('/events/{event}', [EventController::class, 'show'])->whereNumber('event')->name('events.show');
+Route::get('/events/{event}', [EventController::class, 'show'])->middleware(RedirectToCurrentEventUrl::class)->name('events.show');
 
 Route::middleware('guest')->group(function () {
     Route::middleware('throttle:sign-in')->group(function () {
@@ -56,7 +61,7 @@ Route::middleware(['auth', 'throttle:signed-in'])->group(function () {
     Route::middleware('can:manage-events')->group(function () {
         Route::get('/events/create', [EventManagementController::class, 'create'])->name('events.create');
         Route::post('/events', [EventManagementController::class, 'store'])->name('events.store');
-        Route::get('/events/{event}/edit', [EventManagementController::class, 'edit'])->name('events.edit');
+        Route::get('/events/{event}/edit', [EventManagementController::class, 'edit'])->middleware(RedirectToCurrentEventUrl::class)->name('events.edit');
         Route::put('/events/{event}', [EventManagementController::class, 'update'])->name('events.update');
         Route::delete('/events/{event}', [EventManagementController::class, 'destroy'])->name('events.destroy');
         // The dates a schedule gives a new or existing event, previewed on the form.
@@ -72,7 +77,7 @@ Route::middleware(['auth', 'throttle:signed-in'])->group(function () {
     });
 
     Route::middleware('can:manage-staffing')->group(function () {
-        Route::get('/events/{event}/staffing', [StaffingController::class, 'edit'])->name('staffing.edit');
+        Route::get('/events/{event}/staffing', [StaffingController::class, 'edit'])->middleware(RedirectToCurrentEventUrl::class)->name('staffing.edit');
         Route::put('/events/{event}/staffing', [StaffingController::class, 'update'])->name('staffing.update');
         Route::put('/events/{event}/staffing/plan', [StaffingController::class, 'plan'])->name('staffing.plan');
 

@@ -122,12 +122,12 @@ class ControlCenterPositionSyncTest extends TestCase
         $event = Event::factory()->withShifts()->create();
         $staff = User::factory()->staff()->create();
 
-        $this->actingAs($staff)->get("/events/{$event->id}/staffing")->assertInertia(fn (Assert $page) => $page->where('catalogue', []));
+        $this->actingAs($staff)->get("/events/{$event->getRouteKey()}/staffing")->assertInertia(fn (Assert $page) => $page->where('catalogue', []));
 
         $this->catalogue('EKCH_TWR', 'Kastrup Tower', '118.105');
         $this->catalogue('EKCH_APP', 'Copenhagen Approach', null);
 
-        $this->actingAs($staff)->get("/events/{$event->id}/staffing")->assertInertia(fn (Assert $page) => $page->where('catalogue', [
+        $this->actingAs($staff)->get("/events/{$event->getRouteKey()}/staffing")->assertInertia(fn (Assert $page) => $page->where('catalogue', [
             ['callsign' => 'EKCH_APP', 'name' => 'Copenhagen Approach', 'frequency' => null],
             ['callsign' => 'EKCH_TWR', 'name' => 'Kastrup Tower', 'frequency' => '118.105'],
         ]));
@@ -143,7 +143,7 @@ class ControlCenterPositionSyncTest extends TestCase
             'ends_at' => Carbon::parse('2026-11-10 20:00', 'UTC'),
         ]);
 
-        $this->actingAs(User::factory()->staff()->create())->put("/events/{$event->id}/staffing/plan", [
+        $this->actingAs(User::factory()->staff()->create())->put("/events/{$event->getRouteKey()}/staffing/plan", [
             'occurrence_id' => $event->occurrences()->sole()->id,
             'positions' => [['key' => -1, 'callsign' => 'EKCH_TWR', 'frequency' => '118.105'], ['key' => -2, 'callsign' => 'EKDK_X_CTR']],
             'shifts' => [],

@@ -57,7 +57,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                             <div className="flex items-center gap-2">
                                 {event.draft && <PublishButton event={event} />}
                                 <Button variant="outline" size="sm" asChild>
-                                    <Link href={`/events/${event.id}/edit`}>
+                                    <Link href={`/events/${event.key}/edit`}>
                                         <Pencil />
                                         Edit event
                                     </Link>
@@ -114,13 +114,13 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                         </section>
                     )}
 
-                    {!cancelled && staffing.mode !== 'none' && <EventStaffing eventId={event.id} staffing={staffing} />}
+                    {!cancelled && staffing.mode !== 'none' && <EventStaffing eventKey={event.key} staffing={staffing} />}
 
                     {!cancelled && staffing.mode === 'none' && staffing.canManage && (
                         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm ring-1 ring-foreground/10">
                             <span className="text-muted-foreground">Controllers can't staff this event yet.</span>
                             <Button variant="outline" size="sm" asChild>
-                                <Link href={`/events/${event.id}/staffing`}>Set up staffing</Link>
+                                <Link href={`/events/${event.key}/staffing`}>Set up staffing</Link>
                             </Button>
                         </div>
                     )}
@@ -222,7 +222,7 @@ function PublishButton({ event }: { event: HubEventDetail }) {
         });
 
         if (confirmed) {
-            router.post(`/events/${event.id}/publish`, {}, { preserveScroll: true });
+            router.post(`/events/${event.key}/publish`, {}, { preserveScroll: true });
         }
     };
 

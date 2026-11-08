@@ -30,7 +30,7 @@ export default function EventCard({ event }: { event: HubEvent }) {
             {/* Pinned to the bottom, so cards in a row line up with or without a Summary. */}
             <CardFooter className="mt-auto">
                 <Button variant="outline" className="w-full" asChild>
-                    <Link href={`/events/${event.id}`}>View details</Link>
+                    <Link href={`/events/${event.key}`}>View details</Link>
                 </Button>
             </CardFooter>
         </Card>
