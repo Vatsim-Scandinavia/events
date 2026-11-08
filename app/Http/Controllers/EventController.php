@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\EventDetailResource;
 use App\Http\Resources\EventResource;
 use App\Models\Event;
+use App\Services\LinkPreview;
 use App\Staffing\StaffingPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -21,7 +22,7 @@ class EventController extends Controller
         ]);
     }
 
-    public function show(Request $request, Event $event, StaffingPresenter $staffing): Response
+    public function show(Request $request, Event $event, StaffingPresenter $staffing, LinkPreview $preview): Response
     {
         // A Draft is not found for anyone who may not see it, rather than forbidden.
         abort_unless(Gate::allows('view', $event), 404);
@@ -33,6 +34,6 @@ class EventController extends Controller
             'event' => (new EventDetailResource($event))->resolve(),
             'staffing' => $staffing->forEventPage($event, $occurrence, $request->user()),
             'canEdit' => Gate::allows('update', $event),
-        ]);
+        ])->withViewData(['preview' => $preview->event($event)]);
     }
 }
