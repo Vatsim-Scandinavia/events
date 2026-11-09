@@ -90,7 +90,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                 </div>
             </section>
 
-            <div className="mx-auto grid max-w-6xl items-start gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_320px]">
+            <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="flex flex-col gap-10">
                     <section aria-labelledby="about">
                         <SectionHeading id="about">About this event</SectionHeading>

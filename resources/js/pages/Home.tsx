@@ -24,7 +24,7 @@ export default function Home({ upcomingEvents, networkStats }: HomeProps) {
 
             <section className="relative overflow-hidden border-b bg-muted/40">
                 <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-(image:--hero)" />
-                <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 md:py-24 lg:grid-cols-[1fr_400px]">
+                <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-4 py-20 sm:px-6 md:py-24 lg:grid-cols-[minmax(0,1fr)_400px]">
                     <div className="flex flex-col items-start gap-6">
                         <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
                             Fly and control with {vacc.name}.
