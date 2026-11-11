@@ -18,7 +18,7 @@ export function SectionTableRow({ section, columns }: { section: PositionSection
     if (section.label === null) {
         return (
             <tr aria-hidden="true">
-                <td colSpan={columns} className="h-1.5 bg-muted/60 p-0" />
+                <td colSpan={columns} className="h-2 bg-muted/60 p-0" />
             </tr>
         );
     }
@@ -28,7 +28,7 @@ export function SectionTableRow({ section, columns }: { section: PositionSection
             <th
                 scope="colgroup"
                 colSpan={columns}
-                className="bg-muted/40 px-4 py-1.5 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase"
+                className="bg-muted/40 px-4 py-2 text-left text-xs font-semibold tracking-wide text-muted-foreground uppercase"
             >
                 {section.label}
             </th>

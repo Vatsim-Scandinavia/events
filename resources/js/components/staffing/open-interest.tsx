@@ -1,5 +1,5 @@
 import { router, useForm, usePage } from '@inertiajs/react';
-import { CalendarClock, EyeOff, ListChecks, Plus, Users, X } from 'lucide-react';
+import { EyeOff, ListChecks, Plus, Users, X } from 'lucide-react';
 import { Fragment, type FormEvent } from 'react';
 import { SectionTableRow, withSectionHeadings } from '@/components/staffing/sections';
 import SignInPrompt from '@/components/staffing/sign-in-prompt';
@@ -11,15 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { describeTimezone } from '@/lib/time';
-import type {
-    AvailabilityWindow,
-    EventStaffing,
-    Interest,
-    InterestWindowState,
-    RosterEntry,
-    StaffingPosition,
-    StaffInterest,
-} from '@/types/staffing';
+import type { AvailabilityWindow, EventStaffing, Interest, RosterEntry, StaffingPosition, StaffInterest } from '@/types/staffing';
 
 /**
  * Staffing by open interest on the event page: controllers show their interest and
@@ -32,15 +24,6 @@ export default function OpenInterest({ staffing }: { staffing: Extract<EventStaf
 
     return (
         <>
-            {draft ? (
-                <p className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <CalendarClock className="mt-0.5 size-4 shrink-0" />
-                    Controllers can show interest once the event is published.
-                </p>
-            ) : (
-                <WindowNotice state={interest.state} opensAt={interest.opensAt} closesAt={interest.closesAt} />
-            )}
-
             {open && viewer.signedIn && viewer.eligible ? (
                 <InterestForm occurrenceId={occurrence.id} positions={staffing.positions} mine={interest.mine} />
             ) : (
@@ -81,13 +64,13 @@ function InterestList({ interests }: { interests: StaffInterest[] }) {
                     <table className="w-full text-sm">
                         <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                             <tr>
-                                <th scope="col" className="px-4 py-2.5 font-medium">
+                                <th scope="col" className="px-4 py-3 font-medium">
                                     Controller
                                 </th>
-                                <th scope="col" className="px-4 py-2.5 font-medium">
+                                <th scope="col" className="px-4 py-3 font-medium">
                                     Positions
                                 </th>
-                                <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                                <th scope="col" className="px-4 py-3 text-right font-medium">
                                     Available
                                 </th>
                             </tr>
@@ -95,15 +78,15 @@ function InterestList({ interests }: { interests: StaffInterest[] }) {
                         <tbody className="divide-y">
                             {interests.map((item) => (
                                 <tr key={item.id} className="align-top">
-                                    <td className="px-4 py-2.5">
+                                    <td className="px-4 py-3">
                                         {item.controller.name}
                                         {item.controller.cid && String(item.controller.cid) !== item.controller.name && (
-                                            <span className="ml-1.5 text-xs text-muted-foreground">{item.controller.cid}</span>
+                                            <span className="ml-2 text-xs text-muted-foreground">{item.controller.cid}</span>
                                         )}
                                         {item.notes && <p className="mt-1 text-xs whitespace-pre-line text-muted-foreground">{item.notes}</p>}
                                     </td>
-                                    <td className="px-4 py-2.5 font-mono">{item.callsigns.join(', ')}</td>
-                                    <td className="px-4 py-2.5 text-right font-mono whitespace-nowrap tabular-nums">{formatWindows(item.windows)}</td>
+                                    <td className="px-4 py-3 font-mono">{item.callsigns.join(', ')}</td>
+                                    <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums">{formatWindows(item.windows)}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -114,19 +97,21 @@ function InterestList({ interests }: { interests: StaffInterest[] }) {
     );
 }
 
-function WindowNotice({ state, opensAt, closesAt }: { state: InterestWindowState; opensAt: string; closesAt: string }) {
-    const text = {
+/**
+ * What the section's description says about the interest window.
+ */
+export function openInterestHint(staffing: Extract<EventStaffing, { mode: 'open_interest' }>): string {
+    const { state, opensAt, closesAt } = staffing.interest;
+
+    if (staffing.draft) {
+        return 'Controllers can show interest once the event is published.';
+    }
+
+    return {
         upcoming: `Controllers can show interest from ${opensAt}.`,
         open: `Show your interest and availability by ${closesAt}. Event Staff will publish a roster before the event.`,
         closed: `Interest closed ${closesAt}.`,
     }[state];
-
-    return (
-        <p className="flex items-start gap-2 text-sm text-muted-foreground">
-            <CalendarClock className="mt-0.5 size-4 shrink-0" />
-            {text}
-        </p>
-    );
 }
 
 function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number; positions: StaffingPosition[]; mine: Interest | null }) {
@@ -157,7 +142,7 @@ function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number;
     };
 
     return (
-        <form onSubmit={submit} className="flex flex-col gap-5 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+        <form onSubmit={submit} className="flex flex-col gap-6 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
             <div className="flex items-center justify-between gap-2">
                 <h3 className="font-medium">{mine ? 'Your interest' : 'Show interest'}</h3>
                 {mine && <Badge variant="secondary">Saved</Badge>}
@@ -176,18 +161,19 @@ function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number;
                                         {heading.label}
                                     </p>
                                 ))}
-                            <Label className="cursor-pointer rounded-lg px-3 py-2.5 font-normal ring-1 ring-foreground/10 has-checked:bg-primary/10 has-checked:ring-primary/50">
+                            {/* Top-aligned, so a position with a note keeps its checkbox on the callsign's line. */}
+                            <Label className="cursor-pointer items-start rounded-lg px-3 py-3 font-normal ring-1 ring-foreground/10 has-checked:bg-primary/10 has-checked:ring-primary/50">
                                 <input
                                     type="checkbox"
-                                    className="size-4 accent-primary"
+                                    className="mt-0.5 size-4 shrink-0 accent-primary"
                                     checked={form.data.positions.includes(position.id)}
                                     onChange={() => toggle(position.id)}
                                 />
                                 <span className="flex flex-col">
-                                    <span className="font-mono">{position.callsign}</span>
+                                    <span className="font-mono leading-5">{position.callsign}</span>
                                     <PositionNote note={position.note} />
                                 </span>
-                                <span className="ml-auto self-start font-mono text-xs text-muted-foreground">{position.frequency}</span>
+                                <span className="ml-auto font-mono text-xs leading-5 text-muted-foreground">{position.frequency}</span>
                             </Label>
                         </Fragment>
                     ))}
@@ -195,7 +181,7 @@ function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number;
                 <FieldError message={form.errors.positions} />
             </fieldset>
 
-            <fieldset className="flex flex-col gap-3">
+            <fieldset className="flex flex-col gap-2">
                 <legend className="mb-2 text-sm font-medium">When you're available ({describeTimezone(displayTimezone)})</legend>
                 {form.data.windows.length === 0 && (
                     <p className="text-sm text-muted-foreground">Leave this empty if you're available for the whole event.</p>
@@ -206,7 +192,7 @@ function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number;
                     const windowError = errors[`windows.${index}`];
 
                     return (
-                        <div key={index} className="flex flex-col gap-1.5">
+                        <div key={index} className="flex flex-col gap-2">
                             <div className="flex items-end gap-2">
                                 <Field label="From" className="flex-1">
                                     <Input
@@ -288,7 +274,7 @@ function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number;
 
 function InterestSummary({ interest }: { interest: Interest }) {
     return (
-        <div className="flex flex-col gap-1 rounded-xl bg-card p-4 text-sm ring-1 ring-foreground/10">
+        <div className="flex flex-col gap-2 rounded-xl bg-card p-4 text-sm ring-1 ring-foreground/10">
             <span className="font-medium">Your interest</span>
             <span className="text-muted-foreground">
                 <span className="font-mono">{interest.callsigns.join(', ')}</span> · available {formatWindows(interest.windows)}
@@ -306,14 +292,17 @@ function PositionList({ positions }: { positions: StaffingPosition[] }) {
         return null;
     }
 
+    // Plain text, not badges: these can't be clicked.
     return (
-        <div className="flex flex-wrap gap-1.5">
-            {positions.map((position) => (
-                <Badge key={position.id} variant="outline" className="font-mono">
-                    {position.callsign}
-                </Badge>
+        <p className="text-sm text-muted-foreground">
+            Positions:{' '}
+            {positions.map((position, index) => (
+                <Fragment key={position.id}>
+                    {index > 0 && ' · '}
+                    <span className="font-mono whitespace-nowrap">{position.callsign}</span>
+                </Fragment>
             ))}
-        </div>
+        </p>
     );
 }
 
@@ -349,13 +338,13 @@ function RosterTable({ entries }: { entries: RosterEntry[] }) {
             <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                     <tr>
-                        <th scope="col" className="px-4 py-2.5 font-medium">
+                        <th scope="col" className="px-4 py-3 font-medium">
                             Position
                         </th>
-                        <th scope="col" className="px-4 py-2.5 font-medium">
+                        <th scope="col" className="px-4 py-3 font-medium">
                             Controller
                         </th>
-                        <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                        <th scope="col" className="px-4 py-3 text-right font-medium">
                             Time
                         </th>
                     </tr>
@@ -365,15 +354,15 @@ function RosterTable({ entries }: { entries: RosterEntry[] }) {
                         <Fragment key={entry.id}>
                             {heading && <SectionTableRow section={heading} columns={3} />}
                             <tr>
-                                <td className="px-4 py-2.5 font-mono">{entry.callsign}</td>
-                                <td className="px-4 py-2.5">
+                                <td className="px-4 py-3 font-mono">{entry.callsign}</td>
+                                <td className="px-4 py-3">
                                     {entry.controller.name}
                                     {entry.controller.cid && String(entry.controller.cid) !== entry.controller.name && (
-                                        <span className="ml-1.5 text-xs text-muted-foreground">{entry.controller.cid}</span>
+                                        <span className="ml-2 text-xs text-muted-foreground">{entry.controller.cid}</span>
                                     )}
-                                    <NotesIcon notes={entry.notes} className="ml-1.5" />
+                                    <NotesIcon notes={entry.notes} className="ml-2" />
                                 </td>
-                                <td className="px-4 py-2.5 text-right font-mono whitespace-nowrap tabular-nums">{entry.time}</td>
+                                <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums">{entry.time}</td>
                             </tr>
                         </Fragment>
                     ))}

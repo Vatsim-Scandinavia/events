@@ -12,7 +12,7 @@ export function NotesIcon({ notes, className }: { notes: string[]; className?: s
 
     return (
         <span title={notes.join('\n')} className={cn('inline-flex shrink-0 align-middle text-warning', className)}>
-            <TriangleAlert className="size-3.5" aria-hidden />
+            <TriangleAlert className="size-4" aria-hidden />
             <span className="sr-only">{notes.join(' ')}</span>
         </span>
     );
@@ -21,9 +21,10 @@ export function NotesIcon({ notes, className }: { notes: string[]; className?: s
 /**
  * What the signed-in controller should know before working a position.
  */
-export function PositionNote({ note }: { note: string | null | undefined }) {
+export function PositionNote({ note, className }: { note: string | null | undefined; className?: string }) {
     return note ? (
-        <span className="mt-0.5 flex items-start gap-1 text-xs font-normal text-warning">
+        <span className={cn('mt-1 flex items-start gap-1 text-xs font-normal text-warning', className)}>
+            {/* Nudged 1px to sit on the first line of the note. */}
             <TriangleAlert className="mt-px size-3 shrink-0" aria-hidden />
             {note}
         </span>

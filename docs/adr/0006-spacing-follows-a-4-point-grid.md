@@ -6,6 +6,10 @@ Every margin, padding and gap is a multiple of 4px: 4, 8, 12, 16, 24, 32 and so 
 
 Space inside a group is never larger than the space around it. Related items, such as a title and its summary, the badges in a row, or a date and a time, are 8px apart. Groups within a card, such as the header, the details and the footer, are 16px apart, which is the card padding as well. Content is placed in the card slot that matches it: the title and summary in `CardHeader`, supporting details in `CardContent`, and actions in `CardFooter`.
 
+Forms are spaced a step wider: 24px between their parts (each fieldset, the notes, the buttons) and 8px inside them, because labelled groups of inputs need clearer separation than the details on a card. Rows people tap, such as checkboxes in a form or items in the phone menu, are 44px tall.
+
+The one exception to the grid is optical: an icon may be nudged by 1–2px (`mt-px`, `mt-0.5`) so it sits on the first line of the text beside it. That is alignment, not spacing; the space between elements stays on the grid.
+
 Cards shown side by side are read as a comparison, so the same detail sits at the same height on each one. Optional content, like an Event's Summary, must not move what comes after it: the details and actions are pinned to the bottom of the card, and any free space goes between the header and the details. A placeholder such as "No summary" is not added, since it is noise that looks like content.
 
 ## Considered Options

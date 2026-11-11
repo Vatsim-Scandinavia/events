@@ -12,22 +12,12 @@ import type { EventStaffing, PositionWithShifts, Shift } from '@/types/staffing'
  * Staffing by shifts on the event page: controllers book a free shift on a position.
  */
 export default function ShiftBoard({ staffing }: { staffing: Extract<EventStaffing, { mode: 'shifts' }> }) {
-    const { viewer, bookingOpen: open, occurrence, draft } = staffing;
-    const bookingOpen = open && !draft;
-
-    const hint = draft
-        ? 'Controllers can book shifts once the event is published.'
-        : !bookingOpen
-          ? 'Booking closed when the event started.'
-          : !viewer.signedIn
-            ? 'Sign in to book a shift.'
-            : !viewer.eligible
-              ? 'You need a controller rating (S1 or above) to book shifts.'
-              : 'Pick a free shift to book it. You can cancel until the event starts.';
+    const { viewer, occurrence } = staffing;
+    const bookingOpen = staffing.bookingOpen && !staffing.draft;
 
     return (
         <>
-            {bookingOpen && !viewer.signedIn ? <SignInPrompt>{hint}</SignInPrompt> : <p className="text-sm text-muted-foreground">{hint}</p>}
+            {bookingOpen && !viewer.signedIn && <SignInPrompt>Sign in to book a shift.</SignInPrompt>}
             {staffing.positions.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Positions for this event haven't been set up yet.</p>
             ) : (
@@ -35,6 +25,29 @@ export default function ShiftBoard({ staffing }: { staffing: Extract<EventStaffi
             )}
         </>
     );
+}
+
+/**
+ * What the section's description says about booking, or null when a sign-in prompt says it instead.
+ */
+export function shiftBoardHint(staffing: Extract<EventStaffing, { mode: 'shifts' }>): string | null {
+    const { viewer, draft } = staffing;
+
+    if (draft) {
+        return 'Controllers can book shifts once the event is published.';
+    }
+
+    if (!staffing.bookingOpen) {
+        return 'Booking closed when the event started.';
+    }
+
+    if (!viewer.signedIn) {
+        return null;
+    }
+
+    return viewer.eligible
+        ? 'Pick a free shift to book it. You can cancel until the event starts.'
+        : 'You need a controller rating (S1 or above) to book shifts.';
 }
 
 // One row per shift, with each position's callsign spanning its shifts, so positions with
@@ -45,13 +58,13 @@ function ShiftTable({ positions, occurrenceId, canBook }: { positions: PositionW
             <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                     <tr>
-                        <th scope="col" className="px-4 py-2.5 font-medium">
+                        <th scope="col" className="px-4 py-3 font-medium">
                             Position
                         </th>
-                        <th scope="col" className="px-4 py-2.5 font-medium">
+                        <th scope="col" className="px-4 py-3 font-medium">
                             Shift
                         </th>
-                        <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                        <th scope="col" className="px-4 py-3 text-right font-medium">
                             Controller
                         </th>
                     </tr>
@@ -80,11 +93,19 @@ function ShiftTable({ positions, occurrenceId, canBook }: { positions: PositionW
                                 >
                                     {index === 0 && <PositionCell position={position} rows={position.shifts.length} />}
                                     <td className="px-4 py-2 font-mono whitespace-nowrap tabular-nums">{shift.time}</td>
-                                    <td className="px-4 py-1.5 text-right">
+                                    <td className="px-4 py-2 text-right">
                                         <ShiftStatus shift={shift} callsign={position.callsign} occurrenceId={occurrenceId} canBook={canBook} />
                                     </td>
                                 </tr>
                             ))}
+                            {/* On phones the Position column is too narrow for a note, so it gets the full width below the shifts. */}
+                            {position.note && (
+                                <tr className="!border-t-0 sm:hidden">
+                                    <td colSpan={3} className="px-4 pt-0 pb-2">
+                                        <PositionNote note={position.note} />
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </Fragment>
                 ))}
@@ -98,7 +119,7 @@ function PositionCell({ position, rows }: { position: PositionWithShifts; rows: 
         <th scope="rowgroup" rowSpan={rows} className="px-4 py-2 text-left align-top font-normal">
             <span className="block font-mono font-medium">{position.callsign}</span>
             {position.frequency && <span className="block font-mono text-xs text-muted-foreground tabular-nums">{position.frequency}</span>}
-            <PositionNote note={position.note} />
+            <PositionNote note={position.note} className="max-sm:hidden" />
         </th>
     );
 }
