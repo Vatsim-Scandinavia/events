@@ -1,11 +1,10 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowRight, CalendarDays, Clock, ExternalLink } from 'lucide-react';
+import { ArrowRight, ExternalLink } from 'lucide-react';
 import type { ReactNode } from 'react';
-import EventCard, { AirportBadges, EventBanner } from '@/components/event-card';
+import EventCard from '@/components/event-card';
 import NetworkStats, { type NetworkStatsData } from '@/components/network-stats';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout';
 import type { HubEvent } from '@/types/event';
 
@@ -62,7 +61,7 @@ export default function Home({ upcomingEvents, networkStats }: HomeProps) {
                         </div>
                     </div>
 
-                    {nextEvent && <NextEventCard event={nextEvent} />}
+                    {nextEvent && <EventCard event={nextEvent} featured />}
                 </div>
             </section>
 
@@ -99,32 +98,3 @@ export default function Home({ upcomingEvents, networkStats }: HomeProps) {
 }
 
 Home.layout = (page: ReactNode) => <AppLayout>{page}</AppLayout>;
-
-function NextEventCard({ event }: { event: HubEvent }) {
-    return (
-        <Card className="pt-0 shadow-2xl shadow-black/40">
-            <EventBanner event={event} />
-            <CardHeader>
-                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Next event</p>
-                <CardTitle className="text-xl">{event.name}</CardTitle>
-                <AirportBadges airports={event.airports} />
-                {event.summary && <p className="line-clamp-2 text-sm text-muted-foreground">{event.summary}</p>}
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-muted-foreground">
-                <span className="flex items-center gap-2">
-                    <CalendarDays className="size-4" />
-                    {event.date}
-                </span>
-                <span className="flex items-center gap-2">
-                    <Clock className="size-4" />
-                    {event.time}
-                </span>
-            </CardContent>
-            <CardFooter>
-                <Button className="w-full" asChild>
-                    <Link href={`/events/${event.key}`}>View details</Link>
-                </Button>
-            </CardFooter>
-        </Card>
-    );
-}
