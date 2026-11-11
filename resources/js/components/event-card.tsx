@@ -1,35 +1,50 @@
 import { Link } from '@inertiajs/react';
-import { CalendarDays, Clock, Plane } from 'lucide-react';
+import { CalendarDays, Clock, MapPin, Plane } from 'lucide-react';
+import { Fragment } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { HubEvent } from '@/types/event';
 
 const maxVisibleAirports = 4;
 
-export default function EventCard({ event }: { event: HubEvent }) {
+/**
+ * An event as a card. The featured variant is the larger "Next event" card in the front-page hero.
+ * Spacing follows the 4-point grid in docs/adr/0006: 8px inside a group, 16px between groups.
+ */
+export default function EventCard({ event, featured = false }: { event: HubEvent; featured?: boolean }) {
     return (
-        <Card className="pt-0 transition-all duration-200 hover:shadow-lg hover:shadow-black/30 hover:ring-foreground/25 motion-safe:hover:-translate-y-1">
-            <EventBanner event={event} label={event.type} />
-            <CardHeader>
-                <CardTitle className="text-lg">{event.name}</CardTitle>
-                <AirportBadges airports={event.airports} />
-                {event.summary && <p className="line-clamp-2 text-sm text-muted-foreground">{event.summary}</p>}
+        <Card
+            className={cn(
+                'pt-0',
+                featured
+                    ? 'shadow-2xl shadow-black/40'
+                    : 'transition-all duration-200 hover:shadow-lg hover:shadow-black/30 hover:ring-foreground/25 motion-safe:hover:-translate-y-1',
+            )}
+        >
+            <EventBanner event={event} label={featured ? undefined : event.type} />
+            <CardHeader className="gap-2">
+                {featured && <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Next event</p>}
+                <CardTitle className={cn('leading-7', featured ? 'text-xl' : 'text-lg')}>{event.name}</CardTitle>
+                {event.summary && <CardDescription className="line-clamp-2">{event.summary}</CardDescription>}
             </CardHeader>
-            <CardContent className="flex flex-col gap-2 text-sm text-muted-foreground">
-                <span className="flex items-center gap-2">
-                    <CalendarDays className="size-4" />
-                    {event.date}
-                </span>
-                <span className="flex items-center gap-2">
-                    <Clock className="size-4" />
-                    {event.time}
-                </span>
+            {/* Pinned to the bottom with the footer, so the details of cards in a row line up whatever the title and Summary take up. */}
+            <CardContent className="mt-auto flex flex-col gap-2 text-sm text-muted-foreground">
+                <div className="flex flex-wrap gap-x-4 gap-y-2">
+                    <span className="flex items-center gap-2">
+                        <CalendarDays className="size-4" />
+                        {event.date}
+                    </span>
+                    <span className="flex items-center gap-2">
+                        <Clock className="size-4" />
+                        {event.time}
+                    </span>
+                </div>
+                <AirportList airports={event.airports} />
             </CardContent>
-            {/* Pinned to the bottom, so cards in a row line up with or without a Summary. */}
-            <CardFooter className="mt-auto">
-                <Button variant="outline" className="w-full" asChild>
+            <CardFooter>
+                <Button variant={featured ? 'default' : 'outline'} className="w-full" asChild>
                     <Link href={`/events/${event.key}`}>View details</Link>
                 </Button>
             </CardFooter>
@@ -52,7 +67,7 @@ export function EventBanner({ event, label, className }: { event: HubEvent; labe
                 </div>
             )}
             {label && (
-                <span className="absolute top-3 left-3 rounded-md bg-background/70 px-2 py-1 text-xs font-medium text-foreground ring-1 ring-foreground/10 backdrop-blur">
+                <span className="absolute top-3 left-3 rounded-md bg-background/70 px-3 py-1 text-xs font-medium text-foreground ring-1 ring-foreground/10 backdrop-blur">
                     {label}
                 </span>
             )}
@@ -102,12 +117,38 @@ export function EventTypeBadge({ type }: { type: string }) {
     );
 }
 
+/** The airports as a line of plain text, styled like the other details on a card rather than as badges. */
+function AirportList({ airports }: { airports: string[] }) {
+    if (airports.length === 0) {
+        return null;
+    }
+
+    const visible = airports.slice(0, maxVisibleAirports);
+    const hidden = airports.slice(maxVisibleAirports);
+
+    return (
+        <span className="flex items-center gap-2">
+            <MapPin className="size-4 shrink-0" />
+            {/* Only the codes are monospace, so every separator gets the same body-font spacing. */}
+            <span>
+                {visible.map((icao, index) => (
+                    <Fragment key={icao}>
+                        {index > 0 && ' · '}
+                        <span className="font-mono">{icao}</span>
+                    </Fragment>
+                ))}
+                {hidden.length > 0 && <span title={hidden.join(', ')}> · +{hidden.length}</span>}
+            </span>
+        </span>
+    );
+}
+
 export function AirportBadges({ airports }: { airports: string[] }) {
     const visible = airports.slice(0, maxVisibleAirports);
     const hidden = airports.slice(maxVisibleAirports);
 
     return (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
             {visible.map((icao) => (
                 <Badge key={icao} variant="secondary" className="font-mono">
                     {icao}
