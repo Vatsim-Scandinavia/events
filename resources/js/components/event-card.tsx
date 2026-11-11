@@ -118,8 +118,8 @@ export function EventTypeBadge({ type }: { type: string }) {
     );
 }
 
-/** The airports as a line of plain text, styled like the other details on a card rather than as badges. */
-function AirportList({ airports }: { airports: string[] }) {
+/** The airports as a line of plain text, styled like the other details of an event rather than as badges. */
+export function AirportList({ airports }: { airports: string[] }) {
     if (airports.length === 0) {
         return null;
     }
