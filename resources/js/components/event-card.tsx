@@ -1,7 +1,6 @@
 import { Link } from '@inertiajs/react';
 import { CalendarDays, Clock, MapPin, Plane } from 'lucide-react';
 import { Fragment } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
@@ -141,25 +140,5 @@ export function AirportList({ airports }: { airports: string[] }) {
                 {hidden.length > 0 && <span title={hidden.join(', ')}> · +{hidden.length}</span>}
             </span>
         </span>
-    );
-}
-
-export function AirportBadges({ airports }: { airports: string[] }) {
-    const visible = airports.slice(0, maxVisibleAirports);
-    const hidden = airports.slice(maxVisibleAirports);
-
-    return (
-        <div className="flex flex-wrap gap-2">
-            {visible.map((icao) => (
-                <Badge key={icao} variant="secondary" className="font-mono">
-                    {icao}
-                </Badge>
-            ))}
-            {hidden.length > 0 && (
-                <Badge variant="outline" title={hidden.join(', ')}>
-                    +{hidden.length}
-                </Badge>
-            )}
-        </div>
     );
 }
