@@ -18,18 +18,20 @@ export default function Staffing(props: StaffingPageProps) {
             <Head title={`Staffing · ${event.name}`} />
 
             <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6">
-                <div className="flex flex-col gap-3">
-                    <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
+                <div className="flex flex-col items-start gap-4">
+                    <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
                         <Link href={`/events/${event.key}`}>
                             <ArrowLeft />
                             Back to event
                         </Link>
                     </Button>
-                    <h1 className="text-2xl font-semibold tracking-tight">Staffing · {event.name}</h1>
-                    <p className="text-sm text-muted-foreground">
-                        {occurrence.date} · {occurrence.time}
-                        {occurrence.hasEnded && ' · Ended'}
-                    </p>
+                    <div className="flex flex-col gap-2">
+                        <h1 className="text-2xl font-semibold tracking-tight">Staffing · {event.name}</h1>
+                        <p className="text-sm text-muted-foreground">
+                            {occurrence.date} · {occurrence.time}
+                            {occurrence.hasEnded && ' · Ended'}
+                        </p>
+                    </div>
                 </div>
 
                 <SettingsCard {...props} />

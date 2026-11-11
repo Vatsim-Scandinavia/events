@@ -70,9 +70,8 @@ export function ShiftsCard({ occurrence, draft, saved, update, newKey }: DraftPr
             <CardHeader>
                 <CardTitle>Positions and shifts</CardTitle>
                 <CardDescription>
-                    Add the positions you want staffed below the timeline. Click or drag along a position to add a shift, drag a shift to move it, and
-                    drag its edges to change its times. Shifts on a position can’t overlap. They apply to every date of the event; bookings shown are
-                    for {occurrence.date}. Moving or removing a booked shift unbooks the controller.
+                    Lay out shifts per position for controllers to book. Shifts apply to every date of the event; bookings shown are for{' '}
+                    {occurrence.date}. Moving or removing a booked shift unbooks the controller.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -86,6 +85,7 @@ export function ShiftsCard({ occurrence, draft, saved, update, newKey }: DraftPr
                     onRemoveRow={(key) => removeRow({ draft, update, newKey }, key, confirm)}
                     onMoveRow={(key, toIndex) => moveRow({ draft, update, newKey }, key, toIndex)}
                     footer={<AddPositionRow draft={draft} update={update} newKey={newKey} />}
+                    help="Click or drag along a position to add a shift, drag a shift to move it, and drag its edges to change its times. Shifts on a position can’t overlap."
                     onCreate={(position, start, end) =>
                         update((current) => ({
                             ...current,

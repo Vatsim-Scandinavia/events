@@ -96,7 +96,7 @@ export function SettingsCard(props: StaffingPageProps) {
                 <CardTitle>How controllers staff this event</CardTitle>
             </CardHeader>
             <CardContent>
-                <form onSubmit={submit} className="flex flex-col gap-5">
+                <form onSubmit={submit} className="flex flex-col gap-6">
                     <fieldset className="grid gap-2 md:grid-cols-3">
                         <legend className="sr-only">Staffing mode</legend>
                         {modes.map((mode) => (
