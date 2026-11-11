@@ -10,6 +10,7 @@ import {
     FileText,
     Globe,
     Hourglass,
+    Info,
     Pencil,
     Repeat,
     Send,
@@ -17,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useConfirm } from '@/components/confirm-dialog';
-import { AirportBadges, EventBanner, EventTypeBadge } from '@/components/event-card';
+import { AirportList, EventBanner, EventTypeBadge } from '@/components/event-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import EventStaffing from '@/components/staffing/event-staffing';
@@ -66,12 +67,15 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                         )}
                     </div>
 
-                    <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
-                        <EventBanner event={event} className="aspect-[2/1] sm:aspect-[3/1]" />
-                    </div>
+                    {/* Only a real banner: the placeholder keeps cards in a row aligned, but here it would just push the content down. */}
+                    {event.banner && (
+                        <div className="overflow-hidden rounded-xl ring-1 ring-foreground/10">
+                            <EventBanner event={event} className="aspect-[2/1] sm:aspect-[3/1]" />
+                        </div>
+                    )}
 
                     <div className="flex flex-col items-start gap-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             <EventTypeBadge type={event.type} />
                             {event.draft && (
                                 <Badge variant="outline" title="Only staff who can view or manage this FIR’s events can see it until it’s published.">
@@ -79,13 +83,12 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                                 </Badge>
                             )}
                             {cancelled && <Badge variant="destructive">Cancelled</Badge>}
-                            <span className="text-sm text-muted-foreground">
-                                Run by {event.fir.name !== event.fir.icao ? `${event.fir.name} ` : ''}
-                                <span className="font-mono">{event.fir.icao}</span>
-                            </span>
+                            <span className="text-sm text-muted-foreground">Run by {event.fir.name}</span>
                         </div>
                         <h1 className="text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{event.name}</h1>
-                        <AirportBadges airports={event.airports} />
+                        <div className="text-sm text-muted-foreground">
+                            <AirportList airports={event.airports} />
+                        </div>
                     </div>
                 </div>
             </section>
@@ -93,7 +96,9 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
             <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="flex flex-col gap-10">
                     <section aria-labelledby="about">
-                        <SectionHeading id="about">About this event</SectionHeading>
+                        <SectionHeading id="about" icon={<Info className="size-5" />}>
+                            About this event
+                        </SectionHeading>
                         {event.description ? (
                             <Description html={event.description} />
                         ) : (
@@ -106,7 +111,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                             <SectionHeading id="routes" icon={<Route className="size-5" />}>
                                 Suggested routes
                             </SectionHeading>
-                            <div className="flex flex-col gap-3">
+                            <div className="divide-y overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
                                 {event.routes.map((route) => (
                                     <RouteRow key={`${route.from}-${route.to}-${route.route}`} route={route} />
                                 ))}
@@ -136,33 +141,35 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                             </CardAction>
                         )}
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-3 text-sm text-muted-foreground">
-                        <span className={cn('flex items-center gap-2', cancelled && 'line-through')}>
-                            <CalendarDays className="size-4" />
-                            {staffing.occurrence.date}
-                        </span>
-                        <span className={cn('flex items-center gap-2', cancelled && 'line-through')}>
-                            <Clock className="size-4" />
-                            {staffing.occurrence.time}
-                        </span>
-                        {!cancelled && displayTimezone !== 'UTC' && (
-                            <span className="flex items-center gap-2">
-                                <Globe className="size-4" />
-                                {event.zuluTime}
+                    <CardContent className="flex flex-col gap-4 text-sm text-muted-foreground">
+                        <div className="flex flex-col gap-2">
+                            <span className={cn('flex items-center gap-2', cancelled && 'line-through')}>
+                                <CalendarDays className="size-4" />
+                                {staffing.occurrence.date}
                             </span>
-                        )}
-                        {event.duration && (
-                            <span className="flex items-center gap-2">
-                                <Hourglass className="size-4" />
-                                {event.duration}
+                            <span className={cn('flex items-center gap-2', cancelled && 'line-through')}>
+                                <Clock className="size-4" />
+                                {staffing.occurrence.time}
                             </span>
-                        )}
-                        {event.repeats && (
-                            <span className="flex items-center gap-2">
-                                <Repeat className="size-4" />
-                                {event.repeats}
-                            </span>
-                        )}
+                            {!cancelled && displayTimezone !== 'UTC' && (
+                                <span className="flex items-center gap-2">
+                                    <Globe className="size-4" />
+                                    {event.zuluTime}
+                                </span>
+                            )}
+                            {event.duration && (
+                                <span className="flex items-center gap-2">
+                                    <Hourglass className="size-4" />
+                                    {event.duration}
+                                </span>
+                            )}
+                            {event.repeats && (
+                                <span className="flex items-center gap-2">
+                                    <Repeat className="size-4" />
+                                    {event.repeats}
+                                </span>
+                            )}
+                        </div>
                         {!event.cancelled && <OtherDates staffing={staffing} />}
                         <p className="text-xs">
                             All times are in {describeTimezone(displayTimezone)}.{' '}
@@ -300,7 +307,7 @@ function OtherDates({ staffing }: { staffing: EventStaffingProps }) {
     }
 
     return (
-        <div className="flex flex-col gap-1 border-t pt-3">
+        <div className="flex flex-col gap-2 border-t pt-4">
             <span className="text-xs font-medium tracking-wide uppercase">Also on</span>
             {shown.map((occurrence) => (
                 <span key={occurrence.id}>
@@ -337,7 +344,7 @@ function RouteRow({ route }: { route: EventRoute }) {
     };
 
     return (
-        <div className="flex flex-col gap-2 rounded-xl bg-card p-4 ring-1 ring-foreground/10">
+        <div className="flex flex-col gap-2 p-4">
             <div className="flex items-center justify-between gap-2">
                 <span className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-sm font-medium">
@@ -345,7 +352,8 @@ function RouteRow({ route }: { route: EventRoute }) {
                     </span>
                     {route.mandatory && <Badge>Mandatory</Badge>}
                 </span>
-                <Button variant="ghost" size="sm" onClick={copy} aria-label={`Copy route from ${route.from} to ${route.to}`}>
+                {/* Pulled out by the button's own padding, so its label lines up with the route below. */}
+                <Button variant="ghost" size="sm" className="-mr-2.5" onClick={copy} aria-label={`Copy route from ${route.from} to ${route.to}`}>
                     {copied ? <Check /> : <Copy />}
                     {copied ? 'Copied' : 'Copy'}
                 </Button>
