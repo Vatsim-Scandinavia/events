@@ -33,7 +33,7 @@ export default function EventTypeForm({ type }: { type: EditableEventType | null
 
             <form onSubmit={submit} className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
                 <div className="flex flex-col items-start gap-4">
-                    <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
+                    <Button variant="ghost" size="sm" className="-ml-3" asChild>
                         <Link href="/admin/event-types">
                             <ArrowLeft />
                             All event types

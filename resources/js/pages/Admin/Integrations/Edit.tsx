@@ -101,7 +101,7 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
 
             <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
                 <div className="flex flex-col items-start gap-4">
-                    <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
+                    <Button variant="ghost" size="sm" className="-ml-3" asChild>
                         <Link href="/admin/integrations">
                             <ArrowLeft />
                             All integrations

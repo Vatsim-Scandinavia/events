@@ -81,7 +81,7 @@ export default function Home({ upcomingEvents, networkStats }: HomeProps) {
                     description="The next events on the calendar."
                     action={
                         // Pulled out by the button's own padding, so its label lines up with the content edge.
-                        <Button variant="ghost" className="-ml-2.5 sm:-mr-2.5 sm:ml-0" asChild>
+                        <Button variant="ghost" className="-ml-3 sm:-mr-3 sm:ml-0" asChild>
                             <Link href="/events">
                                 View all
                                 <ArrowRight />

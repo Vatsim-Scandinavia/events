@@ -49,7 +49,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
             <section className="border-b bg-muted/40">
                 <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 md:py-12">
                     <div className="flex items-center justify-between gap-2">
-                        <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
+                        <Button variant="ghost" size="sm" className="-ml-3" asChild>
                             <Link href="/events">
                                 <ArrowLeft />
                                 All events
@@ -345,7 +345,7 @@ function RouteRow({ route }: { route: EventRoute }) {
                     {route.mandatory && <Badge>Mandatory</Badge>}
                 </span>
                 {/* Pulled out by the button's own padding, so its label lines up with the route below. */}
-                <Button variant="ghost" size="sm" className="-mr-2.5" onClick={copy} aria-label={`Copy route from ${route.from} to ${route.to}`}>
+                <Button variant="ghost" size="sm" className="-mr-3" onClick={copy} aria-label={`Copy route from ${route.from} to ${route.to}`}>
                     {copied ? <Check /> : <Copy />}
                     {copied ? 'Copied' : 'Copy'}
                 </Button>
