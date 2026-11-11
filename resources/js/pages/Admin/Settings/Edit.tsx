@@ -56,7 +56,7 @@ export default function SiteSettings({ settings, locked, themes, controllerSourc
 
     const hint = (detail: Detail, fallback?: string) =>
         locked[detail] ? (
-            <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+            <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
                 <Lock className="size-3" aria-hidden />
                 Set by the server ({locked[detail]})
             </span>
@@ -70,7 +70,8 @@ export default function SiteSettings({ settings, locked, themes, controllerSourc
 
             <AdminHeader title="Settings" description="Who this Event Hub belongs to: the vACC’s details, logo and colors, shown across the site." />
 
-            <form onSubmit={submit} className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
+            {/* Narrower than the header, but on its left edge, so the page has one left line. */}
+            <form onSubmit={submit} className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 [&>*]:max-w-3xl">
                 <Card>
                     <CardHeader>
                         <CardTitle>vACC</CardTitle>
@@ -79,7 +80,7 @@ export default function SiteSettings({ settings, locked, themes, controllerSourc
                             app.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-5">
+                    <CardContent className="flex flex-col gap-6">
                         <Field label="Name" error={errors.name}>
                             <Input
                                 value={data.name}
@@ -151,7 +152,7 @@ export default function SiteSettings({ settings, locked, themes, controllerSourc
                                 checked={data.auto_controller}
                                 onCheckedChange={(checked) => form.setData('auto_controller', checked === true)}
                             />
-                            <label htmlFor="auto-controller" className="flex flex-col gap-0.5">
+                            <label htmlFor="auto-controller" className="flex flex-col gap-1">
                                 <span className="font-medium">Give the Controller role automatically</span>
                                 <span className="text-sm text-muted-foreground">
                                     Everyone rated S1 or above in your subdivision gets Controller when they sign in, and loses it when they leave the

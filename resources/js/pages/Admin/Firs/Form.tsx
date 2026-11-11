@@ -33,15 +33,17 @@ export default function FirForm({ fir }: { fir: EditableFir | null }) {
             <Head title={fir ? `${fir.icao} · FIRs` : 'New FIR'} />
 
             <form onSubmit={submit} className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
-                <div className="flex flex-col gap-3">
-                    <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
+                <div className="flex flex-col items-start gap-4">
+                    <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
                         <Link href="/admin/firs">
                             <ArrowLeft />
                             All FIRs
                         </Link>
                     </Button>
-                    <h1 className="text-2xl font-semibold tracking-tight">{fir ? `Edit ${fir.icao} ${fir.name}` : 'New FIR'}</h1>
-                    {fir && <p className="text-muted-foreground">{fir.events === 1 ? 'It runs 1 event.' : `It runs ${fir.events} events.`}</p>}
+                    <div className="flex flex-col gap-2">
+                        <h1 className="text-2xl font-semibold tracking-tight">{fir ? `Edit ${fir.icao} ${fir.name}` : 'New FIR'}</h1>
+                        {fir && <p className="text-muted-foreground">{fir.events === 1 ? 'It runs 1 event.' : `It runs ${fir.events} events.`}</p>}
+                    </div>
                 </div>
 
                 <Card>
