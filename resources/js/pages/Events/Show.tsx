@@ -21,6 +21,7 @@ import { useConfirm } from '@/components/confirm-dialog';
 import { AirportList, EventBanner, EventTypeBadge } from '@/components/event-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import SectionHeading from '@/components/events/section-heading';
 import EventStaffing from '@/components/staffing/event-staffing';
 import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout';
@@ -95,7 +96,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
 
             <div className="mx-auto grid max-w-6xl grid-cols-1 items-start gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                 <div className="flex flex-col gap-10">
-                    <section aria-labelledby="about">
+                    <section aria-labelledby="about" className="flex flex-col gap-4">
                         <SectionHeading id="about" icon={<Info className="size-5" />}>
                             About this event
                         </SectionHeading>
@@ -107,7 +108,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                     </section>
 
                     {event.routes.length > 0 && (
-                        <section aria-labelledby="routes">
+                        <section aria-labelledby="routes" className="flex flex-col gap-4">
                             <SectionHeading id="routes" icon={<Route className="size-5" />}>
                                 Suggested routes
                             </SectionHeading>
@@ -318,15 +319,6 @@ function OtherDates({ staffing }: { staffing: EventStaffingProps }) {
                 </span>
             ))}
         </div>
-    );
-}
-
-function SectionHeading({ id, icon, children }: { id: string; icon?: ReactNode; children: ReactNode }) {
-    return (
-        <h2 id={id} className="mb-4 flex items-center gap-2 text-xl font-semibold tracking-tight">
-            {icon && <span className="text-muted-foreground">{icon}</span>}
-            {children}
-        </h2>
     );
 }
 
