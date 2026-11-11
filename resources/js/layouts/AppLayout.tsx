@@ -124,7 +124,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <main className="flex-1">{children}</main>
 
                 <footer className="border-t">
-                    <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                    <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-sm text-muted-foreground sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                         <p>{vacc.name} Event Hub · Part of the VATSIM network</p>
                         <p>For flight simulation use only. Not for real-world navigation.</p>
                     </div>

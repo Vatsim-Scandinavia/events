@@ -3,6 +3,7 @@ import { ArrowRight, ExternalLink } from 'lucide-react';
 import { Fragment, type ReactNode } from 'react';
 import EventCard from '@/components/event-card';
 import NetworkStats, { type NetworkStatsData } from '@/components/network-stats';
+import SectionHeader from '@/components/section-header';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout';
 import type { HubEvent } from '@/types/event';
@@ -14,7 +15,7 @@ type HomeProps = {
 
 export default function Home({ upcomingEvents, networkStats }: HomeProps) {
     const { vacc } = usePage().props;
-    // The first event is featured in the hero, so the grid starts after it.
+    // The first event is featured in the hero on wide screens, so there the grid starts after it.
     const [nextEvent, ...laterEvents] = upcomingEvents;
 
     return (
@@ -69,33 +70,43 @@ export default function Home({ upcomingEvents, networkStats }: HomeProps) {
                         </div>
                     </div>
 
-                    {nextEvent && <EventCard event={nextEvent} featured />}
+                    {/* Only beside the text on wide screens; below lg the next event leads the upcoming grid instead. */}
+                    {nextEvent && <EventCard event={nextEvent} featured className="hidden lg:flex" />}
                 </div>
             </section>
 
             <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-                <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <h2 className="text-2xl font-semibold tracking-tight">Upcoming events</h2>
-                        <p className="text-muted-foreground">The next events on the calendar.</p>
-                    </div>
-                    <Button variant="ghost" className="self-start sm:self-auto" asChild>
-                        <Link href="/events">
-                            View all
-                            <ArrowRight />
-                        </Link>
-                    </Button>
-                </div>
+                <SectionHeader
+                    title="Upcoming events"
+                    description="The next events on the calendar."
+                    action={
+                        // Pulled out by the button's own padding, so its label lines up with the content edge.
+                        <Button variant="ghost" className="-ml-2.5 sm:-mr-2.5 sm:ml-0" asChild>
+                            <Link href="/events">
+                                View all
+                                <ArrowRight />
+                            </Link>
+                        </Button>
+                    }
+                />
 
-                {laterEvents.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-3">
-                        {laterEvents.map((event) => (
-                            <EventCard key={event.id} event={event} />
-                        ))}
-                    </div>
+                {nextEvent ? (
+                    <>
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <EventCard event={nextEvent} className="lg:hidden" />
+                            {laterEvents.map((event) => (
+                                <EventCard key={event.id} event={event} />
+                            ))}
+                        </div>
+                        {laterEvents.length === 0 && (
+                            <p className="hidden rounded-xl border border-dashed p-8 text-center text-muted-foreground lg:block">
+                                Nothing else is scheduled after the next event yet.
+                            </p>
+                        )}
+                    </>
                 ) : (
                     <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
-                        {nextEvent ? 'Nothing else is scheduled after the next event yet.' : 'No events are scheduled right now. Check back soon.'}
+                        No events are scheduled right now. Check back soon.
                     </p>
                 )}
             </section>

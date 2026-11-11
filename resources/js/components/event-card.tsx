@@ -13,7 +13,7 @@ const maxVisibleAirports = 4;
  * An event as a card. The featured variant is the larger "Next event" card in the front-page hero.
  * Spacing follows the 4-point grid in docs/adr/0006: 8px inside a group, 16px between groups.
  */
-export default function EventCard({ event, featured = false }: { event: HubEvent; featured?: boolean }) {
+export default function EventCard({ event, featured = false, className }: { event: HubEvent; featured?: boolean; className?: string }) {
     return (
         <Card
             className={cn(
@@ -21,6 +21,7 @@ export default function EventCard({ event, featured = false }: { event: HubEvent
                 featured
                     ? 'shadow-2xl shadow-black/40'
                     : 'transition-all duration-200 hover:shadow-lg hover:shadow-black/30 hover:ring-foreground/25 motion-safe:hover:-translate-y-1',
+                className,
             )}
         >
             <EventBanner event={event} label={featured ? undefined : event.type} />
