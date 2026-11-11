@@ -14,7 +14,8 @@ class HomeController extends Controller
     {
         return Inertia::render('Home', [
             // The public showcase, so only published events, even for staff who can see Drafts.
-            'upcomingEvents' => EventResource::collection(Event::upcoming()->published()->limit(3)->get())->resolve(),
+            // The first is the hero's next event and the other three fill the grid below it.
+            'upcomingEvents' => EventResource::collection(Event::upcoming()->published()->limit(4)->get())->resolve(),
             'networkStats' => Inertia::defer(fn () => $networkStats->get()),
         ]);
     }

@@ -58,13 +58,13 @@ class EventsPageTest extends TestCase
             );
     }
 
-    public function test_the_front_page_shows_the_next_three_events(): void
+    public function test_the_front_page_shows_the_next_event_and_the_three_after_it(): void
     {
-        Event::factory()->count(5)->create();
+        Event::factory()->count(6)->create();
 
         $this->get('/')->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->has('upcomingEvents', 3)
+            ->has('upcomingEvents', 4)
         );
     }
 }
