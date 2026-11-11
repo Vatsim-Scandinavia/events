@@ -31,7 +31,8 @@ final readonly class Coverage
     /**
      * Why the member isn't covered for the callsign in the FIR, or null when they are, or it
      * can't tell. A controller Control Center doesn't list at all is someone staff gave the role
-     * by hand, so there's nothing to say.
+     * by hand, so there's nothing to say. The note is always shown next to the position, so it
+     * leads with what the position needs and leaves out the callsign.
      */
     public function problem(?Member $member, string $callsign, string $firIcao): ?string
     {
@@ -47,7 +48,7 @@ final readonly class Coverage
             $rating = $this->rating($member->rating);
 
             return $rating !== null && $rating->value < $required->value
-                ? "Rated {$rating->label()} in Control Center; {$callsign} needs {$required->label()}."
+                ? "Needs {$required->label()}; rated {$rating->label()} in Control Center."
                 : null;
         }
 
@@ -61,7 +62,7 @@ final readonly class Coverage
 
         if ($visiting !== null) {
             return $visiting->value < $required->value
-                ? "Visiting endorsement for {$visiting->label()} only; {$callsign} needs {$required->label()}."
+                ? "Needs {$required->label()}; visiting endorsement for {$visiting->label()} only."
                 : null;
         }
 

@@ -56,7 +56,7 @@ class StaffingNotesTest extends TestCase
         [$event, $shift] = $this->shiftEvent('EKCH_TWR');
         $controller = $this->controller(1000001, 'S1', active: ['denmark']);
         $this->switchOn(['roster']);
-        $note = 'Rated S1 in Control Center; EKCH_TWR needs S2.';
+        $note = 'Needs S2; rated S1 in Control Center.';
 
         $this->actingAs($controller)->get("/events/{$event->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.note', $note));
 
@@ -97,10 +97,15 @@ class StaffingNotesTest extends TestCase
     {
         [$danish] = $this->shiftEvent('EKCH_APP', $this->denmark);
         [$norwegian] = $this->shiftEvent('ENGM_APP', $this->norway);
+        [$norwegianCentre] = $this->shiftEvent('ENGM_CTR', $this->norway);
         $visitor = $this->controller(1000001, 'C1', endorsements: ['visiting' => [['rating' => 'S3', 'areas' => ['Norway']]]]);
         $this->switchOn(['roster']);
 
         $this->actingAs($visitor)->get("/events/{$norwegian->getRouteKey()}")->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.note', null));
+        // The note sits next to the position, so it leaves out the callsign.
+        $this->actingAs($visitor)->get("/events/{$norwegianCentre->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
+            ->where('staffing.positions.0.note', 'Needs C1; visiting endorsement for S3 only.')
+        );
         $this->actingAs($visitor)->get("/events/{$danish->getRouteKey()}")->assertInertia(fn (Assert $page) => $page
             ->where('staffing.positions.0.note', 'Not active in EKDK in Control Center, and no visiting endorsement for it.')
         );
@@ -134,7 +139,7 @@ class StaffingNotesTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->actingAs($staff)->get("/events/{$event->getRouteKey()}/staffing")->assertInertia(fn (Assert $page) => $page
-            ->where('roster.0.notes', ['Rated S3 in Control Center; EKDK_CTR needs C1.'])
+            ->where('roster.0.notes', ['Needs C1; rated S3 in Control Center.'])
         );
     }
 
