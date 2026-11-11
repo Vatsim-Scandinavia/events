@@ -127,9 +127,11 @@ function ShiftStatus({ shift, callsign, occurrenceId, canBook }: { shift: Shift;
             <span className="inline-flex items-center gap-2">
                 <span className={cn(shift.booking.isMine && 'font-medium text-primary')}>
                     {shift.booking.isMine ? 'You' : shift.booking.controller.name}
-                    {!shift.booking.isMine && shift.booking.controller.cid && (
-                        <span className="ml-1 text-xs text-muted-foreground">{shift.booking.controller.cid}</span>
-                    )}
+                    {!shift.booking.isMine &&
+                        shift.booking.controller.cid &&
+                        String(shift.booking.controller.cid) !== shift.booking.controller.name && (
+                            <span className="ml-1 text-xs text-muted-foreground">{shift.booking.controller.cid}</span>
+                        )}
                 </span>
                 <NotesIcon notes={shift.booking.notes} />
                 {shift.booking.canCancel && (

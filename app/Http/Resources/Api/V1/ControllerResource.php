@@ -23,7 +23,8 @@ class ControllerResource extends JsonResource
         return [
             /** The controller's VATSIM CID. */
             'cid' => $this->vatsim_cid,
-            'name' => $this->name,
+            /** The name the controller chose to show: full name, first name, or their CID. */
+            'name' => $this->displayName(),
         ];
     }
 }

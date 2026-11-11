@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ControllerRating;
+use App\Enums\NameDisplay;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -86,13 +87,16 @@ class SignInTest extends TestCase
     public function test_first_sign_in_creates_the_user_from_their_vatsim_details(string $provider): void
     {
         config(['auth.sign_in_provider' => $provider]);
-        Socialite::fake($provider, $this->vatsimUser(cid: 1234567, name: 'Jane Controller', email: 'jane@example.com', rating: ControllerRating::S2));
+        Socialite::fake($provider, $this->vatsimUser(cid: 1234567, name: 'Mary Ann Controller', email: 'jane@example.com', rating: ControllerRating::S2, firstName: 'Mary Ann'));
 
         $this->get("/auth/{$provider}/callback?code=code&state=state")->assertRedirect('/');
 
         $user = User::query()->sole();
         $this->assertSame(1234567, $user->vatsim_cid);
-        $this->assertSame('Jane Controller', $user->name);
+        $this->assertSame('Mary Ann Controller', $user->name);
+        // Others see only the first name until they choose otherwise.
+        $this->assertSame('Mary Ann', $user->first_name);
+        $this->assertSame(NameDisplay::FirstName, $user->name_display);
         $this->assertSame('jane@example.com', $user->email);
         $this->assertSame(ControllerRating::S2, $user->rating);
         $this->assertAuthenticatedAs($user);
@@ -173,12 +177,12 @@ class SignInTest extends TestCase
         $this->assertGuest();
     }
 
-    private function vatsimUser(int $cid, string $name, string $email, ControllerRating $rating): SocialiteUser
+    private function vatsimUser(int $cid, string $name, string $email, ControllerRating $rating, ?string $firstName = null): SocialiteUser
     {
         return (new SocialiteUser)
             ->setRaw([
                 'cid' => (string) $cid,
-                'personal' => ['name_full' => $name, 'email' => $email],
+                'personal' => ['name_first' => $firstName, 'name_full' => $name, 'email' => $email],
                 'vatsim' => ['rating' => ['id' => $rating->value, 'short' => $rating->label()]],
             ])
             ->map(['id' => (string) $cid, 'name' => $name, 'email' => $email]);

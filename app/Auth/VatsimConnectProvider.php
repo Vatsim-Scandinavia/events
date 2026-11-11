@@ -58,7 +58,7 @@ class VatsimConnectProvider extends AbstractProvider
     }
 
     /**
-     * @param  array{cid?: int|string, personal?: array{name_full?: string, email?: string}, vatsim?: array{rating?: array{id?: int}}}  $user
+     * @param  array{cid?: int|string, personal?: array{name_first?: string, name_full?: string, email?: string}, vatsim?: array{rating?: array{id?: int}}}  $user
      */
     protected function mapUserToObject(array $user): User
     {

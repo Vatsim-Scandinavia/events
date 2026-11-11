@@ -61,6 +61,7 @@ class SignInController extends Controller
         $user = User::query()->firstOrNew(['vatsim_cid' => (int) $vatsimUser->getId()]);
         $user->fill([
             'name' => $vatsimUser->getName() ?: "VATSIM {$vatsimUser->getId()}",
+            'first_name' => Arr::get($vatsimUser->getRaw(), 'personal.name_first') ?: null,
             'email' => $vatsimUser->getEmail(),
         ]);
 

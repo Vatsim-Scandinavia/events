@@ -3,17 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Enums\AssignmentSource;
+use App\Enums\NameDisplay;
 use App\Models\RoleAssignment;
 use App\Models\User;
 use DateTimeZone;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 /**
  * Whoever is signed in: who they are on VATSIM, the roles they hold, and their preferences.
- * For now the only preference is the time zone event times are shown in.
+ * The preferences are how their name is shown to everyone else, and the time zone event times
+ * are shown in.
  */
 class ProfileController extends Controller
 {
@@ -30,8 +33,15 @@ class ProfileController extends Controller
             ],
             'roleGroups' => $this->roleGroups($user),
             'settings' => [
+                'nameDisplay' => ($user->name_display ?? NameDisplay::FirstName)->value,
                 'timezone' => $user->displayTimezone(),
             ],
+            // Each choice as the user would be shown with it.
+            'nameDisplays' => collect(NameDisplay::cases())->map(fn (NameDisplay $display) => [
+                'value' => $display->value,
+                'label' => $display->label(),
+                'example' => $user->displayNameWithCid($display),
+            ])->all(),
             'timezones' => DateTimeZone::listIdentifiers(),
         ]);
     }
@@ -39,13 +49,16 @@ class ProfileController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
+            'name_display' => ['required', Rule::enum(NameDisplay::class)],
             'timezone' => ['required', 'string', 'timezone:all'],
         ], [
+            'name_display.*' => 'Pick how your name is shown.',
             'timezone.timezone' => 'Pick a time zone from the list.',
         ]);
 
         // UTC is the default, so it is stored as no preference at all.
         $request->user()->update([
+            'name_display' => $validated['name_display'],
             'timezone' => $validated['timezone'] === 'UTC' ? null : $validated['timezone'],
         ]);
 

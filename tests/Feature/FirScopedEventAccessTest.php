@@ -171,7 +171,7 @@ class FirScopedEventAccessTest extends TestCase
         $this->actingAs(User::factory()->staff()->create())
             ->get("/events/{$event->getRouteKey()}/staffing")
             ->assertInertia(fn (Assert $page) => $page
-                ->where('controllers', fn ($controllers) => collect($controllers)->pluck('name')->all() === ['Copenhagen Controller', 'Hub Controller']));
+                ->where('controllers', fn ($controllers) => collect($controllers)->pluck('name')->all() === ['Copenhagen', 'Hub']));
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\NameDisplay;
 use App\Enums\RepeatInterval;
 use App\Integrations\Discord\RosterMessage;
 use App\Integrations\Discord\RosterMessages;
@@ -148,7 +149,7 @@ class DiscordRosterMessagesTest extends TestCase
         [$event, $shift] = $this->shiftEvent();
         $this->saveEvent($event, [RosterMessages::FIELD => self::WEBHOOK]);
 
-        $this->actingAs(User::factory()->controller()->create(['name' => 'Jane *Doe*', 'vatsim_cid' => 1234567]))
+        $this->actingAs(User::factory()->controller()->create(['name' => 'Jane *Doe*', 'name_display' => NameDisplay::FullName, 'vatsim_cid' => 1234567]))
             ->post("/occurrences/{$event->occurrences()->sole()->id}/shifts/{$shift->id}/booking")
             ->assertSessionHasNoErrors();
 
@@ -182,7 +183,7 @@ class DiscordRosterMessagesTest extends TestCase
         $this->assertStringNotContainsString('Kim', $this->lastDescription());
 
         $plan(true);
-        $this->assertStringContainsString("**EKCH\\_TWR**\n`16:00–18:00z` Kim Berg (1000001)", $this->lastDescription());
+        $this->assertStringContainsString("**EKCH\\_TWR**\n`16:00–18:00z` Kim (1000001)", $this->lastDescription());
 
         $this->actingAs($this->staff)->delete("/occurrences/{$occurrence->id}/roster/publish")->assertSessionHasNoErrors();
         $this->assertStringContainsString('Roster not published yet.', $this->lastDescription());
