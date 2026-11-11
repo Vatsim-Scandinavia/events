@@ -37,6 +37,21 @@ class EventUrlTest extends TestCase
         $this->get($current)->assertOk();
     }
 
+    public function test_a_name_given_back_after_a_rename_never_traps_a_browser_in_a_loop(): void
+    {
+        $event = Event::factory()->create(['name' => 'Copenhagen Fly-in']);
+        $first = route('events.show', $event);
+
+        $event->update(['name' => 'Copenhagen Fly-in Typo']);
+        $second = route('events.show', $event);
+        $this->get($first)->assertStatus(301)->assertRedirect($second)->assertHeader('Cache-Control', 'no-store, private');
+
+        // Back to the first name: a browser that kept the redirect above would now go round in a circle.
+        $event->update(['name' => 'Copenhagen Fly-in']);
+        $this->get($second)->assertStatus(301)->assertRedirect($first)->assertHeader('Cache-Control', 'no-store, private');
+        $this->get($first)->assertOk();
+    }
+
     public function test_staff_pages_redirect_too_keeping_the_query(): void
     {
         $event = Event::factory()->create(['name' => 'Copenhagen Fly-in', 'staffing_mode' => StaffingMode::Shifts]);
