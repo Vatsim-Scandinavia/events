@@ -15,6 +15,10 @@ export default defineConfig({
                 bunny('Roboto', {
                     weights: [400, 500, 600],
                 }),
+                // For ICAO codes, callsigns and times, so they look the same on every system.
+                bunny('Roboto Mono', {
+                    weights: [400, 500],
+                }),
             ],
         }),
         tailwindcss(),
