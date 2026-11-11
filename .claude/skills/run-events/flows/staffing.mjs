@@ -51,7 +51,8 @@ export default async function (app) {
     await app.signIn('Hub Admin');
     await app.go('/events/2/staffing');
     await app.dragTo(
-        app.page.locator('li[draggable=true]', { hasText: 'Tower Controller' }),
+        // Rosters show the first name by default, so "Tower" rather than "Tower Controller".
+        app.page.locator('li[draggable=true]', { hasText: 'Tower' }),
         app.page.locator('[data-timeline-row]').first(),
         { x: 0.02, y: 0.5 },
     );
@@ -63,7 +64,7 @@ export default async function (app) {
 
     await app.signIn('Tower Controller');
     await app.go('/events/2');
-    const rows = await app.page.locator('table tr', { hasText: 'Tower Controller' }).count();
+    const rows = await app.page.locator('table tr', { hasText: 'Tower' }).count();
     app.check('controller sees roster', `${rows} rows`, rows > 0);
     await app.shot('controller-event-2');
 }
