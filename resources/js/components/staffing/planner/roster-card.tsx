@@ -175,7 +175,13 @@ export function RosterCard({ occurrence, controllers, interests, roster, draft, 
                                     <option value="">Add a controller who didn’t show interest…</option>
                                     {others.map((controller) => (
                                         <option key={controller.id} value={controller.id}>
-                                            {controller.name} {controller.rating && `(${controller.rating})`}
+                                            {[
+                                                controller.name,
+                                                controller.cid && String(controller.cid) !== controller.name && controller.cid,
+                                                controller.rating && `(${controller.rating})`,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' ')}
                                         </option>
                                     ))}
                                 </NativeSelect>

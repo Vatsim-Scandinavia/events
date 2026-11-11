@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Auth\Roles;
 use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
+use App\Enums\NameDisplay;
 use App\Enums\Permission;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -17,7 +18,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
-#[Fillable(['vatsim_cid', 'name', 'email', 'rating', 'subdivision', 'timezone'])]
+#[Fillable(['vatsim_cid', 'name', 'first_name', 'name_display', 'email', 'rating', 'subdivision', 'timezone'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -33,6 +34,7 @@ class User extends Authenticatable
         return [
             'vatsim_cid' => 'integer',
             'rating' => ControllerRating::class,
+            'name_display' => NameDisplay::class,
         ];
     }
 
@@ -195,5 +197,29 @@ class User extends Authenticatable
     public function displayTimezone(): string
     {
         return $this->timezone ?? 'UTC';
+    }
+
+    /**
+     * The name everyone else sees, as the user chose: their full name, their first name, or
+     * just their CID. Until VATSIM has shared a first name, it is the first word of the name.
+     * Passing a choice shows the name as it would be with that one instead.
+     */
+    public function displayName(?NameDisplay $display = null): string
+    {
+        return match ($display ?? $this->name_display ?? NameDisplay::FirstName) {
+            NameDisplay::FullName => $this->name,
+            NameDisplay::FirstName => $this->first_name ?: strtok($this->name, ' '),
+            NameDisplay::CidOnly => (string) $this->vatsim_cid,
+        };
+    }
+
+    /**
+     * The display name followed by the CID in brackets, or the CID alone when that is the name.
+     */
+    public function displayNameWithCid(?NameDisplay $display = null): string
+    {
+        $display ??= $this->name_display ?? NameDisplay::FirstName;
+
+        return $display === NameDisplay::CidOnly ? (string) $this->vatsim_cid : "{$this->displayName($display)} ({$this->vatsim_cid})";
     }
 }

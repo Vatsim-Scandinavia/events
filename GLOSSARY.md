@@ -100,6 +100,12 @@ _Avoid_: Guest, member
 Where people sign in and get their VATSIM CID vouched for: VATSIM Connect, or VATSIM Scandinavia's Handover, which stands in for it. One per install, chosen when it's deployed. Handover the system has nothing to do with automatic roles being handed over to admins when a Controller source is switched off.
 _Avoid_: Auth provider, SSO, login method
 
+## Profile
+
+**Name display**:
+How someone's name is shown to everyone else on the Hub, in Discord and through the public API, chosen on their Profile: full name, first name, or CID only. First name is the default, and their CID is always shown beside it. Staff managing users still see full names.
+_Avoid_: Display name, privacy setting, nickname
+
 ## Integrations
 
 **Integration**:

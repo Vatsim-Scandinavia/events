@@ -139,7 +139,7 @@ class RosterTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->where('staffing.rosterPublished', true)
                 ->where('staffing.roster.0.callsign', 'ESSA_TWR')
-                ->where('staffing.roster.0.controller.name', 'Rostered Controller')
+                ->where('staffing.roster.0.controller.name', 'Rostered')
                 ->where('staffing.roster.0.time', '18:00–20:00z')
             );
     }

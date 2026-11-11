@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Staffing;
 
+use App\Enums\NameDisplay;
 use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\PositionShift;
@@ -11,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class ShiftBookingTest extends TestCase
@@ -245,10 +247,37 @@ class ShiftBookingTest extends TestCase
                 ->where('staffing.bookingOpen', true)
                 ->where('staffing.positions.0.callsign', 'EKCH_TWR')
                 ->where('staffing.positions.0.shifts.0.time', '16:00–18:00z')
-                ->where('staffing.positions.0.shifts.0.booking.controller.name', 'Jane Controller')
+                ->where('staffing.positions.0.shifts.0.booking.controller.name', 'Jane')
                 ->where('staffing.positions.0.shifts.0.booking.controller.cid', 1234567)
                 ->where('staffing.positions.0.shifts.0.booking.isMine', false)
                 ->where('staffing.positions.0.shifts.1.booking', null)
             );
+    }
+
+    /**
+     * @return array<string, array{NameDisplay, string}>
+     */
+    public static function nameDisplays(): array
+    {
+        return [
+            'full name' => [NameDisplay::FullName, 'Jane Controller'],
+            'first name' => [NameDisplay::FirstName, 'Jane'],
+            'CID only' => [NameDisplay::CidOnly, '1234567'],
+        ];
+    }
+
+    #[DataProvider('nameDisplays')]
+    public function test_a_booking_shows_the_controller_as_they_chose_and_never_more(NameDisplay $display, string $shown): void
+    {
+        $controller = User::factory()->controller()->create(['name' => 'Jane Controller', 'first_name' => 'Jane', 'name_display' => $display, 'vatsim_cid' => 1234567]);
+        ShiftBooking::create(['position_shift_id' => $this->towerEarly->id, 'event_occurrence_id' => $this->occurrence->id, 'user_id' => $controller->id]);
+
+        $page = $this->get("/events/{$this->event->getRouteKey()}")
+            ->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.shifts.0.booking.controller.name', $shown));
+
+        // Nowhere on the page, not just in that prop.
+        if ($display !== NameDisplay::FullName) {
+            $page->assertDontSee('Jane Controller');
+        }
     }
 }

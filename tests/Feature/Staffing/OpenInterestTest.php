@@ -210,7 +210,7 @@ class OpenInterestTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Events/Staffing')
                 ->has('interests', 1)
-                ->where('interests.0.controller.name', 'Interested Controller')
+                ->where('interests.0.controller.name', 'Interested')
                 ->where('interests.0.notes', 'Happy to do either.')
             );
 
@@ -219,7 +219,7 @@ class OpenInterestTest extends TestCase
         $this->actingAs($vaccStaff)->get("/events/{$this->event->getRouteKey()}")
             ->assertInertia(fn (Assert $page) => $page
                 ->has('staffing.interest.all', 1)
-                ->where('staffing.interest.all.0.controller.name', 'Interested Controller')
+                ->where('staffing.interest.all.0.controller.name', 'Interested')
                 ->where('staffing.interest.all.0.callsigns', ['ESSA_TWR', 'ESSA_APP'])
             );
         $this->actingAs($vaccStaff)->get("/events/{$this->event->getRouteKey()}/staffing")->assertForbidden();

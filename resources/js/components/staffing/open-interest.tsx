@@ -97,7 +97,9 @@ function InterestList({ interests }: { interests: StaffInterest[] }) {
                                 <tr key={item.id} className="align-top">
                                     <td className="px-4 py-2.5">
                                         {item.controller.name}
-                                        {item.controller.cid && <span className="ml-1.5 text-xs text-muted-foreground">{item.controller.cid}</span>}
+                                        {item.controller.cid && String(item.controller.cid) !== item.controller.name && (
+                                            <span className="ml-1.5 text-xs text-muted-foreground">{item.controller.cid}</span>
+                                        )}
                                         {item.notes && <p className="mt-1 text-xs whitespace-pre-line text-muted-foreground">{item.notes}</p>}
                                     </td>
                                     <td className="px-4 py-2.5 font-mono">{item.callsigns.join(', ')}</td>
@@ -366,7 +368,9 @@ function RosterTable({ entries }: { entries: RosterEntry[] }) {
                                 <td className="px-4 py-2.5 font-mono">{entry.callsign}</td>
                                 <td className="px-4 py-2.5">
                                     {entry.controller.name}
-                                    {entry.controller.cid && <span className="ml-1.5 text-xs text-muted-foreground">{entry.controller.cid}</span>}
+                                    {entry.controller.cid && String(entry.controller.cid) !== entry.controller.name && (
+                                        <span className="ml-1.5 text-xs text-muted-foreground">{entry.controller.cid}</span>
+                                    )}
                                     <NotesIcon notes={entry.notes} className="ml-1.5" />
                                 </td>
                                 <td className="px-4 py-2.5 text-right font-mono whitespace-nowrap tabular-nums">{entry.time}</td>

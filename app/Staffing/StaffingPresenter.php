@@ -127,7 +127,7 @@ final class StaffingPresenter
             ])->all(),
             'interests' => $this->interests($occurrence),
             'roster' => $this->roster($occurrence, $positions, $sections, $viewer, $notes, true),
-            'controllers' => User::query()->controllers($event)->orderBy('name')->get()
+            'controllers' => User::query()->controllers($event)->get()->sortBy(fn (User $user) => mb_strtolower($user->displayName()))->values()
                 ->map(fn (User $user) => $this->controller($user))->all(),
         ];
     }
@@ -304,7 +304,7 @@ final class StaffingPresenter
     {
         return [
             'id' => $user->id,
-            'name' => $user->name,
+            'name' => $user->displayName(),
             'cid' => $user->vatsim_cid,
             'rating' => $user->rating?->label(),
         ];

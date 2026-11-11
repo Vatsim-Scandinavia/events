@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Auth\Roles;
 use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
+use App\Enums\NameDisplay;
 use App\Models\Fir;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -85,7 +86,7 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->actingAs($user)->from('/profile')->put('/profile', ['timezone' => 'Europe/Copenhagen'])
+        $this->actingAs($user)->from('/profile')->put('/profile', ['name_display' => 'first_name', 'timezone' => 'Europe/Copenhagen'])
             ->assertRedirect('/profile');
 
         $this->assertSame('Europe/Copenhagen', $user->fresh()->timezone);
@@ -95,7 +96,7 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->withTimezone('Europe/Copenhagen')->create();
 
-        $this->actingAs($user)->put('/profile', ['timezone' => 'UTC'])->assertSessionHasNoErrors();
+        $this->actingAs($user)->put('/profile', ['name_display' => 'first_name', 'timezone' => 'UTC'])->assertSessionHasNoErrors();
 
         $this->assertNull($user->fresh()->timezone);
     }
@@ -104,9 +105,42 @@ class ProfileTest extends TestCase
     {
         $user = User::factory()->withTimezone('Europe/Copenhagen')->create();
 
-        $this->actingAs($user)->put('/profile', ['timezone' => 'Mars/Olympus_Mons'])
+        $this->actingAs($user)->put('/profile', ['name_display' => 'first_name', 'timezone' => 'Mars/Olympus_Mons'])
             ->assertSessionHasErrors(['timezone' => 'Pick a time zone from the list.']);
 
         $this->assertSame('Europe/Copenhagen', $user->fresh()->timezone);
+    }
+
+    public function test_others_see_a_first_name_until_the_user_picks_how_their_name_is_shown(): void
+    {
+        $user = User::factory()->create(['name' => 'Mary Ann Doe', 'first_name' => 'Mary Ann', 'vatsim_cid' => 1000009]);
+
+        $this->actingAs($user)->get('/profile')->assertInertia(fn (Assert $page) => $page
+            ->where('settings.nameDisplay', 'first_name')
+            ->where('nameDisplays', [
+                ['value' => 'full_name', 'label' => 'Full name', 'example' => 'Mary Ann Doe (1000009)'],
+                ['value' => 'first_name', 'label' => 'First name', 'example' => 'Mary Ann (1000009)'],
+                ['value' => 'cid_only', 'label' => 'CID only', 'example' => '1000009'],
+            ])
+        );
+    }
+
+    public function test_a_user_can_pick_how_their_name_is_shown(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->put('/profile', ['name_display' => 'cid_only', 'timezone' => 'UTC'])->assertSessionHasNoErrors();
+
+        $this->assertSame(NameDisplay::CidOnly, $user->fresh()->name_display);
+    }
+
+    public function test_how_a_name_is_shown_must_be_one_of_the_choices(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->put('/profile', ['name_display' => 'nickname', 'timezone' => 'UTC'])
+            ->assertSessionHasErrors(['name_display' => 'Pick how your name is shown.']);
+
+        $this->assertSame(NameDisplay::FirstName, $user->fresh()->name_display);
     }
 }

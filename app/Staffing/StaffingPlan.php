@@ -184,14 +184,14 @@ final class StaffingPlan
             $user = $users[$entry['user_id']] ?? $this->fail("A controller rostered on {$callsign} no longer exists.");
 
             if (! $user->isEligibleController($occurrence->event)) {
-                $this->fail("{$user->name} isn't a rated controller.");
+                $this->fail("{$user->displayName()} isn't a rated controller.");
             }
 
             if ($id !== null && ! $existing->contains($id)) {
-                $this->fail("{$user->name}'s roster entry was removed by someone else. Reload the page and try again.");
+                $this->fail("{$user->displayName()}'s roster entry was removed by someone else. Reload the page and try again.");
             }
 
-            $this->ensureWithin($entry['start'], $entry['end'], $duration, "{$user->name}'s roster entry on {$callsign}");
+            $this->ensureWithin($entry['start'], $entry['end'], $duration, "{$user->displayName()}'s roster entry on {$callsign}");
 
             $entries[] = ['id' => $id, 'position' => $entry['position'], 'user_id' => $user->id, 'start' => $entry['start'], 'end' => $entry['end']];
         }

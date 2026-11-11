@@ -68,9 +68,9 @@ class RosterApiTest extends TestCase
             ->assertJsonPath('data.0.position', ['id' => $approach->id, 'callsign' => 'EKCH_APP', 'frequency' => '119.805'])
             ->assertJsonPath('data.0.startsAt', '2026-07-18T18:00:00+00:00')
             ->assertJsonPath('data.0.endsAt', '2026-07-18T20:00:00+00:00')
-            ->assertJsonPath('data.0.controller', ['cid' => 7654321, 'name' => 'Bo Berg'])
+            ->assertJsonPath('data.0.controller', ['cid' => 7654321, 'name' => 'Bo'])
             ->assertJsonPath('data.1.position.callsign', 'EKCH_TWR')
-            ->assertJsonPath('data.1.controller', ['cid' => 1234567, 'name' => 'Anna Andersen']);
+            ->assertJsonPath('data.1.controller', ['cid' => 1234567, 'name' => 'Anna']);
     }
 
     public function test_an_unpublished_roster_is_empty_until_its_published(): void
@@ -115,7 +115,7 @@ class RosterApiTest extends TestCase
                     'position' => $tower,
                     'startsAt' => '2026-07-18T18:00:00+00:00',
                     'endsAt' => '2026-07-18T20:00:00+00:00',
-                    'controller' => ['cid' => 1234567, 'name' => 'Anna Andersen'],
+                    'controller' => ['cid' => 1234567, 'name' => 'Anna'],
                 ],
                 [
                     'kind' => 'shift',
