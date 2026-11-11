@@ -19,6 +19,8 @@ Cards shown side by side are read as a comparison, so the same detail sits at th
 
 ## Consequences
 
-Shared `ui/` primitives such as `Badge` keep their own internal padding for now, including 2px values. The rule applies to the space between elements until the primitives get a pass of their own.
+The shared `ui/` primitives follow the grid too: buttons and inputs have 12px side padding and 8px between an icon and its label, and icons in buttons are 16px. A ghost button pulled flush with an edge uses a negative margin of the same 12px (`-ml-3`).
 
-The rest of the UI is brought in line one area at a time, starting with the front page. Code that hasn't been reviewed yet may still use off-grid values.
+On touch screens (`pointer: coarse`) every button is at least 40px tall, and icon buttons at least 40px wide, so fingers get a usable target while mouse users keep the compact sizes.
+
+New code follows these rules; a value off the grid needs a reason, such as the optical exception above.

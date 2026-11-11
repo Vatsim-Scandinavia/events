@@ -150,7 +150,7 @@ export default function EventForm({ event, types, firs, timezones, integrationFi
             <div className="mx-auto flex max-w-3xl flex-col gap-12 px-4 py-8 sm:px-6">
                 <form ref={formRef} onSubmit={submit} className="flex flex-col gap-8">
                     <div className="flex flex-col items-start gap-4">
-                        <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
+                        <Button variant="ghost" size="sm" className="-ml-3" asChild>
                             <Link href={event ? `/events/${event.key}` : '/events'}>
                                 <ArrowLeft />
                                 {event ? 'Back to event' : 'All events'}

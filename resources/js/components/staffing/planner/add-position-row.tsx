@@ -68,7 +68,7 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
     if (!open) {
         return (
             // Pulled out by the buttons' own padding, so the first label lines up with the content edge.
-            <div className="-ml-2.5 flex gap-1 py-2">
+            <div className="-ml-3 flex gap-1 py-2">
                 <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
                     <Plus />
                     Add position
