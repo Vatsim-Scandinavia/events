@@ -67,7 +67,8 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
 
     if (!open) {
         return (
-            <div className="flex gap-1 py-1.5">
+            // Pulled out by the buttons' own padding, so the first label lines up with the content edge.
+            <div className="-ml-2.5 flex gap-1 py-2">
                 <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
                     <Plus />
                     Add position
@@ -78,7 +79,7 @@ export function AddPositionRow({ draft, update, newKey }: DraftProps) {
     }
 
     return (
-        <form onSubmit={add} onKeyDown={(e) => e.key === 'Escape' && close()} className="flex flex-col gap-1.5 py-2">
+        <form onSubmit={add} onKeyDown={(e) => e.key === 'Escape' && close()} className="flex flex-col gap-2 py-2">
             <div className="flex flex-wrap items-center gap-2">
                 <Input
                     ref={callsignRef}

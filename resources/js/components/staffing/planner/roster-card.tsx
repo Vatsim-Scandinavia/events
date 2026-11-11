@@ -1,6 +1,6 @@
 import { router } from '@inertiajs/react';
 import { EyeOff, GripVertical } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useConfirm } from '@/components/confirm-dialog';
 import { formatWindows } from '@/components/staffing/open-interest';
 import Timeline, { type TimelineItem } from '@/components/staffing/timeline';
@@ -21,13 +21,15 @@ function PositionChips({ callsigns, visible = 3 }: { callsigns: string[]; visibl
     const hidden = callsigns.length - shown.length;
 
     return (
-        <span className="flex flex-wrap gap-1">
-            {shown.map((callsign) => (
-                <span key={callsign} className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] leading-none">
-                    {callsign}
-                </span>
+        // Plain text, not chips: the card is what you drag, so nothing inside it should look clickable.
+        <span className="text-xs text-muted-foreground">
+            {shown.map((callsign, index) => (
+                <Fragment key={callsign}>
+                    {index > 0 && ' · '}
+                    <span className="font-mono whitespace-nowrap">{callsign}</span>
+                </Fragment>
             ))}
-            {hidden > 0 && <span className="rounded px-1 py-0.5 text-[11px] leading-none text-muted-foreground">+{hidden} more</span>}
+            {hidden > 0 && ` · +${hidden} more`}
         </span>
     );
 }
@@ -93,7 +95,7 @@ export function RosterCard({ occurrence, controllers, interests, roster, draft, 
                 <CardDescription>
                     {locked
                         ? 'The event has ended, so this roster is kept as a record and can no longer change.'
-                        : 'Add the positions you want staffed below the timeline, so controllers can pick them when showing interest. Then drag a controller onto a position to roster them for their availability, and drag the roster entry or its edges to adjust it. You can keep editing the roster until the event ends.'}
+                        : 'Add the positions you want staffed so controllers can pick them when showing interest, then drag controllers onto positions to roster them. You can keep editing the roster until the event ends.'}
                 </CardDescription>
                 {!locked && occurrence.rosterPublished && (
                     <CardAction>
@@ -135,7 +137,7 @@ export function RosterCard({ occurrence, controllers, interests, roster, draft, 
                                                 : undefined
                                         }
                                         className={cn(
-                                            'flex w-64 cursor-grab items-start gap-1.5 rounded-lg bg-card py-2 pr-3 pl-1.5 text-sm ring-1 ring-foreground/10 hover:ring-primary/50 active:cursor-grabbing',
+                                            'flex w-64 cursor-grab items-start gap-2 rounded-lg bg-card py-2 pr-3 pl-2 text-sm ring-1 ring-foreground/10 hover:ring-primary/50 active:cursor-grabbing',
                                             rostered.has(candidate.id) && 'opacity-60',
                                         )}
                                     >
@@ -204,6 +206,7 @@ export function RosterCard({ occurrence, controllers, interests, roster, draft, 
                     onRemoveRow={(key) => removeRow({ draft, update, newKey }, key, confirm)}
                     onMoveRow={(key, toIndex) => moveRow({ draft, update, newKey }, key, toIndex)}
                     footer={locked ? undefined : <AddPositionRow draft={draft} update={update} newKey={newKey} />}
+                    help="Drag a controller onto a position to roster them for their availability, and drag a roster entry or its edges to adjust it."
                     onChange={(item, position, start, end) =>
                         update((current) => ({
                             ...current,

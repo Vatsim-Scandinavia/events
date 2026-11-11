@@ -59,7 +59,7 @@ export default function BeforeStartPicker({ startsAt, hours, onChange, min, max,
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button id={id} variant="outline" className="h-auto w-full justify-start py-1.5 text-left font-normal">
+                <Button id={id} variant="outline" className="h-auto w-full justify-start py-2 text-left font-normal">
                     <CalendarDays className="text-muted-foreground" />
                     <span className="flex flex-col">
                         <span>{label}</span>

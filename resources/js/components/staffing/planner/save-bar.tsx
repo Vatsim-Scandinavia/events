@@ -29,7 +29,7 @@ export function SaveBar({
                     error ? 'ring-destructive/50' : dirty ? 'ring-primary/50' : 'ring-foreground/10',
                 )}
             >
-                <div className="flex flex-col gap-0.5 text-sm">
+                <div className="flex flex-col gap-1 text-sm">
                     {error ? (
                         <span role="alert" className="flex items-center gap-2 font-medium text-destructive">
                             <CircleAlert className="size-4 shrink-0" />
@@ -41,7 +41,8 @@ export function SaveBar({
                     <span className="text-xs text-muted-foreground">{liveNote}</span>
                     {warning && <span className="text-xs font-medium text-warning">{warning}</span>}
                 </div>
-                <div className="flex flex-wrap gap-2">
+                {/* On phones the buttons fill their own row, with the main save last. */}
+                <div className="flex flex-wrap gap-2 max-sm:[&>*]:flex-1">
                     <Button variant="ghost" onClick={onDiscard} disabled={!dirty || saving}>
                         <Undo2 />
                         Discard

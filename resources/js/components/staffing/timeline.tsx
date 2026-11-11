@@ -59,6 +59,8 @@ type Props = {
     onRemoveRow?: (rowId: number) => void;
     // Rendered under the last row, e.g. a way to add another row.
     footer?: ReactNode;
+    // How to edit with a pointer, shown with the keyboard help in "How to edit the timeline".
+    help?: ReactNode;
     // Moves a row to a new place in the list: shown as a drag handle and up and down buttons on each row's label.
     onMoveRow?: (rowId: number, toIndex: number) => void;
 };
@@ -101,6 +103,7 @@ export default function Timeline({
     emptyHint,
     onRemoveRow,
     footer,
+    help,
     onMoveRow,
 }: Props) {
     const { clock, span: spanLabel, suffix } = useSpanLabel(startsAt);
@@ -308,7 +311,7 @@ export default function Timeline({
         <div className="flex flex-col gap-2">
             <div className="overflow-x-auto">
                 <div className={cn('min-w-[640px] select-none', drag && 'cursor-grabbing')}>
-                    <div className="flex border-b pb-1.5">
+                    <div className="flex border-b pb-2">
                         <div className={cn(labelWidth, 'shrink-0')} />
                         <div ref={trackRef} className="relative h-5 flex-1">
                             {ticks.map((minute) => (
@@ -337,7 +340,7 @@ export default function Timeline({
                                 onDragEnd={() => setRowDrop(null)}
                             >
                                 <MoveRowButton row={row} direction="up" disabled={index === 0} onMove={moveRow} focusRef={refocusButton} />
-                                <GripVertical aria-hidden="true" className="size-3.5 shrink-0 opacity-60" />
+                                <GripVertical aria-hidden="true" className="size-3 shrink-0 opacity-60" />
                                 <MoveRowButton
                                     row={row}
                                     direction="down"
@@ -368,7 +371,7 @@ export default function Timeline({
                                     {dropLine}
                                     <div
                                         className={cn(
-                                            'group/label relative flex min-h-11 flex-1 items-center gap-2 py-1.5 pr-8',
+                                            'group/label relative flex min-h-11 flex-1 items-center gap-2 py-2 pr-8',
                                             reorderable && 'pl-5',
                                         )}
                                     >
@@ -392,10 +395,10 @@ export default function Timeline({
                                             <button
                                                 type="button"
                                                 aria-label={`Remove ${row.label}`}
-                                                className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded p-1 text-muted-foreground opacity-0 group-focus-within/label:opacity-100 group-hover/label:opacity-100 hover:bg-foreground/10 hover:text-foreground"
+                                                className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-muted-foreground opacity-0 group-focus-within/label:opacity-100 group-hover/label:opacity-100 hover:bg-foreground/10 hover:text-foreground"
                                                 onClick={() => onRemoveRow(row.id)}
                                             >
-                                                <Trash2 className="size-3.5" />
+                                                <Trash2 className="size-4" />
                                             </button>
                                         )}
                                     </div>
@@ -429,7 +432,7 @@ export default function Timeline({
                                     {row.detail && <span className="truncate font-mono text-xs text-muted-foreground">{row.detail}</span>}
                                     {!readOnly && (onCreate || onRemoveRow) && (
                                         // Shown on hover, and always reachable with the keyboard.
-                                        <span className="absolute top-1/2 right-1.5 flex -translate-y-1/2 gap-0.5 opacity-0 group-focus-within/label:opacity-100 group-hover/label:opacity-100">
+                                        <span className="absolute top-1/2 right-2 flex -translate-y-1/2 gap-1 opacity-0 group-focus-within/label:opacity-100 group-hover/label:opacity-100">
                                             {onCreate && (
                                                 <button
                                                     type="button"
@@ -437,7 +440,7 @@ export default function Timeline({
                                                     className="rounded p-1 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
                                                     onClick={() => addToRow(row)}
                                                 >
-                                                    <Plus className="size-3.5" />
+                                                    <Plus className="size-4" />
                                                 </button>
                                             )}
                                             {onRemoveRow && (
@@ -447,7 +450,7 @@ export default function Timeline({
                                                     className="rounded p-1 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
                                                     onClick={() => onRemoveRow(row.id)}
                                                 >
-                                                    <Trash2 className="size-3.5" />
+                                                    <Trash2 className="size-4" />
                                                 </button>
                                             )}
                                         </span>
@@ -513,7 +516,7 @@ export default function Timeline({
                                     {ghost && (
                                         <span
                                             className={cn(
-                                                'pointer-events-none absolute inset-y-1.5 flex items-center overflow-hidden rounded-md px-2 font-mono text-xs ring-2 ring-inset',
+                                                'pointer-events-none absolute inset-y-1 flex items-center overflow-hidden rounded-md px-2 font-mono text-xs ring-2 ring-inset',
                                                 ghostClashes
                                                     ? 'bg-destructive/20 text-destructive ring-destructive'
                                                     : 'bg-primary/25 text-foreground ring-primary',
@@ -537,11 +540,18 @@ export default function Timeline({
                     {footer}
                 </div>
             </div>
+            {/* Folded away: the essentials are in the card's description. Items still point at the keyboard help while it's closed. */}
             {!readOnly && (
-                <p id={hintId} className="text-xs text-muted-foreground">
-                    With the keyboard: Tab to a {noun}, then use the arrow keys to move it by {SNAP} minutes, Shift + arrows to change its length
-                    {allowRowChange && ', up and down to move it to another position'}, and Delete to remove it.
-                </p>
+                <details className="text-xs text-muted-foreground">
+                    <summary className="w-fit cursor-pointer font-medium hover:text-foreground">How to edit the timeline</summary>
+                    <div className="mt-2 flex flex-col gap-2">
+                        {help && <p>{help}</p>}
+                        <p id={hintId}>
+                            With the keyboard: Tab to a {noun}, then use the arrow keys to move it by {SNAP} minutes, Shift + arrows to change its
+                            length{allowRowChange && ', up and down to move it to another position'}, and Delete to remove it.
+                        </p>
+                    </div>
+                </details>
             )}
             {rejected && (
                 <p role="status" className="text-sm text-destructive">
@@ -577,7 +587,7 @@ function MoveRowButton({
             className="rounded opacity-0 group-focus-within/label:opacity-100 group-hover/label:opacity-100 hover:bg-foreground/10 hover:text-foreground disabled:invisible"
             onClick={() => onMove(row.id, direction)}
         >
-            <Icon className="size-3.5" />
+            <Icon className="size-3" />
         </button>
     );
 }
@@ -620,7 +630,7 @@ function Block({
             tabIndex={editable ? 0 : undefined}
             title={label}
             className={cn(
-                'group absolute inset-y-1.5 flex items-center overflow-hidden rounded-md text-xs ring-1 outline-none ring-inset',
+                'group absolute inset-y-1 flex items-center overflow-hidden rounded-md text-xs ring-1 outline-none ring-inset',
                 item.tone === 'muted'
                     ? 'bg-muted text-muted-foreground ring-foreground/15'
                     : item.tone === 'warning'
@@ -635,7 +645,7 @@ function Block({
             {editable && (
                 <span
                     aria-hidden="true"
-                    className="absolute inset-y-0 left-0 w-2.5 cursor-ew-resize hover:bg-primary/40"
+                    className="absolute inset-y-0 left-0 w-3 cursor-ew-resize hover:bg-primary/40"
                     onPointerDown={(event) => onPointerDown(event, 'resize-start')}
                 />
             )}
@@ -651,7 +661,7 @@ function Block({
                 <button
                     type="button"
                     aria-label={`Remove ${item.label}, ${time}`}
-                    className="sr-only mr-1 rounded p-0.5 text-muted-foreground group-hover:not-sr-only hover:bg-foreground/10 hover:text-foreground focus-visible:not-sr-only"
+                    className="sr-only mr-1 rounded p-1 text-muted-foreground group-hover:not-sr-only hover:bg-foreground/10 hover:text-foreground focus-visible:not-sr-only"
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={() => onDelete(item)}
                 >
@@ -661,7 +671,7 @@ function Block({
             {editable && (
                 <span
                     aria-hidden="true"
-                    className="absolute inset-y-0 right-0 w-2.5 cursor-ew-resize hover:bg-primary/40"
+                    className="absolute inset-y-0 right-0 w-3 cursor-ew-resize hover:bg-primary/40"
                     onPointerDown={(event) => onPointerDown(event, 'resize-end')}
                 />
             )}
