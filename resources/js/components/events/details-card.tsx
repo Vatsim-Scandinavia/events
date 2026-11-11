@@ -30,8 +30,8 @@ export function DetailsCard({
             <CardHeader>
                 <CardTitle>Details</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-                <div className="grid gap-5 sm:grid-cols-[1fr_14rem]">
+            <CardContent className="flex flex-col gap-6">
+                <div className="grid gap-6 sm:grid-cols-[1fr_14rem]">
                     <Field label="Name" error={errors.name}>
                         <Input value={data.name} onChange={(e) => form.setData('name', e.target.value)} aria-invalid={!!errors.name} required />
                     </Field>
@@ -60,7 +60,7 @@ export function DetailsCard({
                         )}
                     </Field>
                 </div>
-                <div className="grid gap-5 sm:grid-cols-2">
+                <div className="grid gap-6 sm:grid-cols-2">
                     <Field label="Type" error={errors.event_type_id}>
                         <NativeSelect
                             value={data.event_type_id}

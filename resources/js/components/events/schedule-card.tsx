@@ -55,12 +55,12 @@ export function ScheduleCard({
                     time when the clocks change.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-5">
+            <CardContent className="flex flex-col gap-6">
                 <Field label="Time zone" error={scheduleError('timezone')} className="sm:max-w-xs">
                     <TimezoneSelect timezones={timezones} value={data.timezone} onChange={(e) => form.setData('timezone', e.target.value)} />
                 </Field>
-                <div className="grid gap-5 sm:grid-cols-2">
-                    <div className="flex flex-col gap-1.5">
+                <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="flex flex-col gap-2">
                         <span className="text-sm font-medium">Starts ({zoneLabel})</span>
                         <DateTimePicker
                             label="Starts"
@@ -73,7 +73,7 @@ export function ScheduleCard({
                         />
                         <FieldError message={scheduleError('starts_at')} />
                     </div>
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-2">
                         <span className="text-sm font-medium">Ends ({zoneLabel})</span>
                         <DateTimePicker
                             label="Ends"
@@ -87,8 +87,8 @@ export function ScheduleCard({
                     </div>
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-2">
-                    <div className="flex flex-col gap-1.5">
+                <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="flex flex-col gap-2">
                         <span className="text-sm font-medium">Repeats</span>
                         <NativeSelect
                             aria-label="Repeats"
@@ -104,7 +104,7 @@ export function ScheduleCard({
                         <FieldError message={scheduleError('repeats')} />
                     </div>
                     {data.repeats !== 'none' && (
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-2">
                             <span className="text-sm font-medium">Ends</span>
                             <div className="flex items-center gap-2">
                                 <div className="w-28 shrink-0">

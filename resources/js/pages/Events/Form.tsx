@@ -1,14 +1,15 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { useConfirm } from '@/components/confirm-dialog';
-import { Cancellation } from '@/components/events/cancellation';
+import { DangerZone } from '@/components/events/cancellation';
 import { DetailsCard } from '@/components/events/details-card';
 import type { EventFormData, IntegrationField, RouteRow } from '@/components/events/event-form';
 import { IntegrationFieldsCard } from '@/components/events/integration-fields-card';
 import { RoutesCard } from '@/components/events/routes-card';
 import { describeStaffing, removedDates, useSchedulePreview } from '@/components/events/schedule';
 import { ScheduleCard } from '@/components/events/schedule-card';
+import { SaveBar } from '@/components/staffing/planner/save-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
@@ -29,6 +30,7 @@ type EventFormProps = {
 
 export default function EventForm({ event, types, firs, timezones, integrationFields }: EventFormProps) {
     const confirm = useConfirm();
+    const formRef = useRef<HTMLFormElement>(null);
     const nextKey = useRef(-1);
     const newKey = () => nextKey.current--;
     const today = toDay(Date.now());
@@ -145,71 +147,85 @@ export default function EventForm({ event, types, firs, timezones, integrationFi
         <>
             <Head title={event ? `Edit · ${event.name}` : 'New event'} />
 
-            <form onSubmit={submit} className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
-                <div className="flex flex-col gap-3">
-                    <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
-                        <Link href={event ? `/events/${event.key}` : '/events'}>
-                            <ArrowLeft />
-                            {event ? 'Back to event' : 'All events'}
-                        </Link>
-                    </Button>
-                    <h1 className="text-2xl font-semibold tracking-tight">{event ? `Edit ${event.name}` : 'New event'}</h1>
-                </div>
-
-                <DetailsCard form={form} firs={firs} types={types} bannerUrl={event?.bannerUrl ?? null} />
-
-                <ScheduleCard form={form} event={event} timezones={timezones} today={today} schedule={schedule} checkFailed={checkFailed} />
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Slot and briefing links</CardTitle>
-                        <CardDescription>
-                            Optional links shown on the event page. The slot link is where pilots reserve arrival or departure slots.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid gap-5 sm:grid-cols-2">
-                        <Field label="Slot link" error={errors.booking_url}>
-                            <Input
-                                type="url"
-                                value={data.booking_url}
-                                onChange={(e) => form.setData('booking_url', e.target.value)}
-                                placeholder="https://"
-                                aria-invalid={!!errors.booking_url}
-                            />
-                        </Field>
-                        <Field label="Briefing link" error={errors.briefing_url}>
-                            <Input
-                                type="url"
-                                value={data.briefing_url}
-                                onChange={(e) => form.setData('briefing_url', e.target.value)}
-                                placeholder="https://"
-                                aria-invalid={!!errors.briefing_url}
-                            />
-                        </Field>
-                    </CardContent>
-                </Card>
-
-                <RoutesCard form={form} newKey={newKey} />
-
-                <IntegrationFieldsCard form={form} fields={integrationFields} />
-
-                {event && <Cancellation event={event} />}
-
-                <div className="flex flex-wrap items-center gap-3">
-                    <Button type="submit" disabled={form.processing || (event !== null && !form.isDirty)}>
-                        {event ? 'Save changes' : 'Create event'}
-                    </Button>
-                    <Button variant="ghost" asChild>
-                        <Link href={event ? `/events/${event.key}` : '/events'}>Cancel</Link>
-                    </Button>
-                    {event && (
-                        <Button type="button" variant="destructive" className="sm:ml-auto" onClick={destroy}>
-                            <Trash2 />
-                            Delete event
+            <div className="mx-auto flex max-w-3xl flex-col gap-12 px-4 py-8 sm:px-6">
+                <form ref={formRef} onSubmit={submit} className="flex flex-col gap-8">
+                    <div className="flex flex-col items-start gap-4">
+                        <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
+                            <Link href={event ? `/events/${event.key}` : '/events'}>
+                                <ArrowLeft />
+                                {event ? 'Back to event' : 'All events'}
+                            </Link>
                         </Button>
+                        <h1 className="text-2xl font-semibold tracking-tight">{event ? `Edit ${event.name}` : 'New event'}</h1>
+                    </div>
+
+                    <DetailsCard form={form} firs={firs} types={types} bannerUrl={event?.bannerUrl ?? null} />
+
+                    <ScheduleCard form={form} event={event} timezones={timezones} today={today} schedule={schedule} checkFailed={checkFailed} />
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Slot and briefing links</CardTitle>
+                            <CardDescription>
+                                Optional links shown on the event page. The slot link is where pilots reserve arrival or departure slots.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-6 sm:grid-cols-2">
+                            <Field label="Slot link" error={errors.booking_url}>
+                                <Input
+                                    type="url"
+                                    value={data.booking_url}
+                                    onChange={(e) => form.setData('booking_url', e.target.value)}
+                                    placeholder="https://"
+                                    aria-invalid={!!errors.booking_url}
+                                />
+                            </Field>
+                            <Field label="Briefing link" error={errors.briefing_url}>
+                                <Input
+                                    type="url"
+                                    value={data.briefing_url}
+                                    onChange={(e) => form.setData('briefing_url', e.target.value)}
+                                    placeholder="https://"
+                                    aria-invalid={!!errors.briefing_url}
+                                />
+                            </Field>
+                        </CardContent>
+                    </Card>
+
+                    <RoutesCard form={form} newKey={newKey} />
+
+                    <IntegrationFieldsCard form={form} fields={integrationFields} />
+
+                    {/* Inside the form, so it sticks to the bottom of the screen until the form ends. */}
+                    {event ? (
+                        <SaveBar
+                            dirty={form.isDirty}
+                            saving={form.processing}
+                            error={form.hasErrors ? 'Some fields need fixing. They’re marked above.' : null}
+                            onSave={() => formRef.current?.requestSubmit()}
+                            onDiscard={() => form.reset()}
+                            discardLabel="Discard changes"
+                        />
+                    ) : (
+                        <SaveBar
+                            dirty={form.isDirty}
+                            saving={form.processing}
+                            error={form.hasErrors ? 'Some fields need fixing. They’re marked above.' : null}
+                            status="Not created yet"
+                            onSave={() => formRef.current?.requestSubmit()}
+                            saveLabel="Create event"
+                            canSave
+                            onDiscard={() => router.visit('/events')}
+                            discardLabel="Cancel"
+                            discardIcon={false}
+                            canDiscard
+                        />
                     )}
-                </div>
-            </form>
+                </form>
+
+                {/* Last and set apart, so nobody passes a destructive action on the way to saving. */}
+                {event && <DangerZone event={event} onDelete={destroy} />}
+            </div>
         </>
     );
 }
