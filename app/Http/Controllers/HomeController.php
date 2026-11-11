@@ -10,11 +10,13 @@ use Inertia\Response;
 
 class HomeController extends Controller
 {
+    /**
+     * The front page. It's the public showcase, so it lists only published events, even for staff
+     * who can see Drafts: the next four, the first featured in the hero and the rest in the grid.
+     */
     public function index(VatsimNetworkStats $networkStats): Response
     {
         return Inertia::render('Home', [
-            // The public showcase, so only published events, even for staff who can see Drafts.
-            // The first is the hero's next event and the other three fill the grid below it.
             'upcomingEvents' => EventResource::collection(Event::upcoming()->published()->limit(4)->get())->resolve(),
             'networkStats' => Inertia::defer(fn () => $networkStats->get()),
         ]);

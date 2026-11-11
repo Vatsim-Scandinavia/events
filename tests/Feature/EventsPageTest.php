@@ -60,11 +60,13 @@ class EventsPageTest extends TestCase
 
     public function test_the_front_page_shows_the_next_event_and_the_three_after_it(): void
     {
-        Event::factory()->count(6)->create();
+        foreach (['Fifth' => 5, 'Second' => 2, 'Fourth' => 4, 'First' => 1, 'Third' => 3] as $name => $days) {
+            Event::factory()->create(['name' => $name, 'starts_at' => now()->addDays($days), 'ends_at' => now()->addDays($days)->addHours(3)]);
+        }
 
         $this->get('/')->assertInertia(fn (Assert $page) => $page
             ->component('Home')
-            ->has('upcomingEvents', 4)
+            ->where('upcomingEvents', fn ($events) => collect($events)->pluck('name')->all() === ['First', 'Second', 'Third', 'Fourth'])
         );
     }
 }
