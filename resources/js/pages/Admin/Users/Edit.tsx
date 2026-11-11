@@ -3,6 +3,7 @@ import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import type { FormEvent, ReactNode } from 'react';
 import { RoleBadges } from '@/components/admin-header';
 import { useConfirm } from '@/components/confirm-dialog';
+import { DetailList } from '@/components/detail-list';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,11 +79,11 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
         }
     };
 
-    const details = [
+    const details: [string, ReactNode][] = [
         ['VATSIM CID', user.cid ?? '—'],
         ['Rating', user.rating ?? '—'],
         // Only Administrators are sent email addresses.
-        ...(user.email !== undefined ? [['Email', user.email]] : []),
+        ...(user.email !== undefined ? [['Email', user.email] as [string, ReactNode]] : []),
         ['Joined', user.joinedAt ?? '—'],
     ];
 
@@ -91,15 +92,17 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
             <Head title={`${user.name} · Users`} />
 
             <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
-                <div className="flex flex-col gap-3">
-                    <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
+                <div className="flex flex-col items-start gap-4">
+                    <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
                         <Link href="/admin/users">
                             <ArrowLeft />
                             All users
                         </Link>
                     </Button>
-                    <h1 className="text-2xl font-semibold tracking-tight">{user.name}</h1>
-                    <RoleBadges roles={user.roles} />
+                    <div className="flex flex-col gap-2">
+                        <h1 className="text-2xl font-semibold tracking-tight">{user.name}</h1>
+                        <RoleBadges roles={user.roles} />
+                    </div>
                 </div>
 
                 <Card>
@@ -108,14 +111,7 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
                         <CardDescription>These come from VATSIM and can’t be changed here.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <dl className="grid gap-4 sm:grid-cols-2">
-                            {details.map(([label, value]) => (
-                                <div key={label} className="flex flex-col gap-0.5">
-                                    <dt className="text-xs text-muted-foreground">{label}</dt>
-                                    <dd className="truncate tabular-nums">{value}</dd>
-                                </div>
-                            ))}
-                        </dl>
+                        <DetailList details={details} />
                     </CardContent>
                 </Card>
 
@@ -126,17 +122,17 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
                             A role applies across the hub, or only to one FIR’s events. A person can do everything any of their roles allows.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-col gap-5">
+                    <CardContent className="flex flex-col gap-6">
                         {assignments.length === 0 ? (
                             <p className="text-sm text-muted-foreground">No roles. They’re a Pilot.</p>
                         ) : (
                             <ul className="flex flex-col divide-y">
                                 {assignments.map((assignment) => (
-                                    <li key={assignment.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                                    <li key={assignment.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                                         <span className="flex flex-1 flex-wrap items-center gap-2">
                                             <span className="font-medium">{assignment.role}</span>
                                             {assignment.fir ? (
-                                                <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                                <span className="flex items-center gap-2 text-sm text-muted-foreground">
                                                     in
                                                     <Badge variant="outline" className="font-mono">
                                                         {assignment.fir.icao}
@@ -167,7 +163,7 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
                             </ul>
                         )}
 
-                        <form onSubmit={add} className="flex flex-col gap-2 border-t pt-5">
+                        <form onSubmit={add} className="flex flex-col gap-2 border-t pt-6">
                             <span className="text-sm font-medium">Add a role</span>
                             <div className="flex flex-col gap-2 sm:flex-row">
                                 <div className="sm:flex-1">

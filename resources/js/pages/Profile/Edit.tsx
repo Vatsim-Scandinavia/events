@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import { LocateFixed } from 'lucide-react';
-import { Fragment, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
+import { useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
+import { DetailList } from '@/components/detail-list';
 import { TimezoneSelect } from '@/components/timezone-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -58,7 +59,7 @@ export default function Profile({ details, roleGroups, settings, nameDisplays, t
             <Head title="Profile" />
 
             <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-2">
                     <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
                     <p className="text-muted-foreground">Who you are on the Event Hub, and how it works for you.</p>
                 </div>
@@ -179,14 +180,7 @@ function DetailsCard({ details }: { details: ProfileProps['details'] }) {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-2 text-sm">
-                    {rows.map(([label, value]) => (
-                        <Fragment key={label}>
-                            <dt className="text-muted-foreground">{label}</dt>
-                            <dd className="tabular-nums">{value}</dd>
-                        </Fragment>
-                    ))}
-                </dl>
+                <DetailList details={rows} />
             </CardContent>
         </Card>
     );
@@ -205,9 +199,9 @@ function RolesCard({ roleGroups }: { roleGroups: ProfileProps['roleGroups'] }) {
                 ) : (
                     <dl className="flex flex-col gap-4 text-sm">
                         {roleGroups.map((group) => (
-                            <div key={group.scope} className="flex flex-col gap-1.5">
+                            <div key={group.scope} className="flex flex-col gap-2">
                                 <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{group.scope}</dt>
-                                <dd className="flex flex-wrap gap-1.5">
+                                <dd className="flex flex-wrap gap-2">
                                     {group.roles.map((role) => (
                                         <Badge key={role.name} variant="secondary">
                                             {role.name}

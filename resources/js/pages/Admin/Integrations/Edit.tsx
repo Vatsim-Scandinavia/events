@@ -100,15 +100,17 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
             <Head title={`${integration.name} · Integrations`} />
 
             <div className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
-                <div className="flex flex-col gap-3">
-                    <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
+                <div className="flex flex-col items-start gap-4">
+                    <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
                         <Link href="/admin/integrations">
                             <ArrowLeft />
                             All integrations
                         </Link>
                     </Button>
-                    <h1 className="text-2xl font-semibold tracking-tight">{integration.name}</h1>
-                    <p className="text-muted-foreground">{integration.description}</p>
+                    <div className="flex flex-col gap-2">
+                        <h1 className="text-2xl font-semibold tracking-tight">{integration.name}</h1>
+                        <p className="text-muted-foreground">{integration.description}</p>
+                    </div>
                 </div>
 
                 <form onSubmit={submit} className="flex flex-col gap-8">
@@ -120,7 +122,7 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                                 it.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-5">
+                        <CardContent className="flex flex-col gap-6">
                             {integration.settings.map((setting) =>
                                 setting.lockedBy ? (
                                     <Field key={setting.key} label={setting.label}>
@@ -129,7 +131,7 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                                         ) : (
                                             <Input value={setting.secret ? '••••••••' : (setting.value ?? '')} disabled />
                                         )}
-                                        <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+                                        <span className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
                                             <Lock className="size-3" aria-hidden />
                                             Set by the server ({setting.lockedBy})
                                         </span>
@@ -186,7 +188,7 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                                         checked={data.enabled}
                                         onCheckedChange={(checked) => form.setData('enabled', checked === true)}
                                     />
-                                    <label htmlFor="integration-enabled" className="flex flex-col gap-0.5">
+                                    <label htmlFor="integration-enabled" className="flex flex-col gap-1">
                                         <span className="font-medium">Switch {integration.name} on</span>
                                         <span className="text-sm text-muted-foreground">
                                             Switched off, none of its features run, and nothing it gave is taken away.
@@ -206,7 +208,7 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                                             checked={data.features.includes(feature.key)}
                                             onCheckedChange={(checked) => toggleFeature(feature.key, checked === true)}
                                         />
-                                        <label htmlFor={`feature-${feature.key}`} className="flex flex-col gap-0.5">
+                                        <label htmlFor={`feature-${feature.key}`} className="flex flex-col gap-1">
                                             <span className="font-medium">{feature.name}</span>
                                             <span className="text-sm text-muted-foreground">{feature.description}</span>
                                             {feature.controllerSource && (
@@ -222,19 +224,21 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                             </div>
 
                             {integration.syncs && (
-                                <Field label="Removal limit (%)" error={errors.removal_limit} className="border-t pt-4 sm:max-w-xs">
-                                    <Input
-                                        type="number"
-                                        min={1}
-                                        max={100}
-                                        value={data.removal_limit ?? ''}
-                                        onChange={(e) => form.setData('removal_limit', Number(e.target.value))}
-                                        aria-invalid={!!errors.removal_limit}
-                                    />
-                                    <span className="text-xs font-normal text-muted-foreground">
-                                        A sync that would remove more than this share of what it manages is held until you approve it.
-                                    </span>
-                                </Field>
+                                <div className="border-t pt-4">
+                                    <Field label="Removal limit (%)" error={errors.removal_limit} className="sm:max-w-xs">
+                                        <Input
+                                            type="number"
+                                            min={1}
+                                            max={100}
+                                            value={data.removal_limit ?? ''}
+                                            onChange={(e) => form.setData('removal_limit', Number(e.target.value))}
+                                            aria-invalid={!!errors.removal_limit}
+                                        />
+                                        <span className="text-xs font-normal text-muted-foreground">
+                                            A sync that would remove more than this share of what it manages is held until you approve it.
+                                        </span>
+                                    </Field>
+                                </div>
                             )}
                         </CardContent>
                         <CardFooter className="justify-end">
@@ -255,9 +259,9 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                             {integration.features
                                 .filter((feature) => feature.needsAttention.length > 0)
                                 .map((feature) => (
-                                    <div key={feature.key} className="flex flex-col gap-1.5 text-sm">
+                                    <div key={feature.key} className="flex flex-col gap-2 text-sm">
                                         <span className="font-medium">{feature.name}</span>
-                                        <ul className="list-disc pl-5 text-muted-foreground">
+                                        <ul className="list-disc pl-4 text-muted-foreground">
                                             {feature.needsAttention.map((item) => (
                                                 <li key={item}>{item}</li>
                                             ))}
@@ -298,7 +302,7 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                             ) : (
                                 <ul className="divide-y rounded-lg ring-1 ring-foreground/10">
                                     {runs.map((run) => (
-                                        <li key={run.id} className="flex flex-col gap-1.5 px-3 py-3 text-sm">
+                                        <li key={run.id} className="flex flex-col gap-2 px-3 py-3 text-sm">
                                             <span className="flex flex-wrap items-center gap-2">
                                                 <span className="font-medium">{run.feature}</span>
                                                 <IntegrationRunBadge status={run.status} />
@@ -308,7 +312,7 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                                             {run.message && <span>{run.message}</span>}
                                             {run.approvedBy && <span className="text-muted-foreground">Approved by {run.approvedBy}</span>}
                                             {run.warnings.length > 0 && (
-                                                <ul className="list-disc pl-5 text-muted-foreground">
+                                                <ul className="list-disc pl-4 text-muted-foreground">
                                                     {run.warnings.map((warning) => (
                                                         <li key={warning}>{warning}</li>
                                                     ))}

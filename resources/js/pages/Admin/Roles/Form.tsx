@@ -49,26 +49,30 @@ export default function RoleForm({ role, permissions }: RoleFormProps) {
             <Head title={role ? `${role.name} · Roles` : 'New role'} />
 
             <form onSubmit={submit} className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
-                <div className="flex flex-col gap-3">
-                    <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
+                <div className="flex flex-col items-start gap-4">
+                    <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
                         <Link href="/admin/roles">
                             <ArrowLeft />
                             All roles
                         </Link>
                     </Button>
-                    <h1 className="text-2xl font-semibold tracking-tight">{role ? (locked ? role.name : `Edit ${role.name}`) : 'New role'}</h1>
-                    {role && <p className="text-muted-foreground">{role.users === 1 ? '1 person has' : `${role.users} people have`} this role.</p>}
+                    <div className="flex flex-col gap-2">
+                        <h1 className="text-2xl font-semibold tracking-tight">{role ? (locked ? role.name : `Edit ${role.name}`) : 'New role'}</h1>
+                        {role && (
+                            <p className="text-muted-foreground">{role.users === 1 ? '1 person has' : `${role.users} people have`} this role.</p>
+                        )}
+                    </div>
                 </div>
 
                 {locked && (
-                    <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm text-muted-foreground">
+                    <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-3 text-sm text-muted-foreground">
                         <Lock className="mt-0.5 size-4 shrink-0" />
                         Administrator is built in. It always has every permission and can’t be renamed or deleted.
                     </p>
                 )}
 
                 {role?.builtIn && !locked && (
-                    <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-2.5 text-sm text-muted-foreground">
+                    <p className="flex items-start gap-2 rounded-lg bg-muted px-3 py-3 text-sm text-muted-foreground">
                         <Lock className="mt-0.5 size-4 shrink-0" />
                         {role.name} is built in, so it keeps its name and can’t be deleted. You can still choose what it allows.
                     </p>
@@ -111,7 +115,7 @@ export default function RoleForm({ role, permissions }: RoleFormProps) {
                                             disabled={locked}
                                             onCheckedChange={(checked) => toggle(permission.value, checked === true)}
                                         />
-                                        <label htmlFor={id} className="flex flex-1 flex-col gap-0.5">
+                                        <label htmlFor={id} className="flex flex-1 flex-col gap-1">
                                             <span className="font-medium">{permission.label}</span>
                                             <span className="text-sm text-muted-foreground">{permission.description}</span>
                                         </label>

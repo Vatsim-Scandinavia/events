@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import AppLayout from '@/layouts/AppLayout';
+import { cn, rowLink } from '@/lib/utils';
 import type { AdminUser, Paginated } from '@/types/admin';
 
 type UsersIndexProps = {
@@ -100,29 +101,34 @@ export default function UsersIndex({ users, filters, roles, firs }: UsersIndexPr
                         <table className="w-full table-fixed text-sm">
                             <thead className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
                                 <tr>
-                                    <th scope="col" className="px-4 py-2.5 font-medium">
+                                    <th scope="col" className="px-4 py-3 font-medium">
                                         Name
                                     </th>
-                                    <th scope="col" className="hidden w-28 px-4 py-2.5 font-medium sm:table-cell">
+                                    <th scope="col" className="hidden w-28 px-4 py-3 font-medium sm:table-cell">
                                         CID
                                     </th>
-                                    <th scope="col" className="hidden w-24 px-4 py-2.5 font-medium md:table-cell">
+                                    <th scope="col" className="hidden w-24 px-4 py-3 font-medium md:table-cell">
                                         Rating
                                     </th>
-                                    <th scope="col" className="hidden w-72 px-4 py-2.5 font-medium lg:table-cell">
+                                    <th scope="col" className="hidden w-72 px-4 py-3 font-medium lg:table-cell">
                                         Roles
                                     </th>
-                                    <th scope="col" className="w-16 px-4 py-2.5 lg:w-32">
-                                        <span className="sr-only">Actions</span>
+                                    <th scope="col" className="w-12 px-4 py-3">
+                                        <span className="sr-only">Open</span>
                                     </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y">
                                 {users.data.map((user) => (
-                                    <tr key={user.id} className="transition-colors hover:bg-muted/50">
+                                    <tr key={user.id} className="relative transition-colors hover:bg-muted/50">
                                         <td className="px-4 py-3 align-middle">
                                             <div className="flex min-w-0 flex-col gap-1">
-                                                <span className="truncate font-medium text-foreground">{user.name}</span>
+                                                <Link
+                                                    href={`/admin/users/${user.id}`}
+                                                    className={cn('truncate font-medium text-foreground', rowLink)}
+                                                >
+                                                    {user.name}
+                                                </Link>
                                                 {user.email && <span className="truncate text-xs text-muted-foreground">{user.email}</span>}
                                                 <div className="lg:hidden">
                                                     <RoleBadges roles={user.roles} />
@@ -137,12 +143,7 @@ export default function UsersIndex({ users, filters, roles, firs }: UsersIndexPr
                                             <RoleBadges roles={user.roles} />
                                         </td>
                                         <td className="px-4 py-3 text-right align-middle">
-                                            <Button variant="ghost" size="sm" asChild>
-                                                <Link href={`/admin/users/${user.id}`} aria-label={`Manage ${user.name}`}>
-                                                    <span className="hidden lg:inline">Manage</span>
-                                                    <ChevronRight />
-                                                </Link>
-                                            </Button>
+                                            <ChevronRight className="ml-auto size-4 text-muted-foreground" aria-hidden="true" />
                                         </td>
                                     </tr>
                                 ))}

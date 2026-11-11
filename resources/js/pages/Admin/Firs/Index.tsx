@@ -1,11 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AdminHeader } from '@/components/admin-header';
 import { useConfirm } from '@/components/confirm-dialog';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout';
+import { rowLink } from '@/lib/utils';
 
 // Mirrors the firs prop of App\Http\Controllers\Admin\FirController@index.
 type FirSummary = {
@@ -58,27 +58,25 @@ export default function FirsIndex({ firs }: { firs: FirSummary[] }) {
                 ) : (
                     <ul className="divide-y overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
                         {firs.map((fir) => (
-                            <li key={fir.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center">
-                                <span className="flex flex-1 flex-wrap items-center gap-2 font-medium">
-                                    <Badge variant="outline" className="font-mono">
-                                        {fir.icao}
-                                    </Badge>
-                                    {fir.name}
+                            <li key={fir.id} className="relative flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/50">
+                                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2 font-medium">
+                                    <Link href={`/admin/firs/${fir.id}/edit`} className={rowLink}>
+                                        <span className="font-mono">{fir.icao}</span> {fir.name}
+                                    </Link>
                                     <span className="text-sm font-normal text-muted-foreground">· {events(fir.events)}</span>
                                 </span>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" asChild>
-                                        <Link href={`/admin/firs/${fir.id}/edit`}>
-                                            <Pencil />
-                                            Edit
-                                        </Link>
+                                {fir.events === 0 && (
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="relative z-10"
+                                        onClick={() => destroy(fir)}
+                                        aria-label={`Delete ${fir.icao}`}
+                                    >
+                                        <Trash2 />
                                     </Button>
-                                    {fir.events === 0 && (
-                                        <Button variant="ghost" size="sm" onClick={() => destroy(fir)} aria-label={`Delete ${fir.icao}`}>
-                                            <Trash2 />
-                                        </Button>
-                                    )}
-                                </div>
+                                )}
+                                <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                             </li>
                         ))}
                     </ul>

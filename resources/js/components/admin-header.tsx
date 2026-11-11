@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -23,18 +23,32 @@ export function AdminHeader({ title, description, action }: AdminHeaderProps) {
         auth.user?.isAdministrator && { label: 'Integrations', href: '/admin/integrations' },
         auth.user?.isAdministrator && { label: 'Settings', href: '/admin/settings' },
     ].filter((tab): tab is { label: string; href: string } => Boolean(tab));
+    const tabsRef = useRef<HTMLElement>(null);
+
+    // On phones the tabs scroll sideways; start with the active one in view. Each admin page mounts its own header.
+    useEffect(() => {
+        const active = tabsRef.current?.querySelector<HTMLElement>('[aria-current=page]');
+
+        // After the web font loads, since it changes how wide the tabs are.
+        void document.fonts.ready.then(() => active?.scrollIntoView({ block: 'nearest', inline: 'nearest' }));
+    }, []);
 
     return (
         <section className="border-b bg-muted/40">
-            <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 pt-12 sm:px-6 md:pt-16">
+            <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pt-12 sm:px-6 md:pt-16">
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                    <div className="flex flex-col gap-3">
+                    <div className="flex flex-col gap-4">
                         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
                         <p className="max-w-2xl text-lg text-muted-foreground">{description}</p>
                     </div>
                     {action}
                 </div>
-                <nav className="mt-4 -mb-px flex gap-6 text-sm" aria-label="Admin sections">
+                {/* One line that scrolls sideways when the tabs don't fit, rather than wrapping or widening the page. */}
+                <nav
+                    ref={tabsRef}
+                    className="-mb-px flex [scrollbar-width:none] gap-6 overflow-x-auto text-sm whitespace-nowrap [&::-webkit-scrollbar]:hidden"
+                    aria-label="Admin sections"
+                >
                     {tabs.map((tab) => {
                         const active = url === tab.href || url.startsWith(`${tab.href}/`) || url.startsWith(`${tab.href}?`);
 
@@ -44,7 +58,7 @@ export function AdminHeader({ title, description, action }: AdminHeaderProps) {
                                 href={tab.href}
                                 aria-current={active ? 'page' : undefined}
                                 className={cn(
-                                    'border-b-2 border-transparent pb-3 text-muted-foreground transition-colors hover:text-foreground',
+                                    'shrink-0 border-b-2 border-transparent pb-3 text-muted-foreground transition-colors hover:text-foreground',
                                     active && 'border-primary text-foreground',
                                 )}
                             >

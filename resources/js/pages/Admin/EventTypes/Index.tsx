@@ -1,11 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AdminHeader } from '@/components/admin-header';
 import { useConfirm } from '@/components/confirm-dialog';
 import { EventTypeBadge } from '@/components/event-card';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout';
+import { rowLink } from '@/lib/utils';
 
 // Mirrors the types prop of App\Http\Controllers\Admin\EventTypeController@index.
 type EventTypeSummary = {
@@ -57,22 +58,23 @@ export default function EventTypesIndex({ types }: { types: EventTypeSummary[] }
                 ) : (
                     <ul className="divide-y overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
                         {types.map((type) => (
-                            <li key={type.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center">
-                                <span className="flex flex-1 flex-wrap items-center gap-2 font-medium">
-                                    <EventTypeBadge type={type.name} />
+                            <li key={type.id} className="relative flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/50">
+                                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-2 font-medium">
+                                    <Link href={`/admin/event-types/${type.id}/edit`} className={rowLink} aria-label={`Edit ${type.name}`}>
+                                        <EventTypeBadge type={type.name} />
+                                    </Link>
                                     <span className="text-sm font-normal text-muted-foreground">· {events(type.events)}</span>
                                 </span>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" asChild>
-                                        <Link href={`/admin/event-types/${type.id}/edit`}>
-                                            <Pencil />
-                                            Edit
-                                        </Link>
-                                    </Button>
-                                    <Button variant="ghost" size="sm" onClick={() => destroy(type)} aria-label={`Delete ${type.name}`}>
-                                        <Trash2 />
-                                    </Button>
-                                </div>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="relative z-10"
+                                    onClick={() => destroy(type)}
+                                    aria-label={`Delete ${type.name}`}
+                                >
+                                    <Trash2 />
+                                </Button>
+                                <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                             </li>
                         ))}
                     </ul>

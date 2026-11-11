@@ -32,15 +32,17 @@ export default function EventTypeForm({ type }: { type: EditableEventType | null
             <Head title={type ? `${type.name} · Event types` : 'New event type'} />
 
             <form onSubmit={submit} className="mx-auto flex max-w-3xl flex-col gap-8 px-4 py-8 sm:px-6">
-                <div className="flex flex-col gap-3">
-                    <Button variant="ghost" size="sm" className="-ml-2.5 self-start" asChild>
+                <div className="flex flex-col items-start gap-4">
+                    <Button variant="ghost" size="sm" className="-ml-2.5" asChild>
                         <Link href="/admin/event-types">
                             <ArrowLeft />
                             All event types
                         </Link>
                     </Button>
-                    <h1 className="text-2xl font-semibold tracking-tight">{type ? `Edit ${type.name}` : 'New event type'}</h1>
-                    {type && <p className="text-muted-foreground">{type.events === 1 ? '1 event uses it.' : `${type.events} events use it.`}</p>}
+                    <div className="flex flex-col gap-2">
+                        <h1 className="text-2xl font-semibold tracking-tight">{type ? `Edit ${type.name}` : 'New event type'}</h1>
+                        {type && <p className="text-muted-foreground">{type.events === 1 ? '1 event uses it.' : `${type.events} events use it.`}</p>}
+                    </div>
                 </div>
 
                 <Card>

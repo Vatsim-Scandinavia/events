@@ -1,11 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Lock, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronRight, Lock, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AdminHeader } from '@/components/admin-header';
 import { useConfirm } from '@/components/confirm-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout';
+import { rowLink } from '@/lib/utils';
 
 // Mirrors the roles prop of App\Http\Controllers\Admin\RoleController@index.
 type RoleSummary = {
@@ -58,10 +59,12 @@ export default function RolesIndex({ roles }: { roles: RoleSummary[] }) {
             <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 sm:px-6">
                 <ul className="divide-y overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
                     {roles.map((role) => (
-                        <li key={role.id} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center">
-                            <div className="flex flex-1 flex-col gap-1.5">
-                                <span className="flex items-center gap-2 font-medium">
-                                    {role.name}
+                        <li key={role.id} className="relative flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/50">
+                            <div className="flex min-w-0 flex-1 flex-col gap-2">
+                                <span className="flex flex-wrap items-center gap-2 font-medium">
+                                    <Link href={`/admin/roles/${role.id}/edit`} className={rowLink}>
+                                        {role.name}
+                                    </Link>
                                     {role.builtIn && (
                                         <Badge variant="outline">
                                             <Lock />
@@ -82,19 +85,18 @@ export default function RolesIndex({ roles }: { roles: RoleSummary[] }) {
                                     )}
                                 </div>
                             </div>
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link href={`/admin/roles/${role.id}/edit`}>
-                                        <Pencil />
-                                        {role.administrator ? 'View' : 'Edit'}
-                                    </Link>
+                            {!role.builtIn && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="relative z-10"
+                                    onClick={() => destroy(role)}
+                                    aria-label={`Delete ${role.name}`}
+                                >
+                                    <Trash2 />
                                 </Button>
-                                {!role.builtIn && (
-                                    <Button variant="ghost" size="sm" onClick={() => destroy(role)} aria-label={`Delete ${role.name}`}>
-                                        <Trash2 />
-                                    </Button>
-                                )}
-                            </div>
+                            )}
+                            <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                         </li>
                     ))}
                 </ul>

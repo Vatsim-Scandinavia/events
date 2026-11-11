@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout';
 import { describeTimezone } from '@/lib/time';
+import { cn, rowLink } from '@/lib/utils';
 import type { HubEvent } from '@/types/event';
 
 type EventsIndexProps = {
@@ -109,10 +110,7 @@ function EventRow({ event }: { event: HubEvent }) {
             </td>
             <td className="px-4 py-3 align-middle">
                 <div className="flex flex-col items-start gap-2">
-                    <Link
-                        href={`/events/${event.key}`}
-                        className="font-medium text-foreground outline-none after:absolute after:inset-0 focus-visible:after:ring-2 focus-visible:after:ring-ring focus-visible:after:ring-inset"
-                    >
+                    <Link href={`/events/${event.key}`} className={cn('font-medium text-foreground', rowLink)}>
                         {event.name}
                     </Link>
                     <div className="flex flex-wrap items-center gap-2">

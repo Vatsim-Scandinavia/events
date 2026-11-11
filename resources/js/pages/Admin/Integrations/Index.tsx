@@ -1,11 +1,11 @@
 import { Head, Link } from '@inertiajs/react';
-import { Settings2 } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AdminHeader } from '@/components/admin-header';
 import { IntegrationRunBadge } from '@/components/integration-run-badge';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/AppLayout';
+import { rowLink } from '@/lib/utils';
 import type { IntegrationRunStatus } from '@/types/admin';
 
 // Mirrors the integrations prop of App\Http\Controllers\Admin\IntegrationController@index.
@@ -39,10 +39,12 @@ export default function IntegrationsIndex({ integrations }: { integrations: Inte
                 ) : (
                     <ul className="divide-y overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
                         {integrations.map((integration) => (
-                            <li key={integration.key} className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center">
-                                <div className="flex flex-1 flex-col gap-1.5">
+                            <li key={integration.key} className="relative flex items-center gap-4 px-4 py-4 transition-colors hover:bg-muted/50">
+                                <div className="flex min-w-0 flex-1 flex-col gap-2">
                                     <span className="flex flex-wrap items-center gap-2 font-medium">
-                                        {integration.name}
+                                        <Link href={`/admin/integrations/${integration.key}`} className={rowLink}>
+                                            {integration.name}
+                                        </Link>
                                         <Badge variant={integration.enabled ? 'secondary' : 'outline'}>{integration.enabled ? 'On' : 'Off'}</Badge>
                                         {integration.held > 0 && (
                                             <Badge>
@@ -64,12 +66,7 @@ export default function IntegrationsIndex({ integrations }: { integrations: Inte
                                         </span>
                                     )}
                                 </div>
-                                <Button variant="outline" size="sm" className="self-start sm:self-center" asChild>
-                                    <Link href={`/admin/integrations/${integration.key}`}>
-                                        <Settings2 />
-                                        Set up
-                                    </Link>
-                                </Button>
+                                <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                             </li>
                         ))}
                     </ul>
