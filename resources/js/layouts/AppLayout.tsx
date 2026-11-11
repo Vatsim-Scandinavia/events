@@ -23,6 +23,9 @@ type NavigationItem = { label: string; href: string; section?: string };
 
 const navigation: NavigationItem[] = [{ label: 'Events', href: '/events' }];
 
+// Rows in the phone menu are 44px tall, the recommended size for a touch target.
+const menuItemClass = 'rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground';
+
 // Errors that aren't tied to a form field, raised by sign-in and the staffing and role rules on the server.
 const generalErrorKeys = ['signIn', 'booking', 'interest', 'roster', 'staffing', 'role', 'fir', 'cancel'];
 
@@ -45,17 +48,18 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <div className="flex min-h-screen flex-col bg-background text-foreground">
                 <header className="sticky top-0 z-40 border-b bg-navbar/80 backdrop-blur [--border:var(--navbar-border)]">
                     <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-                        <Link href="/" className="flex items-center gap-2 font-semibold">
+                        {/* Never wraps: a long vACC name is cut short with an ellipsis before the header overflows. */}
+                        <Link href="/" title={vacc.name} className="flex min-w-0 items-center gap-2 font-semibold">
                             {vacc.logo ? (
                                 // Decorative: the vACC's name is right next to it.
-                                <img src={vacc.logo} alt="" className="size-8 object-contain" />
+                                <img src={vacc.logo} alt="" className="size-8 shrink-0 object-contain" />
                             ) : (
-                                <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-icon">
+                                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-icon">
                                     <Plane className="size-4" />
                                 </span>
                             )}
-                            <span className="flex flex-col leading-tight">
-                                {vacc.name}
+                            <span className="flex min-w-0 flex-col leading-tight whitespace-nowrap">
+                                <span className="truncate">{vacc.name}</span>
                                 <span className="text-xs font-normal text-muted-foreground">Event Hub</span>
                             </span>
                         </Link>
@@ -73,19 +77,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
                             ))}
                         </nav>
 
-                        <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                             {auth.user ? (
                                 <UserMenu user={auth.user} />
                             ) : (
                                 <>
+                                    {/* On phones it's in the menu instead. */}
                                     {auth.devLogin && (
-                                        <Button variant="ghost" size="sm" asChild>
+                                        <Button variant="ghost" size="sm" className="hidden sm:inline-flex" asChild>
                                             <Link href="/login">Dev sign-in</Link>
                                         </Button>
                                     )}
                                     <Button size="sm" asChild>
-                                        {/* A full page visit: the sign-in provider is on another origin. */}
-                                        <a href={signInUrl(auth.signIn.url, url)}>{auth.signIn.label}</a>
+                                        {/* A full page visit: the sign-in provider is on another origin. On phones the provider is left out for room. */}
+                                        <a href={signInUrl(auth.signIn.url, url)} aria-label={auth.signIn.label}>
+                                            <span className="sm:hidden">Sign in</span>
+                                            <span className="hidden sm:inline">{auth.signIn.label}</span>
+                                        </a>
                                     </Button>
                                 </>
                             )}
@@ -96,7 +104,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                                         <Menu />
                                     </Button>
                                 </PopoverTrigger>
-                                <PopoverContent align="end" className="w-60 p-1.5">
+                                <PopoverContent align="end" className="w-60 p-2">
                                     <nav aria-label="Main" className="flex flex-col">
                                         {links.map((item) => (
                                             <Link
@@ -104,14 +112,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
                                                 href={item.href}
                                                 onClick={() => setMenuOpen(false)}
                                                 aria-current={isActive(item) ? 'page' : undefined}
-                                                className={cn(
-                                                    'rounded-lg px-3 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground',
-                                                    isActive(item) && 'bg-accent text-foreground',
-                                                )}
+                                                className={cn(menuItemClass, isActive(item) && 'bg-accent text-foreground')}
                                             >
                                                 {item.label}
                                             </Link>
                                         ))}
+                                        {!auth.user && auth.devLogin && (
+                                            <Link href="/login" onClick={() => setMenuOpen(false)} className={cn(menuItemClass, 'sm:hidden')}>
+                                                Dev sign-in
+                                            </Link>
+                                        )}
                                     </nav>
                                 </PopoverContent>
                             </Popover>
