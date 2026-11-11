@@ -57,7 +57,7 @@ export function DescriptionInput({ value, error, onChange }: { value: string; er
 
     return (
         // Not a <Field>: its <label> would pass clicks on the label text to the first toolbar button.
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
             <Label id={labelId} onClick={() => editor?.commands.focus()}>
                 Description
             </Label>
@@ -70,7 +70,7 @@ export function DescriptionInput({ value, error, onChange }: { value: string; er
                 {editor && <Toolbar editor={editor} />}
                 <EditorContent editor={editor} />
             </div>
-            <span className="text-sm text-muted-foreground">Format with the toolbar, or type Markdown like **bold**, - lists and ## headings.</span>
+            <span className="text-xs text-muted-foreground">Format with the toolbar, or type Markdown like **bold**, - lists and ## headings.</span>
             <FieldError id={errorId} message={error} />
         </div>
     );
@@ -110,7 +110,7 @@ function Toolbar({ editor }: { editor: Editor }) {
     ];
 
     return (
-        <div role="toolbar" aria-label="Formatting" className="flex flex-wrap gap-0.5 border-b border-input p-1">
+        <div role="toolbar" aria-label="Formatting" className="flex flex-wrap gap-1 border-b border-input p-1">
             {buttons.map(({ label, icon: Icon, pressed, run }) => (
                 <Button
                     key={label}

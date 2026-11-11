@@ -18,8 +18,8 @@ export function Field({ label, error, children, className }: { label: string; er
         : children;
 
     return (
-        <div className={cn('flex flex-col gap-1.5', className)}>
-            <Label className="flex-col items-stretch gap-1.5">
+        <div className={cn('flex flex-col gap-2', className)}>
+            <Label className="flex-col items-stretch gap-2">
                 <span>{label}</span>
                 {controls}
             </Label>

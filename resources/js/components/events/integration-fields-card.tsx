@@ -32,7 +32,7 @@ export function IntegrationFieldsCard({ form, fields }: { form: EventForm; field
                 <CardTitle>Integrations</CardTitle>
                 <CardDescription>Details the Hub’s integrations need about this event.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-5">
+            <CardContent className="flex flex-col gap-6">
                 {fields.map((field) => {
                     const error = errorFor(form, `integration_fields.${field.key}`);
                     const isSet = field.secret && field.status !== null;

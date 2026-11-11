@@ -41,7 +41,7 @@ export function BannerInput({
     const shown = preview ?? current;
 
     return (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex flex-col gap-2">
             <Label htmlFor={id}>Banner image</Label>
             <input
                 ref={input}

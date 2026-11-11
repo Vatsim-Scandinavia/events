@@ -13,7 +13,7 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (valu
     const minuteOptions = [...new Set([...Array.from({ length: 12 }, (_, index) => pad(index * 5)), minutes])].sort();
 
     return (
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
             <NativeSelect aria-label={`${label}, hour`} value={hours} onChange={(e) => onChange(`${e.target.value}:${minutes}`)}>
                 {Array.from({ length: 24 }, (_, hour) => (
                     <option key={hour} value={pad(hour)}>
