@@ -1,6 +1,7 @@
 import { Deferred, usePoll } from '@inertiajs/react';
 import { Headset, Plane, PlaneLanding, PlaneTakeoff, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import SectionHeader from '@/components/section-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -30,19 +31,19 @@ export default function NetworkStats({ stats }: { stats?: NetworkStatsData | nul
     return (
         <section className="border-t bg-muted/40">
             <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6">
-                <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <h2 className="flex items-center gap-3 text-2xl font-semibold tracking-tight">
-                            <span className="relative flex size-2.5">
+                <SectionHeader
+                    title={
+                        <>
+                            <span className="relative flex size-2">
                                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75 motion-reduce:hidden" />
-                                <span className="relative inline-flex size-2.5 rounded-full bg-success" />
+                                <span className="relative inline-flex size-2 rounded-full bg-success" />
                             </span>
                             Live on the network
-                        </h2>
-                        <p className="text-muted-foreground">Who is flying and controlling on VATSIM right now.</p>
-                    </div>
-                    {stats && <p className="text-sm text-muted-foreground">Updated {formatZulu(stats.updatedAt)}</p>}
-                </div>
+                        </>
+                    }
+                    description="Who is flying and controlling on VATSIM right now."
+                    action={stats && <p className="text-sm text-muted-foreground">Updated {formatZulu(stats.updatedAt)}</p>}
+                />
 
                 <Deferred data="networkStats" fallback={<NetworkStatsSkeleton />}>
                     {stats ? <NetworkStatsContent stats={stats} /> : <NetworkStatsUnavailable />}
@@ -73,21 +74,23 @@ function NetworkStatsContent({ stats }: { stats: NetworkStatsData }) {
                             const movements = airport.departures + airport.arrivals;
 
                             return (
-                                <li key={airport.icao} className="flex flex-col gap-1.5">
+                                <li key={airport.icao} className="flex flex-col gap-2">
                                     <div className="flex items-center justify-between gap-2">
                                         <span className="font-mono font-medium">{airport.icao}</span>
-                                        <span className="flex items-center gap-3 text-xs text-muted-foreground">
+                                        <span className="flex items-center gap-4 text-xs text-muted-foreground">
                                             <span className="flex items-center gap-1" title="Departures">
-                                                <PlaneTakeoff className="size-3.5" />
+                                                <PlaneTakeoff className="size-4" aria-hidden="true" />
                                                 {formatNumber(airport.departures)}
+                                                <span className="sr-only">departures</span>
                                             </span>
                                             <span className="flex items-center gap-1" title="Arrivals">
-                                                <PlaneLanding className="size-3.5" />
+                                                <PlaneLanding className="size-4" aria-hidden="true" />
                                                 {formatNumber(airport.arrivals)}
+                                                <span className="sr-only">arrivals</span>
                                             </span>
                                         </span>
                                     </div>
-                                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                                    <div className="h-2 overflow-hidden rounded-full bg-muted">
                                         <div
                                             className="h-full rounded-full bg-primary transition-[width] duration-500"
                                             style={{ width: `${(movements / busiestMovements) * 100}%` }}
@@ -127,7 +130,7 @@ function NetworkStatsSkeleton() {
                     <Skeleton key={index} className="h-[88px] rounded-xl" />
                 ))}
             </div>
-            <Skeleton className="h-72 rounded-xl lg:col-span-2" />
+            <Skeleton className="h-[314px] rounded-xl lg:col-span-2" />
         </div>
     );
 }
