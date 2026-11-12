@@ -6,7 +6,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { formatDay, parseDay, toDay } from '@/lib/repeat';
 
-function TimeSelect({ value, onChange, label }: { value: string; onChange: (value: string) => void; label: string }) {
+function TimeSelect({ value, onChange, label, zulu }: { value: string; onChange: (value: string) => void; label: string; zulu: boolean }) {
     const [hours, minutes] = value.split(':');
     const pad = (number: number) => String(number).padStart(2, '0');
     // Keep a minute that isn't on the 5-minute grid selectable.
@@ -29,7 +29,7 @@ function TimeSelect({ value, onChange, label }: { value: string; onChange: (valu
                     </option>
                 ))}
             </NativeSelect>
-            <span className="text-sm text-muted-foreground">z</span>
+            {zulu && <span className="text-sm text-muted-foreground">z</span>}
         </div>
     );
 }
@@ -67,12 +67,14 @@ export function DatePicker({ value, min, label, onChange }: { value: string; min
 
 /**
  * One field for a date and a time (in the event's time zone): the button shows both, and its popover holds
- * the calendar with the time below it. A locked date still lets the time change.
+ * the calendar with the time below it. A locked date still lets the time change. Only a time in UTC gets
+ * a "z"; any other zone is named by the field's label.
  */
 export function DateTimePicker({
     label,
     date,
     time,
+    timezone,
     min,
     dateLocked = false,
     onDateChange,
@@ -81,6 +83,8 @@ export function DateTimePicker({
     label: string;
     date: string;
     time: string;
+    // The IANA zone the date and time are in, e.g. "UTC" or "Europe/Copenhagen".
+    timezone: string;
     min: string;
     dateLocked?: boolean;
     onDateChange: (date: string) => void;
@@ -88,7 +92,8 @@ export function DateTimePicker({
 }) {
     const [open, setOpen] = useState(false);
     const selected = parseDay(date);
-    const text = `${formatDay(date)}, ${time}z`;
+    const zulu = timezone === 'UTC';
+    const text = `${formatDay(date)}, ${time}${zulu ? 'z' : ''}`;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -118,7 +123,7 @@ export function DateTimePicker({
                 )}
                 <div className="flex items-center justify-between gap-3">
                     <span className="text-sm text-muted-foreground">Time</span>
-                    <TimeSelect value={time} onChange={onTimeChange} label={`${label} time`} />
+                    <TimeSelect value={time} onChange={onTimeChange} label={`${label} time`} zulu={zulu} />
                 </div>
                 <Button type="button" size="sm" onClick={() => setOpen(false)}>
                     Done

@@ -66,6 +66,7 @@ export function ScheduleCard({
                             label="Starts"
                             date={data.start_date}
                             time={data.start_time}
+                            timezone={data.timezone}
                             min={today}
                             dateLocked={underWay}
                             onDateChange={pickStartDate}
@@ -79,6 +80,7 @@ export function ScheduleCard({
                             label="Ends"
                             date={data.end_date}
                             time={data.end_time}
+                            timezone={data.timezone}
                             min={data.start_date}
                             onDateChange={(day) => form.setData('end_date', day)}
                             onTimeChange={(time) => form.setData('end_time', time)}
