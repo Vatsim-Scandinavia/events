@@ -70,8 +70,7 @@ export default function SiteSettings({ settings, locked, themes, controllerSourc
 
             <AdminHeader title="Settings" description="Who this Event Hub belongs to: the vACC’s details, logo and colors, shown across the site." />
 
-            {/* Narrower than the header, but on its left edge, so the page has one left line. */}
-            <form onSubmit={submit} className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 [&>*]:max-w-3xl">
+            <form onSubmit={submit} className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>vACC</CardTitle>
