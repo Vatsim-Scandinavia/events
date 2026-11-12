@@ -57,7 +57,7 @@ The time windows within a Staffing Interest when the controller can work.
 _Avoid_: Interest window
 
 **Roster**:
-Who works which position, and when, on an Occurrence: its shifts, booked or open, for an Event staffed through shifts, which are always public; or its Roster Entries for an Event staffed through Staffing Interest, once published.
+Who works which position, and when, on an Occurrence: its shifts, booked or open, for an Event staffed through shifts, which are always public; or its Roster Entries for an Event staffed through Staffing Interest, once published. Staff who can see the Event's staffing see those Roster Entries before then.
 _Avoid_: Line-up, schedule
 
 **Section**:
