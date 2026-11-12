@@ -18,11 +18,17 @@ export const clockIn = (timezone: string, iso: string, minutesLater = 0) =>
     clockFormat(timezone).format(new Date(new Date(iso).getTime() + minutesLater * 60_000));
 
 /**
+ * Whether times in this zone are UTC, written with a "z". The server only accepts the name "UTC"
+ * (Laravel's `timezone:all` leaves out aliases like "Etc/UTC"), so that is the one name to check.
+ */
+export const isUtc = (timezone: string) => timezone === 'UTC';
+
+/**
  * What follows a time to say which zone it is in: "z" for UTC, as on VATSIM, otherwise the
  * zone's short name at that moment, such as " CEST".
  */
 export const zoneSuffix = (timezone: string, iso: string) => {
-    if (timezone === 'UTC') {
+    if (isUtc(timezone)) {
         return 'z';
     }
 
@@ -36,4 +42,4 @@ export const zoneSuffix = (timezone: string, iso: string) => {
 /**
  * Names the zone times are shown in, for notes like "All times are in …".
  */
-export const describeTimezone = (timezone: string) => (timezone === 'UTC' ? 'UTC (zulu)' : timezone.replaceAll('_', ' '));
+export const describeTimezone = (timezone: string) => (isUtc(timezone) ? 'UTC (zulu)' : timezone.replaceAll('_', ' '));

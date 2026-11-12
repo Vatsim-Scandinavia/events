@@ -5,6 +5,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { formatDay, parseDay, toDay } from '@/lib/repeat';
+import { isUtc } from '@/lib/time';
 
 function TimeSelect({ value, onChange, label, zulu }: { value: string; onChange: (value: string) => void; label: string; zulu: boolean }) {
     const [hours, minutes] = value.split(':');
@@ -92,7 +93,7 @@ export function DateTimePicker({
 }) {
     const [open, setOpen] = useState(false);
     const selected = parseDay(date);
-    const zulu = timezone === 'UTC' || timezone === 'Etc/UTC';
+    const zulu = isUtc(timezone);
     const text = `${formatDay(date)}, ${time}${zulu ? 'z' : ''}`;
 
     return (

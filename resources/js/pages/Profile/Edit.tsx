@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Field } from '@/components/ui/field';
 import AppLayout from '@/layouts/AppLayout';
-import { clockIn, describeTimezone } from '@/lib/time';
+import { clockIn, describeTimezone, isUtc } from '@/lib/time';
 
 // Mirrors App\Http\Controllers\ProfileController@edit.
 type ProfileProps = {
@@ -142,7 +142,7 @@ export default function Profile({ details, roleGroups, settings, nameDisplays, t
                                     An event at 18:00z today shows as{' '}
                                     <span className="font-medium text-foreground tabular-nums">
                                         {clockIn(form.data.timezone, sample)}
-                                        {form.data.timezone === 'UTC' ? 'z' : ` ${describeTimezone(form.data.timezone)} time`}
+                                        {isUtc(form.data.timezone) ? 'z' : ` ${describeTimezone(form.data.timezone)} time`}
                                     </span>
                                     .
                                 </p>
