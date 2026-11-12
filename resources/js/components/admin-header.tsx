@@ -41,7 +41,7 @@ export function AdminHeader({ title, description, action }: AdminHeaderProps) {
                         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
                         <p className="min-h-[4lh] max-w-2xl text-lg text-muted-foreground sm:min-h-[3lh] lg:min-h-[2lh]">{description}</p>
                     </div>
-                    <div className="flex min-h-9 shrink-0 items-start self-start">{action}</div>
+                    <div className="flex min-h-9 shrink-0 items-start self-start pointer-coarse:min-h-10">{action}</div>
                 </div>
                 {/* One line that scrolls sideways when the tabs don't fit, rather than wrapping or widening the page. */}
                 <nav

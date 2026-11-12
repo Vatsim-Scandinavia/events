@@ -63,7 +63,7 @@ export function ScheduleCard({
                     <div className="flex flex-col gap-2">
                         <span className="text-sm font-medium">Starts ({zoneLabel})</span>
                         <DateTimePicker
-                            label="Starts"
+                            label={`Starts (${zoneLabel})`}
                             date={data.start_date}
                             time={data.start_time}
                             timezone={data.timezone}
@@ -77,7 +77,7 @@ export function ScheduleCard({
                     <div className="flex flex-col gap-2">
                         <span className="text-sm font-medium">Ends ({zoneLabel})</span>
                         <DateTimePicker
-                            label="Ends"
+                            label={`Ends (${zoneLabel})`}
                             date={data.end_date}
                             time={data.end_time}
                             timezone={data.timezone}

@@ -92,7 +92,7 @@ export function DateTimePicker({
 }) {
     const [open, setOpen] = useState(false);
     const selected = parseDay(date);
-    const zulu = timezone === 'UTC';
+    const zulu = timezone === 'UTC' || timezone === 'Etc/UTC';
     const text = `${formatDay(date)}, ${time}${zulu ? 'z' : ''}`;
 
     return (
