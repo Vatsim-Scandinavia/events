@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { TimezoneSelect } from '@/components/timezone-select';
 import { addDays, daysBetween, fitting, MAX_DATES, options as repeatOptions, type RepeatInterval } from '@/lib/repeat';
+import { isUtc } from '@/lib/time';
 import type { EditableEvent } from '@/types/event';
 
 // When the event takes place: its first date, time zone and how it repeats, with warnings about
@@ -28,7 +29,7 @@ export function ScheduleCard({
     checkFailed: boolean;
 }) {
     const { data } = form;
-    const zoneLabel = data.timezone === 'UTC' ? 'UTC' : data.timezone.replaceAll('_', ' ');
+    const zoneLabel = isUtc(data.timezone) ? 'UTC' : data.timezone.replaceAll('_', ' ');
     // The preview's errors are the freshest; once it accepts the schedule, errors from the last save are stale.
     const scheduleError = (key: string) => schedule.errors[key] ?? (schedule.preview ? undefined : errorFor(form, key));
 

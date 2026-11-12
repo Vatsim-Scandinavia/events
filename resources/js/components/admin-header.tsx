@@ -36,12 +36,16 @@ export function AdminHeader({ title, description, action }: AdminHeaderProps) {
     return (
         <section className="border-b bg-muted/40">
             <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 pt-12 sm:px-6 md:pt-16">
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-                    <div className="flex min-w-0 flex-1 flex-col gap-4">
-                        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
-                        <p className="min-h-[4lh] max-w-2xl text-lg text-muted-foreground sm:min-h-[3lh] lg:min-h-[2lh]">{description}</p>
+                {/*
+                 * The action shares the title's row, which is held at the button's height, and the description
+                 * keeps room for the longest one, so the tabs stay put when moving between sections.
+                 */}
+                <div className="flex flex-col gap-4">
+                    <div className="flex min-h-9 items-center justify-between gap-4 pointer-coarse:min-h-10">
+                        <h1 className="min-w-0 text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
+                        {action && <div className="shrink-0">{action}</div>}
                     </div>
-                    <div className="flex min-h-9 shrink-0 items-start self-start pointer-coarse:min-h-10">{action}</div>
+                    <p className="min-h-[4lh] max-w-2xl text-lg text-muted-foreground sm:min-h-[2lh]">{description}</p>
                 </div>
                 {/* One line that scrolls sideways when the tabs don't fit, rather than wrapping or widening the page. */}
                 <nav
