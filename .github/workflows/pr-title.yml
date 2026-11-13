@@ -1,0 +1,22 @@
+name: PR title
+
+# Pull requests are squashed, so the title becomes the commit on dev, and release-please
+# builds the changelog and the next version from it. feat: is a minor, fix: a patch, ! a major.
+
+on:
+  pull_request:
+    branches: [dev]
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  conventional:
+    name: Conventional Commit title
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: amannn/action-semantic-pull-request@2252a14e810aa9b85c2d560bd7070c802206ecf6 # v6.1.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

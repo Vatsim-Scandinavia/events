@@ -1,0 +1,42 @@
+name: Set up the hub
+description: PHP, Node and both sets of dependencies, with a fresh .env. Check out the code first.
+
+inputs:
+  php-extensions:
+    description: The database drivers the job needs, on top of the extensions every job needs.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+      with:
+        php-version: '8.5'
+        extensions: mbstring, xml, curl, zip, gd, intl, bcmath, ${{ inputs.php-extensions }}
+        coverage: none
+
+    - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+      with:
+        node-version: '22'
+        cache: npm
+
+    - name: Cache Composer packages
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+      with:
+        path: ~/.composer/cache/files
+        key: composer-${{ hashFiles('composer.lock') }}
+        restore-keys: composer-
+
+    - name: Install PHP dependencies
+      shell: bash
+      run: composer install --no-interaction --prefer-dist --no-progress
+
+    - name: Install frontend dependencies
+      shell: bash
+      run: npm ci --ignore-scripts
+
+    - name: Prepare environment
+      shell: bash
+      run: |
+        cp .env.example .env
+        php artisan key:generate
