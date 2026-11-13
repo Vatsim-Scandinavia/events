@@ -82,7 +82,7 @@ final class Roster
         $event = $occurrence->event;
         $positions = $event->positions()->with('shifts')->get();
         $sections = $event->sectionsFor($positions);
-        $bookings = $occurrence->bookings()->with('user')->get()->keyBy('position_shift_id');
+        $bookings = $occurrence->bookings()->chaperone('occurrence')->with('user')->get()->keyBy('position_shift_id');
 
         return $positions->flatMap(fn (EventPosition $position) => $position->shifts->map(function (PositionShift $shift) use ($occurrence, $position, $sections, $bookings) {
             $booking = $bookings->get($shift->id);

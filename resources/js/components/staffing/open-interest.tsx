@@ -11,30 +11,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { describeTimezone } from '@/lib/time';
-import type { AvailabilityWindow, EventStaffing, Interest, RosterEntry, StaffingPosition, StaffInterest } from '@/types/staffing';
+import type { AvailabilityWindow, EventStaffing, Interest, InterestRefusal, RosterEntry, StaffingPosition, StaffInterest } from '@/types/staffing';
 
 /**
  * Staffing by open interest on the event page: controllers show their interest and
  * availability, and see the roster once Event Staff publish it.
  */
 export default function OpenInterest({ staffing }: { staffing: Extract<EventStaffing, { mode: 'open_interest' }> }) {
-    const { viewer, interest, occurrence, draft } = staffing;
-    // Nobody can show interest in a Draft, so treat its window as not open.
-    const open = interest.state === 'open' && !draft;
+    const { interest, occurrence } = staffing;
 
     return (
         <>
-            {open && viewer.signedIn && viewer.eligible ? (
+            {interest.refusal === null ? (
                 <InterestForm occurrenceId={occurrence.id} positions={staffing.positions} mine={interest.mine} />
             ) : (
                 <>
                     {interest.mine && <InterestSummary interest={interest.mine} />}
-                    {open &&
-                        (viewer.signedIn ? (
-                            <p className="text-sm text-muted-foreground">You need a controller rating (S1 or above) to show interest.</p>
-                        ) : (
-                            <SignInPrompt>Sign in to show your interest in controlling this event.</SignInPrompt>
-                        ))}
+                    {interest.refusal === 'not_controller' && (
+                        <p className="text-sm text-muted-foreground">You need a controller rating (S1 or above) to show interest.</p>
+                    )}
+                    {interest.refusal === 'sign_in_needed' && <SignInPrompt>Sign in to show your interest in controlling this event.</SignInPrompt>}
                     <PositionList positions={staffing.positions} />
                 </>
             )}
@@ -101,17 +97,21 @@ function InterestList({ interests }: { interests: StaffInterest[] }) {
  * What the section's description says about the interest window.
  */
 export function openInterestHint(staffing: Extract<EventStaffing, { mode: 'open_interest' }>): string {
-    const { state, opensAt, closesAt } = staffing.interest;
-
-    if (staffing.draft) {
-        return 'Controllers can show interest once the event is published.';
-    }
-
-    return {
-        upcoming: `Controllers can show interest from ${opensAt}.`,
-        open: `Show your interest and availability by ${closesAt}. Event Staff will publish a roster before the event.`,
+    const { refusal, opensAt, closesAt } = staffing.interest;
+    const open = `Show your interest and availability by ${closesAt}. Event Staff will publish a roster before the event.`;
+    const hints: Record<InterestRefusal | 'open', string> = {
+        draft: 'Controllers can show interest once the event is published.',
+        cancelled: 'This date has been cancelled.',
+        not_open_yet: `Controllers can show interest from ${opensAt}.`,
         closed: `Interest closed ${closesAt}.`,
-    }[state];
+        not_next_date: 'Interest opens for this date once the one before it is over.',
+        not_interest: open,
+        sign_in_needed: open,
+        not_controller: open,
+        open,
+    };
+
+    return hints[refusal ?? 'open'];
 }
 
 function InterestForm({ occurrenceId, positions, mine }: { occurrenceId: number; positions: StaffingPosition[]; mine: Interest | null }) {

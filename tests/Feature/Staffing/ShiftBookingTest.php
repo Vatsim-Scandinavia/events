@@ -235,6 +235,15 @@ class ShiftBookingTest extends TestCase
         $this->assertModelMissing($booking);
     }
 
+    public function test_the_event_page_says_a_cancelled_date_is_cancelled_rather_than_started(): void
+    {
+        $this->occurrence->update(['cancelled_at' => now()]);
+
+        $this->actingAs(User::factory()->controller()->create())
+            ->get("/events/{$this->event->getRouteKey()}")
+            ->assertInertia(fn (Assert $page) => $page->where('staffing.booking.refusal', 'cancelled'));
+    }
+
     public function test_everyone_can_see_who_booked_each_shift(): void
     {
         $controller = User::factory()->controller()->create(['name' => 'Jane Controller', 'vatsim_cid' => 1234567]);
@@ -244,7 +253,7 @@ class ShiftBookingTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->where('staffing.mode', 'shifts')
-                ->where('staffing.bookingOpen', true)
+                ->where('staffing.booking.refusal', 'sign_in_needed')
                 ->where('staffing.positions.0.callsign', 'EKCH_TWR')
                 ->where('staffing.positions.0.shifts.0.time', '16:00–18:00z')
                 ->where('staffing.positions.0.shifts.0.booking.controller.name', 'Jane')

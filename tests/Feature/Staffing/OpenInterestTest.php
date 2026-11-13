@@ -180,6 +180,18 @@ class OpenInterestTest extends TestCase
         $this->assertSame(0, StaffingInterest::count());
     }
 
+    public function test_the_event_page_offers_no_interest_form_on_a_cancelled_date(): void
+    {
+        $this->occurrence->update(['cancelled_at' => now()]);
+
+        $this->actingAs(User::factory()->controller()->create())
+            ->get("/events/{$this->event->getRouteKey()}")
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('staffing.interest.state', 'open')
+                ->where('staffing.interest.refusal', 'cancelled')
+            );
+    }
+
     public function test_interest_is_only_visible_to_the_controller_and_event_staff(): void
     {
         $controller = User::factory()->controller()->create(['name' => 'Interested Controller']);
