@@ -1,22 +1,35 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { CalendarDays, ChevronRight, Clock, Plus } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { AirportList, EventTypeBadge } from '@/components/event-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { NativeSelect } from '@/components/ui/native-select';
 import AppLayout from '@/layouts/AppLayout';
 import { describeTimezone } from '@/lib/time';
 import { cn, rowLink } from '@/lib/utils';
 import type { HubEvent } from '@/types/event';
 
+type EventFilters = { fir: string | null; airport: string | null };
+
 type EventsIndexProps = {
     events: HubEvent[];
+    filters: EventFilters;
+    firs: { icao: string; name: string }[];
+    airports: string[];
     canCreate: boolean;
 };
 
-export default function EventsIndex({ events, canCreate }: EventsIndexProps) {
+export default function EventsIndex({ events, filters, firs, airports, canCreate }: EventsIndexProps) {
     const { vacc, displayTimezone } = usePage().props;
     const months = groupByMonth(events);
+    const filtered = filters.fir !== null || filters.airport !== null;
+
+    const visit = (next: Partial<EventFilters>) => {
+        const query = { ...filters, ...next };
+
+        router.get('/events', { fir: query.fir || undefined, airport: query.airport || undefined }, { preserveState: true, replace: true });
+    };
 
     return (
         <>
@@ -30,14 +43,47 @@ export default function EventsIndex({ events, canCreate }: EventsIndexProps) {
                             Everything on the {vacc.name} calendar, soonest first. All times are in {describeTimezone(displayTimezone)}.
                         </p>
                     </div>
-                    {canCreate && (
-                        <Button asChild>
-                            <Link href="/events/create">
-                                <Plus />
-                                New event
-                            </Link>
-                        </Button>
-                    )}
+                    <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+                        {/* A Hub with one FIR has nothing to choose between. */}
+                        {firs.length > 1 && (
+                            <div className="sm:w-56">
+                                <NativeSelect
+                                    value={filters.fir ?? ''}
+                                    onChange={(e) => visit({ fir: e.target.value || null })}
+                                    aria-label="Filter by FIR"
+                                >
+                                    <option value="">All FIRs</option>
+                                    {firs.map((fir) => (
+                                        <option key={fir.icao} value={fir.icao}>
+                                            {fir.icao} {fir.name !== fir.icao ? fir.name : ''}
+                                        </option>
+                                    ))}
+                                </NativeSelect>
+                            </div>
+                        )}
+                        <div className="sm:w-48">
+                            <NativeSelect
+                                value={filters.airport ?? ''}
+                                onChange={(e) => visit({ airport: e.target.value || null })}
+                                aria-label="Filter by airport"
+                            >
+                                <option value="">All airports</option>
+                                {airports.map((airport) => (
+                                    <option key={airport} value={airport}>
+                                        {airport}
+                                    </option>
+                                ))}
+                            </NativeSelect>
+                        </div>
+                        {canCreate && (
+                            <Button asChild className="sm:ml-auto">
+                                <Link href="/events/create">
+                                    <Plus />
+                                    New event
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
                 </div>
             </section>
 
@@ -86,6 +132,13 @@ export default function EventsIndex({ events, canCreate }: EventsIndexProps) {
                             </div>
                         </section>
                     ))
+                ) : filtered ? (
+                    <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
+                        No upcoming events match these filters.{' '}
+                        <Link href="/events" className="font-medium text-foreground underline underline-offset-4">
+                            Clear filters
+                        </Link>
+                    </p>
                 ) : (
                     <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">
                         No events are scheduled right now. Check back soon.

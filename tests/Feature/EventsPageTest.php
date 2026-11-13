@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Event;
+use App\Models\Fir;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -65,6 +66,87 @@ class EventsPageTest extends TestCase
                 ->where('events.0.date', 'Sun 19 Jul')
                 ->where('events.0.time', '08:00–10:00 JST')
             );
+    }
+
+    public function test_it_lists_only_the_chosen_firs_events(): void
+    {
+        $denmark = Fir::factory()->create(['icao' => 'EKDK']);
+        Event::factory()->for($denmark)->create(['name' => 'Copenhagen']);
+        Event::factory()->create(['name' => 'Elsewhere']);
+
+        $this->get('/events?fir=ekdk')->assertInertia(fn (Assert $page) => $page
+            ->has('events', 1)
+            ->where('events.0.name', 'Copenhagen')
+            ->where('filters.fir', 'EKDK')
+        );
+    }
+
+    public function test_an_unknown_fir_is_ignored(): void
+    {
+        Event::factory()->count(2)->create();
+
+        $this->get('/events?fir=XXXX')->assertInertia(fn (Assert $page) => $page
+            ->has('events', 2)
+            ->where('filters.fir', null)
+        );
+    }
+
+    public function test_it_lists_only_events_at_the_chosen_airport(): void
+    {
+        Event::factory()->create(['name' => 'Kastrup', 'airports' => ['EKCH', 'ESSA']]);
+        Event::factory()->create(['name' => 'Billund', 'airports' => ['EKBI']]);
+
+        $this->get('/events?airport=EKCH')->assertInertia(fn (Assert $page) => $page
+            ->has('events', 1)
+            ->where('events.0.name', 'Kastrup')
+            ->where('filters.airport', 'EKCH')
+        );
+    }
+
+    public function test_an_airport_with_no_events_is_kept_so_the_page_shows_none(): void
+    {
+        Event::factory()->create(['airports' => ['EKCH']]);
+
+        $this->get('/events?airport=ENGM')->assertInertia(fn (Assert $page) => $page
+            ->has('events', 0)
+            ->where('filters.airport', 'ENGM')
+            ->where('airports', ['EKCH', 'ENGM'])
+        );
+    }
+
+    public function test_the_fir_and_airport_filters_combine(): void
+    {
+        $denmark = Fir::factory()->create(['icao' => 'EKDK']);
+        Event::factory()->for($denmark)->create(['name' => 'Kastrup', 'airports' => ['EKCH']]);
+        Event::factory()->for($denmark)->create(['name' => 'Billund', 'airports' => ['EKBI']]);
+        Event::factory()->create(['name' => 'Arlanda', 'airports' => ['EKCH']]);
+
+        $this->get('/events?fir=EKDK&airport=EKCH')->assertInertia(fn (Assert $page) => $page
+            ->has('events', 1)
+            ->where('events.0.name', 'Kastrup')
+        );
+    }
+
+    public function test_the_airports_to_choose_from_follow_the_chosen_fir(): void
+    {
+        $denmark = Fir::factory()->create(['icao' => 'EKDK']);
+        Event::factory()->for($denmark)->create(['airports' => ['EKCH', 'EKBI']]);
+        Event::factory()->create(['airports' => ['ESSA']]);
+
+        $this->get('/events')->assertInertia(fn (Assert $page) => $page->where('airports', ['EKBI', 'EKCH', 'ESSA']));
+        $this->get('/events?fir=EKDK')->assertInertia(fn (Assert $page) => $page->where('airports', ['EKBI', 'EKCH']));
+    }
+
+    public function test_an_airport_outside_the_chosen_firs_events_is_dropped(): void
+    {
+        $denmark = Fir::factory()->create(['icao' => 'EKDK']);
+        Event::factory()->for($denmark)->create(['airports' => ['EKCH']]);
+        Event::factory()->create(['airports' => ['ESSA']]);
+
+        $this->get('/events?fir=EKDK&airport=ESSA')->assertInertia(fn (Assert $page) => $page
+            ->has('events', 1)
+            ->where('filters.airport', null)
+        );
     }
 
     public function test_the_front_page_shows_the_next_event_and_the_three_after_it(): void
