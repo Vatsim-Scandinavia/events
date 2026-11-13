@@ -57,7 +57,7 @@ class LinkPreviewTest extends TestCase
 
         $this->get("/events/{$event->getRouteKey()}")->assertOk()
             ->assertSee('<meta property="og:title" content="Cancelled: Cross the Pond">', false)
-            ->assertSee('<meta name="description" content="Tue 17 Nov 2026 · 10:00–22:00z · KJFK, EGLL">', false)
+            ->assertSee('<meta name="description" content="Tue 17 Nov 2026, 10:00–22:00z · KJFK, EGLL">', false)
             ->assertDontSee('og:image', false)
             ->assertSee('<meta name="twitter:card" content="summary">', false);
     }
@@ -76,7 +76,7 @@ class LinkPreviewTest extends TestCase
 
         $this->get("/events/{$event->getRouteKey()}")->assertOk()
             ->assertSee('<meta property="og:title" content="Cancelled: Night Owls">', false)
-            ->assertSee('<meta name="description" content="Tue 17 Nov 2026 · 22:00z–Wed 18 Nov 02:00z · EKCH">', false);
+            ->assertSee('<meta name="description" content="Tue 17 Nov 2026, 22:00–Wed 18 Nov 02:00z · EKCH">', false);
     }
 
     public function test_an_svg_logo_is_not_offered_as_the_preview_image(): void

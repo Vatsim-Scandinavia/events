@@ -4,6 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import SectionHeader from '@/components/section-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { zuluClock } from '@/lib/time';
 
 export type NetworkStatsData = {
     pilots: number;
@@ -17,13 +18,6 @@ export type NetworkStatsData = {
 const pollInterval = 60_000;
 
 const formatNumber = (value: number) => value.toLocaleString('en-US');
-
-// Formatted by hand in UTC so the server and every client render the same string.
-const formatZulu = (iso: string) => {
-    const date = new Date(iso);
-
-    return `${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}z`;
-};
 
 export default function NetworkStats({ stats }: { stats?: NetworkStatsData | null }) {
     usePoll(pollInterval, { only: ['networkStats'] });
@@ -42,7 +36,7 @@ export default function NetworkStats({ stats }: { stats?: NetworkStatsData | nul
                         </>
                     }
                     description="Who is flying and controlling on VATSIM right now."
-                    action={stats && <p className="text-sm text-muted-foreground">Updated {formatZulu(stats.updatedAt)}</p>}
+                    action={stats && <p className="text-sm text-muted-foreground">Updated {zuluClock(stats.updatedAt)}</p>}
                 />
 
                 <Deferred data="networkStats" fallback={<NetworkStatsSkeleton />}>

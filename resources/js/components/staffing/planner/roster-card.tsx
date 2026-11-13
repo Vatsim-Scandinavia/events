@@ -195,6 +195,7 @@ export function RosterCard({ occurrence, controllers, interests, roster, draft, 
                 <Timeline
                     noun="roster entry"
                     startsAt={occurrence.startsAt}
+                    zone={occurrence.zone}
                     duration={durationMinutes}
                     readOnly={locked}
                     allowRowChange

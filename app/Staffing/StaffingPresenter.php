@@ -129,6 +129,8 @@ final class StaffingPresenter
                 // A Draft's roster can be laid but not published until the event is.
                 'eventDraft' => $event->isDraft(),
                 'startsAt' => $occurrence->starts_at->utc()->toIso8601String(),
+                // The planner works out clock times itself, but names the zone as the rest of the Hub does.
+                'zone' => $this->display->suffix($occurrence->starts_at),
                 'durationMinutes' => (int) $occurrence->starts_at->diffInMinutes($occurrence->ends_at),
             ],
             'positions' => $this->positionsWithBookings($positions, $sections, $occurrence, $viewer, $notes, true),

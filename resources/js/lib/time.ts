@@ -1,5 +1,6 @@
 // Clock times in the viewer's chosen time zone, for times worked out in the browser. Most
-// times arrive preformatted by App\Services\DisplayTime, which also gives the zone's label.
+// times arrive preformatted by App\Services\DisplayTime. Zone names always come from it too:
+// browsers name most zones differently ("GMT+9" where it says "JST"), so none are made here.
 
 const clocks = new Map<string, Intl.DateTimeFormat>();
 
@@ -24,20 +25,9 @@ export const clockIn = (timezone: string, iso: string, minutesLater = 0) =>
 export const isUtc = (timezone: string) => timezone === 'UTC';
 
 /**
- * What follows a time to say which zone it is in: "z" for UTC, as on VATSIM, otherwise the
- * zone's short name at that moment, such as " CEST".
+ * HH:MM in UTC with a "z", as on VATSIM: "18:00z". The same in every browser and on the server.
  */
-export const zoneSuffix = (timezone: string, iso: string) => {
-    if (isUtc(timezone)) {
-        return 'z';
-    }
-
-    const name = new Intl.DateTimeFormat('en-GB', { timeZone: timezone, timeZoneName: 'short' })
-        .formatToParts(new Date(iso))
-        .find((part) => part.type === 'timeZoneName')?.value;
-
-    return name ? ` ${name}` : '';
-};
+export const zuluClock = (moment: Date | number | string) => `${clockFormat('UTC').format(new Date(moment))}z`;
 
 /**
  * Names the zone times are shown in, for notes like "All times are in …".

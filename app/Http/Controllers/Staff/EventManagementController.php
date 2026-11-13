@@ -12,10 +12,10 @@ use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\EventType;
 use App\Models\Fir;
+use App\Services\DisplayTime;
 use App\Services\EventBanners;
 use App\Staffing\EventSchedule;
 use App\Staffing\StaffingChanged;
-use Carbon\CarbonImmutable;
 use DateTimeZone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -77,8 +77,7 @@ class EventManagementController extends Controller
 
         $occurrences = $event->occurrences()->withCount(['bookings', 'interests', 'rosterEntries'])->get();
         // Staff see and edit times in the zone they scheduled the event in.
-        $local = fn (CarbonImmutable $moment) => $moment->setTimezone($event->timezone);
-        $zone = fn (CarbonImmutable $moment) => $event->timezone === 'UTC' ? 'z' : ' '.$local($moment)->format('T');
+        $display = new DisplayTime($event->timezone);
 
         return Inertia::render('Events/Form', [
             'event' => [
@@ -94,8 +93,8 @@ class EventManagementController extends Controller
                 'bannerUrl' => $banners->url($event->banner_path),
                 'bookingUrl' => $event->booking_url,
                 'briefingUrl' => $event->briefing_url,
-                'startsAt' => $local($event->starts_at)->format('Y-m-d H:i'),
-                'endsAt' => $local($event->ends_at)->format('Y-m-d H:i'),
+                'startsAt' => $display->local($event->starts_at)->format('Y-m-d H:i'),
+                'endsAt' => $display->local($event->ends_at)->format('Y-m-d H:i'),
                 'timezone' => $event->timezone,
                 'repeats' => $event->repeats->value,
                 'repeatCount' => $event->repeat_count,
@@ -103,8 +102,8 @@ class EventManagementController extends Controller
                 'cancelled' => $event->isCancelled(),
                 'dates' => $occurrences->map(fn (EventOccurrence $occurrence) => [
                     'id' => $occurrence->id,
-                    'date' => $local($occurrence->starts_at)->toDateString(),
-                    'time' => $local($occurrence->starts_at)->format('H:i').'–'.$local($occurrence->ends_at)->format('H:i').$zone($occurrence->starts_at),
+                    'date' => $display->local($occurrence->starts_at)->toDateString(),
+                    'time' => $display->range($occurrence->starts_at, $occurrence->ends_at),
                     'hasStarted' => $occurrence->hasStarted(),
                     'hasEnded' => $occurrence->hasEnded(),
                     // Cancelled on its own; the event's own cancellation is `cancelled` above.

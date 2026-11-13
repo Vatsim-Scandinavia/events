@@ -142,6 +142,8 @@ export type StaffOccurrence = Occurrence & {
     // The event is still a Draft, so its roster can't be published yet.
     eventDraft: boolean;
     startsAt: string;
+    // What follows a time to name the viewer's zone, as DisplayTime writes it: "z" or " CEST".
+    zone: string;
     durationMinutes: number;
 };
 

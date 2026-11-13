@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { usePage } from '@inertiajs/react';
 import { clashes, SNAP, useTimelineDrag, type Drag } from '@/components/staffing/use-timeline-drag';
-import { clockIn, zoneSuffix } from '@/lib/time';
+import { clockIn } from '@/lib/time';
 import { cn } from '@/lib/utils';
 
 export type TimelineRow = {
@@ -41,6 +41,8 @@ type Props = {
     // What the items are, for messages: "shift" or "roster entry".
     noun: string;
     startsAt: string;
+    // What follows a time to name the viewer's zone, from the server: "z" or " CEST".
+    zone: string;
     duration: number;
     rows: TimelineRow[];
     items: TimelineItem[];
@@ -71,9 +73,10 @@ const ROW_DRAG = 'application/x-timeline-row';
 const isRowDrag = (event: DragEvent) => event.dataTransfer.types.includes(ROW_DRAG);
 
 // Labels a span of minutes from the start in the viewer's time zone, e.g. "18:00–20:00 CEST".
-function useSpanLabel(startsAt: string) {
+// The clock times are worked out here; the zone's name comes from the server, so it matches the
+// times it formats itself.
+function useSpanLabel(startsAt: string, suffix: string) {
     const { displayTimezone } = usePage().props;
-    const suffix = zoneSuffix(displayTimezone, startsAt);
 
     return {
         clock: (minute: number) => clockIn(displayTimezone, startsAt, minute),
@@ -90,6 +93,7 @@ function useSpanLabel(startsAt: string) {
 export default function Timeline({
     noun,
     startsAt,
+    zone,
     duration,
     rows,
     items,
@@ -106,7 +110,7 @@ export default function Timeline({
     help,
     onMoveRow,
 }: Props) {
-    const { clock, span: spanLabel, suffix } = useSpanLabel(startsAt);
+    const { clock, span: spanLabel, suffix } = useSpanLabel(startsAt, zone);
     const [dropTarget, setDropTarget] = useState<{
         rowId: number;
         minute: number;
@@ -501,6 +505,7 @@ export default function Timeline({
                                                 key={item.id}
                                                 item={item}
                                                 startsAt={startsAt}
+                                                zone={zone}
                                                 left={percent(item.start)}
                                                 width={percent(item.end - item.start)}
                                                 readOnly={readOnly}
@@ -595,6 +600,7 @@ function MoveRowButton({
 function Block({
     item,
     startsAt,
+    zone,
     left,
     width,
     readOnly,
@@ -606,6 +612,7 @@ function Block({
 }: {
     item: TimelineItem;
     startsAt: string;
+    zone: string;
     left: string;
     width: string;
     readOnly: boolean;
@@ -615,7 +622,7 @@ function Block({
     onDelete?: (item: TimelineItem) => void;
     focusRef: (element: HTMLDivElement | null) => void;
 }): ReactNode {
-    const time = useSpanLabel(startsAt).span(item.start, item.end);
+    const time = useSpanLabel(startsAt, zone).span(item.start, item.end);
     const editable = !readOnly && !item.locked;
     const notes = item.notes?.length ? ` ${item.notes.join(' ')}` : '';
     const label = (item.locked ? `${item.label}, ${time}. ${item.lockedReason ?? ''}` : `${item.label}, ${time}`) + notes;

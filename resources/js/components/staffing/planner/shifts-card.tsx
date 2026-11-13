@@ -78,6 +78,7 @@ export function ShiftsCard({ occurrence, draft, saved, update, newKey }: DraftPr
                 <Timeline
                     noun="shift"
                     startsAt={occurrence.startsAt}
+                    zone={occurrence.zone}
                     duration={occurrence.durationMinutes}
                     rows={timelineRows({ draft, update, newKey })}
                     items={items}
