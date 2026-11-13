@@ -60,21 +60,15 @@ final class LinkPreview
     }
 
     /**
-     * e.g. "Tue 17 Nov 2026 · 10:00–22:00z · KJFK, EGLL", or with the end's date too when it's
-     * another day: "Tue 17 Nov 2026 · 22:00z–Wed 18 Nov 02:00z · EKCH".
+     * e.g. "Tue 17 Nov 2026, 10:00–22:00z · KJFK, EGLL", or with the end's date too when it's
+     * another day: "Tue 17 Nov 2026, 22:00–Wed 18 Nov 02:00z · EKCH".
      */
     private function nextDateAndPlace(Event $event): string
     {
         $next = $event->currentOccurrence() ?? $event;
-        $startsAt = $next->starts_at->utc();
-        $endsAt = $next->ends_at->utc();
-        $times = $startsAt->isSameDay($endsAt)
-            ? $startsAt->format('H:i').'–'.$endsAt->format('H:i').'z'
-            : $startsAt->format('H:i').'z–'.$endsAt->format('D j M H:i').'z';
 
         return implode(' · ', array_filter([
-            $startsAt->format('D j M Y'),
-            $times,
+            (new DisplayTime)->span($next->starts_at, $next->ends_at),
             implode(', ', $event->airports ?? []),
         ]));
     }

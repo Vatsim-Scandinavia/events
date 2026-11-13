@@ -69,7 +69,7 @@ final class EventSchedule
         }
 
         if ($first->lessThanOrEqualTo(now()) && ! $underWay) {
-            $this->fail('starts_at', $first->format('D j M, H:i').($timezone === 'UTC' ? 'z' : ' '.$first->format('T')).' has already passed. Pick a later start.');
+            $this->fail('starts_at', (new DisplayTime($timezone))->moment($first).' has already passed. Pick a later start.');
         }
 
         if (! $repeats->fits($first)) {

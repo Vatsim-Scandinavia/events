@@ -476,6 +476,19 @@ class EventManagementTest extends TestCase
         $this->assertSame(['2027-03-20 18:00–21:00', '2027-03-27 18:00–21:00', '2027-04-03 17:00–20:00'], $this->dates($event));
     }
 
+    public function test_a_zone_without_an_abbreviation_shows_its_offset_on_the_form(): void
+    {
+        $this->actingAs($this->staff)->post('/events', $this->payload([
+            'timezone' => 'Europe/Istanbul',
+            'starts_at' => '2027-03-20 19:00',
+            'ends_at' => '2027-03-20 22:00',
+        ]))->assertSessionHasNoErrors();
+
+        $this->actingAs($this->staff)->get('/events/'.Event::sole()->getRouteKey().'/edit')->assertInertia(fn (Assert $page) => $page
+            ->where('event.dates.0.time', '19:00–22:00 UTC+03')
+        );
+    }
+
     public function test_dates_just_after_local_midnight_belong_to_the_local_day(): void
     {
         // 00:30 on Saturday in Copenhagen is still Friday in UTC.

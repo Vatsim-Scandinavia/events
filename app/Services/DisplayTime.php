@@ -61,6 +61,18 @@ final class DisplayTime
         return $this->time($from).'–'.$this->time($until).$this->suffix($from);
     }
 
+    /**
+     * A span with its date, such as "Sat 18 Oct 2026, 19:00–22:00z", naming the day it ends
+     * too when that's another: "Sat 18 Oct 2026, 22:00–Sun 19 Oct 02:00z".
+     */
+    public function span(CarbonImmutable $from, CarbonImmutable $until): string
+    {
+        $start = $this->local($from);
+        $end = $this->local($until);
+
+        return $start->format('D j M Y, H:i').'–'.$end->format($end->isSameDay($start) ? 'H:i' : 'D j M H:i').$this->suffix($from);
+    }
+
     public function date(CarbonImmutable $moment, string $format = 'D j M'): string
     {
         return $this->local($moment)->format($format);

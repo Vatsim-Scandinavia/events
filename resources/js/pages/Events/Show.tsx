@@ -26,7 +26,7 @@ import EventStaffing from '@/components/staffing/event-staffing';
 import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout';
 import { descriptionClasses } from '@/lib/description';
-import { describeTimezone } from '@/lib/time';
+import { describeTimezone, isUtc } from '@/lib/time';
 import { cn } from '@/lib/utils';
 import type { EventRoute, HubEventDetail } from '@/types/event';
 import type { EventStaffing as EventStaffingProps } from '@/types/staffing';
@@ -152,7 +152,7 @@ export default function EventsShow({ event, staffing, canEdit }: EventsShowProps
                                 <Clock className="size-4" />
                                 {staffing.occurrence.time}
                             </span>
-                            {!cancelled && displayTimezone !== 'UTC' && (
+                            {!cancelled && !isUtc(displayTimezone) && (
                                 <span className="flex items-center gap-2">
                                     <Globe className="size-4" />
                                     {event.zuluTime}

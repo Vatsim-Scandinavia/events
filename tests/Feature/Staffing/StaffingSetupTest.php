@@ -35,6 +35,13 @@ class StaffingSetupTest extends TestCase
         $this->staff = User::factory()->staff()->create();
     }
 
+    public function test_the_planner_names_the_viewers_zone_as_the_rest_of_the_hub_does(): void
+    {
+        $this->actingAs(User::factory()->staff()->withTimezone('Asia/Tokyo')->create())
+            ->get("/events/{$this->event->getRouteKey()}/staffing")
+            ->assertInertia(fn (Assert $page) => $page->where('occurrence.zone', ' JST'));
+    }
+
     public function test_every_event_gets_an_occurrence_on_its_own_dates(): void
     {
         $occurrence = $this->event->occurrences()->sole();

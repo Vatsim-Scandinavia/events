@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { zuluClock } from '@/lib/time';
 
 const HOUR = 3_600_000;
 
@@ -54,7 +55,7 @@ export default function BeforeStartPicker({ startsAt, hours, onChange, min, max,
         }
     };
 
-    const label = `${moment.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}, ${moment.toISOString().slice(11, 16)}z`;
+    const label = `${moment.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}, ${zuluClock(moment)}`;
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
@@ -84,7 +85,7 @@ export default function BeforeStartPicker({ startsAt, hours, onChange, min, max,
                 >
                     {Array.from({ length: 24 }, (_, hour) => (
                         <option key={hour} value={hour} disabled={!within(toHours(at(moment, hour)))}>
-                            {`${String(hour).padStart(2, '0')}:${String(moment.getUTCMinutes()).padStart(2, '0')}z`}
+                            {zuluClock(at(moment, hour))}
                         </option>
                     ))}
                 </NativeSelect>

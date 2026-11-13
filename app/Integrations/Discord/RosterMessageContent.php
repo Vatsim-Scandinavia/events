@@ -9,6 +9,7 @@ use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\EventSection;
 use App\Models\User;
+use App\Services\DisplayTime;
 use App\Staffing\Roster;
 use App\Staffing\RosterItem;
 use Carbon\CarbonImmutable;
@@ -55,10 +56,7 @@ final class RosterMessageContent
 
     private static function date(EventOccurrence $occurrence): string
     {
-        $startsAt = $occurrence->starts_at->utc();
-        $endsAt = $occurrence->ends_at->utc();
-
-        return '**'.$startsAt->format('D j M Y, H:i').'–'.$endsAt->format($endsAt->isSameDay($startsAt) ? 'H:i' : 'D j M H:i').'z**';
+        return '**'.(new DisplayTime)->span($occurrence->starts_at, $occurrence->ends_at).'**';
     }
 
     private static function staffing(Event $event, EventOccurrence $occurrence, string $url, int $maxLength): string
@@ -83,7 +81,7 @@ final class RosterMessageContent
 
     private static function line(CarbonImmutable $startsAt, CarbonImmutable $endsAt, ?User $controller): string
     {
-        $span = $startsAt->utc()->format('H:i').'–'.$endsAt->utc()->format('H:i').'z';
+        $span = (new DisplayTime)->range($startsAt, $endsAt);
 
         return $controller ? "`{$span}` ".Discord::plain($controller->displayName()).($controller->name_display === NameDisplay::CidOnly ? '' : " ({$controller->vatsim_cid})") : "`{$span}` *open*";
     }

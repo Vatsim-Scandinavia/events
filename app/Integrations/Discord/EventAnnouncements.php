@@ -7,6 +7,7 @@ use App\Integrations\Feature;
 use App\Integrations\Integrations;
 use App\Models\Event;
 use App\Models\EventOccurrence;
+use App\Services\DisplayTime;
 use App\Services\EventBanners;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -116,12 +117,7 @@ class EventAnnouncements extends Feature
         $upcoming = $event->occurrences()->orderBy('starts_at')->get()
             ->reject(fn (EventOccurrence $occurrence) => $occurrence->hasEnded() || $occurrence->isCancelled());
 
-        $lines = $upcoming->take(self::MAX_DATES)->map(function (EventOccurrence $occurrence) {
-            $startsAt = $occurrence->starts_at->utc();
-            $endsAt = $occurrence->ends_at->utc();
-
-            return $startsAt->format('D j M Y, H:i').'–'.$endsAt->format($endsAt->isSameDay($startsAt) ? 'H:i' : 'D j M H:i').'z';
-        });
+        $lines = $upcoming->take(self::MAX_DATES)->map(fn (EventOccurrence $occurrence) => (new DisplayTime)->span($occurrence->starts_at, $occurrence->ends_at));
 
         if ($upcoming->count() > self::MAX_DATES) {
             $lines->push('and '.($upcoming->count() - self::MAX_DATES).' more');

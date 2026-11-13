@@ -42,4 +42,22 @@ class DisplayTimeTest extends TestCase
 
         $this->assertSame(' UTC+04', $display->suffix(CarbonImmutable::parse('2026-07-18 17:00', 'UTC')));
     }
+
+    public function test_a_span_gives_the_date_and_says_the_day_it_ends_when_that_is_another(): void
+    {
+        $display = new DisplayTime;
+        $evening = CarbonImmutable::parse('2026-10-18 19:00', 'UTC');
+        $late = CarbonImmutable::parse('2026-10-18 22:00', 'UTC');
+
+        $this->assertSame('Sun 18 Oct 2026, 19:00–22:00z', $display->span($evening, $evening->addHours(3)));
+        $this->assertSame('Sun 18 Oct 2026, 22:00–Mon 19 Oct 02:00z', $display->span($late, $late->addHours(4)));
+    }
+
+    public function test_a_span_crosses_midnight_where_the_viewer_is(): void
+    {
+        $display = new DisplayTime('Europe/Copenhagen');
+        $start = CarbonImmutable::parse('2026-10-18 20:00', 'UTC');
+
+        $this->assertSame('Sun 18 Oct 2026, 22:00–Mon 19 Oct 01:00 CEST', $display->span($start, $start->addHours(3)));
+    }
 }
