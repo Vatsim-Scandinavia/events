@@ -119,7 +119,7 @@ php artisan users:make-admin <vatsim-cid>
 | Type-check TypeScript | `npm run typecheck` |
 | Build the frontend | `npm run build` |
 
-Backend code lives in `app/`, with staffing rules in `app/Staffing`. Pages are in `resources/js/pages`, shared components in `resources/js/components`. CI runs the tests, type check, lint and formatting on every push to `dev` and every pull request to `dev` or `master`.
+Backend code lives in `app/`, with staffing rules in `app/Staffing`. Pages are in `resources/js/pages`, shared components in `resources/js/components`. CI runs the tests, type check, lint and formatting on every push to `dev` and every pull request to `dev`. Pull request titles follow [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `refactor:`…), because each pull request is squashed into one commit on `dev` and the changelog is written from them.
 
 ## Deploying
 
@@ -144,11 +144,13 @@ The hub ships as a Docker image. Each release is published as `ghcr.io/vatsim-sc
 
 Versions follow [semantic versioning](https://semver.org): a breaking change, such as an upgrade that needs more than pulling the new image, bumps the major version.
 
-1. Merge `dev` into `master` through a pull request, which runs CI.
-2. Tag `master` and push the tag, e.g. `git tag v2.1.0 origin/master && git push origin v2.1.0`.
-3. The Release workflow runs CI again, publishes the image and drafts a GitHub release with notes generated from the merged pull requests. Edit the notes, calling out anything breaking, and publish it.
+Releases are cut by [release-please](https://github.com/googleapis/release-please) from the commits on `dev` (see [ADR 0007](docs/adr/0007-releases-are-cut-from-dev-by-release-please.md)):
 
-A tag with a suffix, such as `v2.1.0-rc.1`, is a pre-release: it can be tagged on any branch, for trying out on a staging server, and is only published under its own tag.
+1. After each push to `dev`, release-please keeps a Release PR open. It holds the next version, worked out from the commits since the last release (`feat:` bumps the minor version, `fix:` the patch, a `!` such as `feat!:` the major), and its [CHANGELOG.md](CHANGELOG.md) entry.
+2. Edit the Release PR's changelog if it needs it, calling out anything breaking, and merge it when you want to release.
+3. CI then tags the release and publishes it on GitHub, publishes the image it tested for that commit as `:v2.1.0`, `:v2.1` and `:v2`, and moves `master` to the release. `master` always points at the latest release, so never commit to it directly.
+
+A tag with a suffix, such as `v2.1.0-rc.1`, is a pre-release for trying out on a staging server. Push it on a commit of `dev` whose CI run has finished, and that commit's image is published under that tag alone.
 
 ### Playground
 
