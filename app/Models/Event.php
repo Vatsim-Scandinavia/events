@@ -302,6 +302,19 @@ class Event extends Model
     }
 
     /**
+     * Deletes the event with its dates and staffing, and announces those dates, which are gone
+     * by then, so Integrations can take down what they put up for them.
+     */
+    public function remove(): void
+    {
+        DB::transaction(function () {
+            $occurrenceIds = $this->occurrences()->pluck('id')->all();
+            $this->delete();
+            StaffingChanged::dispatch($occurrenceIds);
+        });
+    }
+
+    /**
      * Calls off the whole event. Nothing is deleted: bookings, interest and rosters stay so a
      * restored event picks up where it was.
      *
