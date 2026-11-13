@@ -125,6 +125,20 @@ class ProfileTest extends TestCase
         );
     }
 
+    public function test_a_name_is_shown_by_first_name_with_the_cid_beside_it_even_before_it_is_saved(): void
+    {
+        $user = new User(['name' => 'Mary Ann Doe', 'vatsim_cid' => 1000009]);
+
+        $this->assertSame(NameDisplay::FirstName, $user->name_display);
+        $this->assertTrue($user->showsCidBesideName());
+        $this->assertSame('Mary (1000009)', $user->displayNameWithCid());
+
+        $user->name_display = NameDisplay::CidOnly;
+
+        $this->assertFalse($user->showsCidBesideName());
+        $this->assertSame('1000009', $user->displayNameWithCid());
+    }
+
     public function test_a_user_can_pick_how_their_name_is_shown(): void
     {
         $user = User::factory()->create();

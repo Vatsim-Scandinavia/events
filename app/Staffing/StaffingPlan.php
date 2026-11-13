@@ -184,20 +184,20 @@ final class StaffingPlan
             $user = $users[$entry['user_id']] ?? $this->fail("A controller rostered on {$callsign} no longer exists.");
 
             if (! $user->isEligibleController($occurrence->event)) {
-                $this->fail("{$user->displayName()} isn't a rated controller.");
+                $this->fail("{$user->displayNameWithCid()} isn't a rated controller.");
             }
 
             if ($id !== null && ! $existing->contains($id)) {
-                $this->fail("{$user->displayName()}'s roster entry was removed by someone else. Reload the page and try again.");
+                $this->fail("{$user->displayNameWithCid()}'s roster entry was removed by someone else. Reload the page and try again.");
             }
 
-            $this->ensureWithin($entry['start'], $entry['end'], $duration, "{$user->displayName()}'s roster entry on {$callsign}");
+            $this->ensureWithin($entry['start'], $entry['end'], $duration, "{$user->displayNameWithCid()}'s roster entry on {$callsign}");
 
             $entries[] = ['id' => $id, 'position' => $entry['position'], 'user_id' => $user->id, 'start' => $entry['start'], 'end' => $entry['end']];
         }
 
-        $this->ensureNoOverlap($entries, 'position', fn (array $a, array $b) => "{$users[$a['user_id']]->name} and {$users[$b['user_id']]->name} overlap on {$callsigns[$a['position']]}.");
-        $this->ensureNoOverlap($entries, 'user_id', fn (array $a, array $b) => "{$users[$a['user_id']]->name} is rostered on {$callsigns[$a['position']]} and {$callsigns[$b['position']]} at the same time.");
+        $this->ensureNoOverlap($entries, 'position', fn (array $a, array $b) => "{$users[$a['user_id']]->displayNameWithCid()} and {$users[$b['user_id']]->displayNameWithCid()} overlap on {$callsigns[$a['position']]}.");
+        $this->ensureNoOverlap($entries, 'user_id', fn (array $a, array $b) => "{$users[$a['user_id']]->displayNameWithCid()} is rostered on {$callsigns[$a['position']]} and {$callsigns[$b['position']]} at the same time.");
 
         return $entries;
     }

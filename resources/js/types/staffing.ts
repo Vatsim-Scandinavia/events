@@ -6,6 +6,8 @@ export type Controller = {
     id: number;
     name: string;
     cid: number | null;
+    // Whether the CID goes beside the name; not when the name shown is the CID.
+    showCid: boolean;
     rating: string | null;
 };
 

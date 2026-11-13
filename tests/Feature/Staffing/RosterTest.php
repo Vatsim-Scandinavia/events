@@ -82,9 +82,12 @@ class RosterTest extends TestCase
 
     public function test_a_position_cannot_be_rostered_twice_at_once(): void
     {
-        $other = User::factory()->controller()->create();
+        $other = User::factory()->controller()->create(['name' => 'Jane Other', 'first_name' => 'Jane', 'vatsim_cid' => 1234567]);
+        $this->controller->update(['first_name' => 'Rostered', 'vatsim_cid' => 7654321]);
 
-        $this->saveRoster([[$this->controller, $this->tower, 0, 120], [$other, $this->tower, 60, 180]])->assertSessionHasErrors('plan');
+        // Named as the planner shows them, with their CIDs to tell them apart, never by full name.
+        $this->saveRoster([[$this->controller, $this->tower, 0, 120], [$other, $this->tower, 60, 180]])
+            ->assertSessionHasErrors(['plan' => 'Rostered (7654321) and Jane (1234567) overlap on ESSA_TWR.']);
         $this->saveRoster([[$this->controller, $this->tower, 0, 120], [$other, $this->tower, 120, 240]])->assertSessionHasNoErrors();
     }
 

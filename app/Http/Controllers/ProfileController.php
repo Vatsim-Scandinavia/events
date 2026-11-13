@@ -33,7 +33,7 @@ class ProfileController extends Controller
             ],
             'roleGroups' => $this->roleGroups($user),
             'settings' => [
-                'nameDisplay' => ($user->name_display ?? NameDisplay::FirstName)->value,
+                'nameDisplay' => $user->name_display->value,
                 'timezone' => $user->displayTimezone(),
             ],
             // Each choice as the user would be shown with it.
