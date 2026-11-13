@@ -10,9 +10,9 @@ use App\Integrations\SyncContext;
 use App\Integrations\SyncResult;
 use App\Models\EventOccurrence;
 use App\Models\EventPosition;
-use App\Models\RosterEntry;
-use App\Models\ShiftBooking;
 use App\Models\User;
+use App\Staffing\Roster;
+use App\Staffing\RosterItem;
 use App\Staffing\StaffingChanged;
 use App\Staffing\StaffingNotes;
 use Carbon\CarbonImmutable;
@@ -137,40 +137,28 @@ class BookingPush extends Feature implements StaffingNotes, Syncable
     }
 
     /**
-     * The bookings Control Center should have for the date, by "source:id". Only what's still
-     * to come: Control Center refuses bookings in the past.
+     * The bookings Control Center should have for the date, by "source:id": everyone on its
+     * public Roster, but only what's still to come, since Control Center refuses bookings in
+     * the past.
      *
      * @return Collection<string, array{source: string, source_id: int, cid: ?int, callsign: string, starts_at: CarbonImmutable, ends_at: CarbonImmutable}>
      */
     public static function wanted(?EventOccurrence $occurrence): Collection
     {
-        $event = $occurrence?->event;
-
-        if ($occurrence === null || $event->isDraft() || $occurrence->isCancelled()) {
+        if ($occurrence === null || $occurrence->isCancelled()) {
             return collect();
         }
 
-        $bookings = match ($event->staffing_mode) {
-            StaffingMode::Shifts => $occurrence->bookings()->with('shift.position', 'user')->get()->map(fn (ShiftBooking $booking) => [
-                'source' => 'shift_booking',
-                'source_id' => $booking->id,
-                'cid' => $booking->user->vatsim_cid,
-                'callsign' => $booking->shift->position->callsign,
-                'starts_at' => $booking->shift->startsAtFor($occurrence),
-                'ends_at' => $booking->shift->endsAtFor($occurrence),
-            ]),
-            StaffingMode::OpenInterest => $occurrence->isRosterPublished()
-                ? $occurrence->rosterEntries()->with('position', 'user')->get()->map(fn (RosterEntry $entry) => [
-                    'source' => 'roster_entry',
-                    'source_id' => $entry->id,
-                    'cid' => $entry->user->vatsim_cid,
-                    'callsign' => $entry->position->callsign,
-                    'starts_at' => $entry->starts_at,
-                    'ends_at' => $entry->ends_at,
-                ])
-                : collect(),
-            default => collect(),
-        };
+        $bookings = Roster::of($occurrence)->items()
+            ->filter(fn (RosterItem $item) => $item->controller() !== null)
+            ->map(fn (RosterItem $item) => [
+                'source' => $item->isShift() ? 'shift_booking' : 'roster_entry',
+                'source_id' => $item->isShift() ? $item->booking->id : $item->source->id,
+                'cid' => $item->controller()->vatsim_cid,
+                'callsign' => $item->position->callsign,
+                'starts_at' => $item->startsAt,
+                'ends_at' => $item->endsAt,
+            ]);
 
         return $bookings
             ->filter(fn (array $booking) => $booking['starts_at']->isFuture())

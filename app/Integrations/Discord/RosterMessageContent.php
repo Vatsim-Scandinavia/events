@@ -3,14 +3,14 @@
 namespace App\Integrations\Discord;
 
 use App\Enums\NameDisplay;
+use App\Enums\RosterState;
 use App\Enums\StaffingMode;
 use App\Models\Event;
 use App\Models\EventOccurrence;
-use App\Models\EventPosition;
 use App\Models\EventSection;
-use App\Models\PositionShift;
-use App\Models\RosterEntry;
 use App\Models\User;
+use App\Staffing\Roster;
+use App\Staffing\RosterItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Collection;
 
@@ -63,58 +63,22 @@ final class RosterMessageContent
 
     private static function staffing(Event $event, EventOccurrence $occurrence, string $url, int $maxLength): string
     {
-        $positions = match ($event->staffing_mode) {
-            StaffingMode::Shifts => self::shifts($event, $occurrence),
-            StaffingMode::OpenInterest => $occurrence->isRosterPublished() ? self::roster($occurrence) : null,
-            default => collect(),
-        };
+        $roster = Roster::of($occurrence);
 
-        if ($positions === null) {
+        if ($roster->state() === RosterState::Unpublished) {
             return "Roster not published yet.\n\n[See the event on the Hub]({$url})";
         }
 
-        if ($positions->isEmpty()) {
+        if ($roster->items()->isEmpty()) {
             return "No positions to staff yet.\n\n[See the event on the Hub]({$url})";
         }
 
         $link = $event->staffing_mode === StaffingMode::Shifts ? "[Book on the Hub]({$url})" : "[See the roster on the Hub]({$url})";
-        $eventPositions = $event->positions()->get();
-        $sectionsByPosition = $event->sectionsFor($eventPositions);
-        $sectionsByCallsign = $eventPositions->mapWithKeys(fn (EventPosition $position) => [$position->callsign => $sectionsByPosition[$position->id]])->all();
+        $byCallsign = $roster->items()->groupBy(fn (RosterItem $item) => $item->position->callsign);
+        $positions = $byCallsign->map(fn (Collection $items) => $items->map(fn (RosterItem $item) => self::line($item->startsAt, $item->endsAt, $item->controller()))->all());
+        $sections = $byCallsign->map(fn (Collection $items) => $items->first()->section)->all();
 
-        return self::fit($positions, $sectionsByCallsign, $link, $url, $maxLength);
-    }
-
-    /**
-     * Every shift on the date, booked or open, by position.
-     *
-     * @return Collection<string, list<string>>
-     */
-    private static function shifts(Event $event, EventOccurrence $occurrence): Collection
-    {
-        $bookings = $occurrence->bookings()->with('user')->get()->keyBy('position_shift_id');
-
-        return $event->positions()->with('shifts')->get()
-            ->filter(fn (EventPosition $position) => $position->shifts->isNotEmpty())
-            ->mapWithKeys(fn (EventPosition $position) => [$position->callsign => $position->shifts
-                ->map(fn (PositionShift $shift) => self::line($shift->startsAtFor($occurrence), $shift->endsAtFor($occurrence), $bookings->get($shift->id)?->user))
-                ->all()]);
-    }
-
-    /**
-     * The published Roster Entries, by position.
-     *
-     * @return Collection<string, list<string>>
-     */
-    private static function roster(EventOccurrence $occurrence): Collection
-    {
-        return $occurrence->rosterEntries()->with(['position', 'user'])->get()
-            ->sortBy([
-                fn (RosterEntry $a, RosterEntry $b) => [$a->position->sort, $a->position->id] <=> [$b->position->sort, $b->position->id],
-                fn (RosterEntry $a, RosterEntry $b) => $a->starts_at <=> $b->starts_at,
-            ])
-            ->groupBy(fn (RosterEntry $entry) => $entry->position->callsign)
-            ->map(fn (Collection $entries) => $entries->map(fn (RosterEntry $entry) => self::line($entry->starts_at, $entry->ends_at, $entry->user))->all());
+        return self::fit($positions, $sections, $link, $url, $maxLength);
     }
 
     private static function line(CarbonImmutable $startsAt, CarbonImmutable $endsAt, ?User $controller): string
