@@ -1,0 +1,50 @@
+# Weekly updates into dev. Minor and patch updates come as one PR per ecosystem;
+# each major comes on its own, since it may need code changes.
+# The chore(deps) prefix passes the PR title check and stays out of the changelog.
+
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directories: ['/', '/.github/actions/*']
+    target-branch: dev
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      actions:
+        update-types: [minor, patch]
+
+  - package-ecosystem: composer
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      composer:
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      npm:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore(deps)
+    groups:
+      docker:
+        update-types: [minor, patch]
