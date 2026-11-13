@@ -36,6 +36,15 @@ class EventsPageTest extends TestCase
         $this->get('/events')->assertInertia(fn (Assert $page) => $page->has('events', 1));
     }
 
+    public function test_an_event_stops_being_listed_the_moment_its_date_ends(): void
+    {
+        $this->travelTo(Carbon::parse('2026-07-01 21:00', 'UTC'));
+        Event::factory()->create(['starts_at' => Carbon::parse('2026-07-01 18:00', 'UTC'), 'ends_at' => Carbon::parse('2026-07-01 21:00', 'UTC')]);
+
+        $this->get('/events')->assertInertia(fn (Assert $page) => $page->has('events', 0));
+        $this->get('/')->assertInertia(fn (Assert $page) => $page->has('upcomingEvents', 0));
+    }
+
     public function test_a_late_zulu_event_is_listed_on_the_next_day_for_viewers_further_east(): void
     {
         $this->travelTo(Carbon::parse('2026-07-01 12:00', 'UTC'));
