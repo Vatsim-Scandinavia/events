@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { NativeSelect } from '@/components/ui/native-select';
+import { controllerText } from '@/components/staffing/controller-name';
 import { cn } from '@/lib/utils';
 import type { Controller, StaffInterest } from '@/types/staffing';
 import { AddPositionRow } from './add-position-row';
@@ -177,13 +178,7 @@ export function RosterCard({ occurrence, controllers, interests, roster, draft, 
                                     <option value="">Add a controller who didn’t show interest…</option>
                                     {others.map((controller) => (
                                         <option key={controller.id} value={controller.id}>
-                                            {[
-                                                controller.name,
-                                                controller.cid && String(controller.cid) !== controller.name && controller.cid,
-                                                controller.rating && `(${controller.rating})`,
-                                            ]
-                                                .filter(Boolean)
-                                                .join(' ')}
+                                            {[controllerText(controller), controller.rating && `(${controller.rating})`].filter(Boolean).join(' ')}
                                         </option>
                                     ))}
                                 </NativeSelect>

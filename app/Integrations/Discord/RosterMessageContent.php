@@ -2,7 +2,6 @@
 
 namespace App\Integrations\Discord;
 
-use App\Enums\NameDisplay;
 use App\Enums\RosterState;
 use App\Enums\StaffingMode;
 use App\Models\Event;
@@ -83,7 +82,7 @@ final class RosterMessageContent
     {
         $span = (new DisplayTime)->range($startsAt, $endsAt);
 
-        return $controller ? "`{$span}` ".Discord::plain($controller->displayName()).($controller->name_display === NameDisplay::CidOnly ? '' : " ({$controller->vatsim_cid})") : "`{$span}` *open*";
+        return $controller ? "`{$span}` ".Discord::plain($controller->displayName()).($controller->showsCidBesideName() ? " ({$controller->vatsim_cid})" : '') : "`{$span}` *open*";
     }
 
     /**

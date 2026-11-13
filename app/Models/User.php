@@ -25,6 +25,14 @@ class User extends Authenticatable
     use HasFactory;
 
     /**
+     * First name is how a name is shown until someone picks otherwise, as the column defaults to,
+     * so a user not saved yet is shown the same way.
+     *
+     * @var array<string, string>
+     */
+    protected $attributes = ['name_display' => 'first_name'];
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -206,7 +214,7 @@ class User extends Authenticatable
      */
     public function displayName(?NameDisplay $display = null): string
     {
-        return match ($display ?? $this->name_display ?? NameDisplay::FirstName) {
+        return match ($display ?? $this->name_display) {
             NameDisplay::FullName => $this->name,
             NameDisplay::FirstName => $this->first_name ?: strtok($this->name, ' '),
             NameDisplay::CidOnly => (string) $this->vatsim_cid,
@@ -214,12 +222,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Whether the CID goes beside the name, which it does unless the name shown is the CID.
+     */
+    public function showsCidBesideName(?NameDisplay $display = null): bool
+    {
+        return ($display ?? $this->name_display) !== NameDisplay::CidOnly;
+    }
+
+    /**
      * The display name followed by the CID in brackets, or the CID alone when that is the name.
      */
     public function displayNameWithCid(?NameDisplay $display = null): string
     {
-        $display ??= $this->name_display ?? NameDisplay::FirstName;
-
-        return $display === NameDisplay::CidOnly ? (string) $this->vatsim_cid : "{$this->displayName($display)} ({$this->vatsim_cid})";
+        return $this->showsCidBesideName($display) ? "{$this->displayName($display)} ({$this->vatsim_cid})" : $this->displayName($display);
     }
 }

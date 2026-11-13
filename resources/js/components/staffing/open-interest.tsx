@@ -1,6 +1,7 @@
 import { router, useForm, usePage } from '@inertiajs/react';
 import { EyeOff, ListChecks, Plus, Users, X } from 'lucide-react';
 import { Fragment, type FormEvent } from 'react';
+import ControllerName from '@/components/staffing/controller-name';
 import { SectionTableRow, withSectionHeadings } from '@/components/staffing/sections';
 import SignInPrompt from '@/components/staffing/sign-in-prompt';
 import { NotesIcon, PositionNote } from '@/components/staffing/staffing-notes';
@@ -75,10 +76,7 @@ function InterestList({ interests }: { interests: StaffInterest[] }) {
                             {interests.map((item) => (
                                 <tr key={item.id} className="align-top">
                                     <td className="px-4 py-3">
-                                        {item.controller.name}
-                                        {item.controller.cid && String(item.controller.cid) !== item.controller.name && (
-                                            <span className="ml-2 text-xs text-muted-foreground">{item.controller.cid}</span>
-                                        )}
+                                        <ControllerName controller={item.controller} />
                                         {item.notes && <p className="mt-1 text-xs whitespace-pre-line text-muted-foreground">{item.notes}</p>}
                                     </td>
                                     <td className="px-4 py-3 font-mono">{item.callsigns.join(', ')}</td>
@@ -356,10 +354,7 @@ function RosterTable({ entries }: { entries: RosterEntry[] }) {
                             <tr>
                                 <td className="px-4 py-3 font-mono">{entry.callsign}</td>
                                 <td className="px-4 py-3">
-                                    {entry.controller.name}
-                                    {entry.controller.cid && String(entry.controller.cid) !== entry.controller.name && (
-                                        <span className="ml-2 text-xs text-muted-foreground">{entry.controller.cid}</span>
-                                    )}
+                                    <ControllerName controller={entry.controller} />
                                     <NotesIcon notes={entry.notes} className="ml-2" />
                                 </td>
                                 <td className="px-4 py-3 text-right font-mono whitespace-nowrap tabular-nums">{entry.time}</td>

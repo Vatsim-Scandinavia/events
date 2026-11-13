@@ -1,6 +1,7 @@
 import { router } from '@inertiajs/react';
 import { Fragment } from 'react';
 import { useConfirm } from '@/components/confirm-dialog';
+import ControllerName from '@/components/staffing/controller-name';
 import { SectionTableRow, withSectionHeadings } from '@/components/staffing/sections';
 import SignInPrompt from '@/components/staffing/sign-in-prompt';
 import { NotesIcon, PositionNote } from '@/components/staffing/staffing-notes';
@@ -142,12 +143,7 @@ function ShiftStatus({ shift, callsign, occurrenceId, canBook }: { shift: Shift;
         return (
             <span className="inline-flex items-center gap-2">
                 <span className={cn(shift.booking.isMine && 'font-medium text-primary')}>
-                    {shift.booking.isMine ? 'You' : shift.booking.controller.name}
-                    {!shift.booking.isMine &&
-                        shift.booking.controller.cid &&
-                        String(shift.booking.controller.cid) !== shift.booking.controller.name && (
-                            <span className="ml-1 text-xs text-muted-foreground">{shift.booking.controller.cid}</span>
-                        )}
+                    {shift.booking.isMine ? 'You' : <ControllerName controller={shift.booking.controller} />}
                 </span>
                 <NotesIcon notes={shift.booking.notes} />
                 {shift.booking.canCancel && (

@@ -357,6 +357,8 @@ final class StaffingPresenter
             'id' => $user->id,
             'name' => $user->displayName(),
             'cid' => $user->vatsim_cid,
+            // Whether the CID goes beside the name; not when the name shown is the CID.
+            'showCid' => $user->showsCidBesideName(),
             'rating' => $user->rating?->label(),
         ];
     }

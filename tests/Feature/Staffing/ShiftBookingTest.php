@@ -264,25 +264,29 @@ class ShiftBookingTest extends TestCase
     }
 
     /**
-     * @return array<string, array{NameDisplay, string}>
+     * @return array<string, array{NameDisplay, string, bool}>
      */
     public static function nameDisplays(): array
     {
         return [
-            'full name' => [NameDisplay::FullName, 'Jane Controller'],
-            'first name' => [NameDisplay::FirstName, 'Jane'],
-            'CID only' => [NameDisplay::CidOnly, '1234567'],
+            'full name' => [NameDisplay::FullName, 'Jane Controller', true],
+            'first name' => [NameDisplay::FirstName, 'Jane', true],
+            'CID only' => [NameDisplay::CidOnly, '1234567', false],
         ];
     }
 
     #[DataProvider('nameDisplays')]
-    public function test_a_booking_shows_the_controller_as_they_chose_and_never_more(NameDisplay $display, string $shown): void
+    public function test_a_booking_shows_the_controller_as_they_chose_and_never_more(NameDisplay $display, string $shown, bool $showCid): void
     {
         $controller = User::factory()->controller()->create(['name' => 'Jane Controller', 'first_name' => 'Jane', 'name_display' => $display, 'vatsim_cid' => 1234567]);
         ShiftBooking::create(['position_shift_id' => $this->towerEarly->id, 'event_occurrence_id' => $this->occurrence->id, 'user_id' => $controller->id]);
 
         $page = $this->get("/events/{$this->event->getRouteKey()}")
-            ->assertInertia(fn (Assert $page) => $page->where('staffing.positions.0.shifts.0.booking.controller.name', $shown));
+            ->assertInertia(fn (Assert $page) => $page
+                ->where('staffing.positions.0.shifts.0.booking.controller.name', $shown)
+                // The CID goes beside the name, unless the name already is the CID.
+                ->where('staffing.positions.0.shifts.0.booking.controller.showCid', $showCid)
+            );
 
         // Nowhere on the page, not just in that prop.
         if ($display !== NameDisplay::FullName) {
