@@ -77,6 +77,8 @@ class RosterVisibilityTest extends TestCase
         $this->assertSame(RosterState::Shown, $roster->state());
         $this->assertSame([[$entry->id, 'ESSA_TWR', '18:00', '22:00', $controller->id, null]], $this->summarise($roster));
         $this->assertFalse($roster->items()->sole()->isShift());
+        $this->assertSame(RosterState::Shown, Roster::of($occurrence, User::factory()->staff()->create())->state());
+        $this->assertSame([[$entry->id, 'ESSA_TWR', '18:00', '22:00', $controller->id, null]], $this->summarise(Roster::of($occurrence, User::factory()->staff()->create())));
     }
 
     public function test_an_event_not_staffed_through_the_hub_has_no_roster(): void
@@ -143,7 +145,7 @@ class RosterVisibilityTest extends TestCase
             $item->position->callsign,
             $item->startsAt->utc()->format('H:i'),
             $item->endsAt->utc()->format('H:i'),
-            $item->controller?->id,
+            $item->controller()?->id,
             $item->booking?->id,
         ])->all();
     }

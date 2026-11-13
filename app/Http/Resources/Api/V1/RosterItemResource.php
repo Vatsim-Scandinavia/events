@@ -37,7 +37,7 @@ class RosterItemResource extends JsonResource
             'startsAt' => $this->resource->startsAt->utc()->toIso8601String(),
             'endsAt' => $this->resource->endsAt->utc()->toIso8601String(),
             /** Who works it, or null while a shift is open. */
-            'controller' => $this->resource->controller !== null ? new ControllerResource($this->resource->controller) : null,
+            'controller' => $this->resource->controller() !== null ? new ControllerResource($this->resource->controller()) : null,
         ];
     }
 }

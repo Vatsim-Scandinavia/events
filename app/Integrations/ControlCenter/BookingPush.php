@@ -150,11 +150,11 @@ class BookingPush extends Feature implements StaffingNotes, Syncable
         }
 
         $bookings = Roster::of($occurrence)->items()
-            ->filter(fn (RosterItem $item) => $item->controller !== null)
+            ->filter(fn (RosterItem $item) => $item->controller() !== null)
             ->map(fn (RosterItem $item) => [
                 'source' => $item->isShift() ? 'shift_booking' : 'roster_entry',
-                'source_id' => $item->booking?->id ?? $item->source->id,
-                'cid' => $item->controller->vatsim_cid,
+                'source_id' => $item->isShift() ? $item->booking->id : $item->source->id,
+                'cid' => $item->controller()->vatsim_cid,
                 'callsign' => $item->position->callsign,
                 'starts_at' => $item->startsAt,
                 'ends_at' => $item->endsAt,

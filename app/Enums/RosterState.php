@@ -16,5 +16,6 @@ enum RosterState
     /** The roster from Staffing Interest isn't published yet, and this viewer isn't staff. */
     case Unpublished;
 
+    /** The Roster can be shown to this viewer, though it may have nothing on it yet. */
     case Shown;
 }

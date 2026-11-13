@@ -72,7 +72,8 @@ final class Roster
     }
 
     /**
-     * Every shift on the date, booked or open.
+     * Every shift on the date, booked or open: by position, then by start, as the positions
+     * and their shifts are ordered.
      *
      * @return Collection<int, RosterItem>
      */
@@ -86,7 +87,7 @@ final class Roster
         return $positions->flatMap(fn (EventPosition $position) => $position->shifts->map(function (PositionShift $shift) use ($occurrence, $position, $sections, $bookings) {
             $booking = $bookings->get($shift->id);
 
-            return new RosterItem($shift, $position, $sections[$position->id], $shift->startsAtFor($occurrence), $shift->endsAtFor($occurrence), $booking?->user, $booking);
+            return new RosterItem($shift, $position, $sections[$position->id], $shift->startsAtFor($occurrence), $shift->endsAtFor($occurrence), $booking);
         }))->values();
     }
 
@@ -108,14 +109,7 @@ final class Roster
                 fn (RosterEntry $a, RosterEntry $b) => $order[$a->event_position_id] <=> $order[$b->event_position_id],
                 fn (RosterEntry $a, RosterEntry $b) => $a->starts_at <=> $b->starts_at,
             ])
-            ->map(fn (RosterEntry $entry) => new RosterItem(
-                $entry,
-                $entry->setRelation('position', $positions[$entry->event_position_id])->position,
-                $sections[$entry->event_position_id],
-                $entry->starts_at,
-                $entry->ends_at,
-                $entry->user,
-            ))
+            ->map(fn (RosterEntry $entry) => new RosterItem($entry, $positions[$entry->event_position_id], $sections[$entry->event_position_id], $entry->starts_at, $entry->ends_at))
             ->values();
     }
 }

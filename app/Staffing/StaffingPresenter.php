@@ -46,8 +46,6 @@ final class StaffingPresenter
         // vACC Staff may see what staffing managers see, without changing anything.
         $canSeeAsStaff = (bool) $viewer?->can('viewStaffing', $event);
         $roster = Roster::of($occurrence, $viewer);
-        $positions = $event->positions()->get();
-        $sections = $event->sectionsFor($positions);
         $notes = $viewer !== null ? $this->notes($occurrence) : [];
         // A controller hears what they should know before working each position.
         $noteFor = $viewer?->isEligibleController($event) ? $viewer : null;
@@ -73,14 +71,14 @@ final class StaffingPresenter
                     ->groupBy(fn (RosterItem $item) => $item->position->id)
                     ->map(fn (Collection $items) => [
                         ...$this->position($items->first()->position, $items->first()->section, $noteFor),
-                        'shifts' => $items->map(fn (RosterItem $item) => $this->shift($item->source, $occurrence, $item->booking, $viewer, $notes, $canSeeAsStaff))->all(),
+                        'shifts' => $items->map(fn (RosterItem $item) => $this->shift($item->shift(), $occurrence, $item->booking, $viewer, $notes, $canSeeAsStaff))->all(),
                     ])
                     ->values()
                     ->all(),
             ],
             StaffingMode::OpenInterest => [
                 ...$staffing,
-                'positions' => $positions->map(fn (EventPosition $position) => $this->position($position, $sections[$position->id], $noteFor))->all(),
+                'positions' => $this->positions($event, $noteFor),
                 'interest' => [
                     'state' => $occurrence->interestWindowState(),
                     'opensAt' => $this->moment($occurrence->interestOpensAt()),
@@ -90,7 +88,7 @@ final class StaffingPresenter
                 ],
                 'rosterPublished' => $occurrence->isRosterPublished(),
                 'roster' => $roster->state() === RosterState::Shown
-                    ? $roster->items()->map(fn (RosterItem $item) => $this->rosterEntry($item->source, $item->section, $occurrence, $viewer, $notes, $canSeeAsStaff))->all()
+                    ? $roster->items()->map(fn (RosterItem $item) => $this->rosterEntry($item->rosterEntry(), $item->position, $item->section, $occurrence, $viewer, $notes, $canSeeAsStaff))->all()
                     : null,
             ],
             default => $staffing,
@@ -199,6 +197,20 @@ final class StaffingPresenter
     }
 
     /**
+     * Every position, in order, for the controller picking which they'd like to work.
+     *
+     * @param  ?User  $noteFor  The controller to tell what they should know before working each.
+     * @return list<array<string, mixed>>
+     */
+    private function positions(Event $event, ?User $noteFor): array
+    {
+        $positions = $event->positions()->get();
+        $sections = $event->sectionsFor($positions);
+
+        return $positions->map(fn (EventPosition $position) => $this->position($position, $sections[$position->id], $noteFor))->all();
+    }
+
+    /**
      * @param  ?EventSection  $section  The Section the position falls under.
      * @param  ?User  $noteFor  The controller to tell what they should know before working it.
      * @return array<string, mixed>
@@ -302,7 +314,7 @@ final class StaffingPresenter
                 fn (RosterEntry $a, RosterEntry $b) => $a->starts_at <=> $b->starts_at,
             ])
             ->values()
-            ->map(fn (RosterEntry $entry) => $this->rosterEntry($entry, $sections[$entry->event_position_id] ?? null, $occurrence, $viewer, $notes, $asStaff))
+            ->map(fn (RosterEntry $entry) => $this->rosterEntry($entry, $entry->position, $sections[$entry->event_position_id] ?? null, $occurrence, $viewer, $notes, $asStaff))
             ->all();
     }
 
@@ -311,12 +323,12 @@ final class StaffingPresenter
      * @param  array<string, list<string>>  $notes
      * @return array<string, mixed>
      */
-    private function rosterEntry(RosterEntry $entry, ?EventSection $section, EventOccurrence $occurrence, ?User $viewer, array $notes, bool $asStaff): array
+    private function rosterEntry(RosterEntry $entry, EventPosition $position, ?EventSection $section, EventOccurrence $occurrence, ?User $viewer, array $notes, bool $asStaff): array
     {
         return [
             'id' => $entry->id,
-            'positionId' => $entry->event_position_id,
-            'callsign' => $entry->position->callsign,
+            'positionId' => $position->id,
+            'callsign' => $position->callsign,
             'section' => $this->section($section),
             'controller' => $this->controller($entry->user),
             'time' => $this->display->range($entry->starts_at, $entry->ends_at),

@@ -75,7 +75,7 @@ final class RosterMessageContent
 
         $link = $event->staffing_mode === StaffingMode::Shifts ? "[Book on the Hub]({$url})" : "[See the roster on the Hub]({$url})";
         $byCallsign = $roster->items()->groupBy(fn (RosterItem $item) => $item->position->callsign);
-        $positions = $byCallsign->map(fn (Collection $items) => $items->map(fn (RosterItem $item) => self::line($item->startsAt, $item->endsAt, $item->controller))->all());
+        $positions = $byCallsign->map(fn (Collection $items) => $items->map(fn (RosterItem $item) => self::line($item->startsAt, $item->endsAt, $item->controller()))->all());
         $sections = $byCallsign->map(fn (Collection $items) => $items->first()->section)->all();
 
         return self::fit($positions, $sections, $link, $url, $maxLength);
