@@ -5,12 +5,11 @@ on:
     branches: [dev]
   pull_request:
     branches: [dev]
-  # The release workflow runs all of this before publishing a version.
-  workflow_call:
 
+# A newer push cancels a pull request's run, but never dev's: its run may be publishing a release.
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -217,7 +216,7 @@ jobs:
   # Its own job, so pull request builds never hold registry write access.
   publish:
     name: Publish image
-    # Only pushes to dev. Releases publish their own tags from release.yml.
+    # Only pushes to dev. The release job below gives a release its version tags.
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     needs: [checks, databases, image]
     runs-on: ubuntu-latest
@@ -259,3 +258,60 @@ jobs:
           push: true
           tags: ghcr.io/vatsim-scandinavia/events:playground
           cache-from: type=gha
+
+  # Keeps a Release PR open on dev. Merging it lands here: the release is tagged and published
+  # on GitHub, the image this run tested is retagged as the version, and master moves to it.
+  release:
+    name: Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: write
+
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          target-branch: dev
+
+      - name: Log in to GitHub Container Registry
+        if: steps.release.outputs.release_created
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+        if: steps.release.outputs.release_created
+
+      # The very image the jobs above tested, never a rebuild, and never latest.
+      - name: Publish the image as the version
+        if: steps.release.outputs.release_created
+        env:
+          IMAGE: ghcr.io/vatsim-scandinavia/events
+          MAJOR: ${{ steps.release.outputs.major }}
+          MINOR: ${{ steps.release.outputs.minor }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+          # The Release PR's merge, which may be older than this run's commit.
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+        run: |
+          docker buildx imagetools create \
+            -t "$IMAGE:$TAG" -t "$IMAGE:v$MAJOR.$MINOR" -t "$IMAGE:v$MAJOR" \
+            "$IMAGE:sha-$RELEASE_SHA"
+
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        if: steps.release.outputs.release_created
+        with:
+          fetch-depth: 0
+
+      # Master only ever points at the latest release. Never forced: if someone committed
+      # to master directly, this fails and master has to be put back by hand.
+      - name: Move master to the release
+        if: steps.release.outputs.release_created
+        env:
+          RELEASE_SHA: ${{ steps.release.outputs.sha }}
+        run: git push origin "$RELEASE_SHA:refs/heads/master"
