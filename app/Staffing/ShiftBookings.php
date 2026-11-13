@@ -2,6 +2,7 @@
 
 namespace App\Staffing;
 
+use App\Enums\BookingRefusal;
 use App\Enums\StaffingMode;
 use App\Models\EventOccurrence;
 use App\Models\PositionShift;
@@ -19,40 +20,38 @@ use Illuminate\Validation\ValidationException;
 final class ShiftBookings
 {
     /**
+     * Why someone can't book shifts on the date right now, or null when they can. Reasons
+     * about the date come first, so the page explains those before asking anyone to sign in.
+     */
+    public function refusal(?User $user, EventOccurrence $occurrence): ?BookingRefusal
+    {
+        $event = $occurrence->event;
+
+        return match (true) {
+            $event->isDraft() => BookingRefusal::Draft,
+            $event->staffing_mode !== StaffingMode::Shifts => BookingRefusal::NotShifts,
+            $occurrence->hasStarted() => BookingRefusal::Started,
+            $occurrence->isCancelled() => BookingRefusal::Cancelled,
+            // For now controllers only book the next date; the one after opens once it is over.
+            $event->currentOccurrence()?->isNot($occurrence) => BookingRefusal::NotNextDate,
+            $user === null => BookingRefusal::SignInNeeded,
+            ! $user->isEligibleController($event) => BookingRefusal::NotController,
+            default => null,
+        };
+    }
+
+    /**
      * @throws AuthorizationException when the user isn't an eligible controller
      * @throws ValidationException when the shift can't be booked
      */
     public function book(User $user, PositionShift $shift, EventOccurrence $occurrence): ShiftBooking
     {
-        $event = $occurrence->event;
-
-        if ($shift->position->event_id !== $event->id) {
+        if ($shift->position->event_id !== $occurrence->event_id) {
             throw ValidationException::withMessages(['booking' => 'That shift belongs to a different event.']);
         }
 
-        if ($event->isDraft()) {
-            throw ValidationException::withMessages(['booking' => 'This event isn’t published yet.']);
-        }
-
-        if (! $user->isEligibleController($event)) {
-            throw new AuthorizationException('Only controllers can book shifts.');
-        }
-
-        if ($event->staffing_mode !== StaffingMode::Shifts) {
-            throw ValidationException::withMessages(['booking' => 'This event does not use shift booking.']);
-        }
-
-        if ($occurrence->hasStarted()) {
-            throw ValidationException::withMessages(['booking' => 'Booking closed when the event started.']);
-        }
-
-        if ($occurrence->isCancelled()) {
-            throw ValidationException::withMessages(['booking' => 'This date has been cancelled.']);
-        }
-
-        // For now controllers only book the next date; the one after opens once it is over.
-        if ($event->currentOccurrence()?->isNot($occurrence)) {
-            throw ValidationException::withMessages(['booking' => 'Shifts can only be booked for the next date of this event.']);
+        if ($refusal = $this->refusal($user, $occurrence)) {
+            $this->refuse($refusal);
         }
 
         $startsAt = $shift->startsAtFor($occurrence);
@@ -103,6 +102,24 @@ final class ShiftBookings
         });
     }
 
+    /**
+     * @throws AuthorizationException|ValidationException
+     */
+    private function refuse(BookingRefusal $refusal): never
+    {
+        if ($refusal === BookingRefusal::SignInNeeded || $refusal === BookingRefusal::NotController) {
+            throw new AuthorizationException('Only controllers can book shifts.');
+        }
+
+        throw ValidationException::withMessages(['booking' => match ($refusal) {
+            BookingRefusal::Draft => 'This event isn’t published yet.',
+            BookingRefusal::NotShifts => 'This event does not use shift booking.',
+            BookingRefusal::Started => 'Booking closed when the event started.',
+            BookingRefusal::Cancelled => 'This date has been cancelled.',
+            BookingRefusal::NotNextDate => 'Shifts can only be booked for the next date of this event.',
+        }]);
+    }
+
     private function alreadyBooked(): never
     {
         throw ValidationException::withMessages(['booking' => 'Someone else has already booked this shift.']);
@@ -111,19 +128,27 @@ final class ShiftBookings
     /**
      * Controllers can drop their own booking until the event starts; staffing managers can
      * remove any booking until the event ends.
-     *
+     */
+    public function canCancel(User $actor, ShiftBooking $booking): bool
+    {
+        $occurrence = $booking->occurrence;
+
+        return $actor->can('manageStaffing', $occurrence->event)
+            ? ! $occurrence->hasEnded()
+            : $booking->user_id === $actor->id && ! $occurrence->hasStarted();
+    }
+
+    /**
      * @throws AuthorizationException
      */
     public function cancel(User $actor, ShiftBooking $booking): void
     {
         $occurrence = $booking->occurrence;
 
-        if ($actor->can('manageStaffing', $occurrence->event)) {
-            if ($occurrence->hasEnded()) {
-                throw new AuthorizationException('Bookings are archived once the event has ended.');
-            }
-        } elseif ($booking->user_id !== $actor->id || $occurrence->hasStarted()) {
-            throw new AuthorizationException('You can no longer cancel this booking.');
+        if (! $this->canCancel($actor, $booking)) {
+            throw new AuthorizationException($actor->can('manageStaffing', $occurrence->event)
+                ? 'Bookings are archived once the event has ended.'
+                : 'You can no longer cancel this booking.');
         }
 
         $booking->delete();

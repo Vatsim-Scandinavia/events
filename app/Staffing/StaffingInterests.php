@@ -2,6 +2,7 @@
 
 namespace App\Staffing;
 
+use App\Enums\InterestRefusal;
 use App\Enums\StaffingMode;
 use App\Models\EventOccurrence;
 use App\Models\StaffingInterest;
@@ -19,6 +20,28 @@ use Illuminate\Validation\ValidationException;
 final class StaffingInterests
 {
     /**
+     * Why someone can't show interest in the date right now, or null when they can. Reasons
+     * about the date come first, so the page explains those before asking anyone to sign in.
+     */
+    public function refusal(?User $user, EventOccurrence $occurrence): ?InterestRefusal
+    {
+        $event = $occurrence->event;
+
+        return match (true) {
+            $event->isDraft() => InterestRefusal::Draft,
+            $event->staffing_mode !== StaffingMode::OpenInterest => InterestRefusal::NotInterest,
+            $occurrence->isCancelled() => InterestRefusal::Cancelled,
+            $occurrence->interestWindowState() === 'upcoming' => InterestRefusal::NotOpenYet,
+            $occurrence->interestWindowState() === 'closed' => InterestRefusal::Closed,
+            // For now controllers only staff the next date; the one after opens once it is over.
+            $event->currentOccurrence()?->isNot($occurrence) => InterestRefusal::NotNextDate,
+            $user === null => InterestRefusal::SignInNeeded,
+            ! $user->isEligibleController($event) => InterestRefusal::NotController,
+            default => null,
+        };
+    }
+
+    /**
      * Create or replace the user's interest in the occurrence.
      *
      * @param  list<int>  $positionIds
@@ -29,19 +52,8 @@ final class StaffingInterests
      */
     public function submit(User $user, EventOccurrence $occurrence, array $positionIds, array $windows, ?string $notes): StaffingInterest
     {
-        if ($occurrence->event->isDraft()) {
-            throw ValidationException::withMessages(['interest' => 'This event isn’t published yet.']);
-        }
-
-        $this->ensureWindowIsOpen($user, $occurrence);
-
-        if ($occurrence->isCancelled()) {
-            throw ValidationException::withMessages(['interest' => 'This date has been cancelled.']);
-        }
-
-        // For now controllers only staff the next date; the one after opens once it is over.
-        if ($occurrence->event->currentOccurrence()?->isNot($occurrence)) {
-            throw ValidationException::withMessages(['interest' => 'You can only show interest in the next date of this event.']);
+        if ($refusal = $this->refusal($user, $occurrence)) {
+            $this->refuse($refusal, $user, $occurrence);
         }
 
         $validPositions = $occurrence->event->positions()->whereKey($positionIds)->pluck('id');
@@ -119,6 +131,28 @@ final class StaffingInterests
         $occurrence->interests()->where('user_id', $user->id)->delete();
     }
 
+    /**
+     * @throws AuthorizationException|ValidationException
+     */
+    private function refuse(InterestRefusal $refusal, User $user, EventOccurrence $occurrence): never
+    {
+        if ($refusal === InterestRefusal::SignInNeeded || $refusal === InterestRefusal::NotController) {
+            throw new AuthorizationException('Only controllers can show interest in staffing.');
+        }
+
+        throw ValidationException::withMessages(['interest' => match ($refusal) {
+            InterestRefusal::Draft => 'This event isn’t published yet.',
+            InterestRefusal::NotInterest => 'This event does not take staffing interest.',
+            InterestRefusal::Cancelled => 'This date has been cancelled.',
+            InterestRefusal::NotOpenYet => 'Interest opens '.DisplayTime::for($user)->moment($occurrence->interestOpensAt()).'.',
+            InterestRefusal::Closed => 'The window for showing interest has closed.',
+            InterestRefusal::NotNextDate => 'You can only show interest in the next date of this event.',
+        }]);
+    }
+
+    /**
+     * Withdrawing only needs the window open: it harms nobody, even on a cancelled date.
+     */
     private function ensureWindowIsOpen(User $user, EventOccurrence $occurrence): void
     {
         if (! $user->isEligibleController($occurrence->event)) {

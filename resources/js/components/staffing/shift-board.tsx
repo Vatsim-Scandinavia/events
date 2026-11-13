@@ -6,22 +6,22 @@ import SignInPrompt from '@/components/staffing/sign-in-prompt';
 import { NotesIcon, PositionNote } from '@/components/staffing/staffing-notes';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { EventStaffing, PositionWithShifts, Shift } from '@/types/staffing';
+import type { BookingRefusal, EventStaffing, PositionWithShifts, Shift } from '@/types/staffing';
 
 /**
  * Staffing by shifts on the event page: controllers book a free shift on a position.
  */
 export default function ShiftBoard({ staffing }: { staffing: Extract<EventStaffing, { mode: 'shifts' }> }) {
-    const { viewer, occurrence } = staffing;
-    const bookingOpen = staffing.bookingOpen && !staffing.draft;
+    const { occurrence } = staffing;
+    const { refusal } = staffing.booking;
 
     return (
         <>
-            {bookingOpen && !viewer.signedIn && <SignInPrompt>Sign in to book a shift.</SignInPrompt>}
+            {refusal === 'sign_in_needed' && <SignInPrompt>Sign in to book a shift.</SignInPrompt>}
             {staffing.positions.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Positions for this event haven't been set up yet.</p>
             ) : (
-                <ShiftTable positions={staffing.positions} occurrenceId={occurrence.id} canBook={bookingOpen && viewer.signedIn && viewer.eligible} />
+                <ShiftTable positions={staffing.positions} occurrenceId={occurrence.id} canBook={refusal === null} />
             )}
         </>
     );
@@ -31,23 +31,18 @@ export default function ShiftBoard({ staffing }: { staffing: Extract<EventStaffi
  * What the section's description says about booking, or null when a sign-in prompt says it instead.
  */
 export function shiftBoardHint(staffing: Extract<EventStaffing, { mode: 'shifts' }>): string | null {
-    const { viewer, draft } = staffing;
+    const hints: Record<BookingRefusal | 'open', string | null> = {
+        draft: 'Controllers can book shifts once the event is published.',
+        started: 'Booking closed when the event started.',
+        cancelled: 'This date has been cancelled.',
+        not_next_date: 'Shifts open for this date once the one before it is over.',
+        not_shifts: null,
+        sign_in_needed: null,
+        not_controller: 'You need a controller rating (S1 or above) to book shifts.',
+        open: 'Pick a free shift to book it. You can cancel until the event starts.',
+    };
 
-    if (draft) {
-        return 'Controllers can book shifts once the event is published.';
-    }
-
-    if (!staffing.bookingOpen) {
-        return 'Booking closed when the event started.';
-    }
-
-    if (!viewer.signedIn) {
-        return null;
-    }
-
-    return viewer.eligible
-        ? 'Pick a free shift to book it. You can cancel until the event starts.'
-        : 'You need a controller rating (S1 or above) to book shifts.';
+    return hints[staffing.booking.refusal ?? 'open'];
 }
 
 // One row per shift, with each position's callsign spanning its shifts, so positions with

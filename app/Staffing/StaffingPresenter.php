@@ -34,7 +34,12 @@ use Illuminate\Support\Collection;
  */
 final class StaffingPresenter
 {
-    public function __construct(private DisplayTime $display, private Integrations $integrations) {}
+    public function __construct(
+        private DisplayTime $display,
+        private Integrations $integrations,
+        private ShiftBookings $shiftBookings,
+        private StaffingInterests $staffingInterests,
+    ) {}
 
     /**
      * Staffing as shown on the public event page.
@@ -66,7 +71,8 @@ final class StaffingPresenter
         return match ($event->staffing_mode) {
             StaffingMode::Shifts => [
                 ...$staffing,
-                'bookingOpen' => ! $occurrence->hasStarted() && ! $occurrence->isCancelled(),
+                // Why the viewer can't book here, if they can't, so the page explains it.
+                'booking' => ['refusal' => $this->shiftBookings->refusal($viewer, $occurrence)?->value],
                 'positions' => $roster->items()
                     ->groupBy(fn (RosterItem $item) => $item->position->id)
                     ->map(fn (Collection $items) => [
@@ -81,6 +87,8 @@ final class StaffingPresenter
                 'positions' => $this->positions($event, $noteFor),
                 'interest' => [
                     'state' => $occurrence->interestWindowState(),
+                    // Why the viewer can't show interest here, if they can't, so the page explains it.
+                    'refusal' => $this->staffingInterests->refusal($viewer, $occurrence)?->value,
                     'opensAt' => $this->moment($occurrence->interestOpensAt()),
                     'closesAt' => $this->moment($occurrence->interestClosesAt()),
                     'mine' => $viewer ? $this->interest($occurrence->interests()->where('user_id', $viewer->id)->first()) : null,
@@ -145,7 +153,7 @@ final class StaffingPresenter
      */
     private function positionsWithBookings(iterable $positions, array $sections, EventOccurrence $occurrence, ?User $viewer, array $notes, bool $asStaff, ?User $noteFor = null): array
     {
-        $bookings = $occurrence->bookings()->with('user')->get()->keyBy('position_shift_id');
+        $bookings = $occurrence->bookings()->chaperone('occurrence')->with('user')->get()->keyBy('position_shift_id');
         $result = [];
 
         foreach ($positions as $position) {
@@ -191,7 +199,7 @@ final class StaffingPresenter
             'id' => $booking->id,
             'controller' => $this->controller($booking->user),
             'isMine' => $isMine,
-            'canCancel' => ($isMine && ! $occurrence->hasStarted()) || ($viewer?->can('manageStaffing', $occurrence->event) && ! $occurrence->hasEnded()),
+            'canCancel' => $viewer !== null && $this->shiftBookings->canCancel($viewer, $booking),
             'notes' => $asStaff || $isMine ? $notes["shift_booking:{$booking->id}"] ?? [] : [],
         ];
     }

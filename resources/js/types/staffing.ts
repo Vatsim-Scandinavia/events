@@ -99,6 +99,12 @@ export type RosterEntry = {
 
 export type InterestWindowState = 'upcoming' | 'open' | 'closed';
 
+// Why the viewer can't book or show interest on the date, from App\Enums\BookingRefusal and
+// App\Enums\InterestRefusal; null when they can.
+export type BookingRefusal = 'draft' | 'not_shifts' | 'started' | 'cancelled' | 'not_next_date' | 'sign_in_needed' | 'not_controller';
+export type InterestRefusal =
+    'draft' | 'not_interest' | 'cancelled' | 'not_open_yet' | 'closed' | 'not_next_date' | 'sign_in_needed' | 'not_controller';
+
 type StaffingBase = {
     // Controllers can't book or show interest until the event is published.
     draft: boolean;
@@ -110,12 +116,19 @@ type StaffingBase = {
 
 export type EventStaffing =
     | (StaffingBase & { mode: 'none' })
-    | (StaffingBase & { mode: 'shifts'; bookingOpen: boolean; positions: PositionWithShifts[] })
+    | (StaffingBase & { mode: 'shifts'; booking: { refusal: BookingRefusal | null }; positions: PositionWithShifts[] })
     | (StaffingBase & {
           mode: 'open_interest';
           positions: StaffingPosition[];
           // `all` is everyone's interest, sent only to staff and vACC Staff.
-          interest: { state: InterestWindowState; opensAt: string; closesAt: string; mine: Interest | null; all: StaffInterest[] | null };
+          interest: {
+              state: InterestWindowState;
+              refusal: InterestRefusal | null;
+              opensAt: string;
+              closesAt: string;
+              mine: Interest | null;
+              all: StaffInterest[] | null;
+          };
           rosterPublished: boolean;
           roster: RosterEntry[] | null;
       });
