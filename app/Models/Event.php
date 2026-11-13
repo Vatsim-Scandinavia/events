@@ -375,11 +375,11 @@ class Event extends Model
     protected function upcoming(Builder $query): void
     {
         $query->whereNull('cancelled_at')
-            ->whereHas('occurrences', fn (Builder $query) => $query->where('ends_at', '>=', now())->whereNull('cancelled_at'))
+            ->whereHas('occurrences', fn (Builder $query) => $query->where('ends_at', '>', now())->whereNull('cancelled_at'))
             ->orderBy(EventOccurrence::query()
                 ->select('starts_at')
                 ->whereColumn('event_id', 'events.id')
-                ->where('ends_at', '>=', now())
+                ->where('ends_at', '>', now())
                 ->whereNull('cancelled_at')
                 ->orderBy('starts_at')
                 ->limit(1))
