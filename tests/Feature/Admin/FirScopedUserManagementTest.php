@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\Permission;
 use App\Models\Fir;
@@ -33,7 +34,7 @@ class FirScopedUserManagementTest extends TestCase
     private function anna(): User
     {
         $anna = User::factory()->create(['name' => 'Anna']);
-        $anna->assignRole(
+        app(RoleAssignments::class)->give($anna,
             Role::create(['name' => 'FIR Lead', 'permissions' => [Permission::ManageUsers->value, Permission::ManageEvents->value, Permission::ManageStaffing->value]]),
             $this->copenhagen,
         );
@@ -80,7 +81,7 @@ class FirScopedUserManagementTest extends TestCase
     public function test_they_can_only_give_roles_that_allow_nothing_beyond_what_they_can_do_in_that_fir(): void
     {
         $lead = User::factory()->create();
-        $lead->assignRole(Role::create(['name' => 'Events Lead', 'permissions' => [Permission::ManageUsers->value, Permission::ManageEvents->value]]), $this->copenhagen);
+        app(RoleAssignments::class)->give($lead, Role::create(['name' => 'Events Lead', 'permissions' => [Permission::ManageUsers->value, Permission::ManageEvents->value]]), $this->copenhagen);
         $newcomer = User::factory()->create();
 
         // Event Staff also manages staffing, which this lead can't do in EKDK.
@@ -97,9 +98,9 @@ class FirScopedUserManagementTest extends TestCase
     {
         $anna = $this->anna();
         $kim = User::factory()->create();
-        $inCopenhagen = $kim->assignRole(Roles::EVENT_STAFF, $this->copenhagen);
-        $inSweden = $kim->assignRole(Roles::EVENT_STAFF, $this->sweden);
-        $acrossTheHub = $kim->assignRole(Roles::VACC_STAFF);
+        $inCopenhagen = app(RoleAssignments::class)->give($kim, Roles::EVENT_STAFF, $this->copenhagen);
+        $inSweden = app(RoleAssignments::class)->give($kim, Roles::EVENT_STAFF, $this->sweden);
+        $acrossTheHub = app(RoleAssignments::class)->give($kim, Roles::VACC_STAFF);
 
         $this->actingAs($anna)->delete("/admin/users/{$kim->id}/roles/{$inSweden->id}")->assertSessionHasErrors('roles');
         $this->actingAs($anna)->delete("/admin/users/{$kim->id}/roles/{$acrossTheHub->id}")->assertSessionHasErrors('roles');
@@ -114,9 +115,9 @@ class FirScopedUserManagementTest extends TestCase
     {
         $anna = $this->anna();
         $kim = User::factory()->create();
-        $kim->assignRole(Roles::VACC_STAFF);
-        $kim->assignRole(Roles::EVENT_STAFF, $this->copenhagen);
-        $kim->assignRole(Roles::EVENT_STAFF, $this->sweden);
+        app(RoleAssignments::class)->give($kim, Roles::VACC_STAFF);
+        app(RoleAssignments::class)->give($kim, Roles::EVENT_STAFF, $this->copenhagen);
+        app(RoleAssignments::class)->give($kim, Roles::EVENT_STAFF, $this->sweden);
 
         $this->actingAs($anna)->get("/admin/users/{$kim->id}")->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Users/Edit')
@@ -140,8 +141,8 @@ class FirScopedUserManagementTest extends TestCase
     public function test_someone_who_manages_users_across_the_hub_can_give_roles_anywhere_their_permissions_reach(): void
     {
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]));
-        $manager->assignRole(Roles::EVENT_STAFF, $this->copenhagen);
+        app(RoleAssignments::class)->give($manager, Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]));
+        app(RoleAssignments::class)->give($manager, Roles::EVENT_STAFF, $this->copenhagen);
         $newcomer = User::factory()->create();
         $staff = Role::findByName(Roles::EVENT_STAFF);
 

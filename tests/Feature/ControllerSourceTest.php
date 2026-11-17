@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
@@ -65,7 +66,7 @@ class ControllerSourceTest extends TestCase
     {
         $this->switchSourceOn();
         $controller = User::factory()->create(['vatsim_cid' => 1000001]);
-        $controller->assignRole(Roles::CONTROLLER, null, AssignmentSource::Automatic);
+        app(RoleAssignments::class)->give($controller, Roles::CONTROLLER, null, AssignmentSource::Automatic);
 
         $this->actingAs(User::factory()->admin()->create())
             ->post('/admin/settings', ['name' => 'Hub', 'subdivision' => 'SCA', 'auto_controller' => false])
@@ -79,7 +80,7 @@ class ControllerSourceTest extends TestCase
         Queue::fake();
         $this->switchSourceOn();
         $fromSource = User::factory()->create(['vatsim_cid' => 1000001, 'subdivision' => 'GER']);
-        $fromSource->assignRole(Roles::CONTROLLER, null, AssignmentSource::Automatic);
+        app(RoleAssignments::class)->give($fromSource, Roles::CONTROLLER, null, AssignmentSource::Automatic);
         User::factory()->rated(ControllerRating::S2)->create(['vatsim_cid' => 1000002, 'subdivision' => 'SCA']);
 
         $this->actingAs(User::factory()->admin()->create())

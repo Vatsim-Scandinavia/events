@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\Permission;
 use App\Models\Fir;
@@ -84,7 +85,7 @@ class RoleAssignmentManagementTest extends TestCase
     {
         // A user manager who can't manage events can't make anyone Event Staff, or an Administrator.
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]));
+        app(RoleAssignments::class)->give($manager, Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]));
         $user = User::factory()->create();
 
         foreach ([Roles::EVENT_STAFF, Roles::ADMINISTRATOR] as $role) {

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Models\User;
 use Illuminate\Console\Attributes\Description;
@@ -15,7 +16,7 @@ use Illuminate\Console\Command;
 #[Description('Give a user the Admin role')]
 class MakeAdmin extends Command
 {
-    public function handle(): int
+    public function handle(RoleAssignments $roleAssignments): int
     {
         $user = User::query()->where('vatsim_cid', $this->argument('cid'))->first();
 
@@ -25,7 +26,7 @@ class MakeAdmin extends Command
             return self::FAILURE;
         }
 
-        $user->assignRole(Roles::ADMINISTRATOR);
+        $roleAssignments->give($user, Roles::ADMINISTRATOR);
         $this->info("{$user->name} is now an Administrator.");
 
         return self::SUCCESS;

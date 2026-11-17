@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
@@ -51,10 +52,10 @@ class ProfileTest extends TestCase
         $copenhagen = Fir::factory()->create(['icao' => 'EKDK', 'name' => 'Copenhagen']);
         $polaris = Fir::factory()->create(['icao' => 'ENOR', 'name' => 'ENOR']);
         $user = User::factory()->rated(ControllerRating::S2)->create(['name' => 'Jane Doe', 'vatsim_cid' => 1000009, 'subdivision' => 'SCA']);
-        $user->assignRole(Roles::VACC_STAFF);
-        $user->assignRole(Roles::EVENT_STAFF, $polaris);
-        $user->assignRole(Roles::EVENT_STAFF, $copenhagen);
-        $user->assignRole(Roles::CONTROLLER, $copenhagen, AssignmentSource::Automatic);
+        app(RoleAssignments::class)->give($user, Roles::VACC_STAFF);
+        app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF, $polaris);
+        app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF, $copenhagen);
+        app(RoleAssignments::class)->give($user, Roles::CONTROLLER, $copenhagen, AssignmentSource::Automatic);
 
         $this->actingAs($user)->get('/profile')->assertInertia(fn (Assert $page) => $page
             ->where('details', ['name' => 'Jane Doe', 'cid' => 1000009, 'rating' => 'S2', 'subdivision' => 'SCA'])

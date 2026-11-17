@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\Permission;
 use App\Models\EventType;
@@ -19,7 +20,7 @@ class HubAdministrationTest extends TestCase
     public function test_holding_every_permission_across_the_hub_still_leaves_hub_configuration_to_administrators(): void
     {
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'Everything but Administrator', 'permissions' => Roles::all()]));
+        app(RoleAssignments::class)->give($manager, Role::create(['name' => 'Everything but Administrator', 'permissions' => Roles::all()]));
         $fir = Fir::factory()->create();
         $type = EventType::query()->firstOrFail();
         $role = Role::findByName(Roles::EVENT_STAFF);
@@ -47,7 +48,7 @@ class HubAdministrationTest extends TestCase
     public function test_only_administrators_can_give_or_take_away_administrator(): void
     {
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'Everything but Administrator', 'permissions' => Roles::all()]));
+        app(RoleAssignments::class)->give($manager, Role::create(['name' => 'Everything but Administrator', 'permissions' => Roles::all()]));
         $administrator = Role::findByName(Roles::ADMINISTRATOR);
         $someone = User::factory()->create();
         $admin = User::factory()->admin()->create();
@@ -80,7 +81,7 @@ class HubAdministrationTest extends TestCase
     public function test_only_administrators_are_shown_the_hub_configuration_sections(): void
     {
         $manager = User::factory()->create();
-        $manager->assignRole(Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]));
+        app(RoleAssignments::class)->give($manager, Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]));
 
         $this->actingAs($manager)->get('/admin/users')->assertInertia(fn (Assert $page) => $page
             ->where('auth.user.isAdministrator', false)

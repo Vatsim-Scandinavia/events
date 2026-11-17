@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Auth\RoleAssignments;
 use App\Enums\Permission;
 use App\Models\Fir;
 use App\Models\Role;
@@ -17,7 +18,7 @@ class UserEmailVisibilityTest extends TestCase
     private function userManager(): User
     {
         $manager = User::factory()->create(['name' => 'Anna']);
-        $manager->assignRole(Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]), Fir::factory()->create());
+        app(RoleAssignments::class)->give($manager, Role::create(['name' => 'User Manager', 'permissions' => [Permission::ManageUsers->value]]), Fir::factory()->create());
 
         return $manager;
     }

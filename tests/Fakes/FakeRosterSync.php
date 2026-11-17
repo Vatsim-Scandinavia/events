@@ -3,6 +3,7 @@
 namespace Tests\Fakes;
 
 use App\Auth\ControllerSource;
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\AssignmentSource;
 use App\Integrations\Feature;
@@ -58,7 +59,7 @@ class FakeRosterSync extends Feature implements ControllerSource, Syncable
     public function syncController(User $user): void
     {
         if (in_array($user->vatsim_cid, self::$roster, true)) {
-            $user->assignRole(Roles::CONTROLLER, null, AssignmentSource::Automatic);
+            app(RoleAssignments::class)->give($user, Roles::CONTROLLER, null, AssignmentSource::Automatic);
         }
     }
 }

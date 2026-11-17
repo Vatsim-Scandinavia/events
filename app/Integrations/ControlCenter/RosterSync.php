@@ -3,6 +3,7 @@
 namespace App\Integrations\ControlCenter;
 
 use App\Auth\ControllerSource;
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\AssignmentSource;
 use App\Integrations\Feature;
@@ -214,7 +215,7 @@ class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syn
         $added = 0;
         foreach ($plan['add'] as $grant) {
             // A role given by hand in the same place already covers it, and stays manual.
-            if ($grant['user']->assignRole(Roles::CONTROLLER, $grant['fir'], AssignmentSource::Automatic)->wasRecentlyCreated) {
+            if (app(RoleAssignments::class)->give($grant['user'], Roles::CONTROLLER, $grant['fir'], AssignmentSource::Automatic)->wasRecentlyCreated) {
                 $added++;
             }
         }

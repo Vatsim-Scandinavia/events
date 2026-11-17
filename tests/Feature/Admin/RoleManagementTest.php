@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\Permission;
 use App\Models\Role;
@@ -52,7 +53,7 @@ class RoleManagementTest extends TestCase
         $this->assertEqualsCanonicalizing([Permission::ManageStaffing->value, Permission::ManageEvents->value], $role->permissions->pluck('value')->all());
 
         $member = User::factory()->create();
-        $member->assignRole($role);
+        app(RoleAssignments::class)->give($member, $role);
 
         $this->actingAs($admin)->delete("/admin/roles/{$role->id}")->assertRedirect('/admin/roles');
         $this->assertDatabaseMissing('roles', ['name' => 'Rostering']);

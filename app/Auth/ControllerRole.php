@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 final class ControllerRole
 {
-    public function __construct(private VaccIdentity $identity, private Integrations $integrations) {}
+    public function __construct(private VaccIdentity $identity, private Integrations $integrations, private RoleAssignments $roleAssignments) {}
 
     /**
      * The Integration feature in charge of the Controller role, or null when the hub's rule is.
@@ -68,7 +68,7 @@ final class ControllerRole
 
         if ($this->qualifies($user)) {
             if (! $assignments->exists()) {
-                $user->assignRole($role, null, AssignmentSource::Automatic);
+                $this->roleAssignments->give($user, $role, null, AssignmentSource::Automatic);
             }
         } else {
             $assignments->where('source', AssignmentSource::Automatic)->delete();

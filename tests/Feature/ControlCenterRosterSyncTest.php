@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
@@ -128,10 +129,10 @@ class ControlCenterRosterSyncTest extends TestCase
     {
         $this->switchOn();
         $leaver = User::factory()->create(['vatsim_cid' => 1000001]);
-        $leaver->assignRole(Roles::CONTROLLER, $this->denmark, AssignmentSource::Automatic);
-        $leaver->assignRole(Roles::CONTROLLER, $this->norway, AssignmentSource::Manual);
+        app(RoleAssignments::class)->give($leaver, Roles::CONTROLLER, $this->denmark, AssignmentSource::Automatic);
+        app(RoleAssignments::class)->give($leaver, Roles::CONTROLLER, $this->norway, AssignmentSource::Manual);
         $staying = User::factory()->create(['vatsim_cid' => 1000002]);
-        $staying->assignRole(Roles::CONTROLLER, $this->denmark, AssignmentSource::Automatic);
+        app(RoleAssignments::class)->give($staying, Roles::CONTROLLER, $this->denmark, AssignmentSource::Automatic);
         $this->fakeControlCenter([$this->member(1000001), $this->member(1000002, active: ['denmark'])], removalLimit: 100);
 
         $this->sync();
@@ -150,7 +151,7 @@ class ControlCenterRosterSyncTest extends TestCase
         $identity->setControllerRoleAutomatic(true);
         $members = collect(range(1000001, 1000004))->map(function (int $cid) {
             $user = User::factory()->rated(ControllerRating::S2)->create(['vatsim_cid' => $cid, 'subdivision' => 'SCA']);
-            $user->assignRole(Roles::CONTROLLER, null, AssignmentSource::Automatic);
+            app(RoleAssignments::class)->give($user, Roles::CONTROLLER, null, AssignmentSource::Automatic);
 
             return $user;
         });
@@ -205,7 +206,7 @@ class ControlCenterRosterSyncTest extends TestCase
     {
         $this->switchOn();
         $controller = User::factory()->create(['vatsim_cid' => 1000001]);
-        $controller->assignRole(Roles::CONTROLLER, $this->denmark, AssignmentSource::Automatic);
+        app(RoleAssignments::class)->give($controller, Roles::CONTROLLER, $this->denmark, AssignmentSource::Automatic);
         Member::query()->create(['cid' => 1000001, 'active_areas' => ['denmark'], 'endorsements' => [], 'synced_at' => now()]);
         $fake();
 
@@ -221,7 +222,7 @@ class ControlCenterRosterSyncTest extends TestCase
     {
         $this->switchOn();
         $controller = User::factory()->create(['vatsim_cid' => 1000001]);
-        $controller->assignRole(Roles::CONTROLLER, $this->norway, AssignmentSource::Automatic);
+        app(RoleAssignments::class)->give($controller, Roles::CONTROLLER, $this->norway, AssignmentSource::Automatic);
         // "norway" was renamed "Norge" upstream.
         $this->fakeControlCenter([$this->member(1000001, active: ['norge'], inactive: ['denmark'])]);
 

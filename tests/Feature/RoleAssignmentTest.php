@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\Permission;
 use App\Models\Fir;
@@ -53,7 +54,7 @@ class RoleAssignmentTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
 
-        User::factory()->create()->assignRole(Roles::ADMINISTRATOR, Fir::factory()->create());
+        app(RoleAssignments::class)->give(User::factory()->create(), Roles::ADMINISTRATOR, Fir::factory()->create());
     }
 
     public function test_holding_a_role_twice_in_the_same_place_keeps_one_assignment(): void
@@ -61,10 +62,10 @@ class RoleAssignmentTest extends TestCase
         $fir = Fir::factory()->create();
         $user = User::factory()->create();
 
-        $user->assignRole(Roles::EVENT_STAFF);
-        $user->assignRole(Roles::EVENT_STAFF);
-        $user->assignRole(Roles::EVENT_STAFF, $fir);
-        $user->assignRole(Roles::EVENT_STAFF, $fir);
+        app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF);
+        app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF);
+        app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF, $fir);
+        app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF, $fir);
 
         $this->assertSame(2, $user->roleAssignments()->count());
     }
@@ -110,9 +111,9 @@ class RoleAssignmentTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $user->assignRole(Roles::EVENT_STAFF);
-        $user->assignRole(Roles::EVENT_STAFF, Fir::factory()->create());
-        $user->assignRole(Roles::EVENT_STAFF, Fir::factory()->create());
+        app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF);
+        app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF, Fir::factory()->create());
+        app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF, Fir::factory()->create());
 
         $this->assertSame(3, $user->roleAssignments()->count());
     }
@@ -123,9 +124,9 @@ class RoleAssignmentTest extends TestCase
         $kim = User::factory()->create(['name' => 'Kim']);
         $staff = Role::findByName(Roles::EVENT_STAFF);
         // Another admin's request got there first, after this one checked.
-        $kim->assignRole($staff);
+        app(RoleAssignments::class)->give($kim, $staff);
 
-        $this->assertFalse($kim->assignRole($staff)->wasRecentlyCreated);
+        $this->assertFalse(app(RoleAssignments::class)->give($kim, $staff)->wasRecentlyCreated);
         // The race itself: the insert hits the unique index and falls back to the existing row.
         $this->assertFalse($kim->roleAssignments()->createOrFirst(['role_id' => $staff->id, 'fir_id' => null])->wasRecentlyCreated);
 

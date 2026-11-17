@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Auth\Roles;
-use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
 use App\Enums\NameDisplay;
 use Database\Factories\UserFactory;
@@ -12,7 +10,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use InvalidArgumentException;
 
 #[Fillable(['vatsim_cid', 'name', 'first_name', 'name_display', 'email', 'rating', 'subdivision', 'timezone'])]
 class User extends Authenticatable
@@ -67,24 +64,6 @@ class User extends Authenticatable
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class, 'role_assignments')->withPivot('fir_id')->withTimestamps();
-    }
-
-    /**
-     * Give the user a role across the hub, or only in the given FIR. Administrator always
-     * applies across the hub. Holding it already changes nothing.
-     */
-    public function assignRole(Role|string $role, ?Fir $fir = null, AssignmentSource $source = AssignmentSource::Manual): RoleAssignment
-    {
-        $role = $role instanceof Role ? $role : Role::findByName($role);
-
-        if ($fir !== null && $role->name === Roles::ADMINISTRATOR) {
-            throw new InvalidArgumentException('Administrator always applies across the hub.');
-        }
-
-        $assignment = $this->roleAssignments()->firstOrCreate(['role_id' => $role->id, 'fir_id' => $fir?->id], ['source' => $source]);
-        $this->unsetRelation('roles');
-
-        return $assignment;
     }
 
     /**

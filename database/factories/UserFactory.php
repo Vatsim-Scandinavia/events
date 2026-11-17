@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\ControllerRating;
 use App\Models\Fir;
@@ -82,6 +83,6 @@ class UserFactory extends Factory
      */
     public function withRole(string $role, ?Fir $fir = null): static
     {
-        return $this->afterCreating(fn (User $user) => $user->assignRole($role, $fir));
+        return $this->afterCreating(fn (User $user) => app(RoleAssignments::class)->give($user, $role, $fir));
     }
 }

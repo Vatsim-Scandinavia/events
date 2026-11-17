@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Auth\ControllerRole;
+use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
@@ -119,8 +120,8 @@ class SyncVatsimDetailsTest extends TestCase
     {
         $this->configure(automatic: true);
         $visitor = User::factory()->rated(ControllerRating::S2)->create(['vatsim_cid' => 1000001, 'subdivision' => 'SCA']);
-        $visitor->assignRole(Roles::CONTROLLER);
-        $visitor->assignRole(Roles::EVENT_STAFF);
+        app(RoleAssignments::class)->give($visitor, Roles::CONTROLLER);
+        app(RoleAssignments::class)->give($visitor, Roles::EVENT_STAFF);
 
         // VATSIM says they've left the subdivision, which would take an automatic role away.
         Http::fake(['api.vatsim.net/v2/members/1000001' => Http::response(['id' => 1000001, 'rating' => ControllerRating::S2->value, 'subdivision_id' => 'GER'])]);
