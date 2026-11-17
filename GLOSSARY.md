@@ -2,134 +2,52 @@
 
 An event hub for a single VATSIM vACC: pilots find events, controllers staff them, and staff plan them.
 
-## Organisation
+## People and sign-in
 
-**Hub**:
-The whole vACC as this app sees it, spanning all of its FIRs.
-_Avoid_: Site, instance
+**Member**:
+A person on the VATSIM network, known by their CID.
+_Avoid_: VATSIM user, pilot (as a generic word for a person)
 
-**Hub-wide**:
-Applying across the whole Hub rather than in a single FIR. Every role can be held per FIR except Administrator, which is always hub-wide.
-_Avoid_: Global
+**Account**:
+The Hub's own record of a Member, created the first time they sign in.
+_Avoid_: Profile, user record
 
-**Theme**:
-The colors the whole Hub is shown in, chosen by an Administrator, either Default or VATSIM Scandinavia.
-_Avoid_: Skin, palette
+**Sign-in Provider**:
+The service that vouches for a Member's CID when they sign in: VATSIM Connect or VATSCA Handover, one per Hub.
+_Avoid_: Auth provider, OAuth server, SSO
 
-## Events
-
-**Event**:
-Something the vACC organises on the network, run by one FIR, taking place on one or more Occurrences.
-_Avoid_: Calendar entry
-
-**Summary**:
-A sentence or two saying what an Event is, as plain text, shown where the full description won't fit: the Event announcement, the events list and the public API.
-_Avoid_: Short description, teaser, excerpt
-
-**Draft**:
-An Event not yet visible to pilots and controllers; only staff who can view or manage events see it.
-_Avoid_: Unpublished, hidden
-
-**Publish**:
-To make a Draft Event visible to everyone. Rosters are also published, per Occurrence.
-_Avoid_: Release, go live
-
-**Occurrence**:
-One date on which an Event takes place. Shown to people as a "date".
-_Avoid_: Instance, session
-
-**Slot link**:
-An Event's link to an external system where pilots reserve arrival or departure slots.
-_Avoid_: Booking link, slot booking link
-
-## Staffing
-
-**Shift Booking**:
-A controller claiming a pre-defined shift on a position for an Occurrence. "Booking" on its own always means this.
-_Avoid_: Reservation, slot
-
-**Staffing Interest**:
-A controller's statement that they want to work an Occurrence, with the positions they'd like.
-_Avoid_: Sign-up, application
-
-**Availability**:
-The time windows within a Staffing Interest when the controller can work.
-_Avoid_: Interest window
-
-**Roster**:
-Who works which position, and when, on an Occurrence: its shifts, booked or open, for an Event staffed through shifts, which are always public; or its Roster Entries for an Event staffed through Staffing Interest, once published. Staff who can see the Event's staffing see those Roster Entries before then.
-_Avoid_: Line-up, schedule
-
-**Section**:
-A labelled break in an Event's list of positions, grouping the positions below it until the next Section. One without a label is a plain divider.
-_Avoid_: Separator, divider, group
-
-**Roster Entry**:
-A controller placed on a position for a span of time in an Occurrence's roster.
-_Avoid_: Roster slot, slot
+**Member Details**:
+What VATSIM says about a Member that the Hub keeps on their Account: name, first name, email, rating and subdivision.
+_Avoid_: VATSIM details, profile data
 
 ## Roles
 
+**Role**:
+A named set of permissions that can be given to an Account, either Hub-wide or in a single FIR.
+_Avoid_: Group, rank
+
+**Hub-wide**:
+Held across every FIR rather than in a single one. Whether a role applies Hub-wide or in a single FIR is decided each time it is given, not by the role itself. Administrator is always Hub-wide.
+_Avoid_: Global
+
 **Administrator**:
-The built-in role that can do everything, always held hub-wide.
+The built-in role with full rights, always Hub-wide, which also makes its holder a Controller everywhere.
 _Avoid_: Admin, superuser
 
-**Event Staff**:
-The built-in role that plans events and their staffing.
-_Avoid_: Event team, organiser
-
-**vACC Staff**:
-The built-in role for vACC staff outside the events team, who can see every Event and its staffing but not change them.
-_Avoid_: Observer, read-only staff
+## Controllers
 
 **Controller**:
-The built-in role that may book shifts and show Staffing Interest; given automatically by the Controller source, or granted by hand.
-_Avoid_: ATC, rated member
+An Account that may staff events, either Hub-wide or in a FIR. Being a Controller is not a role.
+_Avoid_: Controller role, ATC user
 
-**Controller source**:
-Whatever currently decides who automatically holds the Controller role, and where: either the hub's own rule (rated S1 or above in the vACC's subdivision, across the Hub) or one Integration feature. Only one is in charge at a time.
-_Avoid_: Roster provider, role sync
+**Controller Rule**:
+The Hub's own test for being a Controller: rated S1 or above and in the vACC's subdivision. It applies Hub-wide.
+_Avoid_: Automatic Controller role
 
-**Pilot**:
-What someone with no role is; not a role itself.
-_Avoid_: Guest, member
+**Controller Source**:
+An Integration that decides who is a Controller instead of the Controller Rule. Only one decides at a time.
+_Avoid_: Roster provider
 
-## Sign-in
-
-**Sign-in provider**:
-Where people sign in and get their VATSIM CID vouched for: VATSIM Connect, or VATSIM Scandinavia's Handover, which stands in for it. One per install, chosen when it's deployed. Handover the system has nothing to do with automatic roles being handed over to admins when a Controller source is switched off.
-_Avoid_: Auth provider, SSO, login method
-
-## Profile
-
-**Name display**:
-How someone's name is shown to everyone else on the Hub, in Discord and through the public API, chosen on their Profile: full name, first name, or CID only. First name is the default, and their CID is always shown beside it. Staff managing users still see full names.
-_Avoid_: Display name, privacy setting, nickname
-
-## Integrations
-
-**Integration**:
-A connection to one external system, such as the vACC's training system, that Administrators can switch on for the whole Hub. The Hub works fully with every Integration switched off.
-_Avoid_: Plugin, module, connector
-
-**Integration feature**:
-One job an Integration can do, switched on separately, such as syncing the controller roster, syncing positions or pushing bookings.
-_Avoid_: Capability, sub-integration
-
-**Position catalogue**:
-The Hub-wide list of known controller positions that staff pick from when adding positions to an Event.
-_Avoid_: Position list, position registry
-
-## Discord
-
-**Event announcement**:
-The one-off Discord post, in the Hub-wide events channel, telling everyone an Event has been published.
-_Avoid_: Notification, publish message
-
-**Roster channel**:
-The Discord channel an Event's staffing is shown in, one per Event, such as #vectors-to-copenhagen.
-_Avoid_: Event channel, booking channel
-
-**Roster message**:
-The single message in an Event's Roster channel that always shows the Roster of its next upcoming Occurrence that isn't cancelled, moving on to the next date once one ends.
-_Avoid_: Booking message, roster post
+**Controller Grant**:
+A stored decision that an Account is a Controller in a FIR or Hub-wide, given either by the Controller Source or by hand.
+_Avoid_: Endorsement, visiting role
