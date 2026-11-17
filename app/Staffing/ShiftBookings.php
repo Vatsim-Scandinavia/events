@@ -35,7 +35,7 @@ final class ShiftBookings
             // For now controllers only book the next date; the one after opens once it is over.
             $event->currentOccurrence()?->isNot($occurrence) => BookingRefusal::NotNextDate,
             $user === null => BookingRefusal::SignInNeeded,
-            ! $user->isEligibleController($event) => BookingRefusal::NotController,
+            ! $user->can('staff', $event) => BookingRefusal::NotController,
             default => null,
         };
     }

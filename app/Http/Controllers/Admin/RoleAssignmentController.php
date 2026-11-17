@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Auth\Authorization;
 use App\Auth\Roles;
+use App\Auth\Where;
 use App\Enums\AssignmentSource;
 use App\Http\Controllers\Controller;
 use App\Models\Fir;
@@ -26,6 +28,8 @@ use Inertia\Inertia;
  */
 class RoleAssignmentController extends Controller
 {
+    public function __construct(private Authorization $authorization) {}
+
     public function store(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
@@ -89,7 +93,7 @@ class RoleAssignmentController extends Controller
 
     private function ensureGrantable(Request $request, Role $role, ?Fir $fir): void
     {
-        if (! $request->user()->managesUsersIn($fir)) {
+        if (! $this->authorization->managesUsers($request->user(), Where::at($fir))) {
             throw ValidationException::withMessages([
                 'roles' => $fir
                     ? 'You can only give or take away roles in FIRs where you manage users.'
@@ -97,7 +101,7 @@ class RoleAssignmentController extends Controller
             ]);
         }
 
-        if (! Roles::canGrant($request->user(), $role, $fir)) {
+        if (! $this->authorization->mayGrant($request->user(), $role, Where::at($fir))) {
             throw ValidationException::withMessages([
                 'roles' => "You can’t give or take away {$role->name}, because it allows more than you can do yourself.",
             ]);

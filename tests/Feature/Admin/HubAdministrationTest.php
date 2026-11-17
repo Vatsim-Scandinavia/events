@@ -58,8 +58,8 @@ class HubAdministrationTest extends TestCase
         $this->actingAs($manager)->post("/admin/users/{$someone->id}/roles", ['role_id' => $administrator->id])->assertSessionHasErrors('roles');
         $this->actingAs($manager)->delete("/admin/users/{$admin->id}/roles/{$assignment->id}")->assertSessionHasErrors('roles');
 
-        $this->assertFalse($someone->fresh()->isAdministrator());
-        $this->assertTrue($admin->fresh()->isAdministrator());
+        $this->assertFalse($someone->fresh()->can('administer'));
+        $this->assertTrue($admin->fresh()->can('administer'));
     }
 
     public function test_roles_can_no_longer_grant_hub_configuration(): void

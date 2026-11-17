@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Auth\Authorization;
 use App\Auth\HandoverProvider;
 use App\Auth\VatsimConnectProvider;
+use App\Auth\Where;
 use App\Enums\Permission;
 use App\Integrations\Integrations;
 use App\Models\Fir;
@@ -37,16 +39,19 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Administrators may do everything. Every permission is a gate of the same name, granted
-        // through the user's roles; given a FIR, only roles held across the hub or in it count.
-        Gate::before(fn (User $user) => $user->isAdministrator() ? true : null);
+        // through the user's roles: given a FIR, roles held Hub-wide or in it count; without one,
+        // holding it anywhere is enough.
+        $authorization = $this->app->make(Authorization::class);
+
+        Gate::before(fn (User $user) => $authorization->isAdministrator($user) ? true : null);
 
         foreach (Permission::cases() as $permission) {
-            Gate::define($permission->value, fn (User $user, ?Fir $fir = null) => $user->hasPermission($permission, $fir));
+            Gate::define($permission->value, fn (User $user, ?Fir $fir = null) => $authorization->holds($user, $permission, $fir !== null ? Where::in($fir) : Where::anywhere()));
         }
 
         // Roles and the hub's settings, FIRs and event types are shared by every FIR, so only
         // Administrators may change them.
-        Gate::define('administer', fn (User $user) => $user->isAdministrator());
+        Gate::define('administer', fn (User $user) => $authorization->isAdministrator($user));
 
         // Generous for people clicking around, but stops scripts hammering bookings and admin pages.
         RateLimiter::for('signed-in', fn (Request $request) => Limit::perMinute(120)->by((string) $request->user()?->id));

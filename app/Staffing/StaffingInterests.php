@@ -36,7 +36,7 @@ final class StaffingInterests
             // For now controllers only staff the next date; the one after opens once it is over.
             $event->currentOccurrence()?->isNot($occurrence) => InterestRefusal::NotNextDate,
             $user === null => InterestRefusal::SignInNeeded,
-            ! $user->isEligibleController($event) => InterestRefusal::NotController,
+            ! $user->can('staff', $event) => InterestRefusal::NotController,
             default => null,
         };
     }
@@ -155,7 +155,7 @@ final class StaffingInterests
      */
     private function ensureWindowIsOpen(User $user, EventOccurrence $occurrence): void
     {
-        if (! $user->isEligibleController($occurrence->event)) {
+        if (! $user->can('staff', $occurrence->event)) {
             throw new AuthorizationException('Only controllers can show interest in staffing.');
         }
 

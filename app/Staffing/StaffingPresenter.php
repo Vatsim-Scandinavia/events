@@ -2,6 +2,7 @@
 
 namespace App\Staffing;
 
+use App\Auth\Authorization;
 use App\Enums\RosterState;
 use App\Enums\StaffingMode;
 use App\Integrations\Integrations;
@@ -39,6 +40,7 @@ final class StaffingPresenter
         private Integrations $integrations,
         private ShiftBookings $shiftBookings,
         private StaffingInterests $staffingInterests,
+        private Authorization $authorization,
     ) {}
 
     /**
@@ -53,7 +55,7 @@ final class StaffingPresenter
         $roster = Roster::of($occurrence, $viewer);
         $notes = $viewer !== null ? $this->notes($occurrence) : [];
         // A controller hears what they should know before working each position.
-        $noteFor = $viewer?->isEligibleController($event) ? $viewer : null;
+        $noteFor = $viewer?->can('staff', $event) ? $viewer : null;
 
         $staffing = [
             'mode' => $event->staffing_mode->value,
@@ -62,7 +64,7 @@ final class StaffingPresenter
             'canManage' => (bool) $viewer?->can('manageStaffing', $event),
             'viewer' => [
                 'signedIn' => $viewer !== null,
-                'eligible' => (bool) $viewer?->isEligibleController($event),
+                'eligible' => (bool) $viewer?->can('staff', $event),
             ],
             'occurrence' => $this->occurrence($occurrence),
             'occurrences' => $event->occurrences->map(fn (EventOccurrence $item) => $this->occurrence($item))->all(),
@@ -142,7 +144,7 @@ final class StaffingPresenter
             ])->all(),
             'interests' => $this->interests($occurrence),
             'roster' => $this->roster($occurrence, $positions, $sections, $viewer, $notes, true),
-            'controllers' => User::query()->controllers($event)->get()->sortBy(fn (User $user) => mb_strtolower($user->displayName()))->values()
+            'controllers' => $this->authorization->controllersFor($event)->get()->sortBy(fn (User $user) => mb_strtolower($user->displayName()))->values()
                 ->map(fn (User $user) => $this->controller($user))->all(),
         ];
     }

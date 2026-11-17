@@ -2,6 +2,8 @@
 
 namespace App\Policies;
 
+use App\Auth\Authorization;
+use App\Auth\Where;
 use App\Enums\Permission;
 use App\Models\Event;
 use App\Models\User;
@@ -14,6 +16,8 @@ use App\Models\User;
  */
 class EventPolicy
 {
+    public function __construct(private Authorization $authorization) {}
+
     /**
      * Everyone sees published events. Drafts only show to staff who can view or manage events
      * in the event's FIR.
@@ -25,7 +29,7 @@ class EventPolicy
         }
 
         return $user !== null
-            && ($user->hasPermissionFor(Permission::ManageEvents, $event) || $user->hasPermissionFor(Permission::ViewEvents, $event));
+            && ($this->holds($user, Permission::ManageEvents, $event) || $this->holds($user, Permission::ViewEvents, $event));
     }
 
     /**
@@ -33,17 +37,17 @@ class EventPolicy
      */
     public function publish(User $user, Event $event): bool
     {
-        return $user->hasPermissionFor(Permission::ManageEvents, $event);
+        return $this->holds($user, Permission::ManageEvents, $event);
     }
 
     public function update(User $user, Event $event): bool
     {
-        return $user->hasPermissionFor(Permission::ManageEvents, $event);
+        return $this->holds($user, Permission::ManageEvents, $event);
     }
 
     public function delete(User $user, Event $event): bool
     {
-        return $user->hasPermissionFor(Permission::ManageEvents, $event);
+        return $this->holds($user, Permission::ManageEvents, $event);
     }
 
     /**
@@ -51,7 +55,7 @@ class EventPolicy
      */
     public function cancel(User $user, Event $event): bool
     {
-        return $user->hasPermissionFor(Permission::ManageEvents, $event);
+        return $this->holds($user, Permission::ManageEvents, $event);
     }
 
     /**
@@ -59,7 +63,7 @@ class EventPolicy
      */
     public function manageStaffing(User $user, Event $event): bool
     {
-        return $user->hasPermissionFor(Permission::ManageStaffing, $event);
+        return $this->holds($user, Permission::ManageStaffing, $event);
     }
 
     /**
@@ -68,6 +72,22 @@ class EventPolicy
      */
     public function viewStaffing(User $user, Event $event): bool
     {
-        return $this->manageStaffing($user, $event) || $user->hasPermissionFor(Permission::ViewEvents, $event);
+        return $this->manageStaffing($user, $event) || $this->holds($user, Permission::ViewEvents, $event);
+    }
+
+    /**
+     * Staff the event as a controller: book shifts, show interest and be rostered.
+     */
+    public function staff(User $user, Event $event): bool
+    {
+        return $this->authorization->isController($user, $event);
+    }
+
+    /**
+     * Whether the user holds the permission Hub-wide or in the FIR that runs the event.
+     */
+    private function holds(User $user, Permission $permission, Event $event): bool
+    {
+        return $this->authorization->holds($user, $permission, Where::in($event->fir));
     }
 }

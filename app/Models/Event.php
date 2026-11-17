@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Auth\Authorization;
 use App\Enums\Permission;
 use App\Enums\RepeatInterval;
 use App\Enums\StaffingMode;
@@ -283,7 +284,7 @@ class Event extends Model
             return;
         }
 
-        $firs = $user->firIdsWithAny(Permission::ManageEvents, Permission::ViewEvents);
+        $firs = app(Authorization::class)->firsWhere($user, Permission::ManageEvents, Permission::ViewEvents);
 
         // Held across the hub, so every Draft.
         if ($firs === null) {

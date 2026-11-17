@@ -10,7 +10,7 @@ use App\Models\User;
 use Illuminate\Support\Collection;
 
 /**
- * The roles the hub ships with, and the rules for who may hand out which role.
+ * The roles the hub ships with. Who may hand out which role is decided by Authorization.
  *
  * Built-in roles can't be renamed or deleted. Administrator always holds every permission
  * and applies across the hub. The others start out with the permissions below, which admins
@@ -69,52 +69,6 @@ final class Roles
     public static function isBuiltIn(Role $role): bool
     {
         return self::isAdministrator($role) || array_key_exists($role->name, self::DEFAULTS);
-    }
-
-    /**
-     * Whether the permissions allow no more than the user can do across the hub, or in the
-     * given FIR (counting their hub-wide roles too).
-     *
-     * @param  iterable<string>  $permissions
-     */
-    public static function within(User $user, iterable $permissions, ?Fir $fir = null): bool
-    {
-        return collect($permissions)->diff($user->permissionNames($fir))->isEmpty();
-    }
-
-    /**
-     * Whether the user may give or take away the role in the given FIR, or across the hub when
-     * none is given: they must manage users there, and the role must allow no more than they
-     * can do there, so managing users never becomes a way to gain permissions.
-     *
-     * Administrator also runs the hub's configuration, which no permission covers, so only
-     * Administrators can hand it out or take it away.
-     */
-    public static function canGrant(User $user, Role $role, ?Fir $fir = null): bool
-    {
-        if (self::isAdministrator($role)) {
-            return $user->isAdministrator();
-        }
-
-        return $user->managesUsersIn($fir) && self::within($user, $role->permissions->pluck('value'), $fir);
-    }
-
-    /**
-     * Where the user may give the role: across the hub (null) and the FIRs (by id), in that
-     * order. Empty when they can't give it anywhere.
-     *
-     * @param  Collection<int, Fir>  $firs
-     * @return list<int|null>
-     */
-    public static function grantableIn(User $user, Role $role, Collection $firs): array
-    {
-        $places = self::isAdministrator($role) ? [null] : [null, ...$firs->all()];
-
-        return collect($places)
-            ->filter(fn (?Fir $fir) => self::canGrant($user, $role, $fir))
-            ->map(fn (?Fir $fir) => $fir?->id)
-            ->values()
-            ->all();
     }
 
     /**

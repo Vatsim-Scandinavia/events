@@ -183,7 +183,7 @@ final class StaffingPlan
             $callsign = $callsigns[$entry['position']] ?? $this->fail('A roster entry belongs to a position that is no longer in the plan.');
             $user = $users[$entry['user_id']] ?? $this->fail("A controller rostered on {$callsign} no longer exists.");
 
-            if (! $user->isEligibleController($occurrence->event)) {
+            if (! $user->can('staff', $occurrence->event)) {
                 $this->fail("{$user->displayNameWithCid()} isn't a rated controller.");
             }
 

@@ -15,7 +15,7 @@ class DatabaseSeederTest extends TestCase
     {
         $this->seed();
 
-        $this->assertTrue(User::query()->where('name', 'Hub Admin')->firstOrFail()->isAdministrator());
+        $this->assertTrue(User::query()->where('name', 'Hub Admin')->firstOrFail()->can('administer'));
         $this->assertSame(6, Event::query()->published()->count());
         $this->assertSame(['Winter Wonderland Fly-in'], Event::query()->whereNull('published_at')->pluck('name')->all());
 

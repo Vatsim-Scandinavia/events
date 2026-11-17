@@ -54,7 +54,7 @@ class ControllerRoleTest extends TestCase
         $user = User::query()->where('vatsim_cid', 1234567)->sole();
         $this->assertSame($subdivision, $user->subdivision);
         $this->assertSame($isController, $this->holdsController($user, AssignmentSource::Automatic));
-        $this->assertSame($isController, $user->hasPermission(Permission::BookPositions));
+        $this->assertSame($isController, $user->can(Permission::BookPositions->value));
     }
 
     public function test_leaving_the_subdivision_or_losing_the_rating_takes_controller_away(): void

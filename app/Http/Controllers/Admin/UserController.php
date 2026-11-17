@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Auth\Authorization;
 use App\Auth\Roles;
+use App\Auth\Where;
 use App\Enums\AssignmentSource;
 use App\Http\Controllers\Controller;
 use App\Models\Fir;
@@ -27,7 +29,7 @@ class UserController extends Controller
     public function index(Request $request): Response
     {
         $search = trim((string) $request->query('search', ''));
-        $showEmail = $request->user()->isAdministrator();
+        $showEmail = $request->user()->can('administer');
         $role = $request->integer('role') ?: null;
         $fir = $request->integer('fir') ?: null;
 
@@ -59,16 +61,16 @@ class UserController extends Controller
         ]);
     }
 
-    public function edit(Request $request, User $user): Response
+    public function edit(Request $request, User $user, Authorization $authorization): Response
     {
         $roles = Role::query()->orderBy('name')->get();
         // Only the FIRs the signed-in user may give roles in.
         $firs = Fir::query()->orderBy('icao')->get(['id', 'icao', 'name'])
-            ->filter(fn (Fir $fir) => $request->user()->managesUsersIn($fir))
+            ->filter(fn (Fir $fir) => $authorization->managesUsers($request->user(), Where::in($fir)))
             ->values();
 
         return Inertia::render('Admin/Users/Edit', [
-            'user' => $this->summary($user, $request->user()->isAdministrator()),
+            'user' => $this->summary($user, $request->user()->can('administer')),
             // Roles held across the hub first, then those held in one FIR.
             'assignments' => $user->roleAssignments()->with('role', 'fir')->get()
                 ->sortBy(fn (RoleAssignment $assignment) => [$assignment->fir_id === null ? 0 : 1, $assignment->role->name, $assignment->fir?->icao])
@@ -78,14 +80,14 @@ class UserController extends Controller
                     'fir' => $assignment->fir ? ['icao' => $assignment->fir->icao, 'name' => $assignment->fir->name] : null,
                     // Given by the hub's automatic Controller role, which would give it straight back.
                     'automatic' => $assignment->source === AssignmentSource::Automatic,
-                    'canRemove' => $assignment->source !== AssignmentSource::Automatic && Roles::canGrant($request->user(), $assignment->role, $assignment->fir),
+                    'canRemove' => $assignment->source !== AssignmentSource::Automatic && $authorization->mayGrant($request->user(), $assignment->role, Where::at($assignment->fir)),
                 ])
                 ->values(),
             'roles' => $roles->map(fn (Role $role) => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'permissions' => Roles::permissionLabels($role),
-                'grantableIn' => Roles::grantableIn($request->user(), $role, $firs),
+                'grantableIn' => $authorization->grantableIn($request->user(), $role, $firs),
                 'hubOnly' => Roles::isAdministrator($role),
             ]),
             'firs' => $firs,
