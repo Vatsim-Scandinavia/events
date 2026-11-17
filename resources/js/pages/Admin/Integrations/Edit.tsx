@@ -213,8 +213,8 @@ export default function IntegrationEdit({ integration, runs }: { integration: Ed
                                             <span className="text-sm text-muted-foreground">{feature.description}</span>
                                             {feature.controllerSource && (
                                                 <span className="text-sm text-muted-foreground">
-                                                    Hands out the Controller role instead of the hub’s own rule. Switching it off turns the roles it
-                                                    gave into ones given by hand.
+                                                    Decides who is a Controller instead of the Controller Rule. Switching it off turns what it gave
+                                                    into hand grants.
                                                 </span>
                                             )}
                                         </label>

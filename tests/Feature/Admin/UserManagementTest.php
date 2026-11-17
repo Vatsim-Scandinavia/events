@@ -24,7 +24,6 @@ class UserManagementTest extends TestCase
             Role::findByName(Roles::EVENT_STAFF)->permissions->pluck('value')->all(),
         );
         $this->assertSame([Permission::ViewEvents->value], Role::findByName(Roles::VACC_STAFF)->permissions->pluck('value')->all());
-        $this->assertSame([Permission::BookPositions->value], Role::findByName(Roles::CONTROLLER)->permissions->pluck('value')->all());
     }
 
     public function test_the_existing_gates_follow_role_permissions(): void

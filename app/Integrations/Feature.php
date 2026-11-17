@@ -7,7 +7,7 @@ use Illuminate\Console\Scheduling\Schedule;
 /**
  * One job an Integration can do, switched on separately, such as syncing the controller
  * roster. A feature that pulls data on a schedule also implements Syncable; one that decides
- * who holds the Controller role also implements App\Auth\ControllerSource.
+ * who is a Controller also implements App\Auth\ControllerSource.
  */
 abstract class Feature
 {
@@ -33,7 +33,7 @@ abstract class Feature
 
     /**
      * Called when an admin switches it off, or its Integration, so it can forget what it kept
-     * for doing its job. Whatever it gave stays: a Controller source's roles become manual.
+     * for doing its job. Whatever it gave stays: a Controller Source's grants become hand grants.
      */
     public function switchedOff(): void {}
 

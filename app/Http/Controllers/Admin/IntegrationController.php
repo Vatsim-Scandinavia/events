@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Auth\ControllerRole;
+use App\Auth\Controllers;
 use App\Auth\ControllerSource;
 use App\Enums\IntegrationRunStatus;
 use App\Http\Controllers\Controller;
@@ -117,12 +117,12 @@ class IntegrationController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $integration, Integrations $integrations, ControllerRole $controllerRole): RedirectResponse
+    public function update(Request $request, string $integration, Integrations $integrations, Controllers $controllers): RedirectResponse
     {
         $integration = $this->find($integration, $integrations);
         $validated = $this->validated($request, $integration, $integrations);
         $wasOn = $this->featuresOn($integration, $integrations);
-        $previousSource = $controllerRole->source();
+        $previousSource = $controllers->source();
 
         $integrations->save($integration, $validated['settings'], $validated['enabled'], $validated['features'], $validated['removal_limit']);
 
@@ -132,11 +132,10 @@ class IntegrationController extends Controller
             }
         }
 
-        // A Controller source switched off hands its roles to admins; the hub's rule then takes over again.
-        $source = $controllerRole->source();
-        if ($previousSource !== null && ($source === null || $source::class !== $previousSource::class)) {
-            $controllerRole->handOver();
-            $controllerRole->syncEveryone();
+        // A Controller Source switched off hands its grants to admins; the Controller Rule then
+        // takes over again. A source taking over from another owns what that one gave.
+        if ($previousSource !== null && $controllers->source() === null) {
+            $controllers->sourceSwitchedOff();
         }
 
         // Sync what was just switched on straight away, rather than at its next scheduled run.

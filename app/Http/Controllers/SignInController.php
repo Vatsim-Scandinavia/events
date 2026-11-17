@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Auth\ControllerRole;
+use App\Auth\Controllers;
 use App\Enums\ControllerRating;
 use App\Enums\SignInProvider;
 use App\Models\User;
@@ -39,7 +39,7 @@ class SignInController extends Controller
         return Inertia::location(Socialite::driver($provider->value)->redirect()->getTargetUrl());
     }
 
-    public function callback(Request $request, SignInProvider $provider, ControllerRole $controllerRole): RedirectResponse
+    public function callback(Request $request, SignInProvider $provider, Controllers $controllers): RedirectResponse
     {
         $this->ensureConfigured($provider);
 
@@ -70,11 +70,11 @@ class SignInController extends Controller
             $user->rating = $rating;
         }
 
-        // Null when they aren't in a subdivision; it decides the automatic Controller role.
+        // Null when they aren't in a subdivision; the Controller Rule follows it.
         $user->subdivision = Arr::get($vatsimUser->getRaw(), 'vatsim.subdivision.id') ?: null;
 
         $user->save();
-        $controllerRole->sync($user);
+        $controllers->signedIn($user);
 
         Auth::login($user);
         $request->session()->regenerate();

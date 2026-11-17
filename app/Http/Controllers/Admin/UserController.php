@@ -3,16 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Auth\Authorization;
+use App\Auth\Controllers;
 use App\Auth\Roles;
 use App\Auth\Where;
-use App\Enums\AssignmentSource;
+use App\Enums\ControllerGrantOrigin;
 use App\Http\Controllers\Controller;
+use App\Models\ControllerGrant;
 use App\Models\Fir;
 use App\Models\Role;
 use App\Models\RoleAssignment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -61,7 +64,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function edit(Request $request, User $user, Authorization $authorization): Response
+    public function edit(Request $request, User $user, Authorization $authorization, Controllers $controllers): Response
     {
         $roles = Role::query()->orderBy('name')->get();
         // Only the FIRs the signed-in user may give roles in.
@@ -78,9 +81,7 @@ class UserController extends Controller
                     'id' => $assignment->id,
                     'role' => $assignment->role->name,
                     'fir' => $assignment->fir ? ['icao' => $assignment->fir->icao, 'name' => $assignment->fir->name] : null,
-                    // Given by the hub's automatic Controller role, which would give it straight back.
-                    'automatic' => $assignment->source === AssignmentSource::Automatic,
-                    'canRemove' => $assignment->source !== AssignmentSource::Automatic && $authorization->mayGrant($request->user(), $assignment->role, Where::at($assignment->fir)),
+                    'canRemove' => $authorization->mayGrant($request->user(), $assignment->role, Where::at($assignment->fir)),
                 ])
                 ->values(),
             'roles' => $roles->map(fn (Role $role) => [
@@ -91,7 +92,37 @@ class UserController extends Controller
                 'hubOnly' => Roles::isAdministrator($role),
             ]),
             'firs' => $firs,
+            'controller' => $this->controller($request->user(), $user, $firs, $authorization, $controllers),
         ]);
+    }
+
+    /**
+     * Where the user is a Controller, and where the signed-in user may make them one by hand.
+     *
+     * @param  Collection<int, Fir>  $firs
+     * @return array<string, mixed>
+     */
+    private function controller(User $actor, User $user, Collection $firs, Authorization $authorization, Controllers $controllers): array
+    {
+        $source = $controllers->source();
+
+        return [
+            'administrator' => $authorization->isAdministrator($user),
+            'byRule' => $controllers->ruleApplies($user),
+            'ruleInCharge' => $controllers->ruleIsInCharge(),
+            'source' => $source?->controllerSourceName(),
+            // Hub-wide first, then by FIR.
+            'grants' => $user->controllerGrants()->with('fir')->get()
+                ->sortBy(fn (ControllerGrant $grant) => $grant->fir?->icao ?? '')
+                ->map(fn (ControllerGrant $grant) => [
+                    'id' => $grant->id,
+                    'fir' => $grant->fir ? ['icao' => $grant->fir->icao, 'name' => $grant->fir->name] : null,
+                    'fromSource' => $grant->origin === ControllerGrantOrigin::Source,
+                    'canRemove' => $grant->origin === ControllerGrantOrigin::Hand && $authorization->managesUsers($actor, Where::at($grant->fir)),
+                ])
+                ->values(),
+            'grantableIn' => $controllers->grantableIn($actor, $firs),
+        ];
     }
 
     /**

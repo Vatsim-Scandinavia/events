@@ -28,11 +28,13 @@ type SiteSettingsProps = {
     locked: Partial<Record<Detail, string>>;
     // Each App\Enums\Theme, with its name.
     themes: { value: string; label: string }[];
-    // The Integration feature handing out the Controller role instead, if one is.
+    // The Integration feature deciding who is a Controller instead, if one is.
     controllerSource: string | null;
+    // Who would no longer be able to staff events if the Controller Rule were switched off.
+    controllersOnlyByRule: number;
 };
 
-export default function SiteSettings({ settings, locked, themes, controllerSource }: SiteSettingsProps) {
+export default function SiteSettings({ settings, locked, themes, controllerSource, controllersOnlyByRule }: SiteSettingsProps) {
     const form = useForm({
         name: settings.name,
         division: settings.division ?? '',
@@ -131,12 +133,12 @@ export default function SiteSettings({ settings, locked, themes, controllerSourc
                 <Card>
                     <CardHeader>
                         <CardTitle>Controllers</CardTitle>
-                        <CardDescription>Only people with the Controller role can book shifts, show interest and be rostered.</CardDescription>
+                        <CardDescription>Only Controllers can book shifts, show interest and be rostered.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-2">
                         {controllerSource && (
                             <p className="rounded-lg bg-muted px-3 py-2 text-sm">
-                                {controllerSource} hands out the Controller role, so this rule is set aside. Change it on the{' '}
+                                {controllerSource} decides who is a Controller, so this rule is set aside. Change it on the{' '}
                                 <Link href="/admin/integrations" className="font-medium underline underline-offset-4">
                                     Integrations
                                 </Link>{' '}
@@ -152,13 +154,19 @@ export default function SiteSettings({ settings, locked, themes, controllerSourc
                                 onCheckedChange={(checked) => form.setData('auto_controller', checked === true)}
                             />
                             <label htmlFor="auto-controller" className="flex flex-col gap-1">
-                                <span className="font-medium">Give the Controller role automatically</span>
+                                <span className="font-medium">Use the Controller Rule</span>
                                 <span className="text-sm text-muted-foreground">
-                                    Everyone rated S1 or above in your subdivision gets Controller when they sign in, and loses it when they leave the
-                                    subdivision or lose their rating. Controller roles you give by hand are left alone.
+                                    Everyone rated S1 or above in your subdivision is a Controller across the hub, for as long as they are. People you
+                                    make Controllers by hand are left alone.
                                 </span>
                             </label>
                         </div>
+                        {settings.autoController && !data.auto_controller && controllersOnlyByRule > 0 && (
+                            <p role="alert" className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                {controllersOnlyByRule} {controllersOnlyByRule === 1 ? 'Controller' : 'Controllers'} will no longer be able to staff
+                                events once you save.
+                            </p>
+                        )}
                         <FieldError message={errors.auto_controller} />
                     </CardContent>
                 </Card>

@@ -2,10 +2,8 @@
 
 namespace Tests\Fakes;
 
+use App\Auth\Controllers;
 use App\Auth\ControllerSource;
-use App\Auth\RoleAssignments;
-use App\Auth\Roles;
-use App\Enums\AssignmentSource;
 use App\Integrations\Feature;
 use App\Integrations\Syncable;
 use App\Integrations\SyncContext;
@@ -23,6 +21,8 @@ class FakeRosterSync extends Feature implements ControllerSource, Syncable
     /** @var list<int> */
     public static array $roster = [];
 
+    public static bool $decided = true;
+
     /** @var (Closure(SyncContext): SyncResult)|null */
     public static ?Closure $sync = null;
 
@@ -38,7 +38,7 @@ class FakeRosterSync extends Feature implements ControllerSource, Syncable
 
     public function description(): string
     {
-        return 'Gives Controller to everyone on the fake roster.';
+        return 'Makes everyone on the fake roster a Controller, Hub-wide.';
     }
 
     public function schedule(Event $event): void
@@ -56,10 +56,16 @@ class FakeRosterSync extends Feature implements ControllerSource, Syncable
         return 'Fake System roster sync';
     }
 
+    public function hasDecided(): bool
+    {
+        return self::$decided;
+    }
+
     public function syncController(User $user): void
     {
         if (in_array($user->vatsim_cid, self::$roster, true)) {
-            app(RoleAssignments::class)->give($user, Roles::CONTROLLER, null, AssignmentSource::Automatic);
+            $controllers = app(Controllers::class);
+            $controllers->applySourceGrants($controllers->planSourceGrants(collect([['user' => $user, 'fir' => null]]), $user));
         }
     }
 }

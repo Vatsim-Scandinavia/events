@@ -42,7 +42,7 @@ class Member extends Model
     }
 
     /**
-     * The areas that give them the Controller role: where they're active, and where a visiting
+     * The areas that make them a Controller: where they're active, and where a visiting
      * endorsement lets them control. Solo, facility and examiner endorsements give nothing.
      *
      * @return list<string>

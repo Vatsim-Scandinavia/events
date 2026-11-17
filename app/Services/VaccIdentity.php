@@ -97,16 +97,16 @@ final class VaccIdentity
     }
 
     /**
-     * Whether the hub hands out the Controller role itself (see App\Auth\ControllerRole).
+     * Whether an admin switched the Controller Rule on (see App\Auth\Controllers).
      */
-    public function controllerRoleIsAutomatic(): bool
+    public function controllerRuleIsOn(): bool
     {
         return (bool) ($this->stored()['auto_controller'] ?? false);
     }
 
-    public function setControllerRoleAutomatic(bool $automatic): void
+    public function switchControllerRule(bool $on): void
     {
-        $this->put('auto_controller', $automatic ?: null);
+        $this->put('auto_controller', $on ?: null);
     }
 
     /**

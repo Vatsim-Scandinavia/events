@@ -2,20 +2,17 @@
 
 namespace App\Integrations\ControlCenter;
 
+use App\Auth\Controllers;
 use App\Auth\ControllerSource;
-use App\Auth\RoleAssignments;
-use App\Auth\Roles;
-use App\Enums\AssignmentSource;
 use App\Integrations\Feature;
 use App\Integrations\Integrations;
 use App\Integrations\Syncable;
 use App\Integrations\SyncContext;
 use App\Integrations\SyncResult;
+use App\Models\ControllerGrant;
 use App\Models\EventOccurrence;
 use App\Models\EventPosition;
 use App\Models\Fir;
-use App\Models\Role;
-use App\Models\RoleAssignment;
 use App\Models\RosterEntry;
 use App\Models\ShiftBooking;
 use App\Models\User;
@@ -25,13 +22,12 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
- * Hands out the Controller role from Control Center's roster: in the FIR of every area someone
- * is active in, or holds a visiting endorsement for. Never across the hub.
+ * Decides who is a Controller from Control Center's roster: in the FIR of every area someone is
+ * active in, or holds a visiting endorsement for. Never Hub-wide.
  *
- * While it's the Controller source, every automatic Controller role is its to give and take
- * away, including hub-wide ones the hub's own rule gave before it took over. Roles given by hand
- * are never touched. Until its first successful sync it changes nothing, so switching it on
- * never takes roles away before the roster is known.
+ * While it's the Controller Source, every source grant is its to give and take away, including
+ * ones an earlier source gave. Hand grants are never touched. Until its first successful sync it
+ * changes nothing, so switching it on never takes grants away before the roster is known.
  */
 class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syncable
 {
@@ -47,7 +43,7 @@ class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syn
 
     public function description(): string
     {
-        return 'Gives controllers the Controller role in the FIRs where Control Center says they’re active, or have a visiting endorsement. Syncs every hour.';
+        return 'Makes people Controllers in the FIRs where Control Center says they’re active, or have a visiting endorsement. Syncs every hour.';
     }
 
     public function schedule(Event $event): void
@@ -71,7 +67,7 @@ class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syn
         $missing = array_values(array_diff($areas->areas(), $listed->all()));
         $warnings = $this->warnings($areas, $listed);
 
-        // A renamed or vanished area would otherwise take the role from everyone in its FIR.
+        // A renamed or vanished area would otherwise stop everyone in its FIR being a Controller.
         if ($missing !== []) {
             return SyncResult::held(
                 'Control Center no longer lists '.Str::of(collect($missing)->map(fn (string $area) => "“{$area}”")->join(', ', ' or '))
@@ -96,14 +92,19 @@ class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syn
 
         if (! $context->mayRemove($plan['remove']->count(), $plan['existing'])) {
             return SyncResult::held(
-                "It would take the Controller role away {$plan['remove']->count()} of {$plan['existing']} times. Check Control Center, or approve to sync anyway.",
+                "It would take away {$plan['remove']->count()} of {$plan['existing']} Controller Grants. Check Control Center, or approve to sync anyway.",
                 $warnings,
             );
         }
 
-        [$added, $removed] = $this->apply($plan);
+        [$added, $removed] = app(Controllers::class)->applySourceGrants($plan);
 
         return SyncResult::succeeded(added: $added, removed: $removed, warnings: $warnings);
+    }
+
+    public function hasDecided(): bool
+    {
+        return Member::query()->exists();
     }
 
     public function syncController(User $user): void
@@ -113,7 +114,7 @@ class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syn
             return;
         }
 
-        $this->apply($this->plan($this->areas(), $user));
+        app(Controllers::class)->applySourceGrants($this->plan($this->areas(), $user));
     }
 
     /**
@@ -166,14 +167,12 @@ class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syn
     }
 
     /**
-     * The automatic Controller roles to give and take away to match the stored roster, for
-     * everyone or one user.
+     * The source grants to give and take away to match the stored roster, for everyone or one user.
      *
-     * @return array{add: list<array{user: User, fir: Fir}>, remove: Collection<int, RoleAssignment>, existing: int}
+     * @return array{add: list<array{user: User, fir: Fir|null}>, remove: Collection<int, ControllerGrant>, existing: int}
      */
     private function plan(AreaMap $areas, ?User $only = null): array
     {
-        $role = Role::findByName(Roles::CONTROLLER);
         $firs = Fir::query()->get()->keyBy('icao');
         $users = User::query()
             ->when($only, fn ($query) => $query->whereKey($only->id))
@@ -187,40 +186,7 @@ class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syn
             ->unique('id')
             ->map(fn (Fir $fir) => ['user' => $users[$member->cid], 'fir' => $fir]));
 
-        $automatic = RoleAssignment::query()
-            ->where('role_id', $role->id)
-            ->where('source', AssignmentSource::Automatic)
-            ->when($only, fn ($query) => $query->where('user_id', $only->id))
-            ->get();
-
-        $wantedKeys = $wanted->map(fn (array $grant) => "{$grant['user']->id}:{$grant['fir']->id}");
-        $heldKeys = $automatic->map(fn (RoleAssignment $assignment) => "{$assignment->user_id}:{$assignment->fir_id}");
-
-        return [
-            'add' => $wanted->reject(fn (array $grant) => $heldKeys->contains("{$grant['user']->id}:{$grant['fir']->id}"))->values()->all(),
-            'remove' => $automatic->reject(fn (RoleAssignment $assignment) => $assignment->fir_id !== null
-                && $wantedKeys->contains("{$assignment->user_id}:{$assignment->fir_id}"))->values(),
-            'existing' => $automatic->count(),
-        ];
-    }
-
-    /**
-     * @param  array{add: list<array{user: User, fir: Fir}>, remove: Collection<int, RoleAssignment>, existing: int}  $plan
-     * @return array{0: int, 1: int} How many roles were given and taken away.
-     */
-    private function apply(array $plan): array
-    {
-        RoleAssignment::query()->whereKey($plan['remove']->modelKeys())->delete();
-
-        $added = 0;
-        foreach ($plan['add'] as $grant) {
-            // A role given by hand in the same place already covers it, and stays manual.
-            if (app(RoleAssignments::class)->give($grant['user'], Roles::CONTROLLER, $grant['fir'], AssignmentSource::Automatic)->wasRecentlyCreated) {
-                $added++;
-            }
-        }
-
-        return [$added, $plan['remove']->count()];
+        return app(Controllers::class)->planSourceGrants($wanted->values(), $only);
     }
 
     /**
@@ -234,7 +200,7 @@ class RosterSync extends Feature implements ControllerSource, StaffingNotes, Syn
         $firs = Fir::query()->pluck('icao');
 
         return [
-            ...$listed->reject(fn (string $area) => $areas->fir($area) !== null)->sort()->map(fn (string $area) => "Control Center’s area “{$area}” isn’t mapped to a FIR, so it gives nobody the Controller role.")->values()->all(),
+            ...$listed->reject(fn (string $area) => $areas->fir($area) !== null)->sort()->map(fn (string $area) => "Control Center’s area “{$area}” isn’t mapped to a FIR, so it makes nobody a Controller.")->values()->all(),
             ...collect($areas->firs)->reject(fn (string $icao) => $firs->contains($icao))->map(fn (string $icao, string $area) => "“{$area}” is mapped to {$icao}, which isn’t one of the Hub’s FIRs.")->values()->all(),
         ];
     }

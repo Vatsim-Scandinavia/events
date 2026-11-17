@@ -43,7 +43,7 @@ class ControlCenter extends Integration
                         $fail($problem);
                     }
                 }],
-                description: 'Which FIR each Control Center area is, one per line, like “denmark = EKDK”. Controllers active in an area get the Controller role in its FIR.',
+                description: 'Which FIR each Control Center area is, one per line, like “denmark = EKDK”. Controllers active in an area are Controllers in its FIR.',
                 multiline: true,
             ),
         ];

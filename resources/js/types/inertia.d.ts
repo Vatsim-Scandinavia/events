@@ -19,7 +19,7 @@ export type Vacc = {
 };
 
 // Mirrors App\Enums\Permission.
-export type PermissionName = 'manage-events' | 'manage-staffing' | 'view-events' | 'book-positions' | 'manage-users';
+export type PermissionName = 'manage-events' | 'manage-staffing' | 'view-events' | 'manage-users';
 
 // Mirrors the auth props shared by App\Http\Middleware\HandleInertiaRequests.
 export type AuthUser = {

@@ -26,7 +26,6 @@ return new class extends Migration
             'Administrator' => [],
             'Event Staff' => ['manage-events', 'manage-staffing'],
             'vACC Staff' => ['view-events'],
-            'Controller' => ['book-positions'],
         ])->map(fn (array $permissions, string $name) => [
             'name' => $name,
             'permissions' => json_encode($permissions),

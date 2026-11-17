@@ -7,8 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * Run the migrations. Control Center's roster as of its last sync, by CID, so people get
-     * their Controller roles when they first sign in.
+     * Run the migrations. Control Center's roster as of its last sync, by CID, so people are
+     * Controllers where they should be when they first sign in.
      */
     public function up(): void
     {

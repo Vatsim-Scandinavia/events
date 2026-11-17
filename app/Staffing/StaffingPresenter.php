@@ -2,7 +2,7 @@
 
 namespace App\Staffing;
 
-use App\Auth\Authorization;
+use App\Auth\Controllers;
 use App\Enums\RosterState;
 use App\Enums\StaffingMode;
 use App\Integrations\Integrations;
@@ -40,7 +40,7 @@ final class StaffingPresenter
         private Integrations $integrations,
         private ShiftBookings $shiftBookings,
         private StaffingInterests $staffingInterests,
-        private Authorization $authorization,
+        private Controllers $controllers,
     ) {}
 
     /**
@@ -144,7 +144,7 @@ final class StaffingPresenter
             ])->all(),
             'interests' => $this->interests($occurrence),
             'roster' => $this->roster($occurrence, $positions, $sections, $viewer, $notes, true),
-            'controllers' => $this->authorization->controllersFor($event)->get()->sortBy(fn (User $user) => mb_strtolower($user->displayName()))->values()
+            'controllers' => $this->controllers->controllersFor($event)->get()->sortBy(fn (User $user) => mb_strtolower($user->displayName()))->values()
                 ->map(fn (User $user) => $this->controller($user))->all(),
         ];
     }

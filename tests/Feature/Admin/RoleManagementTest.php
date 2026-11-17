@@ -22,12 +22,12 @@ class RoleManagementTest extends TestCase
 
         $this->actingAs(User::factory()->admin()->create())->get('/admin/roles')->assertInertia(fn (Assert $page) => $page
             ->component('Admin/Roles/Index')
-            ->has('roles', 4)
+            ->has('roles', 3)
             ->where('roles.0.name', Roles::ADMINISTRATOR)
             ->where('roles.0.builtIn', true)
-            ->where('roles.2.name', Roles::EVENT_STAFF)
-            ->where('roles.2.users', 1)
-            ->where('roles.2.builtIn', true)
+            ->where('roles.1.name', Roles::EVENT_STAFF)
+            ->where('roles.1.users', 1)
+            ->where('roles.1.builtIn', true)
         );
     }
 

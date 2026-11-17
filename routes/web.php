@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ControllerGrantController;
 use App\Http\Controllers\Admin\EventTypeController;
 use App\Http\Controllers\Admin\FirController;
 use App\Http\Controllers\Admin\IntegrationController;
@@ -91,6 +92,8 @@ Route::middleware(['auth', 'throttle:signed-in'])->group(function () {
             Route::get('/users/{user}', [UserController::class, 'edit'])->name('users.edit');
             Route::post('/users/{user}/roles', [RoleAssignmentController::class, 'store'])->name('users.roles.store');
             Route::delete('/users/{user}/roles/{roleAssignment}', [RoleAssignmentController::class, 'destroy'])->scopeBindings()->name('users.roles.destroy');
+            Route::post('/users/{user}/controller-grants', [ControllerGrantController::class, 'store'])->name('users.controller-grants.store');
+            Route::delete('/users/{user}/controller-grants/{controllerGrant}', [ControllerGrantController::class, 'destroy'])->scopeBindings()->name('users.controller-grants.destroy');
         });
 
         Route::middleware('can:administer')->group(function () {

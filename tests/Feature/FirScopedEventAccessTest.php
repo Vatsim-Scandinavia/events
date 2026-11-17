@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Auth\Roles;
 use App\Models\Event;
 use App\Models\Fir;
 use App\Models\ShiftBooking;
@@ -148,7 +147,7 @@ class FirScopedEventAccessTest extends TestCase
     public function test_controllers_of_one_fir_can_only_book_that_firs_events(): void
     {
         $ekdk = Fir::factory()->create();
-        $visitor = User::factory()->rated()->withRole(Roles::CONTROLLER, $ekdk)->create();
+        $visitor = User::factory()->controller(fir: $ekdk)->create();
 
         foreach ([[$ekdk, 302], [Fir::factory()->create(), 403]] as [$fir, $status]) {
             $event = Event::factory()->withShifts()->create(['fir_id' => $fir->id]);
@@ -165,8 +164,8 @@ class FirScopedEventAccessTest extends TestCase
         $ekdk = Fir::factory()->create();
         $event = Event::factory()->withOpenInterest()->create(['fir_id' => $ekdk->id]);
         User::factory()->controller()->create(['name' => 'Hub Controller']);
-        User::factory()->rated()->withRole(Roles::CONTROLLER, $ekdk)->create(['name' => 'Copenhagen Controller']);
-        User::factory()->rated()->withRole(Roles::CONTROLLER, Fir::factory()->create())->create(['name' => 'Stockholm Controller']);
+        User::factory()->controller(fir: $ekdk)->create(['name' => 'Copenhagen Controller']);
+        User::factory()->controller(fir: Fir::factory()->create())->create(['name' => 'Stockholm Controller']);
 
         $this->actingAs(User::factory()->staff()->create())
             ->get("/events/{$event->getRouteKey()}/staffing")

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Auth\ControllerRole;
+use App\Auth\Controllers;
 use App\Enums\Theme;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SiteSettingsRequest;
@@ -20,7 +20,7 @@ use Throwable;
  */
 class SiteSettingsController extends Controller
 {
-    public function edit(VaccIdentity $identity, ControllerRole $controllerRole): Response
+    public function edit(VaccIdentity $identity, Controllers $controllers): Response
     {
         $effective = $identity->effective();
 
@@ -32,20 +32,21 @@ class SiteSettingsController extends Controller
                 'website' => $effective['website'],
                 'logo' => $effective['logo'],
                 'theme' => $identity->theme()->value,
-                'autoController' => $identity->controllerRoleIsAutomatic(),
+                'autoController' => $identity->controllerRuleIsOn(),
             ],
-            // The Integration feature handing out the Controller role instead of the hub's rule.
             'themes' => collect(Theme::cases())->map(fn (Theme $theme) => ['value' => $theme->value, 'label' => $theme->label()]),
-            'controllerSource' => $controllerRole->source()?->controllerSourceName(),
+            // The Integration feature deciding who is a Controller instead of the Controller Rule.
+            'controllerSource' => $controllers->source()?->controllerSourceName(),
+            // Who would no longer be able to staff events if the Controller Rule were switched off.
+            'controllersOnlyByRule' => $controllers->onlyByRuleCount(),
             // Each locked detail and the environment variable it is set by.
             'locked' => collect($identity->locked())->mapWithKeys(fn (string $field) => [$field => VaccIdentity::FIELDS[$field]]),
         ]);
     }
 
-    public function update(SiteSettingsRequest $request, VaccIdentity $identity, SiteLogo $logos, ControllerRole $controllerRole): RedirectResponse
+    public function update(SiteSettingsRequest $request, VaccIdentity $identity, SiteLogo $logos): RedirectResponse
     {
         $previous = $identity->logo();
-        $controllerRule = [$identity->effective()['subdivision'], $identity->controllerRoleIsAutomatic()];
         $uploaded = $request->hasFile('logo') ? $logos->store($request->file('logo')) : null;
 
         try {
@@ -69,12 +70,8 @@ class SiteSettingsController extends Controller
             $identity->saveTheme($request->enum('theme', Theme::class));
         }
 
-        $identity->setControllerRoleAutomatic($request->boolean('auto_controller'));
-
-        // Who holds the automatic Controller role follows the subdivision and the switch.
-        if ([$identity->effective()['subdivision'], $identity->controllerRoleIsAutomatic()] !== $controllerRule) {
-            $controllerRole->syncEveryone();
-        }
+        // The Controller Rule is worked out live, so switching it takes effect at once.
+        $identity->switchControllerRule($request->boolean('auto_controller'));
 
         Inertia::flash('success', 'The settings are saved.');
 

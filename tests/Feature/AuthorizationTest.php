@@ -6,7 +6,6 @@ use App\Auth\Authorization;
 use App\Auth\Roles;
 use App\Auth\Where;
 use App\Enums\Permission;
-use App\Models\Event;
 use App\Models\Fir;
 use App\Models\Role;
 use App\Models\User;
@@ -92,22 +91,5 @@ class AuthorizationTest extends TestCase
         $this->assertFalse($authorization->mayGrant($manager, Role::findByName(Roles::VACC_STAFF), Where::in($copenhagen)));
         $this->assertFalse($authorization->mayGrant($manager, Role::findByName(Roles::ADMINISTRATOR), Where::hub()));
         $this->assertSame([$copenhagen->id], $authorization->grantableIn($manager, Role::findByName(Roles::EVENT_STAFF), collect([$copenhagen, $sweden])));
-    }
-
-    public function test_controllers_for_an_event_hold_the_controller_role_hub_wide_or_in_its_fir(): void
-    {
-        $copenhagen = Fir::factory()->create();
-        $sweden = Fir::factory()->create();
-        $event = Event::factory()->create(['fir_id' => $copenhagen->id]);
-        $hubWide = User::factory()->controller()->create();
-        $here = User::factory()->withRole(Roles::CONTROLLER, $copenhagen)->create();
-        $elsewhere = User::factory()->withRole(Roles::CONTROLLER, $sweden)->create();
-        $admin = User::factory()->admin()->create();
-        User::factory()->staff($copenhagen)->create();
-        $authorization = app(Authorization::class);
-
-        $this->assertEqualsCanonicalizing([$hubWide->id, $here->id, $admin->id], $authorization->controllersFor($event)->pluck('id')->all());
-        $this->assertTrue($here->can('staff', $event));
-        $this->assertFalse($elsewhere->can('staff', $event));
     }
 }

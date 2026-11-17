@@ -22,7 +22,6 @@ return new class extends Migration
             $table->foreignId('role_id')->constrained()->cascadeOnDelete();
             $table->foreignId('fir_id')->nullable()->constrained()->restrictOnDelete();
             $table->unsignedBigInteger('fir_key')->storedAs('coalesce(fir_id, 0)');
-            $table->string('source', 10)->default('manual');
             $table->timestamps();
             $table->unique(['user_id', 'role_id', 'fir_key']);
         });

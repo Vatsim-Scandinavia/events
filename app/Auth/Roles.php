@@ -3,6 +3,7 @@
 namespace App\Auth;
 
 use App\Enums\Permission;
+use App\Models\ControllerGrant;
 use App\Models\Fir;
 use App\Models\Role;
 use App\Models\RoleAssignment;
@@ -24,7 +25,8 @@ final class Roles
 
     public const string VACC_STAFF = 'vACC Staff';
 
-    public const string CONTROLLER = 'Controller';
+    /** Not a role: how being a Controller is shown beside someone's roles (see Controllers). */
+    public const string CONTROLLER_LABEL = 'Controller';
 
     /** Not a role: what someone without any role is shown as. */
     public const string PILOT = 'Pilot';
@@ -35,7 +37,7 @@ final class Roles
      *
      * @var list<string>
      */
-    private const array BUILT_IN = [self::ADMINISTRATOR, self::EVENT_STAFF, self::VACC_STAFF, self::CONTROLLER];
+    private const array BUILT_IN = [self::ADMINISTRATOR, self::EVENT_STAFF, self::VACC_STAFF];
 
     /**
      * @return list<string>
@@ -77,14 +79,23 @@ final class Roles
 
     /**
      * What the user holds, e.g. "Administrator" or "Event Staff · EKDK" for a role held in one
-     * FIR, or just "Pilot" when they hold no role.
+     * FIR, and where they're a Controller ("Controller", "Controller · EKDK"), or just "Pilot"
+     * when they're neither.
      *
      * @return Collection<int, string>
      */
     public static function labelsFor(User $user): Collection
     {
-        $labels = $user->loadMissing('roleAssignments.role', 'roleAssignments.fir')->roleAssignments
+        $user->loadMissing('roleAssignments.role', 'roleAssignments.fir', 'controllerGrants.fir');
+
+        $controller = $user->controllerGrants->toBase()
+            ->map(fn (ControllerGrant $grant) => $grant->fir ? self::CONTROLLER_LABEL." · {$grant->fir->icao}" : self::CONTROLLER_LABEL)
+            ->when(app(Controllers::class)->ruleApplies($user), fn (Collection $labels) => $labels->push(self::CONTROLLER_LABEL));
+
+        $labels = $user->roleAssignments->toBase()
             ->map(fn (RoleAssignment $assignment) => self::label($assignment->role, $assignment->fir))
+            ->merge($controller)
+            ->unique()
             ->sort()
             ->values();
 

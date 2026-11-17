@@ -3,11 +3,9 @@
 namespace App\Auth;
 
 use App\Enums\Permission;
-use App\Models\Event;
 use App\Models\Fir;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
@@ -127,31 +125,6 @@ final class Authorization
             ->map(fn (?Fir $fir) => $fir?->id)
             ->values()
             ->all();
-    }
-
-    /**
-     * Whether the user may staff the event (book shifts, show interest, be rostered): with a role
-     * that lets them Hub-wide, or in the FIR that runs it.
-     */
-    public function isController(User $user, Event $event): bool
-    {
-        return $this->holds($user, Permission::BookPositions, Where::in($event->fir));
-    }
-
-    /**
-     * Everyone who may staff the event, by the same rule as isController.
-     *
-     * @return Builder<User>
-     */
-    public function controllersFor(Event $event): Builder
-    {
-        return User::query()->whereHas('roles', fn (Builder $roles) => $roles
-            ->where(fn (Builder $roles) => $roles
-                ->where('name', Roles::ADMINISTRATOR)
-                ->orWhereJsonContains('permissions', Permission::BookPositions->value))
-            ->where(fn (Builder $roles) => $roles
-                ->whereNull('role_assignments.fir_id')
-                ->orWhere('role_assignments.fir_id', $event->fir_id)));
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Auth\Authorization;
+use App\Auth\Controllers;
 use App\Auth\Where;
 use App\Enums\Permission;
 use App\Models\Event;
@@ -16,7 +17,7 @@ use App\Models\User;
  */
 class EventPolicy
 {
-    public function __construct(private Authorization $authorization) {}
+    public function __construct(private Authorization $authorization, private Controllers $controllers) {}
 
     /**
      * Everyone sees published events. Drafts only show to staff who can view or manage events
@@ -76,11 +77,11 @@ class EventPolicy
     }
 
     /**
-     * Staff the event as a controller: book shifts, show interest and be rostered.
+     * Staff the event as a Controller: book shifts, show interest and be rostered.
      */
     public function staff(User $user, Event $event): bool
     {
-        return $this->authorization->isController($user, $event);
+        return $this->controllers->isControllerFor($user, $event);
     }
 
     /**

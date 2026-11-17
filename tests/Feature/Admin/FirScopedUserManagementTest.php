@@ -88,7 +88,8 @@ class FirScopedUserManagementTest extends TestCase
         $this->actingAs($lead)->post("/admin/users/{$newcomer->id}/roles", ['role_id' => Role::findByName(Roles::EVENT_STAFF)->id, 'fir_id' => $this->copenhagen->id])
             ->assertSessionHasErrors(['roles' => 'You can’t give or take away Event Staff, because it allows more than you can do yourself.']);
 
-        $this->actingAs($lead)->post("/admin/users/{$newcomer->id}/roles", ['role_id' => Role::findByName(Roles::CONTROLLER)->id, 'fir_id' => $this->copenhagen->id])
+        // vACC Staff views every event, which this lead can't do either.
+        $this->actingAs($lead)->post("/admin/users/{$newcomer->id}/roles", ['role_id' => Role::findByName(Roles::VACC_STAFF)->id, 'fir_id' => $this->copenhagen->id])
             ->assertSessionHasErrors('roles');
 
         $this->assertSame(0, $newcomer->roleAssignments()->count());
@@ -130,7 +131,6 @@ class FirScopedUserManagementTest extends TestCase
             ->where('assignments.2.canRemove', false)
             ->where('roles', fn ($roles) => collect($roles)->mapWithKeys(fn ($role) => [$role['name'] => $role['grantableIn']])->all() === [
                 Roles::ADMINISTRATOR => [],
-                Roles::CONTROLLER => [],
                 Roles::EVENT_STAFF => [$this->copenhagen->id],
                 'FIR Lead' => [$this->copenhagen->id],
                 Roles::VACC_STAFF => [],

@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\AssignmentSource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -14,26 +13,7 @@ class RoleAssignment extends Model
     /**
      * @var list<string>
      */
-    protected $fillable = ['user_id', 'role_id', 'fir_id', 'source'];
-
-    /**
-     * Given by an admin unless the hub handed it out (the automatic Controller role).
-     *
-     * @var array<string, mixed>
-     */
-    protected $attributes = [
-        'source' => 'manual',
-    ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'source' => AssignmentSource::class,
-        ];
-    }
+    protected $fillable = ['user_id', 'role_id', 'fir_id'];
 
     /**
      * @return BelongsTo<User, $this>

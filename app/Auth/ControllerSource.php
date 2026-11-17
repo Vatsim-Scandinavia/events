@@ -5,22 +5,30 @@ namespace App\Auth;
 use App\Models\User;
 
 /**
- * Something other than the hub's own rule that decides who automatically holds the Controller
- * role, and where: an Integration feature such as a training system's roster sync. Only one is
- * in charge at a time; while one is, the hub's S1-and-subdivision rule steps aside.
+ * An Integration feature that decides who is a Controller instead of the Controller Rule, such as
+ * a training system's roster sync. Only one is in charge at a time; while one is, the rule steps
+ * aside.
  *
- * Every Controller role given automatically (AssignmentSource::Automatic) is the source's to give
- * and take away, including ones an earlier source gave. Manual ones are never its to touch.
+ * It records its decisions as Controller Grants through App\Auth\Controllers (planSourceGrants
+ * and applySourceGrants), and owns every grant a source gave, including an earlier one's. Hand
+ * grants are never its to touch.
  */
 interface ControllerSource
 {
     /**
-     * What admins see as handing out the Controller role, e.g. "Control Center roster sync".
+     * What admins see as deciding who is a Controller, e.g. "Control Center’s roster sync".
      */
     public function controllerSourceName(): string;
 
     /**
-     * Give or take away the user's automatic Controller roles to match the source, at sign-in.
+     * Whether it has decided anything yet, e.g. synced at least once. Until it has, the Controller
+     * Rule keeps deciding, so switching a source on never stops anyone being a Controller before
+     * the source knows who should be.
+     */
+    public function hasDecided(): bool;
+
+    /**
+     * Bring the user's source grants up to date, as they sign in.
      */
     public function syncController(User $user): void;
 }

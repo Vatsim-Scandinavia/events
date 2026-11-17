@@ -48,7 +48,7 @@ final class Integrations
     }
 
     /**
-     * The feature in charge of the Controller role, or null when the hub's own rule is.
+     * The feature switched on to decide who is a Controller, or null when the Controller Rule does.
      */
     public function controllerSource(): ?ControllerSource
     {

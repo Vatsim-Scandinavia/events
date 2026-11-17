@@ -25,7 +25,7 @@ class SiteSettingsRequest extends FormRequest
     }
 
     /**
-     * The automatic Controller role needs a subdivision to check people against.
+     * The Controller Rule needs a subdivision to check people against.
      *
      * @return array<int, Closure(Validator): void>
      */

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AssignmentSource;
+use App\Auth\Controllers;
+use App\Auth\Roles;
+use App\Enums\ControllerGrantOrigin;
 use App\Enums\NameDisplay;
+use App\Models\ControllerGrant;
 use App\Models\RoleAssignment;
 use App\Models\User;
 use DateTimeZone;
@@ -66,26 +69,32 @@ class ProfileController extends Controller
     }
 
     /**
-     * The user's roles grouped by where they hold them: across the Hub first, then each FIR
-     * by ICAO. Empty for a Pilot.
+     * The user's roles, and where they're a Controller, grouped by where they hold them: across
+     * the Hub first, then each FIR by ICAO. Being a Controller counts as automatic when the
+     * Controller Rule or the Controller Source decided it. Empty for a Pilot.
      *
      * @return list<array{scope: string, roles: list<array{name: string, automatic: bool}>}>
      */
     private function roleGroups(User $user): array
     {
-        return $user->roleAssignments()->with(['role', 'fir'])->get()
-            ->sortBy(fn (RoleAssignment $assignment) => [$assignment->fir?->icao ?? '', $assignment->role->name])
-            ->groupBy(fn (RoleAssignment $assignment) => match (true) {
-                $assignment->fir === null => 'Across the Hub',
-                $assignment->fir->name === $assignment->fir->icao => $assignment->fir->icao,
-                default => "{$assignment->fir->icao} {$assignment->fir->name}",
+        $held = collect([
+            ...$user->roleAssignments()->with(['role', 'fir'])->get()
+                ->map(fn (RoleAssignment $assignment) => ['name' => $assignment->role->name, 'fir' => $assignment->fir, 'automatic' => false]),
+            ...$user->controllerGrants()->with('fir')->get()
+                ->map(fn (ControllerGrant $grant) => ['name' => Roles::CONTROLLER_LABEL, 'fir' => $grant->fir, 'automatic' => $grant->origin === ControllerGrantOrigin::Source]),
+            ...(app(Controllers::class)->ruleApplies($user) ? [['name' => Roles::CONTROLLER_LABEL, 'fir' => null, 'automatic' => true]] : []),
+        ]);
+
+        return $held
+            ->sortBy(fn (array $role) => [$role['fir']?->icao ?? '', $role['name']])
+            ->groupBy(fn (array $role) => match (true) {
+                $role['fir'] === null => 'Across the Hub',
+                $role['fir']->name === $role['fir']->icao => $role['fir']->icao,
+                default => "{$role['fir']->icao} {$role['fir']->name}",
             })
-            ->map(fn ($assignments, string $scope) => [
+            ->map(fn ($roles, string $scope) => [
                 'scope' => $scope,
-                'roles' => $assignments->map(fn (RoleAssignment $assignment) => [
-                    'name' => $assignment->role->name,
-                    'automatic' => $assignment->source === AssignmentSource::Automatic,
-                ])->values()->all(),
+                'roles' => $roles->unique('name')->map(fn (array $role) => ['name' => $role['name'], 'automatic' => $role['automatic']])->values()->all(),
             ])
             ->values()
             ->all();

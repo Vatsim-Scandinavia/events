@@ -2,18 +2,17 @@
 
 namespace Tests\Feature;
 
-use App\Auth\RoleAssignments;
-use App\Auth\Roles;
-use App\Enums\AssignmentSource;
+use App\Auth\Controllers;
+use App\Enums\ControllerGrantOrigin;
 use App\Enums\ControllerRating;
 use App\Enums\IntegrationRunStatus;
 use App\Integrations\ControlCenter\Member;
 use App\Integrations\RunSync;
+use App\Models\ControllerGrant;
 use App\Models\Event;
 use App\Models\Fir;
 use App\Models\IntegrationRun;
 use App\Models\IntegrationSetting;
-use App\Models\Role;
 use App\Models\User;
 use App\Services\VaccIdentity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,7 +54,7 @@ class ControlCenterRosterSyncTest extends TestCase
 
         $this->sync();
 
-        $this->assertSame([$this->denmark->id], $this->automaticFirs($member));
+        $this->assertSame([$this->denmark->id], $this->sourceFirs($member));
 
         $this->travelTo(Carbon::parse('2026-11-01 12:00', 'UTC'));
         foreach ([[$this->denmark, false], [$this->norway, true]] as [$fir, $forbidden]) {
@@ -82,7 +81,7 @@ class ControlCenterRosterSyncTest extends TestCase
 
         $this->sync();
 
-        $this->assertSame([$this->norway->id], $this->automaticFirs($visitor));
+        $this->assertSame([$this->norway->id], $this->sourceFirs($visitor));
     }
 
     /**
@@ -109,7 +108,7 @@ class ControlCenterRosterSyncTest extends TestCase
 
         $this->sync();
 
-        $this->assertSame([], $this->automaticFirs($student));
+        $this->assertSame([], $this->sourceFirs($student));
         $this->assertEquals($endorsements, array_filter(Member::query()->find(1000001)->endorsements));
     }
 
@@ -122,39 +121,34 @@ class ControlCenterRosterSyncTest extends TestCase
 
         $this->signIn(1000001, ControllerRating::S2);
 
-        $this->assertEqualsCanonicalizing([$this->denmark->id, $this->norway->id], $this->automaticFirs($this->user(1000001)));
+        $this->assertEqualsCanonicalizing([$this->denmark->id, $this->norway->id], $this->sourceFirs($this->user(1000001)));
     }
 
-    public function test_members_who_stop_qualifying_lose_automatic_controller_but_keep_manual_roles(): void
+    public function test_members_who_stop_qualifying_lose_source_grants_but_keep_hand_grants(): void
     {
         $this->switchOn();
         $leaver = User::factory()->create(['vatsim_cid' => 1000001]);
-        app(RoleAssignments::class)->give($leaver, Roles::CONTROLLER, $this->denmark, AssignmentSource::Automatic);
-        app(RoleAssignments::class)->give($leaver, Roles::CONTROLLER, $this->norway, AssignmentSource::Manual);
+        ControllerGrant::factory()->for($leaver)->fromSource()->in($this->denmark)->create();
+        ControllerGrant::factory()->for($leaver)->in($this->norway)->create();
         $staying = User::factory()->create(['vatsim_cid' => 1000002]);
-        app(RoleAssignments::class)->give($staying, Roles::CONTROLLER, $this->denmark, AssignmentSource::Automatic);
+        ControllerGrant::factory()->for($staying)->fromSource()->in($this->denmark)->create();
         $this->fakeControlCenter([$this->member(1000001), $this->member(1000002, active: ['denmark'])], removalLimit: 100);
 
         $this->sync();
 
-        $this->assertSame([], $this->automaticFirs($leaver));
-        $this->assertTrue($leaver->roleAssignments()->where('fir_id', $this->norway->id)->where('source', AssignmentSource::Manual)->exists());
-        $this->assertSame([$this->denmark->id], $this->automaticFirs($staying));
+        $this->assertSame([], $this->sourceFirs($leaver));
+        $this->assertTrue($leaver->controllerGrants()->where('fir_id', $this->norway->id)->where('origin', ControllerGrantOrigin::Hand)->exists());
+        $this->assertSame([$this->denmark->id], $this->sourceFirs($staying));
         $this->assertSame([0, 1], [$this->lastRun()->added, $this->lastRun()->removed]);
     }
 
-    public function test_taking_over_from_the_hubs_rule_holds_the_first_sync_and_sign_in_changes_nothing_before(): void
+    public function test_taking_over_from_the_controller_rule_changes_nothing_until_the_first_sync(): void
     {
         Queue::fake();
         $identity = app(VaccIdentity::class);
         $identity->save(['subdivision' => 'SCA']);
-        $identity->setControllerRoleAutomatic(true);
-        $members = collect(range(1000001, 1000004))->map(function (int $cid) {
-            $user = User::factory()->rated(ControllerRating::S2)->create(['vatsim_cid' => $cid, 'subdivision' => 'SCA']);
-            app(RoleAssignments::class)->give($user, Roles::CONTROLLER, null, AssignmentSource::Automatic);
-
-            return $user;
-        });
+        $identity->switchControllerRule(true);
+        $members = collect(range(1000001, 1000004))->map(fn (int $cid) => User::factory()->rated(ControllerRating::S2)->create(['vatsim_cid' => $cid, 'subdivision' => 'SCA']));
         $this->fakeControlCenter([$this->member(1000001, active: ['denmark']), $this->member(1000005, active: ['norway'])]);
         $admin = User::factory()->admin()->create();
 
@@ -166,22 +160,17 @@ class ControlCenterRosterSyncTest extends TestCase
         ])->assertSessionHasNoErrors();
         auth()->logout();
 
-        // Before any sync, signing in keeps the role the hub's rule gave.
+        // Before any sync, the Controller Rule still decides, and signing in changes nothing.
         $this->signIn(1000002, ControllerRating::S2);
-        $this->assertTrue($this->holdsHubWide($members[1]));
+        $this->assertTrue($members->every(fn (User $user) => app(Controllers::class)->ruleApplies($user->fresh())));
+        $this->assertSame(0, ControllerGrant::query()->count());
 
         $this->sync();
-        $this->assertSame(IntegrationRunStatus::Held, $this->lastRun()->status);
-        $this->assertTrue($members->every(fn (User $user) => $this->holdsHubWide($user)));
-        $this->assertSame(0, Member::query()->count());
-
-        $this->actingAs($admin)->post("/admin/integrations/control-center/runs/{$this->lastRun()->id}/approve")->assertSessionHasNoErrors();
-        $this->sync($admin->id);
 
         $this->assertSame(IntegrationRunStatus::Succeeded, $this->lastRun()->status);
-        $this->assertFalse($members->contains(fn (User $user) => $this->holdsHubWide($user)));
-        $this->assertSame([$this->denmark->id], $this->automaticFirs($members[0]));
-        $this->assertSame([], $this->automaticFirs($members[1]));
+        $this->assertFalse($members->contains(fn (User $user) => app(Controllers::class)->ruleApplies($user->fresh())));
+        $this->assertSame([$this->denmark->id], $this->sourceFirs($members[0]));
+        $this->assertSame([], $this->sourceFirs($members[1]));
     }
 
     /**
@@ -206,7 +195,7 @@ class ControlCenterRosterSyncTest extends TestCase
     {
         $this->switchOn();
         $controller = User::factory()->create(['vatsim_cid' => 1000001]);
-        app(RoleAssignments::class)->give($controller, Roles::CONTROLLER, $this->denmark, AssignmentSource::Automatic);
+        ControllerGrant::factory()->for($controller)->fromSource()->in($this->denmark)->create();
         Member::query()->create(['cid' => 1000001, 'active_areas' => ['denmark'], 'endorsements' => [], 'synced_at' => now()]);
         $fake();
 
@@ -214,7 +203,7 @@ class ControlCenterRosterSyncTest extends TestCase
 
         $this->assertSame(IntegrationRunStatus::Failed, $this->lastRun()->status);
         $this->assertSame($message, $this->lastRun()->message);
-        $this->assertSame([$this->denmark->id], $this->automaticFirs($controller));
+        $this->assertSame([$this->denmark->id], $this->sourceFirs($controller));
         $this->assertSame(1, Member::query()->count());
     }
 
@@ -222,7 +211,7 @@ class ControlCenterRosterSyncTest extends TestCase
     {
         $this->switchOn();
         $controller = User::factory()->create(['vatsim_cid' => 1000001]);
-        app(RoleAssignments::class)->give($controller, Roles::CONTROLLER, $this->norway, AssignmentSource::Automatic);
+        ControllerGrant::factory()->for($controller)->fromSource()->in($this->norway)->create();
         // "norway" was renamed "Norge" upstream.
         $this->fakeControlCenter([$this->member(1000001, active: ['norge'], inactive: ['denmark'])]);
 
@@ -230,7 +219,7 @@ class ControlCenterRosterSyncTest extends TestCase
 
         $this->assertSame(IntegrationRunStatus::Held, $this->lastRun()->status);
         $this->assertStringContainsString('no longer lists “norway”', $this->lastRun()->message);
-        $this->assertSame([$this->norway->id], $this->automaticFirs($controller));
+        $this->assertSame([$this->norway->id], $this->sourceFirs($controller));
     }
 
     public function test_unmapped_areas_give_nothing_and_are_shown_as_warnings(): void
@@ -241,18 +230,18 @@ class ControlCenterRosterSyncTest extends TestCase
 
         $this->sync();
 
-        $this->assertSame([], $this->automaticFirs($controller));
+        $this->assertSame([], $this->sourceFirs($controller));
         $this->actingAs(User::factory()->admin()->create())->get('/admin/integrations/control-center')->assertInertia(fn (Assert $page) => $page
             ->where('runs.0.status', 'succeeded')
-            ->where('runs.0.warnings', ['Control Center’s area “iceland” isn’t mapped to a FIR, so it gives nobody the Controller role.'])
+            ->where('runs.0.warnings', ['Control Center’s area “iceland” isn’t mapped to a FIR, so it makes nobody a Controller.'])
         );
     }
 
-    public function test_switching_it_off_hands_its_roles_to_admins_and_the_hubs_rule_takes_over(): void
+    public function test_switching_it_off_turns_its_grants_into_hand_grants_and_the_controller_rule_takes_over(): void
     {
         $identity = app(VaccIdentity::class);
         $identity->save(['subdivision' => 'SCA']);
-        $identity->setControllerRoleAutomatic(true);
+        $identity->switchControllerRule(true);
         $this->switchOn();
         $controller = User::factory()->create(['vatsim_cid' => 1000001]);
         $this->fakeControlCenter([$this->member(1000001, active: ['denmark'])]);
@@ -266,8 +255,8 @@ class ControlCenterRosterSyncTest extends TestCase
             'settings' => ['url' => 'https://cc.example', 'token' => '', 'areas' => "denmark = EKDK\nnorway = ENOR"],
         ])->assertSessionHasNoErrors();
 
-        $this->assertTrue($controller->roleAssignments()->where('fir_id', $this->denmark->id)->where('source', AssignmentSource::Manual)->exists());
-        $this->assertTrue($this->holdsHubWide($rated));
+        $this->assertTrue($controller->controllerGrants()->where('fir_id', $this->denmark->id)->where('origin', ControllerGrantOrigin::Hand)->exists());
+        $this->assertTrue(app(Controllers::class)->ruleApplies($rated));
         $this->assertSame(0, Member::query()->count());
     }
 
@@ -336,7 +325,7 @@ class ControlCenterRosterSyncTest extends TestCase
 
         $this->sync();
 
-        $this->assertSame([$this->norway->id], $this->automaticFirs($controller));
+        $this->assertSame([$this->norway->id], $this->sourceFirs($controller));
     }
 
     private function switchOn(string $areas = "denmark = EKDK\nnorway = ENOR", int $removalLimit = 25): void
@@ -400,22 +389,9 @@ class ControlCenterRosterSyncTest extends TestCase
     /**
      * @return list<int>
      */
-    private function automaticFirs(User $user): array
+    private function sourceFirs(User $user): array
     {
-        return $user->roleAssignments()
-            ->where('role_id', Role::findByName(Roles::CONTROLLER)->id)
-            ->where('source', AssignmentSource::Automatic)
-            ->pluck('fir_id')
-            ->all();
-    }
-
-    private function holdsHubWide(User $user): bool
-    {
-        return $user->roleAssignments()
-            ->where('role_id', Role::findByName(Roles::CONTROLLER)->id)
-            ->whereNull('fir_id')
-            ->where('source', AssignmentSource::Automatic)
-            ->exists();
+        return $user->controllerGrants()->where('origin', ControllerGrantOrigin::Source)->pluck('fir_id')->all();
     }
 
     private function signIn(int $cid, ControllerRating $rating): void

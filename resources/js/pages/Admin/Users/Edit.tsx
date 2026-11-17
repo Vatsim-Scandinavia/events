@@ -19,9 +19,29 @@ type Assignment = {
     role: string;
     // Null when the role applies across the hub.
     fir: Fir | null;
-    // Given by the automatic Controller role, which also takes it away.
-    automatic: boolean;
     canRemove: boolean;
+};
+
+type ControllerGrant = {
+    id: number;
+    // Null when it applies Hub-wide.
+    fir: Fir | null;
+    // Given by the Controller Source, which also takes it away.
+    fromSource: boolean;
+    canRemove: boolean;
+};
+
+// Where the user is a Controller: may staff events.
+type ControllerStatus = {
+    administrator: boolean;
+    // The Controller Rule makes them one Hub-wide.
+    byRule: boolean;
+    ruleInCharge: boolean;
+    // The Integration deciding who is a Controller, if one is.
+    source: string | null;
+    grants: ControllerGrant[];
+    // Where the signed-in user may make them one by hand: null for Hub-wide, otherwise a FIR's id.
+    grantableIn: (number | null)[];
 };
 
 type AssignableRole = {
@@ -40,11 +60,12 @@ type EditUserProps = {
     roles: AssignableRole[];
     // The FIRs the signed-in user may give roles in.
     firs: (Fir & { id: number })[];
+    controller: ControllerStatus;
 };
 
 const describe = (assignment: Assignment) => (assignment.fir ? `${assignment.role} in ${assignment.fir.icao}` : assignment.role);
 
-export default function EditUser({ user, assignments, roles, firs }: EditUserProps) {
+export default function EditUser({ user, assignments, roles, firs, controller }: EditUserProps) {
     const confirm = useConfirm();
     const { auth, errors } = usePage().props;
     const isMe = auth.user?.id === user.id;
@@ -142,11 +163,6 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
                                             ) : (
                                                 <span className="text-sm text-muted-foreground">across the hub</span>
                                             )}
-                                            {assignment.automatic && (
-                                                <Badge variant="secondary" title="Given and taken away automatically, by rating and subdivision.">
-                                                    Given automatically
-                                                </Badge>
-                                            )}
                                         </span>
                                         {assignment.canRemove && (
                                             <Button
@@ -223,8 +239,127 @@ export default function EditUser({ user, assignments, roles, firs }: EditUserPro
                         </form>
                     </CardContent>
                 </Card>
+
+                <ControllerCard user={user} controller={controller} firs={firs} />
             </div>
         </>
+    );
+}
+
+const describeGrant = (grant: ControllerGrant) => (grant.fir ? `Controller in ${grant.fir.icao}` : 'Controller Hub-wide');
+
+function ControllerCard({ user, controller, firs }: { user: AdminUser; controller: ControllerStatus; firs: EditUserProps['firs'] }) {
+    const confirm = useConfirm();
+    const { errors } = usePage().props;
+    const taken = controller.grants.map((grant) => grant.fir?.icao ?? null);
+    const places = controller.grantableIn.filter((place) => {
+        const icao = place === null ? null : (firs.find((fir) => fir.id === place)?.icao ?? null);
+
+        return !taken.includes(icao);
+    });
+    const form = useForm({ fir_id: (places[0] ?? '') as number | '' });
+
+    const add = (e: FormEvent) => {
+        e.preventDefault();
+        form.post(`/admin/users/${user.id}/controller-grants`, { preserveScroll: true });
+    };
+
+    const remove = async (grant: ControllerGrant) => {
+        const confirmed = await confirm({
+            title: `Remove ${describeGrant(grant)}?`,
+            description: `${user.name} will no longer be able to staff those events, unless they’re a Controller there some other way.`,
+            confirmLabel: 'Remove',
+            destructive: true,
+        });
+
+        if (confirmed) {
+            router.delete(`/admin/users/${user.id}/controller-grants/${grant.id}`, { preserveScroll: true });
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Controller</CardTitle>
+                <CardDescription>Controllers may staff events: book shifts, show interest and be rostered, Hub-wide or in one FIR.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-6">
+                <ul className="flex flex-col divide-y">
+                    {controller.administrator && (
+                        <li className="py-3 text-sm first:pt-0 last:pb-0">
+                            <span className="font-medium">Everywhere</span> <span className="text-muted-foreground">as an Administrator</span>
+                        </li>
+                    )}
+                    {controller.byRule && (
+                        <li className="py-3 text-sm first:pt-0 last:pb-0">
+                            <span className="font-medium">Hub-wide</span>{' '}
+                            <span className="text-muted-foreground">by the Controller Rule: rated S1 or above in the vACC’s subdivision</span>
+                        </li>
+                    )}
+                    {controller.grants.map((grant) => (
+                        <li key={grant.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                            <span className="flex flex-1 flex-wrap items-center gap-2">
+                                {grant.fir ? (
+                                    <span className="flex items-center gap-2 text-sm">
+                                        In
+                                        <Badge variant="outline" className="font-mono">
+                                            {grant.fir.icao}
+                                        </Badge>
+                                        <span className="text-muted-foreground">{grant.fir.name !== grant.fir.icao && grant.fir.name}</span>
+                                    </span>
+                                ) : (
+                                    <span className="text-sm font-medium">Hub-wide</span>
+                                )}
+                                {grant.fromSource ? (
+                                    <Badge variant="secondary" title="Given and taken away by the Integration deciding who is a Controller.">
+                                        From {controller.source ?? 'the Controller Source'}
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="outline">By hand</Badge>
+                                )}
+                            </span>
+                            {grant.canRemove && (
+                                <Button variant="ghost" size="sm" onClick={() => remove(grant)} aria-label={`Remove ${describeGrant(grant)}`}>
+                                    <Trash2 />
+                                </Button>
+                            )}
+                        </li>
+                    ))}
+                    {!controller.administrator && !controller.byRule && controller.grants.length === 0 && (
+                        <li className="text-sm text-muted-foreground">Not a Controller anywhere, so they can’t staff events.</li>
+                    )}
+                </ul>
+
+                {places.length > 0 && (
+                    <form onSubmit={add} className="flex flex-col gap-2 border-t pt-6">
+                        <span className="text-sm font-medium">Make them a Controller by hand</span>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                            <div className="sm:flex-1">
+                                <NativeSelect
+                                    aria-label="Where they’re a Controller"
+                                    value={form.data.fir_id}
+                                    onChange={(e) => form.setData('fir_id', e.target.value === '' ? '' : Number(e.target.value))}
+                                >
+                                    {places.includes(null) && <option value="">Hub-wide</option>}
+                                    {firs
+                                        .filter((fir) => places.includes(fir.id))
+                                        .map((fir) => (
+                                            <option key={fir.id} value={fir.id}>
+                                                {fir.icao} {fir.name !== fir.icao ? fir.name : ''}
+                                            </option>
+                                        ))}
+                                </NativeSelect>
+                            </div>
+                            <Button type="submit" disabled={form.processing}>
+                                <Plus />
+                                Add
+                            </Button>
+                        </div>
+                        <FieldError message={form.errors.fir_id ?? errors.controller} />
+                    </form>
+                )}
+            </CardContent>
+        </Card>
     );
 }
 

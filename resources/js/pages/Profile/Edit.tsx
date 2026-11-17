@@ -208,7 +208,7 @@ function RolesCard({ roleGroups }: { roleGroups: ProfileProps['roleGroups'] }) {
                                             {role.automatic && (
                                                 <span
                                                     className="font-normal text-muted-foreground"
-                                                    title="Given automatically, from your VATSIM rating and subdivision or an Integration"
+                                                    title="Decided automatically, from your VATSIM rating and subdivision or an Integration"
                                                 >
                                                     · Automatic
                                                 </span>

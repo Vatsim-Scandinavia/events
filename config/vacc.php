@@ -20,8 +20,8 @@ return [
 
     'division' => env('VACC_DIVISION') ?: null,
 
-    // The VATSIM subdivision code, e.g. SCA. Members rated S1 or above can get the
-    // Controller role automatically (switched on in the app).
+    // The VATSIM subdivision code, e.g. SCA. Members rated S1 or above in it are Controllers
+    // by the Controller Rule, once it's switched on in the app.
     'subdivision' => filled(env('VACC_SUBDIVISION')) ? strtoupper(trim((string) env('VACC_SUBDIVISION'))) : null,
 
     'website' => env('VACC_WEBSITE') ?: null,

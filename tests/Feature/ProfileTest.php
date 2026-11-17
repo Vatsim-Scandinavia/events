@@ -4,9 +4,9 @@ namespace Tests\Feature;
 
 use App\Auth\RoleAssignments;
 use App\Auth\Roles;
-use App\Enums\AssignmentSource;
 use App\Enums\ControllerRating;
 use App\Enums\NameDisplay;
+use App\Models\ControllerGrant;
 use App\Models\Fir;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,7 +55,7 @@ class ProfileTest extends TestCase
         app(RoleAssignments::class)->give($user, Roles::VACC_STAFF);
         app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF, $polaris);
         app(RoleAssignments::class)->give($user, Roles::EVENT_STAFF, $copenhagen);
-        app(RoleAssignments::class)->give($user, Roles::CONTROLLER, $copenhagen, AssignmentSource::Automatic);
+        ControllerGrant::factory()->for($user)->fromSource()->in($copenhagen)->create();
 
         $this->actingAs($user)->get('/profile')->assertInertia(fn (Assert $page) => $page
             ->where('details', ['name' => 'Jane Doe', 'cid' => 1000009, 'rating' => 'S2', 'subdivision' => 'SCA'])

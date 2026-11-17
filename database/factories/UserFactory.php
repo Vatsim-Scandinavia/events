@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Auth\RoleAssignments;
 use App\Auth\Roles;
 use App\Enums\ControllerRating;
+use App\Models\ControllerGrant;
 use App\Models\Fir;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -30,15 +31,16 @@ class UserFactory extends Factory
     }
 
     /**
-     * A rated controller with the Controller role, so eligible to staff events.
+     * A rated controller made a Controller by hand, Hub-wide or only in the given FIR, so able to
+     * staff events.
      */
-    public function controller(ControllerRating $rating = ControllerRating::S2): static
+    public function controller(ControllerRating $rating = ControllerRating::S2, ?Fir $fir = null): static
     {
-        return $this->rated($rating)->withRole(Roles::CONTROLLER);
+        return $this->rated($rating)->afterCreating(fn (User $user) => ControllerGrant::factory()->for($user)->state(['fir_id' => $fir?->id])->create());
     }
 
     /**
-     * Someone with a controller rating but no role (yet), who can't staff events.
+     * Someone with a controller rating who isn't a Controller (yet), so can't staff events.
      */
     public function rated(ControllerRating $rating = ControllerRating::S2): static
     {

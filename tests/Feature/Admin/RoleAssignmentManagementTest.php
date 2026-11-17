@@ -106,8 +106,8 @@ class RoleAssignmentManagementTest extends TestCase
             ->where('roles.0.name', Roles::ADMINISTRATOR)
             ->where('roles.0.grantableIn', [])
             ->where('roles.0.hubOnly', true)
-            ->where('roles.3.name', 'User Manager')
-            ->where('roles.3.grantableIn', [null])
+            ->where('roles.2.name', 'User Manager')
+            ->where('roles.2.grantableIn', [null])
         );
     }
 

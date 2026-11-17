@@ -56,6 +56,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Where the user is a Controller by a stored grant. The Controller Rule and Administrator
+     * make someone a Controller too, without one (see App\Auth\Controllers).
+     *
+     * @return HasMany<ControllerGrant, $this>
+     */
+    public function controllerGrants(): HasMany
+    {
+        return $this->hasMany(ControllerGrant::class);
+    }
+
+    /**
      * The roles the user holds, once per assignment. The pivot's fir_id is the FIR a role
      * applies in, or null when it applies across the hub.
      *
