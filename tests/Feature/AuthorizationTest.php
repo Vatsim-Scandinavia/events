@@ -67,10 +67,10 @@ class AuthorizationTest extends TestCase
 
     public function test_administrators_hold_every_permission_everywhere_without_storing_any(): void
     {
-        Role::findByName(Roles::ADMINISTRATOR)->update(['permissions' => []]);
         $admin = User::factory()->admin()->create();
         $authorization = app(Authorization::class);
 
+        $this->assertTrue(Role::findByName(Roles::ADMINISTRATOR)->permissions->isEmpty());
         $this->assertTrue($authorization->isAdministrator($admin));
         $this->assertTrue($authorization->holds($admin, Permission::ManageUsers, Where::hub()));
         $this->assertNull($authorization->firsWhere($admin, Permission::ManageEvents));

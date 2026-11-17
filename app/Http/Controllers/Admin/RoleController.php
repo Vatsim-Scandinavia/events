@@ -67,7 +67,7 @@ class RoleController extends Controller
             'role' => [
                 'id' => $role->id,
                 'name' => $role->name,
-                'permissions' => $role->permissions->pluck('value'),
+                'permissions' => Roles::permissionsOf($role)->pluck('value'),
                 'users' => $role->assignments()->distinct()->count('user_id'),
                 'builtIn' => Roles::isBuiltIn($role),
                 'administrator' => Roles::isAdministrator($role),

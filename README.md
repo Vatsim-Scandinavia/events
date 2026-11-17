@@ -123,7 +123,7 @@ Backend code lives in `app/`, with staffing rules in `app/Staffing`. Pages are i
 
 ## Deploying
 
-The hub ships as a Docker image. Each release is published as `ghcr.io/vatsim-scandinavia/events:v2.0.0`, and `:v2.0` and `:v2` follow the newest release of their line; every push to `dev` publishes `:dev`. [compose.yaml](compose.yaml) runs `:v2` unless `HUB_VERSION` in `.env` names another tag, such as `v2.0.0` to pin a release or `dev`. It runs the image with a scheduler, a queue worker and one storage volume for uploads, logs and SQLite; its comments cover the settings. Starting the container migrates the database, creates the built-in roles (`php artisan roles:sync`) and caches the configuration.
+The hub ships as a Docker image. Each release is published as `ghcr.io/vatsim-scandinavia/events:v2.0.0`, and `:v2.0` and `:v2` follow the newest release of their line; every push to `dev` publishes `:dev`. [compose.yaml](compose.yaml) runs `:v2` unless `HUB_VERSION` in `.env` names another tag, such as `v2.0.0` to pin a release or `dev`. It runs the image with a scheduler, a queue worker and one storage volume for uploads, logs and SQLite; its comments cover the settings. Starting the container migrates the database, which also creates the built-in roles, and caches the configuration.
 
 **Background jobs.** These run through Laravel's scheduler (`php artisan schedule:work` in the Compose setup, or `php artisan schedule:run` every minute from cron):
 

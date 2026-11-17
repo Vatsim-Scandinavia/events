@@ -12,9 +12,9 @@ use Illuminate\Support\Collection;
 /**
  * The roles the hub ships with. Who may hand out which role is decided by Authorization.
  *
- * Built-in roles can't be renamed or deleted. Administrator always holds every permission
- * and applies across the hub. The others start out with the permissions below, which admins
- * can change later. Someone holding no role at all is a Pilot.
+ * Built-in roles can't be renamed or deleted. Administrator holds every permission by rule,
+ * whatever its stored permissions say, and applies across the hub. Someone holding no role at
+ * all is a Pilot.
  */
 final class Roles
 {
@@ -30,28 +30,12 @@ final class Roles
     public const string PILOT = 'Pilot';
 
     /**
-     * The permissions each built-in role starts out with. Administrator holds everything.
+     * The roles every Hub has, created by the roles migration. Administrator holds everything by
+     * rule and stores no permissions; the others start out with a few, which admins can change.
      *
-     * @var array<string, list<Permission>>
+     * @var list<string>
      */
-    private const array DEFAULTS = [
-        self::EVENT_STAFF => [Permission::ManageEvents, Permission::ManageStaffing],
-        self::VACC_STAFF => [Permission::ViewEvents],
-        self::CONTROLLER => [Permission::BookPositions],
-    ];
-
-    /**
-     * Makes sure every built-in role exists, and that Administrator holds every permission.
-     * Other built-in roles get their permissions only when first created.
-     */
-    public static function sync(): void
-    {
-        Role::query()->updateOrCreate(['name' => self::ADMINISTRATOR], ['permissions' => Permission::cases()]);
-
-        foreach (self::DEFAULTS as $name => $permissions) {
-            Role::query()->firstOrCreate(['name' => $name], ['permissions' => $permissions]);
-        }
-    }
+    private const array BUILT_IN = [self::ADMINISTRATOR, self::EVENT_STAFF, self::VACC_STAFF, self::CONTROLLER];
 
     /**
      * @return list<string>
@@ -68,7 +52,17 @@ final class Roles
 
     public static function isBuiltIn(Role $role): bool
     {
-        return self::isAdministrator($role) || array_key_exists($role->name, self::DEFAULTS);
+        return in_array($role->name, self::BUILT_IN, true);
+    }
+
+    /**
+     * The permissions a role grants: every one for Administrator, otherwise those it stores.
+     *
+     * @return Collection<int, Permission>
+     */
+    public static function permissionsOf(Role $role): Collection
+    {
+        return self::isAdministrator($role) ? collect(Permission::cases()) : $role->permissions->values();
     }
 
     /**
@@ -78,7 +72,7 @@ final class Roles
      */
     public static function permissionLabels(Role $role): array
     {
-        return $role->permissions->map(fn (Permission $permission) => $permission->label())->values()->all();
+        return self::permissionsOf($role)->map(fn (Permission $permission) => $permission->label())->values()->all();
     }
 
     /**

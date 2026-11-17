@@ -16,7 +16,9 @@ class UserManagementTest extends TestCase
 
     public function test_the_built_in_roles_exist_with_the_right_permissions(): void
     {
-        $this->assertEqualsCanonicalizing(Roles::all(), Role::findByName(Roles::ADMINISTRATOR)->permissions->pluck('value')->all());
+        // Administrator holds every permission by rule, so it stores none.
+        $this->assertTrue(Role::findByName(Roles::ADMINISTRATOR)->permissions->isEmpty());
+        $this->assertEqualsCanonicalizing(Roles::all(), Roles::permissionsOf(Role::findByName(Roles::ADMINISTRATOR))->pluck('value')->all());
         $this->assertEqualsCanonicalizing(
             [Permission::ManageEvents->value, Permission::ManageStaffing->value],
             Role::findByName(Roles::EVENT_STAFF)->permissions->pluck('value')->all(),

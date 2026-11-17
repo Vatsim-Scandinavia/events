@@ -78,7 +78,7 @@ class RoleManagementTest extends TestCase
 
         $role->refresh();
         $this->assertSame(Roles::ADMINISTRATOR, $role->name);
-        $this->assertEqualsCanonicalizing(Roles::all(), $role->permissions->pluck('value')->all());
+        $this->assertEqualsCanonicalizing(Roles::all(), Roles::permissionsOf($role)->pluck('value')->all());
     }
 
     public function test_other_built_in_roles_keep_their_name_but_their_permissions_can_change(): void

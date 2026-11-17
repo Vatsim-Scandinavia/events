@@ -115,7 +115,6 @@ fi
 
 if [ "${RUN_MIGRATIONS:-true}" = true ]; then
     as_web php artisan migrate --force
-    as_web php artisan roles:sync
 fi
 
 as_web php artisan optimize
