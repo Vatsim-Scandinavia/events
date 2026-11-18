@@ -16,7 +16,7 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Keeps one Roster message in each Event's Roster channel, showing the Roster of its next
- * upcoming date that isn't cancelled (see ADR 0005). Whenever staffing changes, the Event's
+ * upcoming date that isn't cancelled. Whenever staffing changes, the Event's
  * message is brought in line (UpdateRosterMessage); a sweep every few minutes moves messages on
  * once their date ends and catches anything missed.
  *

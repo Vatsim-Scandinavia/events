@@ -10,7 +10,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 /**
  * Something about who works which position when changed on these dates: a booking, the
  * positions or shifts, a roster, the dates themselves, or whether they're cancelled. Fired
- * once the change is committed, for Integrations to follow (see ADR 0004); the core itself
+ * once the change is committed, for Integrations to follow; the core itself
  * never listens.
  */
 final class StaffingChanged implements ShouldDispatchAfterCommit

@@ -9,7 +9,7 @@ use App\Models\User;
 /**
  * Something other than the core that has a word to say about staffing, shown next to it but
  * never enforced: an Integration feature warning that a controller isn't endorsed for a
- * position, or that a booking couldn't be sent on. See ADR 0004.
+ * position, or that a booking couldn't be sent on.
  */
 interface StaffingNotes
 {

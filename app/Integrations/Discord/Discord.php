@@ -8,8 +8,8 @@ use App\Integrations\Integration;
 use App\Integrations\Setting;
 
 /**
- * The vACC's Discord server, posted to through channel webhooks only, with no bot user (see
- * ADR 0005). Discord shows what happens on the Hub; nothing is booked from it. Webhooks must
+ * The vACC's Discord server, posted to through channel webhooks only, with no bot user.
+ * Discord shows what happens on the Hub; nothing is booked from it. Webhooks must
  * match WEBHOOK_PATTERN and are only called through Webhook, so they only ever reach Discord.
  */
 class Discord extends Integration

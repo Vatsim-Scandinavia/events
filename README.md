@@ -138,7 +138,7 @@ The hub ships as a Docker image. Each release is published as `ghcr.io/vatsim-sc
 
 Versions follow [semantic versioning](https://semver.org): a breaking change, such as an upgrade that needs more than pulling the new image, bumps the major version.
 
-Releases are cut by [release-please](https://github.com/googleapis/release-please) from the commits on `dev` (see [ADR 0007](docs/adr/0007-releases-are-cut-from-dev-by-release-please.md)):
+Releases are cut by [release-please](https://github.com/googleapis/release-please) from the commits on `dev`:
 
 1. After each push to `dev`, release-please keeps a Release PR open. It holds the next version, worked out from the commits since the last release (`feat:` bumps the minor version, `fix:` the patch, a `!` such as `feat!:` the major), and its [CHANGELOG.md](CHANGELOG.md) entry.
 2. Edit the Release PR's changelog if it needs it, calling out anything breaking, and merge it when you want to release.

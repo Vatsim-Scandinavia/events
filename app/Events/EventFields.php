@@ -8,7 +8,7 @@ use Illuminate\Validation\ValidationException;
 /**
  * An Integration feature that keeps details of its own about each Event, entered on the Event
  * form by whoever can manage the Event, such as the Discord webhook its roster is shown
- * through. The feature stores the values in its own tables. See ADR 0005.
+ * through. The feature stores the values in its own tables.
  */
 interface EventFields
 {

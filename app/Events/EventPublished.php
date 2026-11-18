@@ -8,7 +8,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 
 /**
  * A Draft was published, for the first time. Fired once the change is committed, for
- * Integrations to follow (see ADR 0005); the core itself never listens.
+ * Integrations to follow; the core itself never listens.
  */
 final class EventPublished implements ShouldDispatchAfterCommit
 {

@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\V1\OccurrenceController;
 use App\Http\Controllers\Api\V1\RosterController;
 use Illuminate\Support\Facades\Route;
 
-// The public read API. v1 only ever grows; see docs/adr/0003-versioned-public-read-api.md.
+// The public read API. v1 only ever grows: changes add to it, never alter or remove.
 Route::prefix('v1')->name('api.v1.')->middleware(['throttle:api', 'cache.headers:public;max_age=60'])->group(function () {
     Route::get('/events', [EventController::class, 'index'])->name('events.index');
     // API consumers keep plain IDs; the web pages' slugs aren't for them.

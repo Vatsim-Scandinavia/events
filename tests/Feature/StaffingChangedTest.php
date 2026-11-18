@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 
 /**
- * StaffingChanged is how Integrations follow staffing (ADR 0004), so every write that changes
+ * StaffingChanged is how Integrations follow staffing, so every write that changes
  * who works which position when must announce the dates it touched, and a refused one nothing.
  */
 class StaffingChangedTest extends TestCase
