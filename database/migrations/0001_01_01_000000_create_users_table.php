@@ -19,6 +19,8 @@ return new class extends Migration
             $table->unsignedTinyInteger('rating')->default(0);
             $table->string('subdivision', 10)->nullable();
             $table->string('timezone', 64)->nullable();
+            // When the daily sync last tried to refresh their Member Details; it goes oldest first.
+            $table->timestamp('details_synced_at')->nullable()->index();
             $table->timestamps();
         });
 

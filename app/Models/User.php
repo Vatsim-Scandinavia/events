@@ -37,6 +37,7 @@ class User extends Authenticatable
             'vatsim_cid' => 'integer',
             'rating' => ControllerRating::class,
             'name_display' => NameDisplay::class,
+            'details_synced_at' => 'immutable_datetime',
         ];
     }
 

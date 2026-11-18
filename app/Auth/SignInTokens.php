@@ -39,24 +39,27 @@ final class SignInTokens
     }
 
     /**
-     * An access token for the member that works now, refreshed first if it had (nearly) expired.
-     * Null when they have none that works any more.
+     * An access token for the member that works now, refreshed first if it had (nearly) expired,
+     * or whatever its expiry says when $refresh (the provider just turned it down). Null when they
+     * have none that works any more.
      *
      * @throws OAuthRequestFailed when the provider couldn't be reached; the tokens are kept
      */
-    public function accessToken(User $user): ?string
+    public function accessToken(User $user, bool $refresh = false): ?string
     {
         $token = $this->stored($user);
 
-        if ($token === null || $this->isFresh($token)) {
+        if ($token === null || (! $refresh && $this->isFresh($token))) {
             return $token?->access_token;
         }
 
-        return Cache::lock("sign-in-tokens:{$user->id}", 30)->block(10, function () use ($user) {
+        $refused = $token->access_token;
+
+        return Cache::lock("sign-in-tokens:{$user->id}", 30)->block(10, function () use ($user, $refresh, $refused) {
             // Someone else may have refreshed it while this waited for the lock.
             $token = $this->stored($user);
 
-            if ($token === null || $this->isFresh($token)) {
+            if ($token === null || ($this->isFresh($token) && (! $refresh || $token->access_token !== $refused))) {
                 return $token?->access_token;
             }
 

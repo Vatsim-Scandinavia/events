@@ -122,7 +122,7 @@ The hub ships as a Docker image. Each release is published as `ghcr.io/vatsim-sc
 **Background jobs.** These run through Laravel's scheduler (`php artisan schedule:work` in the Compose setup, or `php artisan schedule:run` every minute from cron):
 
 - `events:extend-repeats` (daily) adds new dates to events that repeat indefinitely.
-- `users:sync-vatsim` (daily) keeps the automatic Controller role up to date between sign-ins. While that role is switched on, it refreshes the rating and subdivision of everyone it could affect (people in the subdivision, or holding the automatic role) from the VATSIM API. Everyone else is refreshed when they sign in. Set `VATSIM_SYNC=false` where people sign in with sandbox accounts, which the live API doesn't know.
+- `users:sync-vatsim` (daily) refreshes every Account's VATSIM details between sign-ins, so the Controller Rule never goes by a stale rating or subdivision. It reads each member's details from the sign-in provider with the tokens they signed in with, or, without working tokens, their rating and subdivision from the public VATSIM API. It goes least recently synced first and stops at a rate limit or an outage, carrying on the next day, and signs out anyone it finds suspended. Set `VATSIM_SYNC=false` where people sign in with sandbox accounts, which the live API doesn't know.
 - `model:prune` (daily) forgets Integration sync runs older than 90 days.
 - The syncs of Integrations switched on under Admin → Integrations, such as Control Center's roster (hourly), positions (daily) and booking push (hourly sweep), and the Discord roster messages sweep (every five minutes).
 

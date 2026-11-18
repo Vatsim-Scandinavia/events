@@ -17,7 +17,6 @@ use App\Models\User;
 use App\Services\VaccIdentity;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -275,20 +274,6 @@ class ControllersTest extends TestCase
         $this->switchSourceOn();
 
         $this->actingAs($admin)->get('/admin/settings')->assertInertia(fn (Assert $page) => $page->where('controllerSource', 'Fake System roster sync'));
-    }
-
-    public function test_the_vatsim_sync_steps_aside_for_a_source(): void
-    {
-        Http::fake();
-        $this->useControllerRule('SCA');
-        $this->switchSourceOn();
-        User::factory()->rated(ControllerRating::S2)->create(['subdivision' => 'SCA']);
-
-        $this->artisan('users:sync-vatsim')
-            ->expectsOutput('Fake System roster sync decides who is a Controller; nothing to sync.')
-            ->assertSuccessful();
-
-        Http::assertNothingSent();
     }
 
     private function useControllerRule(?string $subdivision, bool $on = true): void

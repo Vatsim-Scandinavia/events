@@ -2,104 +2,85 @@
 
 namespace App\Console\Commands;
 
-use App\Auth\Accounts;
-use App\Auth\Controllers;
-use App\Auth\MemberDetails;
+use App\Auth\MemberDetailsSync;
+use App\Auth\MemberSyncStopped;
+use App\Enums\MemberSyncOutcome;
 use App\Models\User;
-use App\Services\VaccIdentity;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\RequestException;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Sleep;
 
 /**
- * Ratings and subdivisions are otherwise only refreshed at sign-in, and the Controller Rule is
- * worked out from them, so someone who left the subdivision and never signs in again would stay
- * a Controller. This re-reads the VATSIM member record of everyone in the subdivision every day.
+ * Member Details are otherwise only refreshed at sign-in, and the Controller Rule is worked out
+ * from them, so someone who left the subdivision and never signs in again would stay a Controller.
+ * Every day this refreshes every Account's details (see MemberDetailsSync), whether or not a
+ * Controller Source is in charge: ratings and names show everywhere.
  *
- * A member whose record can't be fetched is left as they are, so an outage, or a sandbox
- * account the live API doesn't know, never changes anything. VATSIM_SYNC=false switches it off,
- * and it steps aside while the Controller Rule isn't in charge.
+ * It goes least recently synced first and stops at a rate limit or an outage, so a run cut short
+ * picks up where it left off the next day. VATSIM_SYNC=false switches it off, for installs whose
+ * people sign in with sandbox accounts the live VATSIM API doesn't know.
  */
-#[Signature('users:sync-vatsim {--pause=1000 : Milliseconds to wait between requests to the VATSIM API}')]
-#[Description('Refresh VATSIM ratings and subdivisions, which the Controller Rule follows')]
+#[Signature('users:sync-vatsim {--pause=1000 : Milliseconds to wait between requests to VATSIM}')]
+#[Description('Refresh every Account’s Member Details from VATSIM')]
 class SyncVatsimDetails extends Command
 {
-    private const MEMBER_URL = 'https://api.vatsim.net/v2/members/%d';
-
-    public function handle(Controllers $controllers): void
+    public function handle(MemberDetailsSync $sync): int
     {
         if (! config('services.vatsim.sync')) {
             $this->info('Syncing with VATSIM is switched off (VATSIM_SYNC=false); nothing to sync.');
 
-            return;
-        }
-
-        if ($controllers->sourceIsInCharge() && $source = $controllers->source()) {
-            $this->info("{$source->controllerSourceName()} decides who is a Controller; nothing to sync.");
-
-            return;
-        }
-
-        if (! $controllers->ruleIsInCharge()) {
-            $this->info('The Controller Rule is switched off; nothing to sync.');
-
-            return;
+            return self::SUCCESS;
         }
 
         $pause = max(0, (int) $this->option('pause'));
-        $synced = 0;
-        $skipped = 0;
+        $counts = array_fill_keys(array_map(fn (MemberSyncOutcome $outcome) => $outcome->value, MemberSyncOutcome::cases()), 0);
+        $stopped = null;
 
-        $subdivision = strtoupper((string) app(VaccIdentity::class)->effective()['subdivision']);
+        // By id up front, since syncing changes the order this goes in.
+        $ids = User::query()
+            ->orderByRaw('details_synced_at is not null')
+            ->orderBy('details_synced_at')
+            ->orderBy('id')
+            ->pluck('id');
 
-        // Everyone the Controller Rule could make a Controller, or stop being one.
-        User::query()->whereRaw('upper(subdivision) = ?', [$subdivision])->chunkById(100, function ($users) use ($pause, &$synced, &$skipped) {
-            foreach ($users as $user) {
-                if ($synced + $skipped > 0) {
-                    Sleep::usleep($pause * 1000);
-                }
+        foreach ($ids as $index => $id) {
+            $user = User::query()->find($id);
 
-                if ($this->refresh($user)) {
-                    $synced++;
-                } else {
-                    $skipped++;
-                }
+            if ($user === null) {
+                continue;
             }
-        });
 
-        $this->info("Synced {$synced} ".str('member')->plural($synced).", skipped {$skipped}.");
-    }
+            if ($index > 0) {
+                Sleep::usleep($pause * 1000);
+            }
 
-    /**
-     * Copy the member's rating and subdivision from VATSIM. False when the record couldn't be read.
-     */
-    private function refresh(User $user): bool
-    {
-        try {
-            $member = Http::timeout(10)->acceptJson()
-                ->get(sprintf(self::MEMBER_URL, $user->vatsim_cid))
-                ->throw()
-                ->json();
-        } catch (ConnectionException|RequestException $exception) {
-            $this->warn("{$user->vatsim_cid}: could not load the VATSIM member record ({$exception->getMessage()}).");
+            try {
+                $outcome = $sync->sync($user);
+            } catch (MemberSyncStopped $stop) {
+                $stopped = $stop->getMessage();
 
-            return false;
+                break;
+            }
+
+            $counts[$outcome->value]++;
+
+            if ($outcome === MemberSyncOutcome::Skipped) {
+                $this->warn("{$user->vatsim_cid}: VATSIM had no record to read.");
+                Log::info('The VATSIM sync skipped a member it could not read.', ['cid' => $user->vatsim_cid]);
+            }
         }
 
-        $details = is_array($member) ? MemberDetails::fromPublicRecord($user->vatsim_cid, $member) : null;
+        $summary = "Synced {$counts['via_token']} with their tokens and {$counts['via_public_record']} from the public VATSIM API, skipped {$counts['skipped']}, signed out {$counts['suspended']} suspended.";
+        $this->info($summary);
+        Log::info('The VATSIM sync ran.', $counts);
 
-        if ($details === null) {
-            $this->warn("{$user->vatsim_cid}: the VATSIM member record had no rating.");
-
-            return false;
+        if ($stopped !== null) {
+            $this->warn("Stopped early: {$stopped}. The rest go first tomorrow.");
+            Log::warning('The VATSIM sync stopped early.', ['reason' => $stopped]);
         }
 
-        app(Accounts::class)->apply($details);
-
-        return true;
+        return self::SUCCESS;
     }
 }
