@@ -2,8 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Auth\Accounts;
 use App\Auth\Controllers;
-use App\Enums\ControllerRating;
+use App\Auth\MemberDetails;
 use App\Models\User;
 use App\Services\VaccIdentity;
 use Illuminate\Console\Attributes\Description;
@@ -89,19 +90,15 @@ class SyncVatsimDetails extends Command
             return false;
         }
 
-        if (! is_array($member) || ! array_key_exists('rating', $member)) {
+        $details = is_array($member) ? MemberDetails::fromPublicRecord($user->vatsim_cid, $member) : null;
+
+        if ($details === null) {
             $this->warn("{$user->vatsim_cid}: the VATSIM member record had no rating.");
 
             return false;
         }
 
-        if ($rating = ControllerRating::tryFrom((int) $member['rating'])) {
-            $user->rating = $rating;
-        }
-
-        // Null when they aren't in a subdivision, as at sign-in.
-        $user->subdivision = ($member['subdivision_id'] ?? null) ?: null;
-        $user->save();
+        app(Accounts::class)->apply($details);
 
         return true;
     }

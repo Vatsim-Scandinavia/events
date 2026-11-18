@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Auth\Accounts;
 use App\Auth\Controllers;
-use App\Enums\ControllerRating;
+use App\Auth\MemberDetails;
 use App\Enums\SignInProvider;
-use App\Models\User;
 use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
@@ -39,7 +38,7 @@ class SignInController extends Controller
         return Inertia::location(Socialite::driver($provider->value)->redirect()->getTargetUrl());
     }
 
-    public function callback(Request $request, SignInProvider $provider, Controllers $controllers): RedirectResponse
+    public function callback(Request $request, SignInProvider $provider, Accounts $accounts, Controllers $controllers): RedirectResponse
     {
         $this->ensureConfigured($provider);
 
@@ -54,26 +53,13 @@ class SignInController extends Controller
             return $this->failed("Sign-in with {$provider->label()} failed. Please try again.");
         }
 
-        if (blank($vatsimUser->getId())) {
+        $details = MemberDetails::fromSignIn($vatsimUser->getRaw());
+
+        if ($details === null) {
             return $this->failed("{$provider->label()} did not share your CID. Please allow access to your VATSIM details.");
         }
 
-        $user = User::query()->firstOrNew(['vatsim_cid' => (int) $vatsimUser->getId()]);
-        $user->fill([
-            'name' => $vatsimUser->getName() ?: "VATSIM {$vatsimUser->getId()}",
-            'first_name' => Arr::get($vatsimUser->getRaw(), 'personal.name_first') ?: null,
-            'email' => $vatsimUser->getEmail(),
-        ]);
-
-        $ratingId = Arr::get($vatsimUser->getRaw(), 'vatsim.rating.id');
-        if ($ratingId !== null && ($rating = ControllerRating::tryFrom((int) $ratingId))) {
-            $user->rating = $rating;
-        }
-
-        // Null when they aren't in a subdivision; the Controller Rule follows it.
-        $user->subdivision = Arr::get($vatsimUser->getRaw(), 'vatsim.subdivision.id') ?: null;
-
-        $user->save();
+        $user = $accounts->apply($details);
         $controllers->signedIn($user);
 
         Auth::login($user);
