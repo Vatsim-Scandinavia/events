@@ -68,7 +68,9 @@ class SignInToken extends Model
     /**
      * An access token that works now, refreshed first when it has (nearly) expired or when $refresh
      * (the provider just turned it down). Null, and the tokens deleted, when the provider refuses to
-     * refresh them.
+     * refresh them because of the token itself (`invalid_grant`, or `invalid_request` as Connect
+     * answers a revoked one). Any other refusal, such as `invalid_client` after a secret was
+     * changed, keeps every Account's tokens and is thrown, so it shows up as a failed job.
      *
      * @throws TransferException when the provider is down or rate limiting
      */
@@ -79,7 +81,7 @@ class SignInToken extends Model
         }
 
         if ($this->refresh_token === null) {
-            $this->delete();
+            $this->deleteUnlessReplaced();
 
             return null;
         }
@@ -87,11 +89,13 @@ class SignInToken extends Model
         try {
             $tokens = Socialite::driver($this->provider->value)->refreshToken($this->refresh_token);
         } catch (ClientException $refused) {
-            if ($refused->getResponse()->getStatusCode() === 429) {
+            $error = json_decode((string) $refused->getResponse()->getBody(), true)['error'] ?? null;
+
+            if (! in_array($error, ['invalid_grant', 'invalid_request'], true)) {
                 throw $refused;
             }
 
-            $this->delete();
+            $this->deleteUnlessReplaced();
 
             return null;
         }
@@ -103,5 +107,15 @@ class SignInToken extends Model
         ]);
 
         return $this->access_token;
+    }
+
+    /**
+     * Delete these tokens, unless a sign-in replaced them since they were read, so a sync that
+     * gives up on old tokens never takes away new ones.
+     */
+    public function deleteUnlessReplaced(): void
+    {
+        // The stored ciphertext changes whenever the tokens are written, so it tells the two apart.
+        self::query()->whereKey($this->getKey())->where('access_token', $this->getRawOriginal('access_token'))->delete();
     }
 }

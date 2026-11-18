@@ -106,6 +106,7 @@ class SyncMemberDetailsTest extends TestCase
         $this->assertSame(0, SignInToken::query()->count());
         $this->assertSame('Kim', $member->fresh()->name);
         $this->assertNull($member->fresh()->details_synced_at);
+        $this->assertRefreshSent();
     }
 
     public function test_a_refused_refresh_drops_the_token_and_leaves_the_account_alone(): void
@@ -113,16 +114,47 @@ class SyncMemberDetailsTest extends TestCase
         $member = User::factory()->rated(ControllerRating::S2)->create(['vatsim_cid' => 1000001]);
         $this->giveTokens($member, 'access-1', expiresAt: now()->subDay());
         // Connect answers a revoked refresh token with 401 invalid_request.
-        $this->refreshes = [401];
+        $this->refreshes = [['status' => 401, 'error' => 'invalid_request']];
 
         $this->sync($member);
 
         $this->assertSame(0, SignInToken::query()->count());
         $this->assertSame(ControllerRating::S2, $member->fresh()->rating);
+        $this->assertRefreshSent();
+    }
+
+    public function test_a_refusal_of_the_hubs_own_client_keeps_every_token_and_fails_the_job(): void
+    {
+        $member = User::factory()->create(['vatsim_cid' => 1000001]);
+        $this->giveTokens($member, 'access-1', expiresAt: now()->subDay());
+        // A changed or wrong client secret, which says nothing about the member's tokens.
+        $this->refreshes = [['status' => 401, 'error' => 'invalid_client']];
+
+        try {
+            $this->sync($member);
+            $this->fail('The job should fail, so the problem shows up.');
+        } catch (TransferException) {
+            // Logged as a failed job.
+        }
+
+        $this->assertSame('access-1', SignInToken::query()->sole()->access_token);
+    }
+
+    public function test_giving_up_on_old_tokens_never_deletes_ones_a_sign_in_just_stored(): void
+    {
+        $member = User::factory()->create(['vatsim_cid' => 1000001]);
+        $this->giveTokens($member, 'access-1');
+        $read = SignInToken::query()->sole();
+        $read->newQuery()->whereKey($read->id)->update(['access_token' => encrypt('from-a-new-sign-in', false)]);
+
+        $read->deleteUnlessReplaced();
+
+        $this->assertSame('from-a-new-sign-in', SignInToken::query()->sole()->access_token);
     }
 
     #[TestWith(['refresh', 503])]
     #[TestWith(['refresh', 429])]
+    #[TestWith(['refresh', 408])]
     #[TestWith(['api/user', 503])]
     #[TestWith(['api/user', 429])]
     public function test_an_outage_or_a_rate_limit_is_retried_later_and_keeps_the_token(string $failing, int $status): void
@@ -186,6 +218,11 @@ class SyncMemberDetailsTest extends TestCase
         $this->assertTrue(app(Controllers::class)->isController($member->fresh(), Where::hub()));
     }
 
+    private function assertRefreshSent(): void
+    {
+        Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/oauth/token') && $request['grant_type'] === 'refresh_token');
+    }
+
     private function sync(User $user): void
     {
         (new SyncMemberDetails($user->id))->handle();
@@ -216,10 +253,15 @@ class SyncMemberDetailsTest extends TestCase
     }
 
     /**
-     * @param  array<string, mixed>|int  $answer  A JSON body, or an HTTP status to fail with.
+     * @param  array<string, mixed>|int  $answer  A JSON body, an HTTP status to fail with, or a
+     *                                            failure as ['status' => …, 'error' => …].
      */
     private function answer(array|int $answer): mixed
     {
-        return is_int($answer) ? Http::response(['error' => 'refused'], $answer) : Http::response($answer);
+        if (is_int($answer)) {
+            return Http::response(['error' => 'refused'], $answer);
+        }
+
+        return isset($answer['status']) ? Http::response(['error' => $answer['error']], $answer['status']) : Http::response($answer);
     }
 }

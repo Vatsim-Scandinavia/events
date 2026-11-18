@@ -31,12 +31,16 @@ class VatsimConnectProvider extends AbstractProvider
 
     protected $encodingType = PHP_QUERY_RFC3986;
 
+    /**
+     * @param  string|null  $state
+     */
     protected function getAuthUrl($state): string
     {
         return $this->buildAuthUrlFromBase($this->baseUrl().'/oauth/authorize', $state);
     }
 
     /**
+     * @param  string|null  $state
      * @return array<string, string>
      */
     protected function getCodeFields($state = null): array
@@ -47,6 +51,8 @@ class VatsimConnectProvider extends AbstractProvider
     /**
      * Renew the tokens. Refresh tokens rotate, so the old one stops working once this returns; if
      * none comes back the old one is kept, where Socialite's own refresh would fail.
+     *
+     * @param  string  $refreshToken
      */
     public function refreshToken($refreshToken): Token
     {
@@ -67,6 +73,7 @@ class VatsimConnectProvider extends AbstractProvider
     }
 
     /**
+     * @param  string  $token
      * @return array<string, mixed>
      */
     protected function getUserByToken($token): array

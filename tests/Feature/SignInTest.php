@@ -77,7 +77,8 @@ class SignInTest extends TestCase
             ->where('auth.signIn.label', "Sign in with {$label}"));
     }
 
-    #[DataProvider('providers')]
+    #[TestWith(['vatsim'])]
+    #[TestWith(['handover'])]
     public function test_first_sign_in_creates_the_account_from_their_member_details(string $provider): void
     {
         config(['auth.sign_in_provider' => $provider]);

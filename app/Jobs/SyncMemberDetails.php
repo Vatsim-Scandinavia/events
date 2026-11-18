@@ -31,6 +31,12 @@ class SyncMemberDetails implements ShouldQueue
 {
     use Queueable;
 
+    /** Exceptions other than an outage (say a refused client secret) fail the job after a few tries. */
+    public int $maxExceptions = 10;
+
+    /** @var list<int> */
+    public array $backoff = [60, 300, 900, 1800];
+
     public function __construct(public int $userId) {}
 
     /**
@@ -49,7 +55,8 @@ class SyncMemberDetails implements ShouldQueue
     }
 
     /**
-     * Retries are bounded by time rather than attempts, as the throttle releases jobs too.
+     * Retries are bounded by time rather than attempts, as the throttle releases jobs too; other
+     * exceptions are bounded by $maxExceptions.
      */
     public function retryUntil(): DateTimeInterface
     {
@@ -67,7 +74,7 @@ class SyncMemberDetails implements ShouldQueue
 
         // Tokens from the other provider (the Hub switched between Connect and Handover) can never work.
         if ($token->provider !== SignInProvider::configured()) {
-            $token->delete();
+            $token->deleteUnlessReplaced();
 
             return;
         }
@@ -78,11 +85,12 @@ class SyncMemberDetails implements ShouldQueue
             return;
         }
 
-        $user->applySignInDetails($member)->forceFill(['details_synced_at' => now()])->save();
-
-        if ($user->rating?->isSuspended()) {
+        // Signed out first, so a save that fails can never leave a suspended member signed in.
+        if ($member->rating?->isSuspended()) {
             $this->endSessions($user);
         }
+
+        $user->applySignInDetails($member)->forceFill(['details_synced_at' => now()])->save();
     }
 
     /**
@@ -114,7 +122,7 @@ class SyncMemberDetails implements ShouldQueue
         }
 
         // Turned down even freshly refreshed: it'll never work.
-        $token->delete();
+        $token->deleteUnlessReplaced();
 
         return null;
     }
@@ -125,7 +133,7 @@ class SyncMemberDetails implements ShouldQueue
     private static function isTransient(Throwable $exception): bool
     {
         if ($exception instanceof ClientException) {
-            return $exception->getResponse()->getStatusCode() === 429;
+            return in_array($exception->getResponse()->getStatusCode(), [408, 429], true);
         }
 
         return $exception instanceof TransferException;
@@ -138,7 +146,7 @@ class SyncMemberDetails implements ShouldQueue
     private function endSessions(User $user): void
     {
         if (config('session.driver') === 'database') {
-            DB::table((string) config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
+            DB::connection(config('session.connection'))->table((string) config('session.table', 'sessions'))->where('user_id', $user->id)->delete();
         }
     }
 }
