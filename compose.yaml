@@ -1,6 +1,6 @@
 # Runs the hub from the image CI publishes (or builds it here with `docker compose build`).
 # That's the newest v2 release unless HUB_VERSION in .env names another image tag: v2.0.0 to pin
-# a release, dev for the latest from the dev branch, or playground.
+# a release, or dev for the latest from the dev branch.
 #
 # Put the settings in a .env next to this file, starting from .env.example. For a server set at
 # least APP_KEY, APP_URL, APP_ENV, APP_DEBUG=false and the VATSIM Connect client, plus

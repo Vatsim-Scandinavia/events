@@ -189,7 +189,7 @@ class ShiftBookingTest extends TestCase
         $this->book(User::factory()->create(), $this->towerEarly)->assertForbidden();
 
         $this->actingAsGuest();
-        $this->post("/occurrences/{$this->occurrence->id}/shifts/{$this->towerEarly->id}/booking")->assertRedirect('/auth/vatsim');
+        $this->post("/occurrences/{$this->occurrence->id}/shifts/{$this->towerEarly->id}/booking")->assertRedirect('/sign-in');
 
         $this->assertSame(0, ShiftBooking::count());
     }

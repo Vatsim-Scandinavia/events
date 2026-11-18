@@ -81,21 +81,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
                             {auth.user ? (
                                 <UserMenu user={auth.user} />
                             ) : (
-                                <>
-                                    {/* On phones it's in the menu instead. */}
-                                    {auth.devLogin && (
-                                        <Button variant="ghost" size="sm" className="hidden sm:inline-flex" asChild>
-                                            <Link href="/login">Dev sign-in</Link>
-                                        </Button>
-                                    )}
-                                    <Button size="sm" asChild>
-                                        {/* A full page visit: the sign-in provider is on another origin. On phones the provider is left out for room. */}
-                                        <a href={signInUrl(auth.signIn.url, url)} aria-label={auth.signIn.label}>
-                                            <span className="sm:hidden">Sign in</span>
-                                            <span className="hidden sm:inline">{auth.signIn.label}</span>
-                                        </a>
-                                    </Button>
-                                </>
+                                <Button size="sm" asChild>
+                                    {/* To the sign-in page, then back here. On phones the provider is left out for room. */}
+                                    <Link href={signInUrl(auth.signIn.page, url)} aria-label={auth.signIn.label}>
+                                        <span className="sm:hidden">Sign in</span>
+                                        <span className="hidden sm:inline">{auth.signIn.label}</span>
+                                    </Link>
+                                </Button>
                             )}
 
                             <Popover open={menuOpen} onOpenChange={setMenuOpen}>
@@ -117,11 +109,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
                                                 {item.label}
                                             </Link>
                                         ))}
-                                        {!auth.user && auth.devLogin && (
-                                            <Link href="/login" onClick={() => setMenuOpen(false)} className={cn(menuItemClass, 'sm:hidden')}>
-                                                Dev sign-in
-                                            </Link>
-                                        )}
                                     </nav>
                                 </PopoverContent>
                             </Popover>

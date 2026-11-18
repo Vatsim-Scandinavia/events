@@ -138,7 +138,7 @@ class EventDraftTest extends TestCase
     {
         $draft = Event::factory()->draft()->for($this->copenhagen)->create();
 
-        $this->post("/events/{$draft->getRouteKey()}/publish")->assertRedirect('/auth/vatsim');
+        $this->post("/events/{$draft->getRouteKey()}/publish")->assertRedirect('/sign-in');
         $this->actingAs(User::factory()->vaccStaff($this->copenhagen)->create())->post("/events/{$draft->getRouteKey()}/publish")->assertForbidden();
         $this->actingAs(User::factory()->staff($this->sweden)->create())->post("/events/{$draft->getRouteKey()}/publish")->assertForbidden();
 

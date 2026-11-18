@@ -83,13 +83,7 @@ This installs dependencies, creates `.env` from `.env.example`, generates the ap
 
    Handover vouches for the same CIDs, so existing accounts carry over when you switch. Ratings and subdivisions are still refreshed from the VATSIM API each day.
 
-   To skip VATSIM Connect, turn on development sign-in instead. It only works with `APP_ENV=local`:
-
-   ```env
-   AUTH_DEV_LOGIN=true
-   ```
-
-   `/login` then lets you sign in as any user.
+   To skip VATSIM Connect, use the development links on the sign-in page (`/sign-in`). With `APP_ENV=local`, opened on `localhost`, `127.0.0.1` or a `.test` host, it offers one-click sign-in as each of the sandbox's test members, CIDs 10000001 to 10000010, which are the seeded people. They're never offered anywhere else.
 
 3. Add example events and users (an Administrator, Event Staff, controllers of several ratings and an observer):
 
@@ -151,14 +145,6 @@ Releases are cut by [release-please](https://github.com/googleapis/release-pleas
 3. CI then tags the release and publishes it on GitHub, publishes the image it tested for that commit as `:v2.1.0`, `:v2.1` and `:v2`, and moves `master` to the release. `master` always points at the latest release, so never commit to it directly.
 
 A tag with a suffix, such as `v2.1.0-rc.1`, is a pre-release for trying out on a staging server. Push it on a commit of `dev` whose CI run has finished, and that commit's image is published under that tag alone.
-
-### Playground
-
-For people to try the hub out, `ghcr.io/vatsim-scandinavia/events:playground` (built with `--target playground`) is the same app with sample events and dev sign-in, so anyone can sign in as Hub Admin, Event Staff, the sample controllers or a plain member without a VATSIM account.
-
-- **Each start resets it to the sample data.** Restart the container for a clean slate. With `RESET_PLAYGROUND=false` it keeps what people did, and only seeds on its first start.
-- **Run it with [compose.yaml](compose.yaml)**, with `HUB_VERSION=playground` in its `.env`. It needs an `APP_KEY`, an `https://` `APP_URL` and `SESSION_SECURE_COOKIE=true`. Leave `APP_ENV`, `APP_DEBUG` and `AUTH_DEV_LOGIN` out of its `.env`: the image sets them, and dev sign-in only works with `APP_ENV=local`. Leave out `DISCORD_EVENTS_WEBHOOK` too, or test events get announced.
-- **Anyone who reaches it can sign in as an Administrator,** and it doesn't refuse other hosts, so put a password in front of it at the reverse proxy. Never give it real data.
 
 ## License
 

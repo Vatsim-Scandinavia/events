@@ -8,13 +8,13 @@ use App\Http\Controllers\Admin\RoleAssignmentController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\DevLoginController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ShiftBookingController;
 use App\Http\Controllers\SignInController;
+use App\Http\Controllers\SignInPageController;
 use App\Http\Controllers\Staff\EventCancellationController;
 use App\Http\Controllers\Staff\EventManagementController;
 use App\Http\Controllers\Staff\EventPublicationController;
@@ -39,9 +39,9 @@ Route::middleware('guest')->group(function () {
         Route::get('/auth/{provider}/callback', [SignInController::class, 'callback'])->name('auth.callback');
     });
 
-    // Development sign-in as any user; returns 404 unless auth.dev_login is on.
-    Route::get('/login', [DevLoginController::class, 'show'])->name('login');
-    Route::post('/login/{user}', [DevLoginController::class, 'store'])->middleware('throttle:sign-in')->name('login.store');
+    Route::get('/sign-in', [SignInPageController::class, 'show'])->name('login');
+    // One-click sign-in as a sandbox test member; 404 except on a developer's own machine.
+    Route::post('/sign-in/dev/{cid}', [SignInPageController::class, 'dev'])->whereNumber('cid')->middleware('throttle:sign-in')->name('sign-in.dev');
 });
 
 Route::middleware(['auth', 'throttle:signed-in'])->group(function () {

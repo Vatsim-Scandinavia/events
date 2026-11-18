@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { signInUrl } from '@/lib/utils';
@@ -11,7 +11,7 @@ export default function SignInPrompt({ children }: { children: ReactNode }) {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl px-4 py-3 text-sm ring-1 ring-foreground/10">
             <span className="text-muted-foreground">{children}</span>
             <Button size="sm" asChild>
-                <a href={signInUrl(props.auth.signIn.url, url)}>{props.auth.signIn.label}</a>
+                <Link href={signInUrl(props.auth.signIn.page, url)}>{props.auth.signIn.label}</Link>
             </Button>
         </div>
     );

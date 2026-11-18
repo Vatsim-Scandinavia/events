@@ -51,7 +51,7 @@ class EventCancellationTest extends TestCase
 
     public function test_only_staff_can_cancel(): void
     {
-        $this->post("/events/{$this->event->getRouteKey()}/cancel")->assertRedirect('/auth/vatsim');
+        $this->post("/events/{$this->event->getRouteKey()}/cancel")->assertRedirect('/sign-in');
         $this->actingAs(User::factory()->controller()->create())->post("/events/{$this->event->getRouteKey()}/cancel")->assertForbidden();
         $this->actingAs(User::factory()->controller()->create())->post("/occurrences/{$this->first->id}/cancel")->assertForbidden();
 

@@ -20,7 +20,7 @@ class FirManagementTest extends TestCase
         $fir = Fir::factory()->create(['icao' => 'EKDK', 'name' => 'Copenhagen']);
         Event::factory()->count(2)->for($fir)->create();
 
-        $this->get('/admin/firs')->assertRedirect('/auth/vatsim');
+        $this->get('/admin/firs')->assertRedirect('/sign-in');
         $this->actingAs(User::factory()->staff()->create())->get('/admin/firs')->assertForbidden();
 
         $this->actingAs(User::factory()->admin()->create())->get('/admin/firs')->assertInertia(fn (Assert $page) => $page

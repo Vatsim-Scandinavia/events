@@ -19,8 +19,8 @@ class ProfileTest extends TestCase
 
     public function test_guests_are_sent_to_sign_in(): void
     {
-        $this->get('/profile')->assertRedirect('/auth/vatsim');
-        $this->put('/profile', ['timezone' => 'Europe/Copenhagen'])->assertRedirect('/auth/vatsim');
+        $this->get('/profile')->assertRedirect('/sign-in');
+        $this->put('/profile', ['timezone' => 'Europe/Copenhagen'])->assertRedirect('/sign-in');
     }
 
     public function test_the_page_shows_zulu_until_a_time_zone_is_picked(): void

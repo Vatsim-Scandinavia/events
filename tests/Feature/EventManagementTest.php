@@ -66,7 +66,7 @@ class EventManagementTest extends TestCase
     {
         $event = Event::factory()->create();
 
-        $this->get('/events/create')->assertRedirect('/auth/vatsim');
+        $this->get('/events/create')->assertRedirect('/sign-in');
         $this->actingAs(User::factory()->create())->get('/events/create')->assertForbidden();
         $this->actingAs(User::factory()->create())->delete("/events/{$event->getRouteKey()}")->assertForbidden();
 

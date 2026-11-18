@@ -46,7 +46,7 @@ class UserManagementTest extends TestCase
     {
         $user = User::factory()->create();
 
-        $this->get('/admin/users')->assertRedirect('/auth/vatsim');
+        $this->get('/admin/users')->assertRedirect('/sign-in');
         $this->actingAs(User::factory()->staff()->create())->get('/admin/users')->assertForbidden();
         $this->actingAs(User::factory()->staff()->create())->get("/admin/users/{$user->id}")->assertForbidden();
         $this->actingAs(User::factory()->admin()->create())->get('/admin/users')->assertOk();

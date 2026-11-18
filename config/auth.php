@@ -27,19 +27,6 @@ return [
 
     'sign_in_provider' => env('AUTH_PROVIDER', 'vatsim'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Development Sign-in
-    |--------------------------------------------------------------------------
-    |
-    | Until VATSIM Connect is wired up, local installs can sign in as any user
-    | from /login. It must be switched on explicitly, and only works when
-    | APP_ENV=local, so a staging or production server can't turn it on.
-    |
-    */
-
-    'dev_login' => (bool) env('AUTH_DEV_LOGIN', false),
-
     'defaults' => [
         'guard' => env('AUTH_GUARD', 'web'),
     ],

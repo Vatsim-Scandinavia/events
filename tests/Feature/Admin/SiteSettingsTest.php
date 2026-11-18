@@ -25,8 +25,8 @@ class SiteSettingsTest extends TestCase
 
     public function test_only_administrators_can_open_or_save_the_settings(): void
     {
-        $this->get('/admin/settings')->assertRedirect('/auth/vatsim');
-        $this->post('/admin/settings', $this->payload())->assertRedirect('/auth/vatsim');
+        $this->get('/admin/settings')->assertRedirect('/sign-in');
+        $this->post('/admin/settings', $this->payload())->assertRedirect('/sign-in');
 
         $staff = User::factory()->staff()->create();
         $this->actingAs($staff)->get('/admin/settings')->assertForbidden();

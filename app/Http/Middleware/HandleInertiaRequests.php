@@ -2,7 +2,6 @@
 
 namespace App\Http\Middleware;
 
-use App\Auth\DevLogin;
 use App\Enums\Permission;
 use App\Enums\SignInProvider;
 use App\Services\VaccIdentity;
@@ -44,8 +43,10 @@ class HandleInertiaRequests extends Middleware
                     'can' => collect(Permission::cases())
                         ->mapWithKeys(fn (Permission $permission) => [$permission->value => $request->user()->can($permission->value)]),
                 ] : null,
-                'devLogin' => DevLogin::enabled(),
                 'signIn' => [
+                    // The sign-in page, which sign-in links go to.
+                    'page' => route('login', absolute: false),
+                    // The provider itself, for going round again after a failed sign-in.
                     'url' => route('auth.redirect', SignInProvider::configured(), absolute: false),
                     'label' => 'Sign in with '.SignInProvider::configured()->label(),
                 ],

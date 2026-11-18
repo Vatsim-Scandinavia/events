@@ -18,7 +18,7 @@ class EventTypeManagementTest extends TestCase
         $flyIn = EventType::query()->where('name', 'Fly-in')->sole();
         Event::factory()->count(2)->for($flyIn)->create();
 
-        $this->get('/admin/event-types')->assertRedirect('/auth/vatsim');
+        $this->get('/admin/event-types')->assertRedirect('/sign-in');
         $this->actingAs(User::factory()->staff()->create())->get('/admin/event-types')->assertForbidden();
         $this->actingAs(User::factory()->staff()->create())->post('/admin/event-types', ['name' => 'Tour'])->assertForbidden();
 

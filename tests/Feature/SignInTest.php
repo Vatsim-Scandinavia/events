@@ -106,7 +106,7 @@ class SignInTest extends TestCase
     {
         $user = User::factory()->create(['vatsim_cid' => 1234567, 'name' => 'Old Name', 'rating' => ControllerRating::S1, 'subdivision' => 'SCA']);
 
-        $this->get('/admin/users')->assertRedirect('/auth/vatsim');
+        $this->get('/admin/users')->assertRedirect('/sign-in');
         $this->signInThroughProvider(self::connectMember(1234567, ControllerRating::C1, null, name: 'New Name'))->assertRedirect('/admin/users');
 
         $this->assertSame(1, User::query()->count());

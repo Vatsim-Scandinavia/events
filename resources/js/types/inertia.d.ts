@@ -40,9 +40,8 @@ declare module '@inertiajs/core' {
             vacc: Vacc;
             auth: {
                 user: AuthUser | null;
-                devLogin: boolean;
-                // The configured sign-in provider's path and button text.
-                signIn: { url: string; label: string };
+                // The sign-in page, the configured provider's own path, and the button text.
+                signIn: { page: string; url: string; label: string };
             };
             // IANA time zone event times are shown in, 'UTC' (zulu) by default.
             displayTimezone: string;

@@ -40,7 +40,7 @@ class IntegrationsTest extends TestCase
 
     public function test_only_administrators_can_open_or_change_integrations(): void
     {
-        $this->get('/admin/integrations')->assertRedirect('/auth/vatsim');
+        $this->get('/admin/integrations')->assertRedirect('/sign-in');
 
         $staff = User::factory()->staff()->create();
         $this->actingAs($staff)->get('/admin/integrations')->assertForbidden();

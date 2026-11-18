@@ -17,7 +17,7 @@ class RoleManagementTest extends TestCase
 
     public function test_only_administrators_can_open_the_role_pages(): void
     {
-        $this->get('/admin/roles')->assertRedirect('/auth/vatsim');
+        $this->get('/admin/roles')->assertRedirect('/sign-in');
         $this->actingAs(User::factory()->staff()->create())->get('/admin/roles')->assertForbidden();
 
         $this->actingAs(User::factory()->admin()->create())->get('/admin/roles')->assertInertia(fn (Assert $page) => $page
