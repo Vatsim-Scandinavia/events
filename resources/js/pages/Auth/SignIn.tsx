@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signInUrl } from '@/lib/utils';
 
-// Mirrors the props of App\Http\Controllers\SignInPageController@show.
+// Mirrors the props of App\Http\Controllers\Auth\SignInController@show.
 type SignInProps = {
     provider: { label: string; url: string };
     // Where to land afterwards, a path on this site.

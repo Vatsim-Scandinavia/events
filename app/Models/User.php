@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Socialite\Two\User as SocialiteUser;
 
 #[Fillable(['vatsim_cid', 'name', 'first_name', 'name_display', 'email', 'rating', 'subdivision', 'timezone'])]
 class User extends Authenticatable
@@ -69,13 +70,35 @@ class User extends Authenticatable
     }
 
     /**
-     * The tokens the Sign-in Provider last issued them, if any (see App\Auth\SignInTokens).
+     * The tokens the Sign-in Provider last issued them, if any (see SignInToken).
      *
      * @return HasOne<SignInToken, $this>
      */
     public function signInToken(): HasOne
     {
         return $this->hasOne(SignInToken::class);
+    }
+
+    /**
+     * Write the Member Details a Sign-in Provider sent onto the Account and save it. A rating the
+     * Hub doesn't know leaves the one it has; the Controller Rule is worked out live from these.
+     */
+    public function applySignInDetails(SocialiteUser $member): self
+    {
+        $this->fill([
+            'name' => $member->getName(),
+            'first_name' => $member->firstName,
+            'email' => $member->getEmail(),
+            'subdivision' => $member->subdivision,
+        ]);
+
+        if ($member->rating !== null) {
+            $this->rating = $member->rating;
+        }
+
+        $this->save();
+
+        return $this;
     }
 
     /**

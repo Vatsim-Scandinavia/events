@@ -30,4 +30,12 @@ enum ControllerRating: int
             default => $this->name,
         };
     }
+
+    /**
+     * Suspended or inactive on the network, so the Hub turns them away.
+     */
+    public function isSuspended(): bool
+    {
+        return $this === self::Suspended || $this === self::Inactive;
+    }
 }

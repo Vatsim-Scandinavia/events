@@ -12,6 +12,7 @@
         "enshrined/svg-sanitize": "^1.0",
         "inertiajs/inertia-laravel": "^3.5",
         "laravel/framework": "^13.17",
+        "laravel/socialite": "^5.33",
         "laravel/tinker": "^3.0"
     },
     "require-dev": {

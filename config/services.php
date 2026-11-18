@@ -19,9 +19,6 @@ return [
         'redirect' => env('VATSIM_CONNECT_REDIRECT') ?: rtrim((string) env('APP_URL', 'http://localhost'), '/').'/auth/vatsim/callback',
         // https://auth-dev.vatsim.net is VATSIM's sandbox for local development.
         'base_url' => env('VATSIM_CONNECT_BASE_URL') ?: 'https://auth.vatsim.net',
-        // The daily refresh of every Account's VATSIM details (users:sync-vatsim). Switch it off
-        // where people sign in with sandbox accounts, which the live API doesn't know.
-        'sync' => (bool) env('VATSIM_SYNC', true),
     ],
 
     // VATSIM Scandinavia's Handover, used instead of VATSIM Connect when AUTH_PROVIDER=handover.
