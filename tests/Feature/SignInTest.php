@@ -2,21 +2,29 @@
 
 namespace Tests\Feature;
 
+use App\Auth\OAuthRequestFailed;
+use App\Auth\SignInTokens;
 use App\Enums\ControllerRating;
 use App\Enums\NameDisplay;
+use App\Enums\SignInProvider;
+use App\Models\SignInToken;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 use Inertia\Testing\AssertableInertia as Assert;
-use Laravel\Socialite\Facades\Socialite;
-use Laravel\Socialite\Two\InvalidStateException;
-use Laravel\Socialite\Two\User as SocialiteUser;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\TestWith;
+use Tests\Concerns\SignsInThroughTheProvider;
 use Tests\TestCase;
 
 class SignInTest extends TestCase
 {
     use RefreshDatabase;
+    use SignsInThroughTheProvider;
 
     /**
      * @return array<string, array{string, string}>
@@ -27,23 +35,6 @@ class SignInTest extends TestCase
             'VATSIM Connect' => ['vatsim', 'VATSIM'],
             'Handover' => ['handover', 'VATSIM Scandinavia'],
         ];
-    }
-
-    /**
-     * @return array<string, array{string}>
-     */
-    public static function drivers(): array
-    {
-        return array_map(fn (array $provider) => [$provider[0]], self::providers());
-    }
-
-    #[DataProvider('drivers')]
-    public function test_sign_in_sends_you_to_the_configured_provider(string $provider): void
-    {
-        config(['auth.sign_in_provider' => $provider]);
-        Socialite::fake($provider);
-
-        $this->get("/auth/{$provider}")->assertRedirect("https://socialite.fake/{$provider}/authorize");
     }
 
     #[TestWith(['vatsim', 'https://auth.vatsim.net', 'handover'])]
@@ -60,7 +51,7 @@ class SignInTest extends TestCase
 
     #[TestWith(['vatsim', 'https://auth-dev.vatsim.net/', 'https://auth-dev.vatsim.net'])]
     #[TestWith(['handover', 'https://handover.example.org/', 'https://handover.example.org'])]
-    public function test_the_driver_asks_the_configured_server_for_the_details_we_need(string $provider, string $baseUrl, string $server): void
+    public function test_sign_in_asks_the_configured_server_for_what_we_need_with_state_and_pkce(string $provider, string $baseUrl, string $server): void
     {
         config(['auth.sign_in_provider' => $provider, "services.{$provider}.client_id" => 'client-id', "services.{$provider}.base_url" => $baseUrl]);
 
@@ -71,6 +62,9 @@ class SignInTest extends TestCase
         $this->assertSame('client-id', $query['client_id']);
         $this->assertSame('full_name vatsim_details email', $query['scope']);
         $this->assertSame(url("/auth/{$provider}/callback"), $query['redirect_uri']);
+        $this->assertSame(session('sign_in.state'), $query['state']);
+        $this->assertSame('S256', $query['code_challenge_method']);
+        $this->assertArrayNotHasKey('prompt', $query);
     }
 
     #[DataProvider('providers')]
@@ -83,108 +77,209 @@ class SignInTest extends TestCase
             ->where('auth.signIn.label', "Sign in with {$label}"));
     }
 
-    #[DataProvider('drivers')]
-    public function test_first_sign_in_creates_the_user_from_their_vatsim_details(string $provider): void
+    #[DataProvider('providers')]
+    public function test_first_sign_in_creates_the_account_from_their_member_details(string $provider): void
     {
         config(['auth.sign_in_provider' => $provider]);
-        Socialite::fake($provider, $this->vatsimUser(cid: 1234567, name: 'Mary Ann Controller', email: 'jane@example.com', rating: ControllerRating::S2, firstName: 'Mary Ann'));
 
-        $this->get("/auth/{$provider}/callback?code=code&state=state")->assertRedirect('/');
+        $this->signInThroughProvider(self::connectMember(1234567, ControllerRating::S2, 'SCA', name: 'Mary Ann Controller', firstName: 'Mary Ann', email: 'jane@example.com'))
+            ->assertRedirect('/');
 
         $user = User::query()->sole();
-        $this->assertSame(1234567, $user->vatsim_cid);
-        $this->assertSame('Mary Ann Controller', $user->name);
+        $this->assertSame([1234567, 'Mary Ann Controller', 'Mary Ann', 'jane@example.com', ControllerRating::S2, 'SCA'], [$user->vatsim_cid, $user->name, $user->first_name, $user->email, $user->rating, $user->subdivision]);
         // Others see only the first name until they choose otherwise.
-        $this->assertSame('Mary Ann', $user->first_name);
         $this->assertSame(NameDisplay::FirstName, $user->name_display);
-        $this->assertSame('jane@example.com', $user->email);
-        $this->assertSame(ControllerRating::S2, $user->rating);
         $this->assertAuthenticatedAs($user);
+        Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/oauth/token') && $request['code'] === 'the-code' && strlen($request['code_verifier']) === 43);
     }
 
-    #[DataProvider('drivers')]
-    public function test_returning_user_is_updated_and_sent_where_they_were_going(string $provider): void
+    public function test_handover_sends_the_cid_as_a_number(): void
     {
-        config(['auth.sign_in_provider' => $provider]);
-        $user = User::factory()->create(['vatsim_cid' => 1234567, 'name' => 'Old Name', 'rating' => ControllerRating::S1]);
-        Socialite::fake($provider, $this->vatsimUser(cid: 1234567, name: 'New Name', email: 'new@example.com', rating: ControllerRating::C1));
+        config(['auth.sign_in_provider' => 'handover']);
 
-        $this->get('/admin/users')->assertRedirect("/auth/{$provider}");
-        $this->get("/auth/{$provider}/callback?code=code&state=state")->assertRedirect('/admin/users');
+        $this->signInThroughProvider([...self::connectMember(1234567), 'cid' => 1234567])->assertRedirect('/');
+
+        $this->assertSame(1234567, User::query()->sole()->vatsim_cid);
+    }
+
+    public function test_every_sign_in_brings_the_account_up_to_date_and_sends_them_where_they_were_going(): void
+    {
+        $user = User::factory()->create(['vatsim_cid' => 1234567, 'name' => 'Old Name', 'rating' => ControllerRating::S1, 'subdivision' => 'SCA']);
+
+        $this->get('/admin/users')->assertRedirect('/auth/vatsim');
+        $this->signInThroughProvider(self::connectMember(1234567, ControllerRating::C1, null, name: 'New Name'))->assertRedirect('/admin/users');
 
         $this->assertSame(1, User::query()->count());
         $user->refresh();
-        $this->assertSame('New Name', $user->name);
-        $this->assertSame(ControllerRating::C1, $user->rating);
-        $this->assertAuthenticatedAs($user);
+        $this->assertSame(['New Name', ControllerRating::C1, null], [$user->name, $user->rating, $user->subdivision]);
+    }
+
+    public function test_a_missing_name_and_email_are_not_needed(): void
+    {
+        $member = self::connectMember(1234567);
+        unset($member['personal']);
+
+        $this->signInThroughProvider($member)->assertRedirect('/');
+
+        $this->assertSame(['VATSIM 1234567', null], [User::query()->sole()->name, User::query()->sole()->email]);
     }
 
     public function test_signing_in_from_a_page_returns_you_to_it(): void
     {
-        Socialite::fake('vatsim', $this->vatsimUser(cid: 1234567, name: 'Jane Controller', email: 'jane@example.com', rating: ControllerRating::S2));
-
-        $this->get('/auth/vatsim?return='.urlencode('/events/15?occurrence=3'));
-
-        $this->get('/auth/vatsim/callback?code=code&state=state')->assertRedirect('/events/15?occurrence=3');
+        $this->signInThroughProvider(self::connectMember(1234567), returnTo: '/events/15?occurrence=3')->assertRedirect('/events/15?occurrence=3');
     }
 
     #[TestWith(['https://evil.example/phish'])]
     #[TestWith(['//evil.example/phish'])]
     #[TestWith(['/\\evil.example/phish'])]
     #[TestWith(["/\t/evil.example/phish"])]
-    public function test_a_return_address_off_this_site_is_ignored(string $returnTo): void
-    {
-        Socialite::fake('vatsim', $this->vatsimUser(cid: 1234567, name: 'Jane Controller', email: 'jane@example.com', rating: ControllerRating::S2));
-
-        $this->get('/auth/vatsim?return='.urlencode($returnTo));
-
-        $this->get('/auth/vatsim/callback?code=code&state=state')->assertRedirect('/');
-    }
-
     #[TestWith(["/events\n/15"])]
     #[TestWith(["/events\x00/15"])]
     #[TestWith(["/events\x7F/15"])]
-    public function test_a_return_address_with_control_characters_is_ignored(string $returnTo): void
+    public function test_a_return_address_off_this_site_or_with_control_characters_is_ignored(string $returnTo): void
     {
-        Socialite::fake('vatsim', $this->vatsimUser(cid: 1234567, name: 'Jane Controller', email: 'jane@example.com', rating: ControllerRating::S2));
+        $this->signInThroughProvider(self::connectMember(1234567), returnTo: $returnTo)->assertRedirect('/');
+    }
 
-        $this->get('/auth/vatsim?return='.urlencode($returnTo));
+    public function test_the_tokens_are_kept_encrypted_and_never_in_the_session(): void
+    {
+        $this->signInThroughProvider(self::connectMember(1234567));
 
-        $this->get('/auth/vatsim/callback?code=code&state=state')->assertRedirect('/');
+        $token = SignInToken::query()->sole();
+        $this->assertSame(['access-token', 'refresh-token', SignInProvider::Vatsim], [$token->access_token, $token->refresh_token, $token->provider]);
+        $stored = DB::table('sign_in_tokens')->sole();
+        $this->assertNotSame('access-token', $stored->access_token);
+        $this->assertNotSame('refresh-token', $stored->refresh_token);
+        $this->assertStringNotContainsString('access-token', serialize(session()->all()));
+        $this->assertNull(session('sign_in.state'));
+        $this->assertNull(session('sign_in.verifier'));
+    }
+
+    public function test_signing_in_again_replaces_the_tokens_and_signing_out_leaves_them(): void
+    {
+        $this->signInThroughProvider(self::connectMember(1234567), stay: false);
+        $this->providerTokensAnswer(['expires_in' => 60, 'access_token' => 'newer-access', 'refresh_token' => 'newer-refresh']);
+        $this->signInThroughProvider(self::connectMember(1234567));
+
+        $this->post('/logout')->assertRedirect('/');
+
+        $this->assertSame('newer-refresh', SignInToken::query()->sole()->refresh_token);
     }
 
     #[DataProvider('providers')]
-    public function test_declining_at_the_provider_shows_an_error_instead_of_signing_in(string $provider, string $label): void
+    public function test_declining_at_the_provider_lands_back_with_a_retry(string $provider, string $label): void
     {
         config(['auth.sign_in_provider' => $provider]);
-        Socialite::fake($provider, fn () => $this->fail('The callback should not ask the provider for the user.'));
+        Http::fake();
 
-        $this->get("/auth/{$provider}/callback?error=access_denied&state=state")
-            ->assertRedirect('/')
+        $this->get("/auth/{$provider}?return=".urlencode('/events/15'));
+        $this->get("/auth/{$provider}/callback?error=access_denied&state=".session('sign_in.state'))
+            ->assertRedirect('/events/15')
             ->assertSessionHasErrors(['signIn' => "Sign-in was cancelled on {$label}."]);
+
         $this->assertGuest();
+        Http::assertNothingSent();
+        $this->assertTrue(Inertia::getFlashed()['signInRetry'] ?? false);
     }
 
-    #[DataProvider('providers')]
-    public function test_a_callback_with_an_invalid_state_shows_an_error_instead_of_signing_in(string $provider, string $label): void
+    public function test_a_callback_whose_state_does_not_match_is_expired(): void
     {
-        config(['auth.sign_in_provider' => $provider]);
-        Socialite::fake($provider, fn () => throw new InvalidStateException);
+        Log::spy();
+        Http::fake();
+        $this->get('/auth/vatsim');
 
-        $this->get("/auth/{$provider}/callback?code=code&state=forged")
+        $this->get('/auth/vatsim/callback?code=code&state=forged')
             ->assertRedirect('/')
-            ->assertSessionHasErrors(['signIn' => "Sign-in with {$label} failed. Please try again."]);
+            ->assertSessionHasErrors(['signIn' => 'Your sign-in took too long or was started in another tab. Please try again.']);
+        // The state is used once: the right one doesn't work after a wrong one either.
+        $this->get('/auth/vatsim/callback?code=code&state=forged')->assertSessionHasErrors('signIn');
+
         $this->assertGuest();
+        Http::assertNothingSent();
+        Log::shouldHaveReceived('info')->with('Sign-in callback with a missing or mismatched state.');
     }
 
-    private function vatsimUser(int $cid, string $name, string $email, ControllerRating $rating, ?string $firstName = null): SocialiteUser
+    public function test_a_provider_that_fails_is_unavailable_and_is_logged_without_any_secrets(): void
     {
-        return (new SocialiteUser)
-            ->setRaw([
-                'cid' => (string) $cid,
-                'personal' => ['name_first' => $firstName, 'name_full' => $name, 'email' => $email],
-                'vatsim' => ['rating' => ['id' => $rating->value, 'short' => $rating->label()]],
-            ])
-            ->map(['id' => (string) $cid, 'name' => $name, 'email' => $email]);
+        Log::spy();
+        $this->providerTokensAnswer(['error' => 'server_error'], 503);
+
+        $this->signInThroughProvider(self::connectMember(1234567))
+            ->assertSessionHasErrors(['signIn' => 'VATSIM isn’t responding right now. Please try again in a few minutes.']);
+
+        $this->assertGuest();
+        $this->assertSame(0, User::query()->count());
+        Log::shouldHaveReceived('warning')->withArgs(fn (string $message, array $context) => $context === ['provider' => 'vatsim', 'status' => 503, 'error' => 'server_error']);
+    }
+
+    public function test_a_member_who_did_not_share_their_vatsim_details_is_turned_away(): void
+    {
+        $member = self::connectMember(1234567);
+        unset($member['vatsim']);
+
+        $this->signInThroughProvider($member)
+            ->assertSessionHasErrors(['signIn' => 'VATSIM didn’t share your VATSIM details. Please allow access to them when you sign in.']);
+
+        $this->assertGuest();
+        $this->assertSame(0, User::query()->count());
+    }
+
+    #[TestWith([ControllerRating::Suspended])]
+    #[TestWith([ControllerRating::Inactive])]
+    public function test_suspended_and_inactive_members_are_turned_away_without_a_retry(ControllerRating $rating): void
+    {
+        $this->signInThroughProvider(self::connectMember(1234567, $rating))
+            ->assertSessionHasErrors(['signIn' => 'Your VATSIM account is suspended or inactive, so you can’t sign in.']);
+
+        $this->assertGuest();
+        $this->assertArrayNotHasKey('signInRetry', Inertia::getFlashed());
+    }
+
+    public function test_an_expired_token_is_refreshed_once_and_rotated(): void
+    {
+        $this->signInThroughProvider(self::connectMember(1234567));
+        $user = User::query()->sole();
+        $this->travel(8)->days();
+        $this->providerTokensAnswer(['expires_in' => 604800, 'access_token' => 'access-2', 'refresh_token' => 'refresh-2']);
+
+        $tokens = app(SignInTokens::class);
+        $this->assertSame('access-2', $tokens->accessToken($user));
+        $this->assertSame('access-2', $tokens->accessToken($user));
+
+        $this->assertSame('refresh-2', SignInToken::query()->sole()->refresh_token);
+        Http::assertSentCount(3); // the code exchange, /api/user, and one refresh
+    }
+
+    public function test_a_refused_refresh_deletes_the_token_but_an_outage_keeps_it(): void
+    {
+        $this->signInThroughProvider(self::connectMember(1234567));
+        $user = User::query()->sole();
+        $this->travel(8)->days();
+        $tokens = app(SignInTokens::class);
+
+        $this->providerTokensAnswer(['error' => 'server_error'], 502);
+        try {
+            $tokens->accessToken($user);
+            $this->fail('An outage should be reported.');
+        } catch (OAuthRequestFailed $failure) {
+            $this->assertFalse($failure->isPermanent());
+        }
+        $this->assertSame(1, SignInToken::query()->count());
+
+        // Connect answers a revoked refresh token with 401 invalid_request.
+        $this->providerTokensAnswer(['error' => 'invalid_request', 'hint' => 'Token has been revoked'], 401);
+        $this->assertNull($tokens->accessToken($user));
+        $this->assertSame(0, SignInToken::query()->count());
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_tokens_from_the_other_provider_are_dropped(): void
+    {
+        config(['auth.sign_in_provider' => 'handover']);
+        $this->signInThroughProvider(self::connectMember(1234567));
+        config(['auth.sign_in_provider' => 'vatsim']);
+
+        $this->assertNull(app(SignInTokens::class)->accessToken(User::query()->sole()));
+        $this->assertSame(0, SignInToken::query()->count());
     }
 }

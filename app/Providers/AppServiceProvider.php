@@ -3,8 +3,6 @@
 namespace App\Providers;
 
 use App\Auth\Authorization;
-use App\Auth\HandoverProvider;
-use App\Auth\VatsimConnectProvider;
 use App\Auth\Where;
 use App\Enums\Permission;
 use App\Integrations\Integrations;
@@ -19,7 +17,6 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
-use Laravel\Socialite\Facades\Socialite;
 use Throwable;
 
 class AppServiceProvider extends ServiceProvider
@@ -60,11 +57,6 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by((string) $request->ip()));
 
         app(Integrations::class)->boot();
-
-        Socialite::extend('vatsim', fn () => Socialite::buildProvider(VatsimConnectProvider::class, config('services.vatsim'))
-            ->setBaseUrl(config('services.vatsim.base_url')));
-        Socialite::extend('handover', fn () => Socialite::buildProvider(HandoverProvider::class, config('services.handover'))
-            ->setBaseUrl(config('services.handover.base_url')));
 
         Inertia::handleExceptionsUsing(function (ExceptionResponse $response) {
             $status = $response->statusCode();

@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
 #[Fillable(['vatsim_cid', 'name', 'first_name', 'name_display', 'email', 'rating', 'subdivision', 'timezone'])]
@@ -64,6 +65,16 @@ class User extends Authenticatable
     public function controllerGrants(): HasMany
     {
         return $this->hasMany(ControllerGrant::class);
+    }
+
+    /**
+     * The tokens the Sign-in Provider last issued them, if any (see App\Auth\SignInTokens).
+     *
+     * @return HasOne<SignInToken, $this>
+     */
+    public function signInToken(): HasOne
+    {
+        return $this->hasOne(SignInToken::class);
     }
 
     /**

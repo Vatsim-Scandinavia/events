@@ -186,8 +186,10 @@ function UserMenu({ user }: { user: AuthUser }) {
 
 // The outcome of the last action: a success message or a rule the server refused it on.
 function Notices() {
-    const { flash, props } = usePage();
+    const { flash, props, url } = usePage();
     const error = generalErrorKeys.map((key) => props.errors[key]).find(Boolean);
+    // A failed sign-in offers to go round again, landing back on this page.
+    const retry = error !== undefined && error === props.errors.signIn && flash.signInRetry ? signInUrl(props.auth.signIn.url, url) : null;
     const message = error ?? flash.success;
     const [dismissed, setDismissed] = useState<string | null>(null);
 
@@ -207,7 +209,17 @@ function Notices() {
                 )}
             >
                 {error ? <CircleAlert className="mt-0.5 size-4 shrink-0" /> : <CircleCheck className="mt-0.5 size-4 shrink-0" />}
-                <p className="flex-1">{message}</p>
+                <p className="flex-1">
+                    {message}
+                    {retry && (
+                        <>
+                            {' '}
+                            <a href={retry} className="font-medium underline underline-offset-4">
+                                Try again
+                            </a>
+                        </>
+                    )}
+                </p>
                 <button type="button" onClick={() => setDismissed(message)} aria-label="Dismiss" className="opacity-70 hover:opacity-100">
                     <X className="size-4" />
                 </button>

@@ -20,9 +20,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
-use Laravel\Socialite\Facades\Socialite;
-use Laravel\Socialite\Two\User as SocialiteUser;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Concerns\SignsInThroughTheProvider;
 use Tests\Fakes\FakeIntegration;
 use Tests\Fakes\FakeRosterSync;
 use Tests\TestCase;
@@ -34,6 +33,7 @@ use Tests\TestCase;
 class ControllersTest extends TestCase
 {
     use RefreshDatabase;
+    use SignsInThroughTheProvider;
 
     private Fir $copenhagen;
 
@@ -315,15 +315,6 @@ class ControllersTest extends TestCase
 
     private function signIn(int $cid, ControllerRating $rating, string $subdivision): void
     {
-        Socialite::fake('vatsim', (new SocialiteUser)
-            ->setRaw([
-                'cid' => (string) $cid,
-                'personal' => ['name_full' => 'Kim Controller', 'email' => "{$cid}@example.com"],
-                'vatsim' => ['rating' => ['id' => $rating->value], 'subdivision' => ['id' => $subdivision]],
-            ])
-            ->map(['id' => (string) $cid, 'name' => 'Kim Controller', 'email' => "{$cid}@example.com"]));
-
-        $this->get('/auth/vatsim/callback?code=code&state=state')->assertRedirect();
-        auth()->logout();
+        $this->signInThroughProvider(self::connectMember($cid, $rating, $subdivision, email: "{$cid}@example.com"), stay: false)->assertRedirect();
     }
 }

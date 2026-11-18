@@ -22,14 +22,14 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Inertia\Testing\AssertableInertia as Assert;
-use Laravel\Socialite\Facades\Socialite;
-use Laravel\Socialite\Two\User as SocialiteUser;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Tests\Concerns\SignsInThroughTheProvider;
 use Tests\TestCase;
 
 class ControlCenterRosterSyncTest extends TestCase
 {
     use RefreshDatabase;
+    use SignsInThroughTheProvider;
 
     private const string USERS_URL = 'cc.example/api/v1/users*';
 
@@ -396,15 +396,6 @@ class ControlCenterRosterSyncTest extends TestCase
 
     private function signIn(int $cid, ControllerRating $rating): void
     {
-        Socialite::fake('vatsim', (new SocialiteUser)
-            ->setRaw([
-                'cid' => (string) $cid,
-                'personal' => ['name_full' => 'Kim Controller', 'email' => "{$cid}@example.com"],
-                'vatsim' => ['rating' => ['id' => $rating->value], 'subdivision' => ['id' => 'SCA']],
-            ])
-            ->map(['id' => (string) $cid, 'name' => 'Kim Controller', 'email' => "{$cid}@example.com"]));
-
-        $this->get('/auth/vatsim/callback?code=code&state=state')->assertRedirect();
-        auth()->logout();
+        $this->signInThroughProvider(self::connectMember($cid, $rating, 'SCA', email: "{$cid}@example.com"), stay: false)->assertRedirect();
     }
 }

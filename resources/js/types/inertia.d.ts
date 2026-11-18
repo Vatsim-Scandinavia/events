@@ -49,6 +49,8 @@ declare module '@inertiajs/core' {
         };
         flashDataType: {
             success?: string;
+            // A failed sign-in that trying again could fix.
+            signInRetry?: boolean;
         };
     }
 }
