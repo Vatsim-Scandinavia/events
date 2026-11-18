@@ -1,27 +1,19 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Plane } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { signInUrl } from '@/lib/utils';
 
 // Mirrors the props of App\Http\Controllers\SignInPageController@show.
-type DevLink = {
-    cid: number;
-    // Null until the Account exists; signing in creates it.
-    name: string | null;
-    roles: string[];
-};
-
 type SignInProps = {
     provider: { label: string; url: string };
     // Where to land afterwards, a path on this site.
     returnTo: string | null;
-    // Only on a developer's own machine.
-    devLinks: DevLink[] | null;
+    // The sandbox's test members to sign in as, only with APP_ENV=local.
+    devCids: number[] | null;
 };
 
-export default function SignIn({ provider, returnTo, devLinks }: SignInProps) {
+export default function SignIn({ provider, returnTo, devCids }: SignInProps) {
     const { vacc } = usePage().props;
     const providerUrl = returnTo ? signInUrl(provider.url, returnTo) : provider.url;
 
@@ -56,52 +48,26 @@ export default function SignIn({ provider, returnTo, devLinks }: SignInProps) {
                         </CardContent>
                     </Card>
 
-                    {devLinks && <DevLinks links={devLinks} returnTo={returnTo} />}
+                    {devCids && <DevSignIn cids={devCids} returnTo={returnTo} />}
                 </div>
             </div>
         </>
     );
 }
 
-function DevLinks({ links, returnTo }: { links: DevLink[]; returnTo: string | null }) {
+function DevSignIn({ cids, returnTo }: { cids: number[]; returnTo: string | null }) {
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Development</CardTitle>
-                <CardDescription>Sign in as one of the VATSIM Connect sandbox’s test members. Only offered on your own machine.</CardDescription>
+                <CardDescription>Sign in as one of the VATSIM Connect sandbox’s test members. Only offered with APP_ENV=local.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <ul className="flex flex-col divide-y">
-                    {links.map((link) => (
-                        <li key={link.cid} className="flex items-center justify-between gap-3 py-2.5 first:pt-0 last:pb-0">
-                            <span className="flex min-w-0 flex-col gap-1">
-                                <span className="text-sm font-medium">
-                                    {link.cid}
-                                    {link.name && <span className="font-normal text-muted-foreground"> · {link.name}</span>}
-                                </span>
-                                <span className="flex flex-wrap gap-1">
-                                    {link.name === null ? (
-                                        <span className="text-xs text-muted-foreground">No Account yet</span>
-                                    ) : (
-                                        link.roles.map((role) => (
-                                            <Badge key={role} variant="secondary">
-                                                {role}
-                                            </Badge>
-                                        ))
-                                    )}
-                                </span>
-                            </span>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => router.post(`/sign-in/dev/${link.cid}`, { return: returnTo })}
-                                aria-label={`Sign in as ${link.cid}`}
-                            >
-                                Sign in
-                            </Button>
-                        </li>
-                    ))}
-                </ul>
+            <CardContent className="flex flex-wrap gap-2">
+                {cids.map((cid) => (
+                    <Button key={cid} size="sm" variant="outline" onClick={() => router.post(`/sign-in/dev/${cid}`, { return: returnTo })}>
+                        {cid}
+                    </Button>
+                ))}
             </CardContent>
         </Card>
     );

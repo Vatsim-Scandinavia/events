@@ -33,18 +33,14 @@ class SignInPageTest extends TestCase
         $this->actingAs(User::factory()->create())->get('/sign-in')->assertRedirect('/');
     }
 
-    public function test_locally_it_offers_a_link_per_sandbox_member_with_what_each_holds(): void
+    public function test_locally_it_offers_the_sandbox_members_to_sign_in_as(): void
     {
         $this->app->detectEnvironment(fn () => 'local');
-        User::factory()->admin()->create(['vatsim_cid' => 10000001, 'name' => 'Hub Admin']);
 
-        $this->get('/sign-in')->assertInertia(fn (Assert $page) => $page
-            ->has('devLinks', 10)
-            ->where('devLinks.0', ['cid' => 10000001, 'name' => 'Hub Admin', 'roles' => ['Administrator']])
-            ->where('devLinks.9', ['cid' => 10000010, 'name' => null, 'roles' => []]));
+        $this->get('/sign-in')->assertInertia(fn (Assert $page) => $page->where('devCids', range(10000001, 10000010)));
     }
 
-    public function test_a_dev_link_signs_in_creating_the_account_if_needed_and_returns_where_they_were(): void
+    public function test_signing_in_as_one_creates_the_account_if_needed_and_returns_where_they_were(): void
     {
         $this->app->detectEnvironment(fn () => 'local');
         // CSRF checks only skip themselves in the testing environment, so send a valid token.
@@ -55,7 +51,7 @@ class SignInPageTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_a_dev_link_is_only_for_the_sandbox_members(): void
+    public function test_only_the_sandbox_members_can_be_signed_in_as(): void
     {
         $this->app->detectEnvironment(fn () => 'local');
         $this->withSession(['_token' => 'token'])->post('/sign-in/dev/1234567', ['_token' => 'token'])->assertNotFound();
@@ -67,11 +63,11 @@ class SignInPageTest extends TestCase
     #[TestWith(['staging'])]
     #[TestWith(['testing'])]
     #[TestWith(['anything-else'])]
-    public function test_dev_links_are_never_offered_outside_local_development(string $environment): void
+    public function test_dev_sign_in_is_never_offered_outside_local_development(string $environment): void
     {
         $this->app->detectEnvironment(fn () => $environment);
 
-        $this->get('/sign-in')->assertInertia(fn (Assert $page) => $page->where('devLinks', null));
+        $this->get('/sign-in')->assertInertia(fn (Assert $page) => $page->where('devCids', null));
         // CSRF checks only skip themselves in the testing environment, so send a valid token.
         $this->withSession(['_token' => 'token'])->post('/sign-in/dev/10000001', ['_token' => 'token'])->assertNotFound();
         $this->assertGuest();
