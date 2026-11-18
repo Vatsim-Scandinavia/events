@@ -11,8 +11,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 
 /**
- * The sign-in page: one button for the configured Sign-in Provider, and on a developer's own
- * machine the dev links for the sandbox's test members.
+ * The sign-in page: one button for the configured Sign-in Provider, and with APP_ENV=local the dev
+ * links for the sandbox's test members.
  */
 class SignInPageController extends Controller
 {
@@ -31,7 +31,7 @@ class SignInPageController extends Controller
                 'url' => route('auth.redirect', $provider, absolute: false),
             ],
             'returnTo' => is_string($returnTo) && SignIn::isLocalPath($returnTo) ? $returnTo : null,
-            'devLinks' => DevSignIn::isAvailable($request) ? DevSignIn::links() : null,
+            'devLinks' => DevSignIn::isAvailable() ? DevSignIn::links() : null,
         ]);
     }
 
@@ -40,7 +40,7 @@ class SignInPageController extends Controller
      */
     public function dev(Request $request, SignIn $signIn, int $cid): RedirectResponse
     {
-        abort_unless(DevSignIn::isAvailable($request) && DevSignIn::isSandboxCid($cid), 404);
+        abort_unless(DevSignIn::isAvailable() && DevSignIn::isSandboxCid($cid), 404);
 
         $returnTo = $request->input('return');
         if (is_string($returnTo) && SignIn::isLocalPath($returnTo)) {

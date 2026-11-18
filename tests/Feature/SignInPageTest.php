@@ -35,6 +35,7 @@ class SignInPageTest extends TestCase
 
     public function test_locally_it_offers_a_link_per_sandbox_member_with_what_each_holds(): void
     {
+        $this->app->detectEnvironment(fn () => 'local');
         User::factory()->admin()->create(['vatsim_cid' => 10000001, 'name' => 'Hub Admin']);
 
         $this->get('/sign-in')->assertInertia(fn (Assert $page) => $page
@@ -45,7 +46,9 @@ class SignInPageTest extends TestCase
 
     public function test_a_dev_link_signs_in_creating_the_account_if_needed_and_returns_where_they_were(): void
     {
-        $this->post('/sign-in/dev/10000004', ['return' => '/events/15'])->assertRedirect('/events/15');
+        $this->app->detectEnvironment(fn () => 'local');
+        // CSRF checks only skip themselves in the testing environment, so send a valid token.
+        $this->withSession(['_token' => 'token'])->post('/sign-in/dev/10000004', ['_token' => 'token', 'return' => '/events/15'])->assertRedirect('/events/15');
 
         $user = User::query()->sole();
         $this->assertSame([10000004, 'VATSIM 10000004'], [$user->vatsim_cid, $user->name]);
@@ -54,13 +57,15 @@ class SignInPageTest extends TestCase
 
     public function test_a_dev_link_is_only_for_the_sandbox_members(): void
     {
-        $this->post('/sign-in/dev/1234567')->assertNotFound();
-        $this->post('/sign-in/dev/10000011')->assertNotFound();
+        $this->app->detectEnvironment(fn () => 'local');
+        $this->withSession(['_token' => 'token'])->post('/sign-in/dev/1234567', ['_token' => 'token'])->assertNotFound();
+        $this->withSession(['_token' => 'token'])->post('/sign-in/dev/10000011', ['_token' => 'token'])->assertNotFound();
         $this->assertGuest();
     }
 
     #[TestWith(['production'])]
     #[TestWith(['staging'])]
+    #[TestWith(['testing'])]
     #[TestWith(['anything-else'])]
     public function test_dev_links_are_never_offered_outside_local_development(string $environment): void
     {
@@ -70,27 +75,5 @@ class SignInPageTest extends TestCase
         // CSRF checks only skip themselves in the testing environment, so send a valid token.
         $this->withSession(['_token' => 'token'])->post('/sign-in/dev/10000001', ['_token' => 'token'])->assertNotFound();
         $this->assertGuest();
-    }
-
-    #[TestWith(['http://hub.example.org'])]
-    #[TestWith(['http://127.0.0.1.example.org'])]
-    #[TestWith(['http://test.example.org'])]
-    public function test_dev_links_are_never_offered_on_a_host_that_is_not_local_even_in_local_development(string $origin): void
-    {
-        $this->app->detectEnvironment(fn () => 'local');
-
-        $this->get("{$origin}/sign-in")->assertInertia(fn (Assert $page) => $page->where('devLinks', null));
-        $this->withSession(['_token' => 'token'])->post("{$origin}/sign-in/dev/10000001", ['_token' => 'token'])->assertNotFound();
-        $this->assertGuest();
-    }
-
-    #[TestWith(['http://localhost'])]
-    #[TestWith(['http://127.0.0.1:8000'])]
-    #[TestWith(['http://events.test'])]
-    public function test_dev_links_are_offered_on_a_local_host_in_local_development(string $origin): void
-    {
-        $this->app->detectEnvironment(fn () => 'local');
-
-        $this->get("{$origin}/sign-in")->assertInertia(fn (Assert $page) => $page->has('devLinks', 10));
     }
 }

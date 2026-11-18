@@ -39,4 +39,5 @@ runs:
       shell: bash
       run: |
         cp .env.example .env
-        php artisan key:generate
+        # The example file defaults to production, where key:generate asks before writing.
+        php artisan key:generate --force

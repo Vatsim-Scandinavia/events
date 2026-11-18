@@ -156,7 +156,7 @@ jobs:
           test "$(curl -s -o /dev/null -w '%{http_code}' -H 'Host: attacker.example' http://127.0.0.1:8080/)" = 400
 
           docker exec hub test -f /app/storage/database.sqlite
-          # The sign-in page offers no dev links outside local development, even on a .test host.
+          # The sign-in page offers no dev links outside APP_ENV=local.
           curl -fsS -o sign-in.html -H 'Host: hub.test' http://127.0.0.1:8080/sign-in
           if grep -q '10000001' sign-in.html; then echo 'Dev links are offered in production.' >&2; exit 1; fi
           # The web server can't change the code, only storage/ and bootstrap/cache.

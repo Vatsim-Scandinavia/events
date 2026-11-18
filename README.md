@@ -41,7 +41,7 @@ Laravel 13 (PHP 8.3+) with Inertia v3, React 19, TypeScript, Tailwind CSS 4 and 
 composer run setup
 ```
 
-This installs dependencies, creates `.env` from `.env.example`, generates the app key, runs the migrations and builds the frontend. Then:
+This installs dependencies, creates a local `.env` from `.env.example` (switched to `APP_ENV=local` and `APP_DEBUG=true`; the example file itself defaults to production, so a copy of it on a server fails safe), generates the app key, runs the migrations and builds the frontend. Then:
 
 1. The vACC's name, division, subdivision, website and logo are set by an Administrator under **Admin → Settings** once the hub is running. To lock any of these but the logo instead, so they can't be changed in the app, set them in `.env`:
 
@@ -83,7 +83,7 @@ This installs dependencies, creates `.env` from `.env.example`, generates the ap
 
    Handover vouches for the same CIDs, so existing accounts carry over when you switch. Ratings and subdivisions are still refreshed from the VATSIM API each day.
 
-   To skip VATSIM Connect, use the development links on the sign-in page (`/sign-in`). With `APP_ENV=local`, opened on `localhost`, `127.0.0.1` or a `.test` host, it offers one-click sign-in as each of the sandbox's test members, CIDs 10000001 to 10000010, which are the seeded people. They're never offered anywhere else.
+   To skip VATSIM Connect, use the development links on the sign-in page (`/sign-in`). With `APP_ENV=local` it offers one-click sign-in as each of the sandbox's test members, CIDs 10000001 to 10000010, which are the seeded people. `APP_ENV=local` is the only thing that switches them on, so a server must never run with it: anyone who can reach such a server could sign in as those members.
 
 3. Add example events and users (an Administrator, Event Staff, controllers of several ratings and an observer):
 
