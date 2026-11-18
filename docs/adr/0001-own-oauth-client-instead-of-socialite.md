@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0002
+---
+
 # Sign-in uses our own OAuth2 client, not Laravel Socialite
 
 Members sign in through one Sign-in Provider per Hub, either VATSIM Connect or VATSCA Handover. Both speak the same OAuth2 authorization-code flow. Socialite only ever gave us the handshake (`AbstractProvider`), and everything around it was already ours: mapping Member Details, finding or creating the Account, and the failure handling. So we wrote a small client on Laravel's `Http` client instead. Two reasons. First, we keep and refresh tokens, and Socialite's refresh breaks when a provider doesn't send a new refresh token. Second, Socialite calls Guzzle directly, so `Http::fake` can't fake it, and tests would only cover a fake provider rather than our real token exchange.

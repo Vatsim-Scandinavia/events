@@ -8,13 +8,11 @@ use App\Http\Controllers\Admin\RoleAssignmentController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\SignInController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ShiftBookingController;
-use App\Http\Controllers\SignInController;
-use App\Http\Controllers\SignInPageController;
 use App\Http\Controllers\Staff\EventCancellationController;
 use App\Http\Controllers\Staff\EventManagementController;
 use App\Http\Controllers\Staff\EventPublicationController;
@@ -39,13 +37,13 @@ Route::middleware('guest')->group(function () {
         Route::get('/auth/{provider}/callback', [SignInController::class, 'callback'])->name('auth.callback');
     });
 
-    Route::get('/sign-in', [SignInPageController::class, 'show'])->name('login');
+    Route::get('/sign-in', [SignInController::class, 'show'])->name('login');
     // One-click sign-in as a sandbox test member; 404 except on a developer's own machine.
-    Route::post('/sign-in/dev/{cid}', [SignInPageController::class, 'dev'])->whereNumber('cid')->middleware('throttle:sign-in')->name('sign-in.dev');
+    Route::post('/sign-in/dev/{cid}', [SignInController::class, 'dev'])->whereNumber('cid')->middleware('throttle:sign-in')->name('sign-in.dev');
 });
 
 Route::middleware(['auth', 'throttle:signed-in'])->group(function () {
-    Route::post('/logout', LogoutController::class)->name('logout');
+    Route::post('/logout', [SignInController::class, 'destroy'])->name('logout');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

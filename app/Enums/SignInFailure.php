@@ -18,7 +18,7 @@ enum SignInFailure: string
     /** The provider timed out, failed, or wouldn't swap the code for tokens. */
     case ProviderUnavailable = 'provider_unavailable';
 
-    /** No CID, or no vatsim_details scope. */
+    /** Something the Hub needs didn't come back: CID, name, email, VATSIM details or continuous access. */
     case DetailsNotShared = 'details_not_shared';
 
     /** Rated suspended or inactive on the network. */
@@ -30,7 +30,7 @@ enum SignInFailure: string
             self::Cancelled => "Sign-in was cancelled on {$provider->label()}.",
             self::Expired => 'Your sign-in took too long or was started in another tab. Please try again.',
             self::ProviderUnavailable => "{$provider->label()} isn’t responding right now. Please try again in a few minutes.",
-            self::DetailsNotShared => "{$provider->label()} didn’t share your VATSIM details. Please allow access to them when you sign in.",
+            self::DetailsNotShared => "{$provider->label()} didn’t share everything the Hub needs. Please allow access to your name, email, VATSIM details and continued access when you sign in.",
             self::Suspended => 'Your VATSIM account is suspended or inactive, so you can’t sign in.',
         };
     }

@@ -2,8 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Auth\OAuthRequestFailed;
-use App\Auth\SignInTokens;
 use App\Enums\ControllerRating;
 use App\Enums\NameDisplay;
 use App\Enums\SignInProvider;
@@ -49,9 +47,9 @@ class SignInTest extends TestCase
         $this->get('/auth/unknown')->assertNotFound();
     }
 
-    #[TestWith(['vatsim', 'https://auth-dev.vatsim.net/', 'https://auth-dev.vatsim.net'])]
-    #[TestWith(['handover', 'https://handover.example.org/', 'https://handover.example.org'])]
-    public function test_sign_in_asks_the_configured_server_for_what_we_need_with_state_and_pkce(string $provider, string $baseUrl, string $server): void
+    #[TestWith(['vatsim', 'https://auth-dev.vatsim.net/', 'https://auth-dev.vatsim.net', 'full_name vatsim_details email'])]
+    #[TestWith(['handover', 'https://handover.example.org/', 'https://handover.example.org', null])]
+    public function test_sign_in_asks_the_configured_server_for_what_we_need_with_state_and_pkce(string $provider, string $baseUrl, string $server, ?string $requiredScopes): void
     {
         config(['auth.sign_in_provider' => $provider, "services.{$provider}.client_id" => 'client-id', "services.{$provider}.base_url" => $baseUrl]);
 
@@ -62,8 +60,10 @@ class SignInTest extends TestCase
         $this->assertSame('client-id', $query['client_id']);
         $this->assertSame('full_name vatsim_details email', $query['scope']);
         $this->assertSame(url("/auth/{$provider}/callback"), $query['redirect_uri']);
-        $this->assertSame(session('sign_in.state'), $query['state']);
+        $this->assertSame(session('state'), $query['state']);
         $this->assertSame('S256', $query['code_challenge_method']);
+        // Connect lets Members untick scopes unless they're required; Handover requires them itself.
+        $this->assertSame($requiredScopes, $query['required_scopes'] ?? null);
         $this->assertArrayNotHasKey('prompt', $query);
     }
 
@@ -90,7 +90,7 @@ class SignInTest extends TestCase
         // Others see only the first name until they choose otherwise.
         $this->assertSame(NameDisplay::FirstName, $user->name_display);
         $this->assertAuthenticatedAs($user);
-        Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/oauth/token') && $request['code'] === 'the-code' && strlen($request['code_verifier']) === 43);
+        Http::assertSent(fn (Request $request) => str_ends_with($request->url(), '/oauth/token') && $request['code'] === 'the-code' && strlen($request['code_verifier']) === 96);
     }
 
     public function test_handover_sends_the_cid_as_a_number(): void
@@ -114,14 +114,15 @@ class SignInTest extends TestCase
         $this->assertSame(['New Name', ControllerRating::C1, null], [$user->name, $user->rating, $user->subdivision]);
     }
 
-    public function test_a_missing_name_and_email_are_not_needed(): void
+    public function test_a_rating_the_hub_does_not_know_keeps_the_one_it_has(): void
     {
+        User::factory()->rated(ControllerRating::S3)->create(['vatsim_cid' => 1234567]);
         $member = self::connectMember(1234567);
-        unset($member['personal']);
+        $member['vatsim']['rating']['id'] = 99;
 
         $this->signInThroughProvider($member)->assertRedirect('/');
 
-        $this->assertSame(['VATSIM 1234567', null], [User::query()->sole()->name, User::query()->sole()->email]);
+        $this->assertSame(ControllerRating::S3, User::query()->sole()->rating);
     }
 
     public function test_signing_in_from_a_page_returns_you_to_it(): void
@@ -151,8 +152,8 @@ class SignInTest extends TestCase
         $this->assertNotSame('access-token', $stored->access_token);
         $this->assertNotSame('refresh-token', $stored->refresh_token);
         $this->assertStringNotContainsString('access-token', serialize(session()->all()));
-        $this->assertNull(session('sign_in.state'));
-        $this->assertNull(session('sign_in.verifier'));
+        $this->assertNull(session('state'));
+        $this->assertNull(session('code_verifier'));
     }
 
     public function test_signing_in_again_replaces_the_tokens_and_signing_out_leaves_them(): void
@@ -173,7 +174,7 @@ class SignInTest extends TestCase
         Http::fake();
 
         $this->get("/auth/{$provider}?return=".urlencode('/events/15'));
-        $this->get("/auth/{$provider}/callback?error=access_denied&state=".session('sign_in.state'))
+        $this->get("/auth/{$provider}/callback?error=access_denied&state=".session('state'))
             ->assertRedirect('/events/15')
             ->assertSessionHasErrors(['signIn' => "Sign-in was cancelled on {$label}."]);
 
@@ -184,7 +185,6 @@ class SignInTest extends TestCase
 
     public function test_a_callback_whose_state_does_not_match_is_expired(): void
     {
-        Log::spy();
         Http::fake();
         $this->get('/auth/vatsim');
 
@@ -196,7 +196,6 @@ class SignInTest extends TestCase
 
         $this->assertGuest();
         Http::assertNothingSent();
-        Log::shouldHaveReceived('info')->with('Sign-in callback with a missing or mismatched state.');
     }
 
     public function test_a_provider_that_fails_is_unavailable_and_is_logged_without_any_secrets(): void
@@ -212,14 +211,31 @@ class SignInTest extends TestCase
         Log::shouldHaveReceived('warning')->withArgs(fn (string $message, array $context) => $context === ['provider' => 'vatsim', 'status' => 503, 'error' => 'server_error']);
     }
 
-    public function test_a_member_who_did_not_share_their_vatsim_details_is_turned_away(): void
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function somethingWithheld(): array
     {
+        return [
+            'no VATSIM details' => ['vatsim', 'vatsim'],
+            'no email' => ['vatsim', 'personal.email'],
+            'no name' => ['vatsim', 'personal.name_full'],
+            'no continuous access' => ['vatsim', 'oauth.token_valid'],
+            // Handover answers a scope it wasn't given with nulls.
+            'a null rating from Handover' => ['handover', 'vatsim.rating.id'],
+        ];
+    }
+
+    #[DataProvider('somethingWithheld')]
+    public function test_a_member_who_withheld_something_the_hub_needs_is_turned_away(string $provider, string $withheld): void
+    {
+        config(['auth.sign_in_provider' => $provider]);
         $member = self::connectMember(1234567);
-        unset($member['vatsim']);
+        data_set($member, $withheld, null);
 
-        $this->signInThroughProvider($member)
-            ->assertSessionHasErrors(['signIn' => 'VATSIM didn’t share your VATSIM details. Please allow access to them when you sign in.']);
+        $this->signInThroughProvider($member)->assertSessionHasErrors('signIn');
 
+        $this->assertStringContainsString('didn’t share everything the Hub needs', session('errors')->first('signIn'));
         $this->assertGuest();
         $this->assertSame(0, User::query()->count());
     }
@@ -233,53 +249,5 @@ class SignInTest extends TestCase
 
         $this->assertGuest();
         $this->assertArrayNotHasKey('signInRetry', Inertia::getFlashed());
-    }
-
-    public function test_an_expired_token_is_refreshed_once_and_rotated(): void
-    {
-        $this->signInThroughProvider(self::connectMember(1234567));
-        $user = User::query()->sole();
-        $this->travel(8)->days();
-        $this->providerTokensAnswer(['expires_in' => 604800, 'access_token' => 'access-2', 'refresh_token' => 'refresh-2']);
-
-        $tokens = app(SignInTokens::class);
-        $this->assertSame('access-2', $tokens->accessToken($user));
-        $this->assertSame('access-2', $tokens->accessToken($user));
-
-        $this->assertSame('refresh-2', SignInToken::query()->sole()->refresh_token);
-        Http::assertSentCount(3); // the code exchange, /api/user, and one refresh
-    }
-
-    public function test_a_refused_refresh_deletes_the_token_but_an_outage_keeps_it(): void
-    {
-        $this->signInThroughProvider(self::connectMember(1234567));
-        $user = User::query()->sole();
-        $this->travel(8)->days();
-        $tokens = app(SignInTokens::class);
-
-        $this->providerTokensAnswer(['error' => 'server_error'], 502);
-        try {
-            $tokens->accessToken($user);
-            $this->fail('An outage should be reported.');
-        } catch (OAuthRequestFailed $failure) {
-            $this->assertFalse($failure->isPermanent());
-        }
-        $this->assertSame(1, SignInToken::query()->count());
-
-        // Connect answers a revoked refresh token with 401 invalid_request.
-        $this->providerTokensAnswer(['error' => 'invalid_request', 'hint' => 'Token has been revoked'], 401);
-        $this->assertNull($tokens->accessToken($user));
-        $this->assertSame(0, SignInToken::query()->count());
-        $this->assertAuthenticatedAs($user);
-    }
-
-    public function test_tokens_from_the_other_provider_are_dropped(): void
-    {
-        config(['auth.sign_in_provider' => 'handover']);
-        $this->signInThroughProvider(self::connectMember(1234567));
-        config(['auth.sign_in_provider' => 'vatsim']);
-
-        $this->assertNull(app(SignInTokens::class)->accessToken(User::query()->sole()));
-        $this->assertSame(0, SignInToken::query()->count());
     }
 }

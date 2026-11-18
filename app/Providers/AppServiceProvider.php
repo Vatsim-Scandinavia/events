@@ -9,7 +9,10 @@ use App\Integrations\Integrations;
 use App\Models\Fir;
 use App\Models\User;
 use App\Services\DisplayTime;
+use App\Socialite\HandoverProvider;
+use App\Socialite\VatsimConnectProvider;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\ViteException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -17,6 +20,9 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\ExceptionResponse;
 use Inertia\Inertia;
+use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
+use Laravel\Socialite\Socialite;
+use Laravel\Socialite\SocialiteManager;
 use Throwable;
 
 class AppServiceProvider extends ServiceProvider
@@ -28,6 +34,14 @@ class AppServiceProvider extends ServiceProvider
     {
         // Resolved fresh each time, so it always follows whoever is signed in.
         $this->app->bind(DisplayTime::class, fn () => DisplayTime::for(auth()->user()));
+
+        // Socialite keeps each driver for the life of the process, along with its request and the
+        // member it last signed in, so each new request (in tests, or under Octane) starts afresh.
+        $this->app->rebinding('request', function (Application $app) {
+            if ($app->resolved(SocialiteFactory::class) && ($socialite = $app->make(SocialiteFactory::class)) instanceof SocialiteManager) {
+                $socialite->forgetDrivers();
+            }
+        });
     }
 
     /**
@@ -55,6 +69,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('sign-in', fn (Request $request) => Limit::perMinute(10)->by((string) $request->ip()));
         // The public API has no sign-in, so it's limited per address.
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by((string) $request->ip()));
+
+        // One Socialite driver per Sign-in Provider, configured in config/services.php.
+        Socialite::extend('vatsim', fn () => Socialite::buildProvider(VatsimConnectProvider::class, config('services.vatsim')));
+        Socialite::extend('handover', fn () => Socialite::buildProvider(HandoverProvider::class, config('services.handover')));
 
         app(Integrations::class)->boot();
 
