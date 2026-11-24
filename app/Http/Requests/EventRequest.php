@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use App\Events\EventField;
-use App\Events\EventFields;
+use App\Integrations\EventField;
+use App\Integrations\EventFields;
 use App\Integrations\Integrations;
 use App\Models\Event;
 use App\Models\Fir;
@@ -85,7 +85,7 @@ class EventRequest extends EventScheduleRequest
     }
 
     /**
-     * The fields Integration features add to the form (see App\Events\EventFields).
+     * The fields Integration features add to the form (see App\Integrations\EventFields).
      *
      * @return Collection<int, EventField>
      */

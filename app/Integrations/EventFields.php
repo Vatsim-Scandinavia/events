@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Integrations;
 
 use App\Models\Event;
 use Illuminate\Validation\ValidationException;

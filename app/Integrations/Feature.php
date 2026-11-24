@@ -39,7 +39,7 @@ abstract class Feature
 
     /**
      * Called once as the app boots, whether or not it's on, to listen for what the core
-     * announces (such as App\Staffing\StaffingChanged). Listeners must check it's on first,
+     * announces (such as App\Events\StaffingChanged). Listeners must check it's on first,
      * and never change the core's records.
      */
     public function boot(): void {}

@@ -3,6 +3,7 @@
 namespace App\Integrations\ControlCenter;
 
 use App\Enums\StaffingMode;
+use App\Events\StaffingChanged;
 use App\Integrations\Feature;
 use App\Integrations\Integrations;
 use App\Integrations\Syncable;
@@ -13,7 +14,6 @@ use App\Models\EventPosition;
 use App\Models\User;
 use App\Staffing\Roster;
 use App\Staffing\RosterItem;
-use App\Staffing\StaffingChanged;
 use App\Staffing\StaffingNotes;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Scheduling\Event;

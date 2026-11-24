@@ -2,14 +2,14 @@
 
 namespace App\Integrations\Discord;
 
-use App\Events\EventField;
-use App\Events\EventFields;
+use App\Events\StaffingChanged;
 use App\Integrations\ConnectionFailed;
+use App\Integrations\EventField;
+use App\Integrations\EventFields;
 use App\Integrations\Feature;
 use App\Integrations\Integrations;
 use App\Models\Event;
 use App\Models\EventOccurrence;
-use App\Staffing\StaffingChanged;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Event as Events;
 use Illuminate\Validation\ValidationException;

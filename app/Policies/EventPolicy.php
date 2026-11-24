@@ -52,7 +52,7 @@ class EventPolicy
     }
 
     /**
-     * Cancel or restore the event, or one of its dates.
+     * Cancel or reinstate the event, or one of its Occurrences.
      */
     public function cancel(User $user, Event $event): bool
     {

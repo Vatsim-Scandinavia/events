@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
 /**
- * Event Staff cancelling and restoring a whole event or one of its dates.
+ * Event Staff cancelling and reinstating a whole event or one of its dates.
  */
 class EventCancellationController extends Controller
 {
@@ -26,7 +26,7 @@ class EventCancellationController extends Controller
     public function restoreEvent(Event $event): RedirectResponse
     {
         Gate::authorize('cancel', $event);
-        $event->restore();
+        $event->reinstate();
 
         return Inertia::flash('success', "{$event->name} is back on.")->back();
     }
@@ -42,7 +42,7 @@ class EventCancellationController extends Controller
     public function restoreOccurrence(EventOccurrence $occurrence, DisplayTime $display): RedirectResponse
     {
         Gate::authorize('cancel', $occurrence->event);
-        $occurrence->restore();
+        $occurrence->reinstate();
 
         return Inertia::flash('success', $display->date($occurrence->starts_at).' is back on.')->back();
     }
