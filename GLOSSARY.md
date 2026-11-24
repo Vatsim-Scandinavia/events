@@ -51,3 +51,25 @@ _Avoid_: Roster provider
 **Controller Grant**:
 A stored decision that an Account is a Controller in a FIR or Hub-wide, given either by the Controller Source or by hand.
 _Avoid_: Endorsement, visiting role
+
+## Events
+
+**Event**:
+Something a FIR runs on the network for Members to fly or control, taking place on one or more Occurrences.
+_Avoid_: Session, booking
+
+**Occurrence**:
+One time an Event takes place, with its own start and end. An Event that repeats has one Occurrence for each time.
+_Avoid_: Date, instance, session
+
+**Draft**:
+An Event that only staff of its FIR can see, until it is published. Publishing cannot be undone.
+_Avoid_: Unpublished, hidden
+
+**Cancelled**:
+Called off without anything being deleted, either a whole Event or a single Occurrence. When an Event is cancelled, all of its Occurrences count as cancelled.
+_Avoid_: Deleted, removed
+
+**Reinstate**:
+To undo a cancellation, possible until the Occurrence has started.
+_Avoid_: Restore, uncancel
