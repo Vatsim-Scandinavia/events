@@ -3,13 +3,13 @@
 namespace Tests\Feature;
 
 use App\Enums\StaffingMode;
+use App\Events\StaffingChanged;
 use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\PositionShift;
 use App\Models\User;
 use App\Staffing\EventSchedule;
 use App\Staffing\ShiftBookings;
-use App\Staffing\StaffingChanged;
 use App\Staffing\StaffingPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -97,7 +97,7 @@ class StaffingChangedTest extends TestCase
         $this->next->cancel();
         $this->assertAnnounced([$this->next->id]);
 
-        $this->next->fresh()->restore();
+        $this->next->fresh()->reinstate();
         $this->assertAnnounced([$this->next->id], times: 2);
     }
 
@@ -106,7 +106,7 @@ class StaffingChangedTest extends TestCase
         $this->event->cancel();
         $this->assertAnnounced([$this->next->id, $this->later->id]);
 
-        $this->event->restore();
+        $this->event->reinstate();
         $this->assertAnnounced([$this->next->id, $this->later->id], times: 2);
     }
 

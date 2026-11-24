@@ -3,6 +3,7 @@
 namespace App\Staffing;
 
 use App\Enums\RepeatInterval;
+use App\Events\StaffingChanged;
 use App\Models\Event;
 use App\Models\EventOccurrence;
 use App\Models\PositionShift;

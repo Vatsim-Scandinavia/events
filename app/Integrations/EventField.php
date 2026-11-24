@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Integrations;
 
 /**
  * One field an Integration feature adds to the Event form, such as a Discord webhook. The core

@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Enums\StaffingMode;
-use App\Staffing\StaffingChanged;
+use App\Events\StaffingChanged;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -87,7 +87,7 @@ class EventOccurrence extends Model
 
     /**
      * Calls off this date. Nothing is deleted: bookings, interest and its roster stay so a
-     * restored date picks up where it was.
+     * reinstated Occurrence picks up where it was.
      *
      * @throws ValidationException when the date has started
      */
@@ -104,7 +104,7 @@ class EventOccurrence extends Model
     /**
      * @throws ValidationException when the date has started or the whole event is cancelled
      */
-    public function restore(): void
+    public function reinstate(): void
     {
         if ($this->hasStarted()) {
             throw ValidationException::withMessages(['cancel' => 'This date has already started, so it can’t be restored.']);

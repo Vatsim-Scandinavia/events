@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Staff;
 
-use App\Events\EventField;
-use App\Events\EventFields;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\EventRequest;
 use App\Http\Requests\EventScheduleRequest;
+use App\Integrations\EventField;
+use App\Integrations\EventFields;
 use App\Integrations\Integrations;
 use App\Models\Event;
 use App\Models\EventOccurrence;

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Staffing;
+namespace App\Events;
 
 use App\Models\Event;
 use App\Models\EventOccurrence;

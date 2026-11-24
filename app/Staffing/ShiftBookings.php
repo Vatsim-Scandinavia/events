@@ -4,6 +4,7 @@ namespace App\Staffing;
 
 use App\Enums\BookingRefusal;
 use App\Enums\StaffingMode;
+use App\Events\StaffingChanged;
 use App\Models\EventOccurrence;
 use App\Models\PositionShift;
 use App\Models\ShiftBooking;

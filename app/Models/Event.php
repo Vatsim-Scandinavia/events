@@ -7,8 +7,8 @@ use App\Enums\Permission;
 use App\Enums\RepeatInterval;
 use App\Enums\StaffingMode;
 use App\Events\EventPublished;
+use App\Events\StaffingChanged;
 use App\Services\EventBanners;
-use App\Staffing\StaffingChanged;
 use Database\Factories\EventFactory;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -317,7 +317,7 @@ class Event extends Model
 
     /**
      * Calls off the whole event. Nothing is deleted: bookings, interest and rosters stay so a
-     * restored event picks up where it was.
+     * reinstated event picks up where it was.
      *
      * @throws ValidationException when every date is already over
      */
@@ -331,7 +331,7 @@ class Event extends Model
         StaffingChanged::forEvent($this);
     }
 
-    public function restore(): void
+    public function reinstate(): void
     {
         $this->update(['cancelled_at' => null]);
         StaffingChanged::forEvent($this);

@@ -3,7 +3,6 @@
 namespace App\Integrations;
 
 use App\Auth\ControllerSource;
-use App\Events\EventFields;
 use App\Models\IntegrationSetting;
 use App\Staffing\StaffingNotes;
 use Illuminate\Console\Scheduling\Schedule;
