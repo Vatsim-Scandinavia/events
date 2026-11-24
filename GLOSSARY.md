@@ -71,5 +71,5 @@ Called off without anything being deleted, either a whole Event or a single Occu
 _Avoid_: Deleted, removed
 
 **Reinstate**:
-To undo a cancellation, possible until the Occurrence has started.
+To undo a cancellation. A single Occurrence can only be reinstated before it starts. A whole Event can be reinstated at any time.
 _Avoid_: Restore, uncancel
