@@ -37,7 +37,7 @@ trait SignsInThroughTheProvider
         $this->providerMember = $member;
 
         $this->get("/auth/{$provider}".($returnTo !== null ? '?return='.urlencode($returnTo) : ''));
-        $response = $this->get("/auth/{$provider}/callback?code=the-code&state=".session('sign_in.state'));
+        $response = $this->get("/auth/{$provider}/callback?code=the-code&state=".session('state'));
 
         if (! $stay) {
             auth()->logout();
@@ -58,7 +58,7 @@ trait SignsInThroughTheProvider
     }
 
     /**
-     * A member as /api/user describes them, with the scopes shared.
+     * A member as /api/user describes them, with every scope and continuous access shared.
      *
      * @return array<string, mixed>
      */
@@ -71,6 +71,7 @@ trait SignsInThroughTheProvider
                 'rating' => ['id' => $rating->value, 'short' => $rating->label()],
                 'subdivision' => ['id' => $subdivision, 'name' => $subdivision === null ? null : 'Some subdivision'],
             ],
+            'oauth' => ['token_valid' => 'true'],
         ];
     }
 
